@@ -57,6 +57,13 @@ const client = axios.create({
   baseURL: API_BASE || undefined,
 });
 
+export function getJobStreamUrl(job: string, source?: string): string {
+  const base = API_BASE ? API_BASE.replace(/\/$/, '') : '';
+  const params = new URLSearchParams({ job });
+  if (source) params.set('source', source);
+  return `${base}/api/jobs/stream?${params.toString()}`;
+}
+
 export async function fetchDashboard(
   source?: string,
 ): Promise<DashboardPayload> {

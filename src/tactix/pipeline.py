@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import time
+from collections.abc import Callable
 
 import chess.engine
 from tactix.chesscom_client import (
@@ -39,6 +40,19 @@ from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 
 logger = get_logger(__name__)
+
+
+ProgressCallback = Callable[[dict[str, object]], None]
+
+
+def _emit_progress(
+    progress: ProgressCallback | None, step: str, **fields: object
+) -> None:
+    if progress is None:
+        return
+    payload: dict[str, object] = {"step": step, "timestamp": time.time()}
+    payload.update(fields)
+    progress(payload)
 
 
 def _analysis_signature(game_ids: list[str], positions_count: int, source: str) -> str:
@@ -103,13 +117,22 @@ def _analyse_with_retries(
 
 
 def run_daily_game_sync(
-    settings: Settings | None = None, source: str | None = None
+    settings: Settings | None = None,
+    source: str | None = None,
+    progress: ProgressCallback | None = None,
 ) -> dict[str, object]:
     settings = settings or get_settings(source=source)
     if source:
         settings.source = source
     settings.apply_source_defaults()
     settings.ensure_dirs()
+
+    _emit_progress(
+        progress,
+        "start",
+        source=settings.source,
+        message="Starting pipeline run",
+    )
 
     since_ms = 0
     cursor_value: str | None = None
@@ -133,12 +156,27 @@ def run_daily_game_sync(
         games = fetch_lichess_games(settings, since_ms)
         last_timestamp_value = since_ms
 
+    _emit_progress(
+        progress,
+        "fetch_games",
+        source=settings.source,
+        fetched_games=len(games),
+        since_ms=since_ms,
+        cursor=next_cursor or cursor_value,
+    )
+
     conn = get_connection(settings.duckdb_path)
     init_schema(conn)
 
     if not games:
         logger.info(
             "No new games for source=%s at checkpoint=%s", settings.source, since_ms
+        )
+        _emit_progress(
+            progress,
+            "no_games",
+            source=settings.source,
+            message="No new games to process",
         )
         update_metrics_summary(conn)
         metrics_version = write_metrics_version(conn)
@@ -184,8 +222,21 @@ def run_daily_game_sync(
             _clear_analysis_checkpoint(analysis_checkpoint_path)
 
     if not positions:
+        _emit_progress(
+            progress,
+            "raw_pgns",
+            source=settings.source,
+            message="Persisting raw PGNs",
+        )
         delete_game_rows(conn, game_ids)
         upsert_raw_pgns(conn, games)
+
+        _emit_progress(
+            progress,
+            "extract_positions",
+            source=settings.source,
+            message="Extracting positions",
+        )
 
         for game in games:
             positions.extend(
@@ -207,8 +258,17 @@ def run_daily_game_sync(
     else:
         upsert_raw_pgns(conn, games)
 
+    _emit_progress(
+        progress,
+        "positions_ready",
+        source=settings.source,
+        positions=len(positions),
+    )
+
     tactics_count = 0
     analysis_complete = False
+    total_positions = len(positions)
+    progress_every = max(1, total_positions // 20) if total_positions else 1
     with StockfishEngine(settings) as engine:
         for idx, pos in enumerate(positions):
             if idx <= resume_index:
@@ -225,12 +285,30 @@ def run_daily_game_sync(
             _write_analysis_checkpoint(
                 analysis_checkpoint_path, analysis_signature, idx
             )
+            if progress and (
+                idx == total_positions - 1 or (idx + 1) % progress_every == 0
+            ):
+                _emit_progress(
+                    progress,
+                    "analyze_positions",
+                    source=settings.source,
+                    analyzed=idx + 1,
+                    total=total_positions,
+                )
     analysis_complete = True
     if analysis_complete:
         _clear_analysis_checkpoint(analysis_checkpoint_path)
     update_metrics_summary(conn)
     metrics_version = write_metrics_version(conn)
     settings.metrics_version_file.write_text(str(metrics_version))
+
+    _emit_progress(
+        progress,
+        "metrics_refreshed",
+        source=settings.source,
+        metrics_version=metrics_version,
+        message="Metrics refreshed",
+    )
 
     checkpoint_value: int | None = None
     if settings.source == "chesscom":
@@ -259,7 +337,9 @@ def run_daily_game_sync(
 
 
 def run_refresh_metrics(
-    settings: Settings | None = None, source: str | None = None
+    settings: Settings | None = None,
+    source: str | None = None,
+    progress: ProgressCallback | None = None,
 ) -> dict[str, object]:
     settings = settings or get_settings(source=source)
     if source:
@@ -267,11 +347,26 @@ def run_refresh_metrics(
     settings.apply_source_defaults()
     settings.ensure_dirs()
 
+    _emit_progress(
+        progress,
+        "start",
+        source=settings.source,
+        message="Refreshing metrics",
+    )
+
     conn = get_connection(settings.duckdb_path)
     init_schema(conn)
     update_metrics_summary(conn)
     metrics_version = write_metrics_version(conn)
     settings.metrics_version_file.write_text(str(metrics_version))
+
+    _emit_progress(
+        progress,
+        "metrics_refreshed",
+        source=settings.source,
+        metrics_version=metrics_version,
+        message="Metrics refreshed",
+    )
 
     return {
         "source": settings.source,

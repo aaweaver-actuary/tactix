@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+import json
+from queue import Empty, Queue
+from threading import Thread
+
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
 from tactix.config import get_settings
 from tactix.pipeline import (
@@ -39,3 +44,71 @@ def trigger_refresh_metrics(source: str | None = Query(None)) -> dict[str, objec
 @app.get("/api/dashboard")
 def dashboard(source: str | None = Query(None)) -> dict[str, object]:
     return get_dashboard_payload(get_settings(source=source), source=source)
+
+
+def _format_sse(event: str, payload: dict[str, object]) -> str:
+    return f"event: {event}\ndata: {json.dumps(payload)}\n\n"
+
+
+@app.get("/api/jobs/stream")
+def stream_jobs(
+    job: str = Query("daily_game_sync"),
+    source: str | None = Query(None),
+) -> StreamingResponse:
+    settings = get_settings(source=source)
+    queue: Queue[object] = Queue()
+    sentinel = object()
+
+    def progress(payload: dict[str, object]) -> None:
+        payload["job"] = job
+        queue.put(("progress", payload))
+
+    def worker() -> None:
+        try:
+            if job == "daily_game_sync":
+                result = run_daily_game_sync(settings, source=source, progress=progress)
+            elif job == "refresh_metrics":
+                result = run_refresh_metrics(settings, source=source, progress=progress)
+            else:
+                raise ValueError(f"Unsupported job: {job}")
+            queue.put(
+                (
+                    "complete",
+                    {
+                        "job": job,
+                        "step": "complete",
+                        "message": "Job complete",
+                        "result": result,
+                    },
+                )
+            )
+        except Exception as exc:  # pragma: no cover - defensive
+            queue.put(
+                (
+                    "error",
+                    {
+                        "job": job,
+                        "step": "error",
+                        "message": str(exc),
+                    },
+                )
+            )
+        finally:
+            queue.put(sentinel)
+
+    Thread(target=worker, daemon=True).start()
+
+    def event_stream():
+        yield "retry: 1000\n\n"
+        while True:
+            try:
+                item = queue.get(timeout=1)
+            except Empty:
+                yield ": keep-alive\n\n"
+                continue
+            if item is sentinel:
+                break
+            event, payload = item
+            yield _format_sse(event, payload)
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")

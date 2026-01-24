@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   DashboardPayload,
   fetchDashboard,
+  getJobStreamUrl,
   triggerMetricsRefresh,
-  triggerPipeline,
 } from './api';
 
 const SOURCE_OPTIONS: { id: 'lichess' | 'chesscom'; label: string; note: string }[] = [
@@ -241,7 +241,7 @@ function Hero({
               {opt.label}
             </button>
           ))}
-              onClick={onRefresh}
+        </div>
       </div>
       <div className="flex gap-3">
         <button
@@ -253,10 +253,10 @@ function Hero({
         </button>
         <button
           className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
-          onClick={onRun}
+          onClick={onRefresh}
           disabled={loading}
         >
-          Cache bust
+          Refresh metrics
         </button>
       </div>
     </div>
@@ -268,6 +268,23 @@ function App() {
   const [source, setSource] = useState<'lichess' | 'chesscom'>('lichess');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [jobProgress, setJobProgress] = useState<
+    Array<{
+      step: string;
+      timestamp?: number;
+      message?: string;
+      analyzed?: number;
+      total?: number;
+      fetched_games?: number;
+      positions?: number;
+      metrics_version?: number;
+      job?: string;
+    }>
+  >([]);
+  const [jobStatus, setJobStatus] = useState<'idle' | 'running' | 'error' | 'complete'>(
+    'idle',
+  );
+  const streamRef = useRef<EventSource | null>(null);
 
   const load = async (nextSource: 'lichess' | 'chesscom' = source) => {
     setLoading(true);
@@ -288,16 +305,78 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source]);
 
+  useEffect(() => {
+    return () => {
+      streamRef.current?.close();
+      streamRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    streamRef.current?.close();
+    streamRef.current = null;
+    setJobProgress([]);
+    setJobStatus('idle');
+  }, [source]);
+
   const handleRun = async () => {
     setLoading(true);
     setError(null);
     try {
-      const payload = await triggerPipeline(source);
-      setData(payload);
+      streamRef.current?.close();
+      setJobProgress([]);
+      setJobStatus('running');
+
+      const streamUrl = getJobStreamUrl('daily_game_sync', source);
+      const eventSource = new EventSource(streamUrl);
+      streamRef.current = eventSource;
+
+      eventSource.addEventListener('progress', (event) => {
+        const messageEvent = event as MessageEvent<string>;
+        try {
+          const payload = JSON.parse(messageEvent.data);
+          setJobProgress((prev) => [...prev, payload]);
+        } catch (parseError) {
+          console.error(parseError);
+        }
+      });
+
+      eventSource.addEventListener('complete', async (event) => {
+        const messageEvent = event as MessageEvent<string>;
+        try {
+          const payload = JSON.parse(messageEvent.data);
+          setJobProgress((prev) => [...prev, payload]);
+        } catch (parseError) {
+          console.error(parseError);
+        }
+        eventSource.close();
+        streamRef.current = null;
+        setJobStatus('complete');
+        const payload = await fetchDashboard(source);
+        setData(payload);
+        setLoading(false);
+      });
+
+      eventSource.addEventListener('error', (event) => {
+        const messageEvent = event as MessageEvent<string>;
+        if (messageEvent.data) {
+          try {
+            const payload = JSON.parse(messageEvent.data);
+            setJobProgress((prev) => [...prev, payload]);
+          } catch (parseError) {
+            console.error(parseError);
+          }
+        }
+        setJobStatus('error');
+        setLoading(false);
+        setError('Pipeline stream disconnected');
+        eventSource.close();
+        streamRef.current = null;
+      });
     } catch (err) {
       console.error(err);
       setError('Pipeline run failed');
-    } finally {
+      setJobStatus('error');
       setLoading(false);
     }
   };
@@ -358,6 +437,61 @@ function App() {
 
       {error ? <div className="card p-3 text-rust">{error}</div> : null}
 
+      {jobProgress.length ? (
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-display text-sand">Job progress</h3>
+            <Badge
+              label={
+                jobStatus === 'running'
+                  ? 'Running'
+                  : jobStatus === 'complete'
+                    ? 'Complete'
+                    : jobStatus === 'error'
+                      ? 'Error'
+                      : 'Idle'
+              }
+            />
+          </div>
+          <ol className="space-y-2 text-sm">
+            {jobProgress.map((entry, index) => {
+              const detail =
+                entry.analyzed !== undefined && entry.total !== undefined
+                  ? `${entry.analyzed}/${entry.total}`
+                  : entry.fetched_games !== undefined
+                    ? `${entry.fetched_games} games`
+                    : entry.positions !== undefined
+                      ? `${entry.positions} positions`
+                      : entry.metrics_version !== undefined
+                        ? `v${entry.metrics_version}`
+                        : null;
+              const timestamp = entry.timestamp
+                ? new Date(entry.timestamp * 1000).toLocaleTimeString()
+                : null;
+              return (
+                <li
+                  key={`${entry.step}-${entry.timestamp ?? index}`}
+                  className="flex flex-wrap items-center gap-2 text-sand/80"
+                >
+                  {timestamp ? (
+                    <span className="font-mono text-xs text-sand/60">
+                      {timestamp}
+                    </span>
+                  ) : null}
+                  <span className="font-display text-sand">{entry.step}</span>
+                  {entry.message ? (
+                    <span className="text-sand/70">{entry.message}</span>
+                  ) : null}
+                  {detail ? (
+                    <Badge label={detail} />
+                  ) : null}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <MetricCard
           title="Positions"
@@ -383,7 +517,4 @@ function App() {
     </div>
   );
 }
-          onClick={handleRefreshMetrics}
 export default App;
-
-          Refresh metrics

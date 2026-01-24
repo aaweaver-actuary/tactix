@@ -99,3 +99,14 @@ Session 2026-01-24 (feature 011 – Metrics refresh motif breakdown + trends)
 - Note: Airflow CLI not available in environment; refreshed metrics via API/puppeteer instead.
 - Updated feature_list.json: feature 011 marked passes=true after UI + test verification.
 - Current passing count: 11.
+
+Session 2026-01-24 (feature 012 – SSE job progress stream)
+- Fixed dashboard markup regression (restored Refresh metrics button) so Vite renders cleanly during UI checks.
+- Added SSE job progress endpoint `/api/jobs/stream` with pipeline progress callbacks and keep-alive streaming.
+- Wired React dashboard to EventSource and surfaced live job progress list during pipeline runs.
+- New test coverage for SSE stream format/events in `tests/test_job_stream.py`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest` (27 passed).
+- UI verification screenshot: `verification/dashboard-chesscom-sse-progress.png`.
+- Precheck UI screenshots: `verification/precheck-dashboard-lichess.png`, `verification/precheck-dashboard-chesscom.png`.
+- Updated feature_list.json: feature 012 marked passes=true after UI + test verification.
+- Current passing count: 12.

@@ -4,7 +4,7 @@ import json
 from queue import Empty, Queue
 from threading import Thread
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -23,7 +23,32 @@ from tactix.duckdb_store import (
     init_schema,
 )
 
-app = FastAPI(title="TACTIX", version="0.1.0")
+
+def _extract_api_token(request: Request) -> str | None:
+    auth_header = request.headers.get("authorization")
+    if auth_header and auth_header.lower().startswith("bearer "):
+        return auth_header.split(" ", 1)[1].strip()
+    api_key = request.headers.get("x-api-key")
+    if api_key:
+        return api_key.strip()
+    return None
+
+
+def require_api_token(request: Request) -> None:
+    if request.url.path == "/api/health":
+        return
+    settings = get_settings()
+    expected = settings.api_token
+    supplied = _extract_api_token(request)
+    if not supplied or supplied != expected:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized"
+        )
+
+
+app = FastAPI(
+    title="TACTIX", version="0.1.0", dependencies=[Depends(require_api_token)]
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

@@ -100,10 +100,21 @@ export type PracticeAttemptResponse = {
 };
 
 const API_BASE = (import.meta.env.VITE_API_BASE || '').trim();
+const API_TOKEN = (
+  import.meta.env.VITE_TACTIX_API_TOKEN || 'local-dev-token'
+).trim();
+const authHeaders: Record<string, string> = API_TOKEN
+  ? { Authorization: `Bearer ${API_TOKEN}` }
+  : {};
 
 const client = axios.create({
   baseURL: API_BASE || undefined,
+  headers: authHeaders,
 });
+
+export function getAuthHeaders(): Record<string, string> {
+  return authHeaders;
+}
 
 export function getJobStreamUrl(job: string, source?: string): string {
   const base = API_BASE ? API_BASE.replace(/\/$/, '') : '';
@@ -135,9 +146,7 @@ export async function triggerMetricsRefresh(
   return fetchDashboard(source);
 }
 
-export async function triggerMigrations(
-  source?: string,
-): Promise<{
+export async function triggerMigrations(source?: string): Promise<{
   status: string;
   result: { source: string; schema_version: number };
 }> {

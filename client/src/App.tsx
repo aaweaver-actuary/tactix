@@ -5,6 +5,7 @@ import {
   PracticeQueueItem,
   fetchDashboard,
   fetchPracticeQueue,
+  getAuthHeaders,
   getJobStreamUrl,
   submitPracticeAttempt,
   triggerMetricsRefresh,
@@ -14,6 +15,19 @@ const SOURCE_OPTIONS: { id: 'lichess' | 'chesscom'; label: string; note: string 
   { id: 'lichess', label: 'Lichess · Rapid', note: 'Perf: rapid' },
   { id: 'chesscom', label: 'Chess.com · Blitz', note: 'Time class: blitz' },
 ];
+
+type JobProgressItem = {
+  step: string;
+  timestamp?: number;
+  message?: string;
+  analyzed?: number;
+  total?: number;
+  fetched_games?: number;
+  positions?: number;
+  metrics_version?: number;
+  schema_version?: number;
+  job?: string;
+};
 
 function Badge({ label }: { label: string }) {
   return (
@@ -375,24 +389,11 @@ function App() {
   const [practiceSubmitError, setPracticeSubmitError] = useState<string | null>(
     null,
   );
-  const [jobProgress, setJobProgress] = useState<
-    Array<{
-      step: string;
-      timestamp?: number;
-      message?: string;
-      analyzed?: number;
-      total?: number;
-      fetched_games?: number;
-      positions?: number;
-      metrics_version?: number;
-      schema_version?: number;
-      job?: string;
-    }>
-  >([]);
+  const [jobProgress, setJobProgress] = useState<JobProgressItem[]>([]);
   const [jobStatus, setJobStatus] = useState<'idle' | 'running' | 'error' | 'complete'>(
     'idle',
   );
-  const streamRef = useRef<EventSource | null>(null);
+  const streamAbortRef = useRef<AbortController | null>(null);
 
   const load = async (nextSource: 'lichess' | 'chesscom' = source) => {
     setLoading(true);
@@ -448,73 +449,116 @@ function App() {
 
   useEffect(() => {
     return () => {
-      streamRef.current?.close();
-      streamRef.current = null;
+      streamAbortRef.current?.abort();
+      streamAbortRef.current = null;
     };
   }, []);
 
   useEffect(() => {
-    streamRef.current?.close();
-    streamRef.current = null;
+    streamAbortRef.current?.abort();
+    streamAbortRef.current = null;
     setJobProgress([]);
     setJobStatus('idle');
   }, [source]);
+
+  const streamJobEvents = async (
+    job: string,
+    nextSource: 'lichess' | 'chesscom',
+    disconnectMessage: string,
+  ) => {
+    streamAbortRef.current?.abort();
+    const controller = new AbortController();
+    streamAbortRef.current = controller;
+
+    const streamUrl = getJobStreamUrl(job, nextSource);
+    const response = await fetch(streamUrl, {
+      headers: getAuthHeaders(),
+      signal: controller.signal,
+    });
+
+    if (!response.ok || !response.body) {
+      throw new Error(`Stream failed with status ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    const handleEvent = async (eventName: string, data: string) => {
+      if (!data) return;
+      let payload: Record<string, unknown> | null = null;
+      try {
+        payload = JSON.parse(data) as Record<string, unknown>;
+      } catch (parseError) {
+        console.error(parseError);
+        return;
+      }
+
+      if (
+        eventName === 'progress' ||
+        eventName === 'error' ||
+        eventName === 'complete'
+      ) {
+        setJobProgress((prev) => [...prev, payload as JobProgressItem]);
+      }
+
+      if (eventName === 'complete') {
+        setJobStatus('complete');
+        const dashboard = await fetchDashboard(nextSource);
+        setData(dashboard);
+        await loadPracticeQueue(nextSource, includeFailedAttempt);
+        setLoading(false);
+        controller.abort();
+        streamAbortRef.current = null;
+      }
+
+      if (eventName === 'error') {
+        setJobStatus('error');
+        setLoading(false);
+        setError(disconnectMessage);
+        controller.abort();
+        streamAbortRef.current = null;
+      }
+    };
+
+    const parseChunk = async (chunk: string) => {
+      buffer += chunk;
+      const parts = buffer.split('\n\n');
+      buffer = parts.pop() ?? '';
+
+      for (const part of parts) {
+        let eventName = 'message';
+        let data = '';
+        for (const line of part.split('\n')) {
+          if (!line || line.startsWith(':')) continue;
+          if (line.startsWith('event:')) {
+            eventName = line.replace('event:', '').trim();
+          } else if (line.startsWith('data:')) {
+            data += line.replace('data:', '').trim();
+          }
+        }
+        await handleEvent(eventName, data);
+      }
+    };
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      await parseChunk(decoder.decode(value, { stream: true }));
+    }
+  };
 
   const handleRun = async () => {
     setLoading(true);
     setError(null);
     try {
-      streamRef.current?.close();
       setJobProgress([]);
       setJobStatus('running');
-
-      const streamUrl = getJobStreamUrl('daily_game_sync', source);
-      const eventSource = new EventSource(streamUrl);
-      streamRef.current = eventSource;
-
-      eventSource.addEventListener('progress', (event) => {
-        const messageEvent = event as MessageEvent<string>;
-        try {
-          const payload = JSON.parse(messageEvent.data);
-          setJobProgress((prev) => [...prev, payload]);
-        } catch (parseError) {
-          console.error(parseError);
-        }
-      });
-
-      eventSource.addEventListener('complete', async (event) => {
-        const messageEvent = event as MessageEvent<string>;
-        try {
-          const payload = JSON.parse(messageEvent.data);
-          setJobProgress((prev) => [...prev, payload]);
-        } catch (parseError) {
-          console.error(parseError);
-        }
-        eventSource.close();
-        streamRef.current = null;
-        setJobStatus('complete');
-        const payload = await fetchDashboard(source);
-        setData(payload);
-        await loadPracticeQueue(source, includeFailedAttempt);
-        setLoading(false);
-      });
-
-      eventSource.addEventListener('error', (event) => {
-        const messageEvent = event as MessageEvent<string>;
-        if (messageEvent.data) {
-          try {
-            const payload = JSON.parse(messageEvent.data);
-            setJobProgress((prev) => [...prev, payload]);
-          } catch (parseError) {
-            console.error(parseError);
-          }
-        }
-        setJobStatus('error');
-        setLoading(false);
-        setError('Pipeline stream disconnected');
-        eventSource.close();
-        streamRef.current = null;
-      });
+      await streamJobEvents(
+        'daily_game_sync',
+        source,
+        'Pipeline stream disconnected',
+      );
     } catch (err) {
       console.error(err);
       setError('Pipeline run failed');
@@ -527,57 +571,13 @@ function App() {
     setLoading(true);
     setError(null);
     try {
-      streamRef.current?.close();
       setJobProgress([]);
       setJobStatus('running');
-
-      const streamUrl = getJobStreamUrl('migrations', source);
-      const eventSource = new EventSource(streamUrl);
-      streamRef.current = eventSource;
-
-      eventSource.addEventListener('progress', (event) => {
-        const messageEvent = event as MessageEvent<string>;
-        try {
-          const payload = JSON.parse(messageEvent.data);
-          setJobProgress((prev) => [...prev, payload]);
-        } catch (parseError) {
-          console.error(parseError);
-        }
-      });
-
-      eventSource.addEventListener('complete', async (event) => {
-        const messageEvent = event as MessageEvent<string>;
-        try {
-          const payload = JSON.parse(messageEvent.data);
-          setJobProgress((prev) => [...prev, payload]);
-        } catch (parseError) {
-          console.error(parseError);
-        }
-        eventSource.close();
-        streamRef.current = null;
-        setJobStatus('complete');
-        const payload = await fetchDashboard(source);
-        setData(payload);
-        await loadPracticeQueue(source, includeFailedAttempt);
-        setLoading(false);
-      });
-
-      eventSource.addEventListener('error', (event) => {
-        const messageEvent = event as MessageEvent<string>;
-        if (messageEvent.data) {
-          try {
-            const payload = JSON.parse(messageEvent.data);
-            setJobProgress((prev) => [...prev, payload]);
-          } catch (parseError) {
-            console.error(parseError);
-          }
-        }
-        setJobStatus('error');
-        setLoading(false);
-        setError('Migration stream disconnected');
-        eventSource.close();
-        streamRef.current = null;
-      });
+      await streamJobEvents(
+        'migrations',
+        source,
+        'Migration stream disconnected',
+      );
     } catch (err) {
       console.error(err);
       setError('Migration run failed');

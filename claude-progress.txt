@@ -137,3 +137,12 @@ Session 2026-01-24 (feature 015 – DuckDB schema migration preserves data)
 - UI verification screenshots: `verification/dashboard-lichess-migrations.png`, `verification/dashboard-lichess-migration.png`.
 - Updated feature_list.json: feature 015 marked passes=true after UI + test verification.
 - Current passing count: 15.
+
+Session 2026-01-24 (feature 016 – API authentication with local token)
+- Added API token enforcement on FastAPI routes (Authorization Bearer or X-API-Key) with unauthenticated health check.
+- Updated React API client to send auth headers and refactored SSE streaming to use fetch with auth headers.
+- Added auth regression tests and updated SSE test to include auth header.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest` (35 passed).
+- UI verification screenshot: `verification/dashboard-auth-token.png` (Chess.com workflow via puppeteer).
+- Updated feature_list.json: feature 016 marked passes=true after UI + test verification.
+- Current passing count: 16.

@@ -3,14 +3,19 @@ import json
 from fastapi.testclient import TestClient
 
 from tactix.api import app
+from tactix.config import get_settings
 
 
 def test_job_stream_emits_progress_and_complete():
     client = TestClient(app)
+    token = get_settings().api_token
+    headers = {"Authorization": f"Bearer {token}"}
     events: list[tuple[str, dict[str, object]]] = []
 
     with client.stream(
-        "GET", "/api/jobs/stream?job=refresh_metrics&source=lichess"
+        "GET",
+        "/api/jobs/stream?job=refresh_metrics&source=lichess",
+        headers=headers,
     ) as response:
         assert response.status_code == 200
         assert response.headers["content-type"].startswith("text/event-stream")
@@ -20,9 +25,7 @@ def test_job_stream_emits_progress_and_complete():
         for raw_line in response.iter_lines():
             if not raw_line:
                 continue
-            line = (
-                raw_line.decode("utf-8") if isinstance(raw_line, bytes) else raw_line
-            )
+            line = raw_line.decode("utf-8") if isinstance(raw_line, bytes) else raw_line
             if line.startswith(":"):
                 continue
             if line.startswith("event: "):

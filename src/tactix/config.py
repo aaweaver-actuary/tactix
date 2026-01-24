@@ -17,6 +17,7 @@ DEFAULT_DATA_DIR = Path(os.getenv("TACTIX_DATA_DIR", "data"))
 class Settings:
     """Central configuration for ingestion, analysis, and UI refresh."""
 
+    api_token: str = os.getenv("TACTIX_API_TOKEN", "local-dev-token")
     user: str = os.getenv("TACTIX_USER", os.getenv("LICHESS_USER", "lichess"))
     lichess_user: str = os.getenv("LICHESS_USER", "lichess")
     source: str = os.getenv("TACTIX_SOURCE", "lichess")
@@ -55,9 +56,9 @@ class Settings:
     )
     stockfish_use_nnue: bool = os.getenv("STOCKFISH_USE_NNUE", "1") == "1"
     stockfish_ponder: bool = os.getenv("STOCKFISH_PONDER", "0") == "1"
-    stockfish_random_seed: Optional[int] = int(
-        os.getenv("STOCKFISH_RANDOM_SEED", "0")
-    ) or None
+    stockfish_random_seed: Optional[int] = (
+        int(os.getenv("STOCKFISH_RANDOM_SEED", "0")) or None
+    )
     stockfish_max_retries: int = int(os.getenv("STOCKFISH_MAX_RETRIES", "2"))
     stockfish_retry_backoff_ms: int = int(
         os.getenv("STOCKFISH_RETRY_BACKOFF_MS", "250")

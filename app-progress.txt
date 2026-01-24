@@ -4,3 +4,9 @@ Session summary (initializer)
 - Updated README with project overview, stack, and quick start instructions.
 - No code implementation yet; Python deps not added beyond pyproject template.
 - Next: add actual backend/frontend code, populate pyproject dependencies with uv add, wire Rust extractor, and begin marking tests as they pass.
+
+Session 2026-01-24 (backend + UI scaffold)
+- Targeted feature 001: added backend pipeline skeleton (config, DuckDB schema, Lichess fetcher, PGN position extractor, Stockfish wrapper with deterministic options, tactics analyzer, pipeline runner, FastAPI API, Airflow DAG stub).
+- Scaffolded React/Vite/Tailwind dashboard with cache-busting indicator and buttons to trigger sync via API.
+- Updated pyproject for Python 3.12 stack and added Airflow/analytics dependencies; Python 3.12 not yet installed locally, uv sync pending.
+- Outstanding: install Python 3.12 + recreate venv, run uv sync, wire real Stockfish 17 binary with checksum, add robust motif detection and tests (unit/integration/puppeteer), run Airflow DAG end-to-end, capture screenshots, and flip feature 001 after verification.

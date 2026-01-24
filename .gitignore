@@ -9,3 +9,12 @@ wheels/
 # Virtual environments
 .venv
 target/
+
+node_modules/
+dist/
+.vite/
+.env
+data/
+.airflow/
+airflow/airflow.db
+airflow/logs/

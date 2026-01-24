@@ -1,15 +1,27 @@
+
 [project]
-dependencies   =[
+dependencies=[
+    "apache-airflow==2.10.0",
+    "berserk>=0.13.0",
     "duckdb>=1.4.3",
-    "fastapi>=0.128.0",
+    "fastapi>=0.115.0",
+    "orjson>=3.10.7",
+    "pandas>=2.2.3",
+    "pydantic>=2.9.0",
     "python-chess>=1.999",
     "python-dotenv>=1.2.1",
+    "requests>=2.32.3",
+    "tenacity>=9.0.0",
+    "uvicorn>=0.31.0",
 ]
-description    ="Add your description here"
-name           ="tactix"
-readme         ="README.md"
-requires-python=">=3.13"
-version        ="0.1.0"
+description="Tactics analysis pipeline for personal chess training"
+name="tactix"
+readme="README.md"
+requires-python=">=3.12,<3.13"
+version="0.1.0"
+
+    [project.optional-dependencies]
+    dev=["pytest>=9.0.2"]
 
     [project.scripts]
     tactix="tactix:main"
@@ -30,3 +42,6 @@ cache-keys=[
 [build-system]
 build-backend="maturin"
 requires     =["maturin>=1.0,<2.0"]
+
+[dependency-groups]
+dev=["pytest>=9.0.2"]

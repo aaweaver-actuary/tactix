@@ -1,0 +1,68 @@
+from __future__ import annotations
+
+import re
+from io import StringIO
+from typing import Dict, List, Optional
+
+import chess
+import chess.pgn
+
+from tactix.logging_utils import get_logger
+
+logger = get_logger(__name__)
+
+CLK_PATTERN = re.compile(r"%clk\s+(\d+):(\d+):(\d+)")
+
+
+def _clock_from_comment(comment: str) -> Optional[float]:
+    match = CLK_PATTERN.search(comment or "")
+    if not match:
+        return None
+    hours, minutes, seconds = match.groups()
+    return int(hours) * 3600 + int(minutes) * 60 + int(seconds)
+
+
+def extract_positions(
+    pgn: str, user: str, source: str, game_id: str | None = None
+) -> List[Dict[str, object]]:
+    game = chess.pgn.read_game(StringIO(pgn))
+    if not game:
+        logger.warning("Unable to parse PGN")
+        return []
+
+    white = game.headers.get("White", "").lower()
+    black = game.headers.get("Black", "").lower()
+    user_lower = user.lower()
+    if user_lower not in {white, black}:
+        logger.info("User %s not present in game headers; skipping", user)
+        return []
+
+    user_color = chess.WHITE if user_lower == white else chess.BLACK
+    board = game.board()
+    positions: List[Dict[str, object]] = []
+    ply_index = 0
+
+    for node in game.mainline():
+        move = node.move
+        if move is None:
+            continue
+        is_user_to_move = board.turn == user_color
+        if is_user_to_move:
+            positions.append(
+                {
+                    "game_id": game_id or game.headers.get("Site", ""),
+                    "user": user,
+                    "source": source,
+                    "fen": board.fen(),
+                    "ply": ply_index,
+                    "move_number": board.fullmove_number,
+                    "uci": move.uci(),
+                    "san": board.san(move),
+                    "clock_seconds": _clock_from_comment(node.comment or ""),
+                }
+            )
+        board.push(move)
+        ply_index += 1
+
+    logger.info("Extracted %s positions for user", len(positions))
+    return positions

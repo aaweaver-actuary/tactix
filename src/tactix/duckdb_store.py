@@ -1,0 +1,316 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Iterable, List, Mapping
+
+import duckdb
+
+from tactix.logging_utils import get_logger
+
+logger = get_logger(__name__)
+
+
+RAW_PGNS_SCHEMA = """
+CREATE TABLE IF NOT EXISTS raw_pgns (
+    game_id TEXT PRIMARY KEY,
+    user TEXT,
+    source TEXT,
+    fetched_at TIMESTAMP,
+    pgn TEXT,
+    last_timestamp_ms BIGINT
+);
+"""
+
+POSITIONS_SCHEMA = """
+CREATE TABLE IF NOT EXISTS positions (
+    position_id BIGINT PRIMARY KEY,
+    game_id TEXT,
+    user TEXT,
+    source TEXT,
+    fen TEXT,
+    ply INTEGER,
+    move_number INTEGER,
+    uci TEXT,
+    san TEXT,
+    clock_seconds DOUBLE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
+TACTICS_SCHEMA = """
+CREATE TABLE IF NOT EXISTS tactics (
+    tactic_id BIGINT PRIMARY KEY,
+    game_id TEXT,
+    position_id BIGINT,
+    motif TEXT,
+    severity DOUBLE,
+    best_uci TEXT,
+    eval_cp INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
+TACTIC_OUTCOMES_SCHEMA = """
+CREATE TABLE IF NOT EXISTS tactic_outcomes (
+    outcome_id BIGINT PRIMARY KEY,
+    tactic_id BIGINT,
+    result TEXT,
+    user_uci TEXT,
+    eval_delta INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
+METRICS_VERSION_SCHEMA = """
+CREATE TABLE IF NOT EXISTS metrics_version (
+    version BIGINT,
+    updated_at TIMESTAMP
+);
+"""
+
+METRICS_SUMMARY_SCHEMA = """
+CREATE TABLE IF NOT EXISTS metrics_summary (
+    motif TEXT,
+    total BIGINT,
+    found BIGINT,
+    missed BIGINT,
+    failed_attempt BIGINT,
+    unclear BIGINT,
+    updated_at TIMESTAMP
+);
+"""
+
+
+def get_connection(db_path: Path) -> duckdb.DuckDBPyConnection:
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    logger.debug("Opening DuckDB at %s", db_path)
+    return duckdb.connect(str(db_path))
+
+
+def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
+    conn.execute(RAW_PGNS_SCHEMA)
+    conn.execute(POSITIONS_SCHEMA)
+    conn.execute(TACTICS_SCHEMA)
+    conn.execute(TACTIC_OUTCOMES_SCHEMA)
+    conn.execute(METRICS_VERSION_SCHEMA)
+    conn.execute(METRICS_SUMMARY_SCHEMA)
+    if conn.execute("SELECT COUNT(*) FROM metrics_version").fetchone()[0] == 0:
+        conn.execute("INSERT INTO metrics_version VALUES (0, CURRENT_TIMESTAMP)")
+
+
+def upsert_raw_pgns(
+    conn: duckdb.DuckDBPyConnection,
+    rows: Iterable[Mapping[str, object]],
+) -> int:
+    rows_list = list(rows)
+    if not rows_list:
+        return 0
+    conn.execute("BEGIN TRANSACTION")
+    try:
+        conn.executemany(
+            """
+            INSERT OR REPLACE INTO raw_pgns (game_id, user, source, fetched_at, pgn, last_timestamp_ms)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            [
+                (
+                    row["game_id"],
+                    row["user"],
+                    row["source"],
+                    row.get("fetched_at", datetime.now(timezone.utc)),
+                    row["pgn"],
+                    row.get("last_timestamp_ms", 0),
+                )
+                for row in rows_list
+            ],
+        )
+        conn.execute("COMMIT")
+    except Exception:  # noqa: BLE001
+        conn.execute("ROLLBACK")
+        raise
+    return len(rows_list)
+
+
+def insert_positions(
+    conn: duckdb.DuckDBPyConnection,
+    rows: Iterable[Mapping[str, object]],
+) -> List[int]:
+    rows_list = list(rows)
+    if not rows_list:
+        return []
+    start_id = conn.execute(
+        "SELECT COALESCE(MAX(position_id), 0) FROM positions"
+    ).fetchone()[0]
+    conn.execute("BEGIN TRANSACTION")
+    position_ids: List[int] = []
+    try:
+        for idx, row in enumerate(rows_list, start=1):
+            position_id = start_id + idx
+            conn.execute(
+                """
+                INSERT INTO positions (position_id, game_id, user, source, fen, ply, move_number, uci, san, clock_seconds)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    position_id,
+                    row["game_id"],
+                    row["user"],
+                    row["source"],
+                    row["fen"],
+                    row["ply"],
+                    row["move_number"],
+                    row["uci"],
+                    row.get("san", ""),
+                    row.get("clock_seconds"),
+                ),
+            )
+            position_ids.append(position_id)
+        conn.execute("COMMIT")
+    except Exception:  # noqa: BLE001
+        conn.execute("ROLLBACK")
+        raise
+    return position_ids
+
+
+def insert_tactics(
+    conn: duckdb.DuckDBPyConnection,
+    rows: Iterable[Mapping[str, object]],
+) -> List[int]:
+    rows_list = list(rows)
+    if not rows_list:
+        return []
+    start_id = conn.execute(
+        "SELECT COALESCE(MAX(tactic_id), 0) FROM tactics"
+    ).fetchone()[0]
+    conn.execute("BEGIN TRANSACTION")
+    tactic_ids: List[int] = []
+    try:
+        for idx, row in enumerate(rows_list, start=1):
+            tactic_id = start_id + idx
+            conn.execute(
+                """
+                INSERT INTO tactics (tactic_id, game_id, position_id, motif, severity, best_uci, eval_cp)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    tactic_id,
+                    row["game_id"],
+                    row["position_id"],
+                    row.get("motif", "unknown"),
+                    row.get("severity", 0.0),
+                    row.get("best_uci", ""),
+                    row.get("eval_cp", 0),
+                ),
+            )
+            tactic_ids.append(tactic_id)
+        conn.execute("COMMIT")
+    except Exception:  # noqa: BLE001
+        conn.execute("ROLLBACK")
+        raise
+    return tactic_ids
+
+
+def insert_tactic_outcomes(
+    conn: duckdb.DuckDBPyConnection,
+    rows: Iterable[Mapping[str, object]],
+) -> None:
+    rows_list = list(rows)
+    if not rows_list:
+        return
+    start_id = conn.execute(
+        "SELECT COALESCE(MAX(outcome_id), 0) FROM tactic_outcomes"
+    ).fetchone()[0]
+    conn.execute("BEGIN TRANSACTION")
+    try:
+        conn.executemany(
+            """
+            INSERT INTO tactic_outcomes (outcome_id, tactic_id, result, user_uci, eval_delta)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            [
+                (
+                    start_id + idx,
+                    row["tactic_id"],
+                    row.get("result", "unclear"),
+                    row.get("user_uci", ""),
+                    row.get("eval_delta", 0),
+                )
+                for idx, row in enumerate(rows_list, start=1)
+            ],
+        )
+        conn.execute("COMMIT")
+    except Exception:  # noqa: BLE001
+        conn.execute("ROLLBACK")
+        raise
+
+
+def write_metrics_version(conn: duckdb.DuckDBPyConnection) -> int:
+    conn.execute(
+        "UPDATE metrics_version SET version = version + 1, updated_at = CURRENT_TIMESTAMP"
+    )
+    return conn.execute("SELECT version FROM metrics_version").fetchone()[0]
+
+
+def update_metrics_summary(conn: duckdb.DuckDBPyConnection) -> None:
+    conn.execute("DELETE FROM metrics_summary")
+    conn.execute(
+        """
+        INSERT INTO metrics_summary
+        SELECT
+            t.motif,
+            COUNT(*) AS total,
+            SUM(CASE WHEN o.result = 'found' THEN 1 ELSE 0 END) AS found,
+            SUM(CASE WHEN o.result = 'missed' THEN 1 ELSE 0 END) AS missed,
+            SUM(CASE WHEN o.result = 'failed_attempt' THEN 1 ELSE 0 END) AS failed_attempt,
+            SUM(CASE WHEN o.result = 'unclear' THEN 1 ELSE 0 END) AS unclear,
+            CURRENT_TIMESTAMP AS updated_at
+        FROM tactics t
+        LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
+        GROUP BY t.motif
+        """
+    )
+
+
+def _rows_to_dicts(result: duckdb.DuckDBPyRelation) -> list[dict[str, object]]:
+    columns = [desc[0] for desc in result.description]
+    return [dict(zip(columns, row)) for row in result.fetchall()]
+
+
+def fetch_metrics(conn: duckdb.DuckDBPyConnection) -> list[dict[str, object]]:
+    result = conn.execute("SELECT * FROM metrics_summary")
+    return _rows_to_dicts(result)
+
+
+def fetch_recent_positions(
+    conn: duckdb.DuckDBPyConnection, limit: int = 20
+) -> list[dict[str, object]]:
+    result = conn.execute(
+        """
+        SELECT * FROM positions
+        ORDER BY created_at DESC
+        LIMIT ?
+        """,
+        [limit],
+    )
+    return _rows_to_dicts(result)
+
+
+def fetch_recent_tactics(
+    conn: duckdb.DuckDBPyConnection, limit: int = 20
+) -> list[dict[str, object]]:
+    result = conn.execute(
+        """
+        SELECT t.*, o.result, o.eval_delta, o.user_uci
+        FROM tactics t
+        LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
+        ORDER BY t.created_at DESC
+        LIMIT ?
+        """,
+        [limit],
+    )
+    return _rows_to_dicts(result)
+
+
+def fetch_version(conn: duckdb.DuckDBPyConnection) -> int:
+    return conn.execute("SELECT version FROM metrics_version").fetchone()[0]

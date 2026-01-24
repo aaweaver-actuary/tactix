@@ -1,0 +1,22 @@
+[Event "Fixture Game 1"]
+[Site "lichess.org/abcd1234"]
+[UTCDate "2024.06.01"]
+[UTCTime "12:00:00"]
+[White "lichess"]
+[Black "opponent"]
+[TimeControl "600+5"]
+[Result "1-0"]
+
+1. d4 { [%clk 0:10:00] } d5 { [%clk 0:10:00] } 2. c4 { [%clk 0:09:55] } e6 { [%clk 0:09:56] } 3. Nc3 { [%clk 0:09:50] } Nf6 { [%clk 0:09:54] } 4. Bg5 { [%clk 0:09:45] } Be7 { [%clk 0:09:52] } 5. Nf3 { [%clk 0:09:40] } O-O { [%clk 0:09:50] } 6. e3 { [%clk 0:09:35] } h6 { [%clk 0:09:48] } 7. Bh4 { [%clk 0:09:30] } b6 { [%clk 0:09:46] } 8. cxd5 { [%clk 0:09:25] } exd5 { [%clk 0:09:44] } 1-0
+
+
+[Event "Fixture Game 2"]
+[Site "lichess.org/efgh5678"]
+[UTCDate "2024.06.02"]
+[UTCTime "13:30:00"]
+[White "opponent"]
+[Black "lichess"]
+[TimeControl "600+5"]
+[Result "0-1"]
+
+1. e4 { [%clk 0:10:00] } c5 { [%clk 0:10:00] } 2. Nf3 { [%clk 0:09:55] } d6 { [%clk 0:09:56] } 3. d4 { [%clk 0:09:50] } cxd4 { [%clk 0:09:54] } 4. Nxd4 { [%clk 0:09:45] } Nf6 { [%clk 0:09:52] } 5. Nc3 { [%clk 0:09:40] } a6 { [%clk 0:09:50] } 6. Bg5 { [%clk 0:09:35] } e6 { [%clk 0:09:48] } 7. f4 { [%clk 0:09:30] } Qb6 { [%clk 0:09:46] } 8. Qd2 { [%clk 0:09:25] } Qxb2 { [%clk 0:09:44] } 0-1

@@ -4,9 +4,10 @@ import json
 from queue import Empty, Queue
 from threading import Thread
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from tactix.config import get_settings
 from tactix.pipeline import (
@@ -14,7 +15,12 @@ from tactix.pipeline import (
     run_daily_game_sync,
     run_refresh_metrics,
 )
-from tactix.duckdb_store import fetch_practice_queue, get_connection, init_schema
+from tactix.duckdb_store import (
+    fetch_practice_queue,
+    get_connection,
+    grade_practice_attempt,
+    init_schema,
+)
 
 app = FastAPI(title="TACTIX", version="0.1.0")
 app.add_middleware(
@@ -23,6 +29,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+class PracticeAttemptRequest(BaseModel):
+    tactic_id: int
+    position_id: int
+    attempted_uci: str
+    source: str | None = None
 
 
 @app.get("/api/health")
@@ -88,6 +101,23 @@ def practice_next(
         "include_failed_attempt": include_failed_attempt,
         "item": items[0] if items else None,
     }
+
+
+@app.post("/api/practice/attempt")
+def practice_attempt(payload: PracticeAttemptRequest) -> dict[str, object]:
+    settings = get_settings(source=payload.source)
+    conn = get_connection(settings.duckdb_path)
+    init_schema(conn)
+    try:
+        result = grade_practice_attempt(
+            conn,
+            tactic_id=payload.tactic_id,
+            position_id=payload.position_id,
+            attempted_uci=payload.attempted_uci,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return result
 
 
 def _format_sse(event: str, payload: dict[str, object]) -> str:

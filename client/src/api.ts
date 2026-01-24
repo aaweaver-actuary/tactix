@@ -78,6 +78,27 @@ export type PracticeQueueResponse = {
   items: PracticeQueueItem[];
 };
 
+export type PracticeAttemptRequest = {
+  tactic_id: number;
+  position_id: number;
+  attempted_uci: string;
+  source?: string;
+};
+
+export type PracticeAttemptResponse = {
+  attempt_id: number;
+  tactic_id: number;
+  position_id: number;
+  source: string | null;
+  attempted_uci: string;
+  best_uci: string;
+  correct: boolean;
+  motif: string;
+  severity: number;
+  eval_delta: number;
+  message: string;
+};
+
 const API_BASE = (import.meta.env.VITE_API_BASE || '').trim();
 
 const client = axios.create({
@@ -124,5 +145,15 @@ export async function fetchPracticeQueue(
       include_failed_attempt: includeFailedAttempt,
     },
   });
+  return res.data;
+}
+
+export async function submitPracticeAttempt(
+  payload: PracticeAttemptRequest,
+): Promise<PracticeAttemptResponse> {
+  const res = await client.post<PracticeAttemptResponse>(
+    '/api/practice/attempt',
+    payload,
+  );
   return res.data;
 }

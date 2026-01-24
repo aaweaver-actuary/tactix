@@ -118,3 +118,13 @@ Session 2026-01-24 (feature 013 – Practice queue missed-only)
 - UI verification screenshot: `verification/dashboard-practice-queue-missed-only.png` (Refresh metrics action).
 - Updated feature_list.json: feature 013 marked passes=true after UI + test verification.
 - Current passing count: 13.
+
+Session 2026-01-24 (feature 014 – Practice attempt grading)
+- Added training_attempts DuckDB schema and grading helpers to record attempts with correctness + tactic metadata.
+- Added FastAPI endpoint `POST /api/practice/attempt` and wired React practice attempt UI with feedback.
+- Added Puppeteer flow for practice attempt grading (`verification/puppeteer_practice_attempt.js`).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest` (30 passed).
+- UI verification screenshot: `verification/dashboard-practice-attempt-grading.png`.
+- Precheck UI verification: `verification/precheck-dashboard-lichess.png`, `verification/precheck-dashboard-chesscom.png`.
+- Updated feature_list.json: feature 014 marked passes=true after UI + test verification.
+- Current passing count: 14.

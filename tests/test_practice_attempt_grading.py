@@ -1,0 +1,73 @@
+import tempfile
+import unittest
+from pathlib import Path
+
+from tactix.duckdb_store import (
+    get_connection,
+    grade_practice_attempt,
+    init_schema,
+    insert_positions,
+    upsert_tactic_with_outcome,
+)
+
+
+class PracticeAttemptGradingTests(unittest.TestCase):
+    def test_grade_practice_attempt_records_attempts(self) -> None:
+        tmp_dir = Path(tempfile.mkdtemp())
+        db_path = tmp_dir / "practice_attempts.duckdb"
+        conn = get_connection(db_path)
+        init_schema(conn)
+
+        positions = [
+            {
+                "game_id": "game-10",
+                "user": "lichess",
+                "source": "lichess",
+                "fen": "8/8/8/8/8/8/8/8 w - - 0 1",
+                "ply": 1,
+                "move_number": 1,
+                "side_to_move": "w",
+                "uci": "a2a3",
+                "san": "a3",
+                "clock_seconds": 300,
+            }
+        ]
+        position_ids = insert_positions(conn, positions)
+        tactic_id = upsert_tactic_with_outcome(
+            conn,
+            {
+                "game_id": "game-10",
+                "position_id": position_ids[0],
+                "motif": "pin",
+                "severity": 1.3,
+                "best_uci": "a2a4",
+                "eval_cp": 180,
+            },
+            {"result": "missed", "user_uci": "a2a3", "eval_delta": -240},
+        )
+
+        result = grade_practice_attempt(conn, tactic_id, position_ids[0], "a2a4")
+        self.assertTrue(result["correct"])
+        rows = conn.execute(
+            """
+            SELECT attempted_uci, correct, best_uci, motif, severity, eval_delta
+            FROM training_attempts
+            ORDER BY attempt_id
+            """
+        ).fetchall()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0][0], "a2a4")
+        self.assertTrue(rows[0][1])
+        self.assertEqual(rows[0][2], "a2a4")
+        self.assertEqual(rows[0][3], "pin")
+        self.assertAlmostEqual(rows[0][4], 1.3)
+        self.assertEqual(rows[0][5], -240)
+
+        result = grade_practice_attempt(conn, tactic_id, position_ids[0], "a2a3")
+        self.assertFalse(result["correct"])
+        count = conn.execute("SELECT COUNT(*) FROM training_attempts").fetchone()[0]
+        self.assertEqual(count, 2)
+
+
+if __name__ == "__main__":
+    unittest.main()

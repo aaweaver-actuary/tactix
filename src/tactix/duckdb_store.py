@@ -98,6 +98,22 @@ CREATE TABLE IF NOT EXISTS metrics_summary (
 );
 """
 
+TRAINING_ATTEMPTS_SCHEMA = """
+CREATE TABLE IF NOT EXISTS training_attempts (
+    attempt_id BIGINT PRIMARY KEY,
+    tactic_id BIGINT,
+    position_id BIGINT,
+    source TEXT,
+    attempted_uci TEXT,
+    correct BOOLEAN,
+    best_uci TEXT,
+    motif TEXT,
+    severity DOUBLE,
+    eval_delta INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
 
 def get_connection(db_path: Path) -> duckdb.DuckDBPyConnection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -112,6 +128,7 @@ def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute(TACTIC_OUTCOMES_SCHEMA)
     conn.execute(METRICS_VERSION_SCHEMA)
     conn.execute(METRICS_SUMMARY_SCHEMA)
+    conn.execute(TRAINING_ATTEMPTS_SCHEMA)
     _ensure_raw_pgns_versioned(conn)
     _ensure_column(conn, "positions", "side_to_move", "TEXT")
     _ensure_column(conn, "metrics_summary", "source", "TEXT")
@@ -122,6 +139,13 @@ def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
     _ensure_column(conn, "metrics_summary", "time_control", "TEXT")
     _ensure_column(conn, "metrics_summary", "found_rate", "DOUBLE")
     _ensure_column(conn, "metrics_summary", "miss_rate", "DOUBLE")
+    _ensure_column(conn, "training_attempts", "source", "TEXT")
+    _ensure_column(conn, "training_attempts", "attempted_uci", "TEXT")
+    _ensure_column(conn, "training_attempts", "correct", "BOOLEAN")
+    _ensure_column(conn, "training_attempts", "best_uci", "TEXT")
+    _ensure_column(conn, "training_attempts", "motif", "TEXT")
+    _ensure_column(conn, "training_attempts", "severity", "DOUBLE")
+    _ensure_column(conn, "training_attempts", "eval_delta", "INTEGER")
     if conn.execute("SELECT COUNT(*) FROM metrics_version").fetchone()[0] == 0:
         conn.execute("INSERT INTO metrics_version VALUES (0, CURRENT_TIMESTAMP)")
 
@@ -137,10 +161,7 @@ def _ensure_raw_pgns_versioned(conn: duckdb.DuckDBPyConnection) -> None:
     if "raw_pgn_id" not in columns:
         conn.execute("BEGIN TRANSACTION")
         try:
-            existing_tables = {
-                row[0]
-                for row in conn.execute("SHOW TABLES").fetchall()
-            }
+            existing_tables = {row[0] for row in conn.execute("SHOW TABLES").fetchall()}
             if "raw_pgns_legacy" in existing_tables:
                 conn.execute("DROP TABLE raw_pgns_legacy")
             conn.execute("ALTER TABLE raw_pgns RENAME TO raw_pgns_legacy")
@@ -447,6 +468,54 @@ def insert_tactic_outcomes(
     except Exception:  # noqa: BLE001
         conn.execute("ROLLBACK")
         raise
+
+
+def record_training_attempt(
+    conn: duckdb.DuckDBPyConnection,
+    attempt: Mapping[str, object],
+) -> int:
+    conn.execute("BEGIN TRANSACTION")
+    try:
+        attempt_id = (
+            conn.execute(
+                "SELECT COALESCE(MAX(attempt_id), 0) FROM training_attempts"
+            ).fetchone()[0]
+            + 1
+        )
+        conn.execute(
+            """
+            INSERT INTO training_attempts (
+                attempt_id,
+                tactic_id,
+                position_id,
+                source,
+                attempted_uci,
+                correct,
+                best_uci,
+                motif,
+                severity,
+                eval_delta
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                attempt_id,
+                attempt["tactic_id"],
+                attempt["position_id"],
+                attempt.get("source"),
+                attempt.get("attempted_uci", ""),
+                bool(attempt.get("correct", False)),
+                attempt.get("best_uci", ""),
+                attempt.get("motif", "unknown"),
+                attempt.get("severity", 0.0),
+                attempt.get("eval_delta", 0),
+            ),
+        )
+        conn.execute("COMMIT")
+    except Exception:  # noqa: BLE001
+        conn.execute("ROLLBACK")
+        raise
+    return attempt_id
 
 
 def upsert_tactic_with_outcome(
@@ -822,6 +891,89 @@ def fetch_recent_tactics(
     params.append(limit)
     result = conn.execute(query, params)
     return _rows_to_dicts(result)
+
+
+def fetch_practice_tactic(
+    conn: duckdb.DuckDBPyConnection, tactic_id: int
+) -> dict[str, object] | None:
+    result = conn.execute(
+        """
+        SELECT
+            t.tactic_id,
+            t.game_id,
+            t.position_id,
+            t.motif,
+            t.severity,
+            t.best_uci,
+            t.eval_cp,
+            o.result,
+            o.user_uci,
+            o.eval_delta,
+            p.source,
+            p.fen,
+            p.uci AS position_uci,
+            p.san,
+            p.ply,
+            p.move_number,
+            p.side_to_move,
+            p.clock_seconds
+        FROM tactics t
+        LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
+        LEFT JOIN positions p ON p.position_id = t.position_id
+        WHERE t.tactic_id = ?
+        """,
+        [tactic_id],
+    )
+    rows = _rows_to_dicts(result)
+    return rows[0] if rows else None
+
+
+def grade_practice_attempt(
+    conn: duckdb.DuckDBPyConnection,
+    tactic_id: int,
+    position_id: int,
+    attempted_uci: str,
+) -> dict[str, object]:
+    tactic = fetch_practice_tactic(conn, tactic_id)
+    if not tactic or tactic.get("position_id") != position_id:
+        raise ValueError("Tactic not found for position")
+    trimmed_attempt = attempted_uci.strip()
+    if not trimmed_attempt:
+        raise ValueError("attempted_uci is required")
+    best_uci = (tactic.get("best_uci") or "").strip()
+    correct = bool(best_uci) and trimmed_attempt.lower() == best_uci.lower()
+    attempt_id = record_training_attempt(
+        conn,
+        {
+            "tactic_id": tactic_id,
+            "position_id": position_id,
+            "source": tactic.get("source"),
+            "attempted_uci": trimmed_attempt,
+            "correct": correct,
+            "best_uci": best_uci,
+            "motif": tactic.get("motif", "unknown"),
+            "severity": tactic.get("severity", 0.0),
+            "eval_delta": tactic.get("eval_delta", 0) or 0,
+        },
+    )
+    message = (
+        f"Correct! {tactic.get('motif', 'tactic')} found."
+        if correct
+        else f"Missed it. Best move was {best_uci or '--'}."
+    )
+    return {
+        "attempt_id": attempt_id,
+        "tactic_id": tactic_id,
+        "position_id": position_id,
+        "source": tactic.get("source"),
+        "attempted_uci": trimmed_attempt,
+        "best_uci": best_uci,
+        "correct": correct,
+        "motif": tactic.get("motif", "unknown"),
+        "severity": tactic.get("severity", 0.0),
+        "eval_delta": tactic.get("eval_delta", 0) or 0,
+        "message": message,
+    }
 
 
 def fetch_practice_queue(

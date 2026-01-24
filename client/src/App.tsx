@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   DashboardPayload,
+  PracticeAttemptResponse,
   PracticeQueueItem,
   fetchDashboard,
   fetchPracticeQueue,
   getJobStreamUrl,
+  submitPracticeAttempt,
   triggerMetricsRefresh,
 } from './api';
 
@@ -354,6 +356,14 @@ function App() {
   const [practiceLoading, setPracticeLoading] = useState(false);
   const [practiceError, setPracticeError] = useState<string | null>(null);
   const [includeFailedAttempt, setIncludeFailedAttempt] = useState(false);
+  const [practiceMove, setPracticeMove] = useState('');
+  const [practiceSubmitting, setPracticeSubmitting] = useState(false);
+  const [practiceFeedback, setPracticeFeedback] = useState<PracticeAttemptResponse | null>(
+    null,
+  );
+  const [practiceSubmitError, setPracticeSubmitError] = useState<string | null>(
+    null,
+  );
   const [jobProgress, setJobProgress] = useState<
     Array<{
       step: string;
@@ -412,6 +422,17 @@ function App() {
     loadPracticeQueue(source, includeFailedAttempt);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source, includeFailedAttempt]);
+
+  const currentPractice = useMemo(
+    () => (practiceQueue.length ? practiceQueue[0] : null),
+    [practiceQueue],
+  );
+
+  useEffect(() => {
+    setPracticeMove('');
+    setPracticeFeedback(null);
+    setPracticeSubmitError(null);
+  }, [currentPractice?.tactic_id]);
 
   useEffect(() => {
     return () => {
@@ -502,6 +523,32 @@ function App() {
       setError('Metrics refresh failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePracticeAttempt = async () => {
+    if (!currentPractice) return;
+    const trimmed = practiceMove.trim();
+    if (!trimmed) {
+      setPracticeSubmitError('Enter a move in UCI notation (e.g., e2e4).');
+      return;
+    }
+    setPracticeSubmitting(true);
+    setPracticeSubmitError(null);
+    try {
+      const response = await submitPracticeAttempt({
+        tactic_id: currentPractice.tactic_id,
+        position_id: currentPractice.position_id,
+        attempted_uci: trimmed,
+        source,
+      });
+      setPracticeFeedback(response);
+      await loadPracticeQueue(source, includeFailedAttempt);
+    } catch (err) {
+      console.error(err);
+      setPracticeSubmitError('Failed to submit practice attempt');
+    } finally {
+      setPracticeSubmitting(false);
     }
   };
 
@@ -625,6 +672,69 @@ function App() {
       {practiceError ? (
         <div className="card p-3 text-rust">{practiceError}</div>
       ) : null}
+      <div className="card p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-display text-sand">Practice attempt</h3>
+            <p className="text-xs text-sand/60">
+              Play the best move for the current tactic.
+            </p>
+          </div>
+          {currentPractice ? <Badge label={currentPractice.motif} /> : null}
+        </div>
+        {currentPractice ? (
+          <>
+            <div className="space-y-1">
+              <p className="text-xs text-sand/60">FEN</p>
+              <p className="font-mono text-xs text-sand/80">
+                {currentPractice.fen}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs text-sand/70">
+              <Badge
+                label={`Move ${currentPractice.move_number}.${currentPractice.ply}`}
+              />
+              <Badge label={`Best ${currentPractice.best_uci || '--'}`} />
+              {currentPractice.clock_seconds !== null ? (
+                <Badge label={`${currentPractice.clock_seconds}s`} />
+              ) : null}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                value={practiceMove}
+                onChange={(event) => setPracticeMove(event.target.value)}
+                placeholder="Enter your move (UCI e.g. e2e4)"
+                className="flex-1 min-w-[220px] rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand placeholder:text-sand/40"
+                disabled={practiceSubmitting}
+              />
+              <button
+                className="button bg-teal text-night px-4 py-2 rounded-md font-display"
+                onClick={handlePracticeAttempt}
+                disabled={practiceSubmitting}
+              >
+                {practiceSubmitting ? 'Submitting…' : 'Submit attempt'}
+              </button>
+            </div>
+            {practiceSubmitError ? (
+              <p className="text-sm text-rust">{practiceSubmitError}</p>
+            ) : null}
+            {practiceFeedback ? (
+              <div className="rounded-md border border-white/10 bg-white/5 p-3 text-sm">
+                <div className="flex items-center gap-2">
+                  <Badge label={practiceFeedback.correct ? 'Correct' : 'Missed'} />
+                  <span className="text-sand/80">{practiceFeedback.message}</span>
+                </div>
+                <p className="mt-2 font-mono text-xs text-sand/70">
+                  You played {practiceFeedback.attempted_uci} · best{' '}
+                  {practiceFeedback.best_uci || '--'}
+                </p>
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <p className="text-sm text-sand/60">No practice items queued yet.</p>
+        )}
+      </div>
       <PracticeQueue
         data={practiceQueue}
         includeFailedAttempt={includeFailedAttempt}

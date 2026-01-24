@@ -24,6 +24,12 @@ def _classify_result(
     return "unclear", delta
 
 
+def _score_from_pov(score_cp: int, pov_color: bool, turn_color: bool) -> int:
+    if turn_color == pov_color:
+        return score_cp
+    return -score_cp
+
+
 def _count_high_value_targets(
     board_after: chess.Board, to_square: chess.Square, mover_color: bool
 ) -> int:
@@ -84,10 +90,11 @@ def analyze_position(
     user_move_uci = str(position["uci"])
     board = chess.Board(fen)
     motif_board = board.copy()
+    mover_color = board.turn
 
     engine_result: EngineResult = engine.analyse(board)
     best_move = engine_result.best_move.uci() if engine_result.best_move else None
-    base_cp = engine_result.score_cp
+    base_cp = _score_from_pov(engine_result.score_cp, mover_color, board.turn)
 
     try:
         user_move = chess.Move.from_uci(user_move_uci)
@@ -100,7 +107,7 @@ def analyze_position(
         return None
 
     board.push(user_move)
-    after_cp = engine.analyse(board).score_cp
+    after_cp = _score_from_pov(engine.analyse(board).score_cp, mover_color, board.turn)
 
     result, delta = _classify_result(best_move, user_move_uci, base_cp, after_cp)
     motif = _infer_motif(motif_board, engine_result.best_move)

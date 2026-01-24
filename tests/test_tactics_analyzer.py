@@ -1,7 +1,7 @@
 import unittest
 import chess
 
-from tactix.tactics_analyzer import _classify_result, _infer_motif
+from tactix.tactics_analyzer import _classify_result, _infer_motif, _score_from_pov
 
 
 class TacticsAnalyzerTests(unittest.TestCase):
@@ -11,6 +11,12 @@ class TacticsAnalyzerTests(unittest.TestCase):
         self.assertEqual(
             _classify_result(None, "d2d4", -50, -200), ("failed_attempt", -150)
         )
+        self.assertEqual(_classify_result("e2e4", "d2d4", 20, -30), ("unclear", -50))
+
+    def test_score_from_pov(self) -> None:
+        self.assertEqual(_score_from_pov(120, chess.WHITE, chess.WHITE), 120)
+        self.assertEqual(_score_from_pov(120, chess.WHITE, chess.BLACK), -120)
+        self.assertEqual(_score_from_pov(-80, chess.BLACK, chess.WHITE), 80)
 
     def test_infer_motif_fork_detection(self) -> None:
         board = chess.Board(None)

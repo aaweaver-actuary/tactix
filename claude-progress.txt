@@ -81,3 +81,11 @@ Session 2026-01-24 (feature 009 – Stockfish deterministic settings)
 - UI verification screenshot: `verification/dashboard-lichess-deterministic-stockfish.png`.
 - Updated feature_list.json: feature 009 marked passes=true after UI + test verification.
 - Current passing count: 9.
+
+Session 2026-01-24 (feature 010 – Tactics outcome classification per move)
+- Normalized evaluation deltas to the mover POV to map found/missed/failed_attempt/unclear per move; added coverage for POV normalization + unclear classification.
+- Reset Chess.com cursor and reran pipeline on fixtures (2 games, 12 positions, 12 tactics) with Stockfish analysis.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest` (25 passed).
+- UI verification screenshot: `verification/dashboard-chesscom-outcome-classification.png`.
+- Updated feature_list.json: feature 010 marked passes=true after UI + test verification.
+- Current passing count: 10.

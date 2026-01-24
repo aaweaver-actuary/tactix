@@ -1,0 +1,191 @@
+# TACTIX — Personal Chess Tactics Intelligence & Training Platform
+
+## 1. Project Name
+**TACTIX** (Tactics Analysis, Collection, Training, and Insight eXplorer)
+
+---
+
+## 2. High-Level Goal
+
+Build an automated, reproducible system that:
+
+1. Ingests your games from **Lichess** and **Chess.com**
+2. Extracts all positions where **you had to make a move**
+3. Analyzes those positions for **basic tactical opportunities**
+4. Records which tactics were **available, found, missed, or failed**
+5. Aggregates long-term statistics on tactical performance
+6. Provides an interactive dashboard to:
+   - explore trends
+   - drill missed tactics from *your own games*
+   - track improvement over time
+
+**Non-goal:** a generic tactics trainer.  
+**Goal:** diagnostics + training grounded in your real decisions.
+
+---
+
+## 3. Design Principles
+
+- **Batch-first, UI-second**: full headless execution (Airflow/cron).
+- **Reproducibility**: deterministic engine settings; versioned datasets.
+- **Separation of concerns**:
+  - Rust: PGN parsing + position enumeration
+  - Python: orchestration + engine integration + analytics
+  - React: exploration + training UX
+- **DuckDB as system-of-record**
+- **Explainability**: each tactic includes a human-readable explanation.
+
+---
+
+## 4. Key Questions This Should Answer
+
+- What motifs do I consistently miss?
+- How does miss-rate change with rating?
+- Do I miss tactics more in time trouble?
+- Does finding/missing a tactic correlate with winning?
+- What should I drill this week?
+- Am I improving (rolling 7/30 game averages)?
+
+---
+
+## 5. Technology Stack
+
+### Backend / Analysis
+- Orchestration: **Apache Airflow**
+- Runtime: **Python 3.12**
+- Performance chess logic: **Rust via `maturin`**
+- Engine: **Stockfish via `python-chess`**
+- Database: **DuckDB**
+- Storage: **Parquet** (local filesystem)
+- API: **FastAPI**
+- Streaming: **Server-Sent Events (SSE)**
+
+### Frontend
+- Framework: **React + Vite**
+- Styling: **Tailwind CSS**
+- State: hooks + context
+- Routing: **React Router**
+- Chess UI: **react-chessboard**
+- Charts: lightweight (SVG/Canvas)
+- Auth: local token-based (single user initially)
+
+---
+
+## 6. System Architecture
+
+Airflow DAGs orchestrate ingestion, analysis, and metric refresh.  
+FastAPI serves analytics and practice endpoints.  
+React provides exploration and training UI.
+
+---
+
+## 7. Core Features
+
+### 7.1 Game Ingestion
+- Sources: Lichess API, Chess.com API
+- Incremental sync
+- Raw PGN preserved verbatim
+- Metadata: rating, time control, result, color, timestamps
+
+### 7.2 Position Extraction (Rust)
+- Replay games move-by-move
+- Extract FENs only when the user is to move
+- Record move number, ply, time remaining, and user move
+
+### 7.3 Tactical Detection
+- Fixed Stockfish version and settings
+- Motifs:
+  - Mate in 1
+  - Mate in 2
+  - Fork / double attack
+  - Pin
+  - Skewer
+  - Discovered attack
+  - Discovered check
+  - Hanging piece
+- Each tactic includes best line, evaluation delta, severity, explanation
+
+### 7.4 Outcome Classification
+- found / missed / failed_attempt / unclear
+- Based on user move vs engine best line and eval swing
+
+### 7.5 Aggregation & Metrics
+- Miss rate by motif
+- Trends by rating and time control
+- Win rate conditional on tactic outcome
+- Rolling averages
+
+---
+
+## 8. Dashboard
+
+### Analytics
+- Motif breakdowns
+- Timelines
+- Filters (date, rating, motif, site, time control)
+
+### Practice Mode
+- Drill missed tactics from your own games
+- Interactive board
+- Immediate feedback and explanation
+- Track practice success over time
+
+---
+
+## 9. DuckDB Schema (Initial)
+
+Tables:
+- games
+- raw_pgns
+- positions
+- tactics
+- tactic_outcomes
+- training_attempts
+
+---
+
+## 10. API (FastAPI)
+
+- `GET /api/stats/*`
+- `GET /api/tactics/search`
+- `GET /api/practice/next`
+- `POST /api/practice/attempt`
+- `POST /api/jobs/*`
+- `GET /api/jobs/{id}/stream`
+
+---
+
+## 11. Automation (Airflow)
+
+DAGs:
+1. daily_game_sync
+2. extract_positions
+3. analyze_tactics
+4. refresh_metrics
+
+All DAGs must be idempotent and resumable.
+
+---
+
+## 12. Testing
+
+- Rust: PGN → FEN golden tests
+- Python: deterministic Stockfish tests
+- Integration: end-to-end pipeline assertions
+
+---
+
+## 13. Non-Goals
+
+- Social features
+- Cloud hosting
+- Opening theory tooling
+- Endgame tablebases
+
+---
+
+## 14. Success Criteria
+
+- Reproducible analysis
+- Clear tactical weaknesses identified
+- Measurable improvement via practice loop

@@ -1,0 +1,4392 @@
+[
+  {
+    "category": "functional",
+    "description": "001 - Airflow Lichess full pipeline for rapid games",
+    "steps": [
+      "Step 1: Trigger Airflow DAG daily_game_sync for Lichess data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Lichess games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect fork and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "002 - Airflow Chess.com full pipeline for blitz games",
+    "steps": [
+      "Step 1: Trigger Airflow DAG daily_game_sync for Chess.com data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Chess.com games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect pin and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "003 - Lichess pipeline handles incremental sync with since param",
+    "steps": [
+      "Step 1: Trigger Airflow DAG daily_game_sync for Lichess data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Lichess games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect skewer and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "004 - Chess.com pipeline handles incremental sync with cursor",
+    "steps": [
+      "Step 1: Trigger Airflow DAG daily_game_sync for Chess.com data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Chess.com games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect discovered attack and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "005 - Pipeline resumes after network interruption mid-fetch",
+    "steps": [
+      "Step 1: Trigger Airflow DAG daily_game_sync for Lichess data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Lichess games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect mate in 1 and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "006 - Pipeline resumes after Stockfish crash during analysis",
+    "steps": [
+      "Step 1: Trigger Airflow DAG analyze_tactics for Chess.com data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Chess.com games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect mate in 2 and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "007 - Raw PGN persisted verbatim and versioned",
+    "steps": [
+      "Step 1: Trigger Airflow DAG extract_positions for Lichess data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Lichess games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect hanging piece and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "008 - Position extraction captures side to move with ply and clocks",
+    "steps": [
+      "Step 1: Trigger Airflow DAG extract_positions for Chess.com data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Chess.com games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect fork and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "009 - Stockfish deterministic settings applied for all analyses",
+    "steps": [
+      "Step 1: Trigger Airflow DAG analyze_tactics for Lichess data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Lichess games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect pin and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "010 - Tactics classification found/missed/failed mapped per move",
+    "steps": [
+      "Step 1: Trigger Airflow DAG analyze_tactics for Chess.com data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Chess.com games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect skewer and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "011 - Metrics refresh produces motif breakdown and trends",
+    "steps": [
+      "Step 1: Trigger Airflow DAG refresh_metrics for Lichess data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Lichess games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect discovered check and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "012 - SSE stream delivers job progress to UI",
+    "steps": [
+      "Step 1: Trigger Airflow DAG jobs_stream for Chess.com data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Chess.com games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect mate in 1 and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "013 - Practice queue builds from missed tactics only",
+    "steps": [
+      "Step 1: Trigger Airflow DAG refresh_metrics for Lichess data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Lichess games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect fork and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "014 - Practice attempt grading updates training_attempts table",
+    "steps": [
+      "Step 1: Trigger Airflow DAG practice for Chess.com data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Chess.com games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect pin and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "015 - DuckDB schema migration preserves data across versions",
+    "steps": [
+      "Step 1: Trigger Airflow DAG migrations for Lichess data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Lichess games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect skewer and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "016 - API authentication with local token applied to all routes",
+    "steps": [
+      "Step 1: Trigger Airflow DAG api for Chess.com data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Chess.com games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect discovered attack and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "017 - React dashboard shows motif breakdown and filters",
+    "steps": [
+      "Step 1: Trigger Airflow DAG ui for Lichess data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Lichess games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect mate in 2 and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "018 - React training board enforces legal moves and feedback",
+    "steps": [
+      "Step 1: Trigger Airflow DAG ui for Chess.com data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Chess.com games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect fork and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "019 - Airflow backfill replays historical games without duplicates",
+    "steps": [
+      "Step 1: Trigger Airflow DAG daily_game_sync for Lichess data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Lichess games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect pin and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "020 - Airflow retries with exponential backoff on API 429",
+    "steps": [
+      "Step 1: Trigger Airflow DAG daily_game_sync for Chess.com data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Chess.com games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect skewer and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "021 - Chess.com pagination handles >200 games per pull",
+    "steps": [
+      "Step 1: Trigger Airflow DAG daily_game_sync for Chess.com data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Chess.com games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect discovered check and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "022 - Lichess OAuth token refresh keeps sync alive",
+    "steps": [
+      "Step 1: Trigger Airflow DAG daily_game_sync for Lichess data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Lichess games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect mate in 1 and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "023 - Stockfish engine checksum pinned for reproducibility",
+    "steps": [
+      "Step 1: Trigger Airflow DAG analyze_tactics for Lichess data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Lichess games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect hanging piece and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "024 - Rust position extractor handles promotion and en passant",
+    "steps": [
+      "Step 1: Trigger Airflow DAG extract_positions for Lichess data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Lichess games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect fork and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "025 - Rust extractor handles castling both sides",
+    "steps": [
+      "Step 1: Trigger Airflow DAG extract_positions for Chess.com data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Chess.com games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect pin and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "026 - Rolling averages computed for 7 and 30 games",
+    "steps": [
+      "Step 1: Trigger Airflow DAG refresh_metrics for Lichess data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Lichess games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect skewer and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "027 - Time-trouble correlation calculated per time control",
+    "steps": [
+      "Step 1: Trigger Airflow DAG refresh_metrics for Chess.com data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Chess.com games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect discovered attack and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "028 - API /api/practice/next returns only unseen tactics",
+    "steps": [
+      "Step 1: Trigger Airflow DAG api for Lichess data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Lichess games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect mate in 2 and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "029 - API /api/practice/attempt records success and latency",
+    "steps": [
+      "Step 1: Trigger Airflow DAG api for Chess.com data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Chess.com games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect fork and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "030 - UI practice session tracks streaks and progress bars",
+    "steps": [
+      "Step 1: Trigger Airflow DAG ui for Lichess data",
+      "Step 2: Confirm scheduler queues the run with correct execution date",
+      "Step 3: Fetch Lichess games incrementally with authentication if required",
+      "Step 4: Persist raw PGN verbatim into DuckDB raw_pgns table with metadata",
+      "Step 5: Run Rust position extractor to emit FENs only when user is to move",
+      "Step 6: Record move number, ply, user move, and remaining clocks in positions table",
+      "Step 7: Execute Stockfish with pinned settings to detect pin and other motifs",
+      "Step 8: Classify tactic outcomes (found/missed/failed_attempt/unclear) per move",
+      "Step 9: Update DuckDB tactics and tactic_outcomes tables with severity and eval deltas",
+      "Step 10: Refresh aggregated metrics for dashboards and practice queues",
+      "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Lichess bullet games via incremental sync",
+    "steps": [
+      "Step 1: Configure incremental run for Lichess bullet profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Lichess bullet games via full backfill sync",
+    "steps": [
+      "Step 1: Configure full backfill run for Lichess bullet profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Lichess blitz games via incremental sync",
+    "steps": [
+      "Step 1: Configure incremental run for Lichess blitz profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Lichess blitz games via full backfill sync",
+    "steps": [
+      "Step 1: Configure full backfill run for Lichess blitz profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Lichess rapid games via incremental sync",
+    "steps": [
+      "Step 1: Configure incremental run for Lichess rapid profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Lichess rapid games via full backfill sync",
+    "steps": [
+      "Step 1: Configure full backfill run for Lichess rapid profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Lichess classical games via incremental sync",
+    "steps": [
+      "Step 1: Configure incremental run for Lichess classical profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Lichess classical games via full backfill sync",
+    "steps": [
+      "Step 1: Configure full backfill run for Lichess classical profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Lichess correspondence games via incremental sync",
+    "steps": [
+      "Step 1: Configure incremental run for Lichess correspondence profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Lichess correspondence games via full backfill sync",
+    "steps": [
+      "Step 1: Configure full backfill run for Lichess correspondence profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Chess.com bullet games via incremental sync",
+    "steps": [
+      "Step 1: Configure incremental run for Chess.com bullet profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Chess.com bullet games via full backfill sync",
+    "steps": [
+      "Step 1: Configure full backfill run for Chess.com bullet profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Chess.com blitz games via incremental sync",
+    "steps": [
+      "Step 1: Configure incremental run for Chess.com blitz profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Chess.com blitz games via full backfill sync",
+    "steps": [
+      "Step 1: Configure full backfill run for Chess.com blitz profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Chess.com rapid games via incremental sync",
+    "steps": [
+      "Step 1: Configure incremental run for Chess.com rapid profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Chess.com rapid games via full backfill sync",
+    "steps": [
+      "Step 1: Configure full backfill run for Chess.com rapid profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Chess.com classical games via incremental sync",
+    "steps": [
+      "Step 1: Configure incremental run for Chess.com classical profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Chess.com classical games via full backfill sync",
+    "steps": [
+      "Step 1: Configure full backfill run for Chess.com classical profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Chess.com correspondence games via incremental sync",
+    "steps": [
+      "Step 1: Configure incremental run for Chess.com correspondence profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ingestion Chess.com correspondence games via full backfill sync",
+    "steps": [
+      "Step 1: Configure full backfill run for Chess.com correspondence profile",
+      "Step 2: Execute DAG pull and honor API rate limits",
+      "Step 3: Store new games only without duplicating existing IDs",
+      "Step 4: Persist raw PGNs with site metadata",
+      "Step 5: Mark run status success in Airflow and metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records white to move for Lichess bullet",
+    "steps": [
+      "Step 1: Replay Lichess bullet PGN move-by-move",
+      "Step 2: Capture FEN only when white is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records white to move for Lichess blitz",
+    "steps": [
+      "Step 1: Replay Lichess blitz PGN move-by-move",
+      "Step 2: Capture FEN only when white is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records white to move for Lichess rapid",
+    "steps": [
+      "Step 1: Replay Lichess rapid PGN move-by-move",
+      "Step 2: Capture FEN only when white is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records white to move for Lichess classical",
+    "steps": [
+      "Step 1: Replay Lichess classical PGN move-by-move",
+      "Step 2: Capture FEN only when white is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records white to move for Lichess correspondence",
+    "steps": [
+      "Step 1: Replay Lichess correspondence PGN move-by-move",
+      "Step 2: Capture FEN only when white is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records black to move for Lichess bullet",
+    "steps": [
+      "Step 1: Replay Lichess bullet PGN move-by-move",
+      "Step 2: Capture FEN only when black is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records black to move for Lichess blitz",
+    "steps": [
+      "Step 1: Replay Lichess blitz PGN move-by-move",
+      "Step 2: Capture FEN only when black is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records black to move for Lichess rapid",
+    "steps": [
+      "Step 1: Replay Lichess rapid PGN move-by-move",
+      "Step 2: Capture FEN only when black is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records black to move for Lichess classical",
+    "steps": [
+      "Step 1: Replay Lichess classical PGN move-by-move",
+      "Step 2: Capture FEN only when black is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records black to move for Lichess correspondence",
+    "steps": [
+      "Step 1: Replay Lichess correspondence PGN move-by-move",
+      "Step 2: Capture FEN only when black is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records white to move for Chess.com bullet",
+    "steps": [
+      "Step 1: Replay Chess.com bullet PGN move-by-move",
+      "Step 2: Capture FEN only when white is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records white to move for Chess.com blitz",
+    "steps": [
+      "Step 1: Replay Chess.com blitz PGN move-by-move",
+      "Step 2: Capture FEN only when white is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records white to move for Chess.com rapid",
+    "steps": [
+      "Step 1: Replay Chess.com rapid PGN move-by-move",
+      "Step 2: Capture FEN only when white is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records white to move for Chess.com classical",
+    "steps": [
+      "Step 1: Replay Chess.com classical PGN move-by-move",
+      "Step 2: Capture FEN only when white is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records white to move for Chess.com correspondence",
+    "steps": [
+      "Step 1: Replay Chess.com correspondence PGN move-by-move",
+      "Step 2: Capture FEN only when white is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records black to move for Chess.com bullet",
+    "steps": [
+      "Step 1: Replay Chess.com bullet PGN move-by-move",
+      "Step 2: Capture FEN only when black is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records black to move for Chess.com blitz",
+    "steps": [
+      "Step 1: Replay Chess.com blitz PGN move-by-move",
+      "Step 2: Capture FEN only when black is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records black to move for Chess.com rapid",
+    "steps": [
+      "Step 1: Replay Chess.com rapid PGN move-by-move",
+      "Step 2: Capture FEN only when black is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records black to move for Chess.com classical",
+    "steps": [
+      "Step 1: Replay Chess.com classical PGN move-by-move",
+      "Step 2: Capture FEN only when black is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position extraction records black to move for Chess.com correspondence",
+    "steps": [
+      "Step 1: Replay Chess.com correspondence PGN move-by-move",
+      "Step 2: Capture FEN only when black is to move",
+      "Step 3: Record ply, move number, and clocks",
+      "Step 4: Save user move and legality flag"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 1 with low severity in bullet",
+    "steps": [
+      "Step 1: Run engine with pinned depth on bullet sample",
+      "Step 2: Ensure mate in 1 is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 1 with low severity in blitz",
+    "steps": [
+      "Step 1: Run engine with pinned depth on blitz sample",
+      "Step 2: Ensure mate in 1 is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 1 with low severity in rapid",
+    "steps": [
+      "Step 1: Run engine with pinned depth on rapid sample",
+      "Step 2: Ensure mate in 1 is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 1 with low severity in classical",
+    "steps": [
+      "Step 1: Run engine with pinned depth on classical sample",
+      "Step 2: Ensure mate in 1 is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 1 with low severity in correspondence",
+    "steps": [
+      "Step 1: Run engine with pinned depth on correspondence sample",
+      "Step 2: Ensure mate in 1 is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 1 with high severity in bullet",
+    "steps": [
+      "Step 1: Run engine with pinned depth on bullet sample",
+      "Step 2: Ensure mate in 1 is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 1 with high severity in blitz",
+    "steps": [
+      "Step 1: Run engine with pinned depth on blitz sample",
+      "Step 2: Ensure mate in 1 is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 1 with high severity in rapid",
+    "steps": [
+      "Step 1: Run engine with pinned depth on rapid sample",
+      "Step 2: Ensure mate in 1 is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 1 with high severity in classical",
+    "steps": [
+      "Step 1: Run engine with pinned depth on classical sample",
+      "Step 2: Ensure mate in 1 is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 1 with high severity in correspondence",
+    "steps": [
+      "Step 1: Run engine with pinned depth on correspondence sample",
+      "Step 2: Ensure mate in 1 is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 2 with low severity in bullet",
+    "steps": [
+      "Step 1: Run engine with pinned depth on bullet sample",
+      "Step 2: Ensure mate in 2 is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 2 with low severity in blitz",
+    "steps": [
+      "Step 1: Run engine with pinned depth on blitz sample",
+      "Step 2: Ensure mate in 2 is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 2 with low severity in rapid",
+    "steps": [
+      "Step 1: Run engine with pinned depth on rapid sample",
+      "Step 2: Ensure mate in 2 is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 2 with low severity in classical",
+    "steps": [
+      "Step 1: Run engine with pinned depth on classical sample",
+      "Step 2: Ensure mate in 2 is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 2 with low severity in correspondence",
+    "steps": [
+      "Step 1: Run engine with pinned depth on correspondence sample",
+      "Step 2: Ensure mate in 2 is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 2 with high severity in bullet",
+    "steps": [
+      "Step 1: Run engine with pinned depth on bullet sample",
+      "Step 2: Ensure mate in 2 is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 2 with high severity in blitz",
+    "steps": [
+      "Step 1: Run engine with pinned depth on blitz sample",
+      "Step 2: Ensure mate in 2 is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 2 with high severity in rapid",
+    "steps": [
+      "Step 1: Run engine with pinned depth on rapid sample",
+      "Step 2: Ensure mate in 2 is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 2 with high severity in classical",
+    "steps": [
+      "Step 1: Run engine with pinned depth on classical sample",
+      "Step 2: Ensure mate in 2 is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects mate in 2 with high severity in correspondence",
+    "steps": [
+      "Step 1: Run engine with pinned depth on correspondence sample",
+      "Step 2: Ensure mate in 2 is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects fork with low severity in bullet",
+    "steps": [
+      "Step 1: Run engine with pinned depth on bullet sample",
+      "Step 2: Ensure fork is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects fork with low severity in blitz",
+    "steps": [
+      "Step 1: Run engine with pinned depth on blitz sample",
+      "Step 2: Ensure fork is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects fork with low severity in rapid",
+    "steps": [
+      "Step 1: Run engine with pinned depth on rapid sample",
+      "Step 2: Ensure fork is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects fork with low severity in classical",
+    "steps": [
+      "Step 1: Run engine with pinned depth on classical sample",
+      "Step 2: Ensure fork is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects fork with low severity in correspondence",
+    "steps": [
+      "Step 1: Run engine with pinned depth on correspondence sample",
+      "Step 2: Ensure fork is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects fork with high severity in bullet",
+    "steps": [
+      "Step 1: Run engine with pinned depth on bullet sample",
+      "Step 2: Ensure fork is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects fork with high severity in blitz",
+    "steps": [
+      "Step 1: Run engine with pinned depth on blitz sample",
+      "Step 2: Ensure fork is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects fork with high severity in rapid",
+    "steps": [
+      "Step 1: Run engine with pinned depth on rapid sample",
+      "Step 2: Ensure fork is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects fork with high severity in classical",
+    "steps": [
+      "Step 1: Run engine with pinned depth on classical sample",
+      "Step 2: Ensure fork is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects fork with high severity in correspondence",
+    "steps": [
+      "Step 1: Run engine with pinned depth on correspondence sample",
+      "Step 2: Ensure fork is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects pin with low severity in bullet",
+    "steps": [
+      "Step 1: Run engine with pinned depth on bullet sample",
+      "Step 2: Ensure pin is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects pin with low severity in blitz",
+    "steps": [
+      "Step 1: Run engine with pinned depth on blitz sample",
+      "Step 2: Ensure pin is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects pin with low severity in rapid",
+    "steps": [
+      "Step 1: Run engine with pinned depth on rapid sample",
+      "Step 2: Ensure pin is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects pin with low severity in classical",
+    "steps": [
+      "Step 1: Run engine with pinned depth on classical sample",
+      "Step 2: Ensure pin is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects pin with low severity in correspondence",
+    "steps": [
+      "Step 1: Run engine with pinned depth on correspondence sample",
+      "Step 2: Ensure pin is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects pin with high severity in bullet",
+    "steps": [
+      "Step 1: Run engine with pinned depth on bullet sample",
+      "Step 2: Ensure pin is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects pin with high severity in blitz",
+    "steps": [
+      "Step 1: Run engine with pinned depth on blitz sample",
+      "Step 2: Ensure pin is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects pin with high severity in rapid",
+    "steps": [
+      "Step 1: Run engine with pinned depth on rapid sample",
+      "Step 2: Ensure pin is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects pin with high severity in classical",
+    "steps": [
+      "Step 1: Run engine with pinned depth on classical sample",
+      "Step 2: Ensure pin is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects pin with high severity in correspondence",
+    "steps": [
+      "Step 1: Run engine with pinned depth on correspondence sample",
+      "Step 2: Ensure pin is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects skewer with low severity in bullet",
+    "steps": [
+      "Step 1: Run engine with pinned depth on bullet sample",
+      "Step 2: Ensure skewer is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects skewer with low severity in blitz",
+    "steps": [
+      "Step 1: Run engine with pinned depth on blitz sample",
+      "Step 2: Ensure skewer is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects skewer with low severity in rapid",
+    "steps": [
+      "Step 1: Run engine with pinned depth on rapid sample",
+      "Step 2: Ensure skewer is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects skewer with low severity in classical",
+    "steps": [
+      "Step 1: Run engine with pinned depth on classical sample",
+      "Step 2: Ensure skewer is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects skewer with low severity in correspondence",
+    "steps": [
+      "Step 1: Run engine with pinned depth on correspondence sample",
+      "Step 2: Ensure skewer is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects skewer with high severity in bullet",
+    "steps": [
+      "Step 1: Run engine with pinned depth on bullet sample",
+      "Step 2: Ensure skewer is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects skewer with high severity in blitz",
+    "steps": [
+      "Step 1: Run engine with pinned depth on blitz sample",
+      "Step 2: Ensure skewer is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects skewer with high severity in rapid",
+    "steps": [
+      "Step 1: Run engine with pinned depth on rapid sample",
+      "Step 2: Ensure skewer is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects skewer with high severity in classical",
+    "steps": [
+      "Step 1: Run engine with pinned depth on classical sample",
+      "Step 2: Ensure skewer is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects skewer with high severity in correspondence",
+    "steps": [
+      "Step 1: Run engine with pinned depth on correspondence sample",
+      "Step 2: Ensure skewer is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered attack with low severity in bullet",
+    "steps": [
+      "Step 1: Run engine with pinned depth on bullet sample",
+      "Step 2: Ensure discovered attack is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered attack with low severity in blitz",
+    "steps": [
+      "Step 1: Run engine with pinned depth on blitz sample",
+      "Step 2: Ensure discovered attack is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered attack with low severity in rapid",
+    "steps": [
+      "Step 1: Run engine with pinned depth on rapid sample",
+      "Step 2: Ensure discovered attack is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered attack with low severity in classical",
+    "steps": [
+      "Step 1: Run engine with pinned depth on classical sample",
+      "Step 2: Ensure discovered attack is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered attack with low severity in correspondence",
+    "steps": [
+      "Step 1: Run engine with pinned depth on correspondence sample",
+      "Step 2: Ensure discovered attack is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered attack with high severity in bullet",
+    "steps": [
+      "Step 1: Run engine with pinned depth on bullet sample",
+      "Step 2: Ensure discovered attack is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered attack with high severity in blitz",
+    "steps": [
+      "Step 1: Run engine with pinned depth on blitz sample",
+      "Step 2: Ensure discovered attack is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered attack with high severity in rapid",
+    "steps": [
+      "Step 1: Run engine with pinned depth on rapid sample",
+      "Step 2: Ensure discovered attack is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered attack with high severity in classical",
+    "steps": [
+      "Step 1: Run engine with pinned depth on classical sample",
+      "Step 2: Ensure discovered attack is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered attack with high severity in correspondence",
+    "steps": [
+      "Step 1: Run engine with pinned depth on correspondence sample",
+      "Step 2: Ensure discovered attack is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered check with low severity in bullet",
+    "steps": [
+      "Step 1: Run engine with pinned depth on bullet sample",
+      "Step 2: Ensure discovered check is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered check with low severity in blitz",
+    "steps": [
+      "Step 1: Run engine with pinned depth on blitz sample",
+      "Step 2: Ensure discovered check is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered check with low severity in rapid",
+    "steps": [
+      "Step 1: Run engine with pinned depth on rapid sample",
+      "Step 2: Ensure discovered check is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered check with low severity in classical",
+    "steps": [
+      "Step 1: Run engine with pinned depth on classical sample",
+      "Step 2: Ensure discovered check is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered check with low severity in correspondence",
+    "steps": [
+      "Step 1: Run engine with pinned depth on correspondence sample",
+      "Step 2: Ensure discovered check is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered check with high severity in bullet",
+    "steps": [
+      "Step 1: Run engine with pinned depth on bullet sample",
+      "Step 2: Ensure discovered check is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered check with high severity in blitz",
+    "steps": [
+      "Step 1: Run engine with pinned depth on blitz sample",
+      "Step 2: Ensure discovered check is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered check with high severity in rapid",
+    "steps": [
+      "Step 1: Run engine with pinned depth on rapid sample",
+      "Step 2: Ensure discovered check is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered check with high severity in classical",
+    "steps": [
+      "Step 1: Run engine with pinned depth on classical sample",
+      "Step 2: Ensure discovered check is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects discovered check with high severity in correspondence",
+    "steps": [
+      "Step 1: Run engine with pinned depth on correspondence sample",
+      "Step 2: Ensure discovered check is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects hanging piece with low severity in bullet",
+    "steps": [
+      "Step 1: Run engine with pinned depth on bullet sample",
+      "Step 2: Ensure hanging piece is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects hanging piece with low severity in blitz",
+    "steps": [
+      "Step 1: Run engine with pinned depth on blitz sample",
+      "Step 2: Ensure hanging piece is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects hanging piece with low severity in rapid",
+    "steps": [
+      "Step 1: Run engine with pinned depth on rapid sample",
+      "Step 2: Ensure hanging piece is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects hanging piece with low severity in classical",
+    "steps": [
+      "Step 1: Run engine with pinned depth on classical sample",
+      "Step 2: Ensure hanging piece is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects hanging piece with low severity in correspondence",
+    "steps": [
+      "Step 1: Run engine with pinned depth on correspondence sample",
+      "Step 2: Ensure hanging piece is identified with eval delta tagged as low",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects hanging piece with high severity in bullet",
+    "steps": [
+      "Step 1: Run engine with pinned depth on bullet sample",
+      "Step 2: Ensure hanging piece is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects hanging piece with high severity in blitz",
+    "steps": [
+      "Step 1: Run engine with pinned depth on blitz sample",
+      "Step 2: Ensure hanging piece is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects hanging piece with high severity in rapid",
+    "steps": [
+      "Step 1: Run engine with pinned depth on rapid sample",
+      "Step 2: Ensure hanging piece is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects hanging piece with high severity in classical",
+    "steps": [
+      "Step 1: Run engine with pinned depth on classical sample",
+      "Step 2: Ensure hanging piece is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Stockfish detects hanging piece with high severity in correspondence",
+    "steps": [
+      "Step 1: Run engine with pinned depth on correspondence sample",
+      "Step 2: Ensure hanging piece is identified with eval delta tagged as high",
+      "Step 3: Persist best line and explanation",
+      "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome found recorded for mate in 1",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as found and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome found recorded for mate in 2",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as found and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome found recorded for fork",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as found and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome found recorded for pin",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as found and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome found recorded for skewer",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as found and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome found recorded for discovered attack",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as found and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome found recorded for discovered check",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as found and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome found recorded for hanging piece",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as found and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome missed recorded for mate in 1",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as missed and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome missed recorded for mate in 2",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as missed and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome missed recorded for fork",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as missed and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome missed recorded for pin",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as missed and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome missed recorded for skewer",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as missed and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome missed recorded for discovered attack",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as missed and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome missed recorded for discovered check",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as missed and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome missed recorded for hanging piece",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as missed and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome failed_attempt recorded for mate in 1",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as failed_attempt and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome failed_attempt recorded for mate in 2",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as failed_attempt and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome failed_attempt recorded for fork",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as failed_attempt and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome failed_attempt recorded for pin",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as failed_attempt and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome failed_attempt recorded for skewer",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as failed_attempt and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome failed_attempt recorded for discovered attack",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as failed_attempt and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome failed_attempt recorded for discovered check",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as failed_attempt and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome failed_attempt recorded for hanging piece",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as failed_attempt and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome unclear recorded for mate in 1",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as unclear and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome unclear recorded for mate in 2",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as unclear and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome unclear recorded for fork",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as unclear and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome unclear recorded for pin",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as unclear and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome unclear recorded for skewer",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as unclear and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome unclear recorded for discovered attack",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as unclear and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome unclear recorded for discovered check",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as unclear and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Outcome unclear recorded for hanging piece",
+    "steps": [
+      "Step 1: Compare user move to engine best line",
+      "Step 2: Compute eval swing threshold",
+      "Step 3: Mark outcome as unclear and store"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "FastAPI endpoint /api/stats/motifs returns expected schema",
+    "steps": [
+      "Step 1: Authenticate with local token",
+      "Step 2: Call /api/stats/motifs with valid parameters",
+      "Step 3: Validate HTTP 200 and JSON schema"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "FastAPI endpoint /api/stats/trends returns expected schema",
+    "steps": [
+      "Step 1: Authenticate with local token",
+      "Step 2: Call /api/stats/trends with valid parameters",
+      "Step 3: Validate HTTP 200 and JSON schema"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "FastAPI endpoint /api/tactics/search returns expected schema",
+    "steps": [
+      "Step 1: Authenticate with local token",
+      "Step 2: Call /api/tactics/search with valid parameters",
+      "Step 3: Validate HTTP 200 and JSON schema"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "FastAPI endpoint /api/practice/next returns expected schema",
+    "steps": [
+      "Step 1: Authenticate with local token",
+      "Step 2: Call /api/practice/next with valid parameters",
+      "Step 3: Validate HTTP 200 and JSON schema"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "FastAPI endpoint /api/practice/attempt returns expected schema",
+    "steps": [
+      "Step 1: Authenticate with local token",
+      "Step 2: Call /api/practice/attempt with valid parameters",
+      "Step 3: Validate HTTP 200 and JSON schema"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "FastAPI endpoint /api/jobs/trigger returns expected schema",
+    "steps": [
+      "Step 1: Authenticate with local token",
+      "Step 2: Call /api/jobs/trigger with valid parameters",
+      "Step 3: Validate HTTP 200 and JSON schema"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "FastAPI endpoint /api/jobs/{id} returns expected schema",
+    "steps": [
+      "Step 1: Authenticate with local token",
+      "Step 2: Call /api/jobs/{id} with valid parameters",
+      "Step 3: Validate HTTP 200 and JSON schema"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "FastAPI endpoint /api/jobs/{id}/stream returns expected schema",
+    "steps": [
+      "Step 1: Authenticate with local token",
+      "Step 2: Call /api/jobs/{id}/stream with valid parameters",
+      "Step 3: Validate HTTP 200 and JSON schema"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "FastAPI endpoint /api/health returns expected schema",
+    "steps": [
+      "Step 1: Authenticate with local token",
+      "Step 2: Call /api/health with valid parameters",
+      "Step 3: Validate HTTP 200 and JSON schema"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "FastAPI endpoint /api/auth/token returns expected schema",
+    "steps": [
+      "Step 1: Authenticate with local token",
+      "Step 2: Call /api/auth/token with valid parameters",
+      "Step 3: Validate HTTP 200 and JSON schema"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "SSE stream for metrics pushes incremental updates",
+    "steps": [
+      "Step 1: Open SSE connection",
+      "Step 2: Emit metrics update event",
+      "Step 3: Confirm client renders without full reload"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "SSE stream for practice pushes incremental updates",
+    "steps": [
+      "Step 1: Open SSE connection",
+      "Step 2: Emit practice update event",
+      "Step 3: Confirm client renders without full reload"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "SSE stream for jobs pushes incremental updates",
+    "steps": [
+      "Step 1: Open SSE connection",
+      "Step 2: Emit jobs update event",
+      "Step 3: Confirm client renders without full reload"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice mode supports missed tactics only queue",
+    "steps": [
+      "Step 1: Request next tactic",
+      "Step 2: Play moves on board",
+      "Step 3: Receive immediate feedback",
+      "Step 4: Update training_attempts metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice mode supports mixed review queue",
+    "steps": [
+      "Step 1: Request next tactic",
+      "Step 2: Play moves on board",
+      "Step 3: Receive immediate feedback",
+      "Step 4: Update training_attempts metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice mode supports motif-focused queue",
+    "steps": [
+      "Step 1: Request next tactic",
+      "Step 2: Play moves on board",
+      "Step 3: Receive immediate feedback",
+      "Step 4: Update training_attempts metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice mode supports time-control focused queue",
+    "steps": [
+      "Step 1: Request next tactic",
+      "Step 2: Play moves on board",
+      "Step 3: Receive immediate feedback",
+      "Step 4: Update training_attempts metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice mode supports rating-range focused queue",
+    "steps": [
+      "Step 1: Request next tactic",
+      "Step 2: Play moves on board",
+      "Step 3: Receive immediate feedback",
+      "Step 4: Update training_attempts metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice mode supports streak tracking",
+    "steps": [
+      "Step 1: Request next tactic",
+      "Step 2: Play moves on board",
+      "Step 3: Receive immediate feedback",
+      "Step 4: Update training_attempts metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice mode supports hint usage tracking",
+    "steps": [
+      "Step 1: Request next tactic",
+      "Step 2: Play moves on board",
+      "Step 3: Receive immediate feedback",
+      "Step 4: Update training_attempts metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice mode supports explanation display",
+    "steps": [
+      "Step 1: Request next tactic",
+      "Step 2: Play moves on board",
+      "Step 3: Receive immediate feedback",
+      "Step 4: Update training_attempts metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice mode supports retry after fail",
+    "steps": [
+      "Step 1: Request next tactic",
+      "Step 2: Play moves on board",
+      "Step 3: Receive immediate feedback",
+      "Step 4: Update training_attempts metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice mode supports session completion summary",
+    "steps": [
+      "Step 1: Request next tactic",
+      "Step 2: Play moves on board",
+      "Step 3: Receive immediate feedback",
+      "Step 4: Update training_attempts metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Airflow DAG daily_game_sync is idempotent and resumable",
+    "steps": [
+      "Step 1: Trigger DAG twice with same execution date",
+      "Step 2: Ensure no duplicate rows in DuckDB",
+      "Step 3: Verify run status succeeds and logs show skips"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Airflow DAG extract_positions is idempotent and resumable",
+    "steps": [
+      "Step 1: Trigger DAG twice with same execution date",
+      "Step 2: Ensure no duplicate rows in DuckDB",
+      "Step 3: Verify run status succeeds and logs show skips"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Airflow DAG analyze_tactics is idempotent and resumable",
+    "steps": [
+      "Step 1: Trigger DAG twice with same execution date",
+      "Step 2: Ensure no duplicate rows in DuckDB",
+      "Step 3: Verify run status succeeds and logs show skips"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Airflow DAG refresh_metrics is idempotent and resumable",
+    "steps": [
+      "Step 1: Trigger DAG twice with same execution date",
+      "Step 2: Ensure no duplicate rows in DuckDB",
+      "Step 3: Verify run status succeeds and logs show skips"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "DuckDB schema enforces games table primary keys",
+    "steps": [
+      "Step 1: Inspect schema",
+      "Step 2: Insert sample data",
+      "Step 3: Validate constraints hold"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "DuckDB schema enforces raw_pgns table retains text",
+    "steps": [
+      "Step 1: Inspect schema",
+      "Step 2: Insert sample data",
+      "Step 3: Validate constraints hold"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "DuckDB schema enforces positions table indexes ply",
+    "steps": [
+      "Step 1: Inspect schema",
+      "Step 2: Insert sample data",
+      "Step 3: Validate constraints hold"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "DuckDB schema enforces tactics table motif enum",
+    "steps": [
+      "Step 1: Inspect schema",
+      "Step 2: Insert sample data",
+      "Step 3: Validate constraints hold"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "DuckDB schema enforces tactic_outcomes table outcome enum",
+    "steps": [
+      "Step 1: Inspect schema",
+      "Step 2: Insert sample data",
+      "Step 3: Validate constraints hold"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "DuckDB schema enforces training_attempts table timestamps",
+    "steps": [
+      "Step 1: Inspect schema",
+      "Step 2: Insert sample data",
+      "Step 3: Validate constraints hold"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "DuckDB schema enforces parquet export round trip",
+    "steps": [
+      "Step 1: Inspect schema",
+      "Step 2: Insert sample data",
+      "Step 3: Validate constraints hold"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "DuckDB schema enforces eval delta stored as numeric",
+    "steps": [
+      "Step 1: Inspect schema",
+      "Step 2: Insert sample data",
+      "Step 3: Validate constraints hold"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "DuckDB schema enforces clocks stored in seconds",
+    "steps": [
+      "Step 1: Inspect schema",
+      "Step 2: Insert sample data",
+      "Step 3: Validate constraints hold"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "DuckDB schema enforces severity stored as categorical",
+    "steps": [
+      "Step 1: Inspect schema",
+      "Step 2: Insert sample data",
+      "Step 3: Validate constraints hold"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface miss rate by motif",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface miss rate by rating",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface miss rate by time control",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface miss rate by color",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface win rate conditional on tactic",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface rolling 7-game averages",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface rolling 30-game averages",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface trend lines per motif",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface time-trouble correlation",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface practice improvement over time",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface top recurring motifs",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface evaluation swing distribution",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface site comparison",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface session volume over time",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface error budget per run",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface engine version comparison",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface queue length for practice",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface hint usage impact",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface practice success rate",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Metrics surface API latency percentiles",
+    "steps": [
+      "Step 1: Run metrics refresh",
+      "Step 2: Query stats endpoint",
+      "Step 3: Validate figures and units"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Local token authentication protects all private endpoints",
+    "steps": [
+      "Step 1: Call endpoint without token and expect 401",
+      "Step 2: Call with valid token and expect 200",
+      "Step 3: Confirm token rotation invalidates old token"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Maturin-built Rust extractor loads in Python pipeline",
+    "steps": [
+      "Step 1: Build Rust wheel via maturin",
+      "Step 2: Install into virtualenv",
+      "Step 3: Import in Python and extract FEN from sample PGN"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "React router handles dashboard landing route",
+    "steps": [
+      "Step 1: Navigate to path",
+      "Step 2: Verify layout renders",
+      "Step 3: Ensure data fetch executes"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "React router handles games list route",
+    "steps": [
+      "Step 1: Navigate to path",
+      "Step 2: Verify layout renders",
+      "Step 3: Ensure data fetch executes"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "React router handles tactic detail route",
+    "steps": [
+      "Step 1: Navigate to path",
+      "Step 2: Verify layout renders",
+      "Step 3: Ensure data fetch executes"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "React router handles practice session route",
+    "steps": [
+      "Step 1: Navigate to path",
+      "Step 2: Verify layout renders",
+      "Step 3: Ensure data fetch executes"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "React router handles job status stream route",
+    "steps": [
+      "Step 1: Navigate to path",
+      "Step 2: Verify layout renders",
+      "Step 3: Ensure data fetch executes"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "React router handles settings/token route",
+    "steps": [
+      "Step 1: Navigate to path",
+      "Step 2: Verify layout renders",
+      "Step 3: Ensure data fetch executes"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Dashboard typography scales with viewport",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Color palette meets contrast ratios",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Responsive grid for charts",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Practice board fits mobile view",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Buttons have consistent radius and hover",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Charts use accessible colors",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Tables zebra striping",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Loading states skeletons",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Error banners readable",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Dark mode respects palette",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Chessboard piece clarity",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Move list alignment",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Filters alignment and spacing",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Tooltip readability",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: SSE stream indicator visibility",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Call-to-action prominence",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Form field focus ring",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Modal overlay opacity",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Stepper for practice progress",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Empty state illustrations",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Scrollable panels handling",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Card elevation consistency",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Chart legends placement",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Typography hierarchy for headings",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Responsive navbar collapse",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Sticky filter bar",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Chart axes labels legible",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Board coordinates visible",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Button disabled state",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Link underline on focus",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Keyboard navigation support",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: ARIA labels on controls",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Screen reader text for outcomes",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: High-DPI board rendering",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: No layout shift on load",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Animation duration consistency",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Toast notifications position",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Practice feedback color coding",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Tab order logical",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Breadcrumb readability",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Chart tooltip formatting",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Form validation inline hints",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Responsive tables collapse",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Mobile padding for cards",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Contrast for badges",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Icon alt text",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Skip-to-content link",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: SSE reconnect notice",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Chart gridline subtlety",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Board drag-and-drop smoothness",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Button hit area size",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Scrollable modal content",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Legend toggle accessibility",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Focus trap in modals",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Practice timer visibility",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Hover vs touch behavior",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Line height for body text",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Spacing consistency scale",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Practice success banner",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Chart download affordance",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Practice hint icon clarity",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Jobs stream status badge",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Practice streak badge styling",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Responsive breakpoint for filters",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Keyboard shortcuts help panel",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: SSE live dot animation",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Chart color-blind friendly palette",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: Board orientation toggle visibility",
+    "steps": [
+      "Step 1: Open dashboard on desktop and mobile",
+      "Step 2: Inspect element appearance",
+      "Step 3: Compare against design guidelines"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #1",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #2",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #3",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #4",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #5",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #6",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #7",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #8",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #9",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #10",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #11",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #12",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #13",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #14",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #15",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #16",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #17",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #18",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #19",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #20",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #21",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #22",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #23",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #24",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #25",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #26",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #27",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #28",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #29",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #30",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #31",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #32",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #33",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #34",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #35",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #36",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #37",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #38",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #39",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #40",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #41",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #42",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #43",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #44",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #45",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #46",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #47",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #48",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #49",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #50",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #51",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #52",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #53",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #54",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #55",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #56",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #57",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #58",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #59",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #60",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #61",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #62",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #63",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #64",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #65",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #66",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #67",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #68",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #69",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #70",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #71",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #72",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #73",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #74",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #75",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #76",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #77",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #78",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #79",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #80",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #81",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #82",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #83",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #84",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "UI style: responsive polish #85",
+    "steps": [
+      "Step 1: Load page",
+      "Step 2: Resize viewport",
+      "Step 3: Verify components remain aligned"
+    ],
+    "passes": false
+  }
+]

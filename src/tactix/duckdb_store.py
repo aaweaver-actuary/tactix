@@ -824,5 +824,51 @@ def fetch_recent_tactics(
     return _rows_to_dicts(result)
 
 
+def fetch_practice_queue(
+    conn: duckdb.DuckDBPyConnection,
+    limit: int = 20,
+    source: str | None = None,
+    include_failed_attempt: bool = False,
+) -> list[dict[str, object]]:
+    results = ["missed"]
+    if include_failed_attempt:
+        results.append("failed_attempt")
+    placeholders = ", ".join(["?"] * len(results))
+    query = f"""
+        SELECT
+            t.tactic_id,
+            t.game_id,
+            t.position_id,
+            t.motif,
+            t.severity,
+            t.best_uci,
+            t.eval_cp,
+            t.created_at,
+            o.result,
+            o.user_uci,
+            o.eval_delta,
+            p.source,
+            p.fen,
+            p.uci AS position_uci,
+            p.san,
+            p.ply,
+            p.move_number,
+            p.side_to_move,
+            p.clock_seconds
+        FROM tactics t
+        INNER JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
+        INNER JOIN positions p ON p.position_id = t.position_id
+        WHERE o.result IN ({placeholders})
+    """
+    params: list[object] = list(results)
+    if source:
+        query += " AND p.source = ?"
+        params.append(source)
+    query += " ORDER BY t.created_at DESC LIMIT ?"
+    params.append(limit)
+    result = conn.execute(query, params)
+    return _rows_to_dicts(result)
+
+
 def fetch_version(conn: duckdb.DuckDBPyConnection) -> int:
     return conn.execute("SELECT version FROM metrics_version").fetchone()[0]

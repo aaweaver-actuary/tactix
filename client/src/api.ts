@@ -51,6 +51,33 @@ export type DashboardPayload = {
   metrics_version: number;
 };
 
+export type PracticeQueueItem = {
+  tactic_id: number;
+  game_id: string;
+  position_id: number;
+  source: string;
+  motif: string;
+  result: string;
+  best_uci: string;
+  user_uci: string;
+  eval_delta: number;
+  severity: number;
+  created_at: string;
+  fen: string;
+  position_uci: string;
+  san: string;
+  ply: number;
+  move_number: number;
+  side_to_move: string | null;
+  clock_seconds: number | null;
+};
+
+export type PracticeQueueResponse = {
+  source: string;
+  include_failed_attempt: boolean;
+  items: PracticeQueueItem[];
+};
+
 const API_BASE = (import.meta.env.VITE_API_BASE || '').trim();
 
 const client = axios.create({
@@ -85,4 +112,17 @@ export async function triggerMetricsRefresh(
 ): Promise<DashboardPayload> {
   await client.post('/api/jobs/refresh_metrics', null, { params: { source } });
   return fetchDashboard(source);
+}
+
+export async function fetchPracticeQueue(
+  source?: string,
+  includeFailedAttempt = false,
+): Promise<PracticeQueueResponse> {
+  const res = await client.get<PracticeQueueResponse>('/api/practice/queue', {
+    params: {
+      source,
+      include_failed_attempt: includeFailedAttempt,
+    },
+  });
+  return res.data;
 }

@@ -110,3 +110,11 @@ Session 2026-01-24 (feature 012 – SSE job progress stream)
 - Precheck UI screenshots: `verification/precheck-dashboard-lichess.png`, `verification/precheck-dashboard-chesscom.png`.
 - Updated feature_list.json: feature 012 marked passes=true after UI + test verification.
 - Current passing count: 12.
+
+Session 2026-01-24 (feature 013 – Practice queue missed-only)
+- Added practice queue query + API endpoints (`/api/practice/queue`, `/api/practice/next`) filtering to missed tactics with optional failed_attempt inclusion.
+- Extended dashboard UI with practice queue section + toggle to include failed attempts; queue scoped by source.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest` (29 passed).
+- UI verification screenshot: `verification/dashboard-practice-queue-missed-only.png` (Refresh metrics action).
+- Updated feature_list.json: feature 013 marked passes=true after UI + test verification.
+- Current passing count: 13.

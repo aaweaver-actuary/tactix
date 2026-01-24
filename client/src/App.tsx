@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   DashboardPayload,
+  PracticeQueueItem,
   fetchDashboard,
+  fetchPracticeQueue,
   getJobStreamUrl,
   triggerMetricsRefresh,
 } from './api';
@@ -77,6 +79,86 @@ function TacticsTable({ data }: { data: DashboardPayload['tactics'] }) {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function PracticeQueue({
+  data,
+  includeFailedAttempt,
+  onToggleIncludeFailedAttempt,
+  loading,
+}: {
+  data: PracticeQueueItem[];
+  includeFailedAttempt: boolean;
+  onToggleIncludeFailedAttempt: (next: boolean) => void;
+  loading: boolean;
+}) {
+  return (
+    <div className="card p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <div>
+          <h3 className="text-lg font-display text-sand">Practice queue</h3>
+          <p className="text-xs text-sand/60">
+            Missed tactics from your games, ready to drill.
+          </p>
+        </div>
+        <label className="flex items-center gap-2 text-xs text-sand/70">
+          <input
+            type="checkbox"
+            className="accent-teal"
+            checked={includeFailedAttempt}
+            onChange={(event) => onToggleIncludeFailedAttempt(event.target.checked)}
+            disabled={loading}
+          />
+          Include failed attempts
+        </label>
+      </div>
+      {data.length ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-sand/60">
+              <tr>
+                <th className="text-left py-2">Motif</th>
+                <th className="text-left">Result</th>
+                <th className="text-left">Best</th>
+                <th className="text-left">Your move</th>
+                <th className="text-left">Move</th>
+                <th className="text-left">Delta</th>
+              </tr>
+            </thead>
+            <tbody className="text-sand/90">
+              {data.map((row) => (
+                <tr
+                  key={`${row.tactic_id}-${row.position_id}`}
+                  className="odd:bg-white/0 even:bg-white/5/5 border-b border-white/5"
+                >
+                  <td className="py-2 font-display text-sm uppercase tracking-wide">
+                    {row.motif}
+                  </td>
+                  <td>
+                    <Badge label={row.result} />
+                  </td>
+                  <td className="font-mono text-xs text-teal">
+                    {row.best_uci || '--'}
+                  </td>
+                  <td className="font-mono text-xs">{row.user_uci}</td>
+                  <td className="font-mono text-xs">
+                    {row.move_number}.{row.ply}
+                  </td>
+                  <td className="font-mono text-xs text-rust">
+                    {row.eval_delta}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="text-sm text-sand/60">
+          {loading ? 'Loading practice queue…' : 'No missed tactics queued yet.'}
+        </p>
+      )}
     </div>
   );
 }
@@ -268,6 +350,10 @@ function App() {
   const [source, setSource] = useState<'lichess' | 'chesscom'>('lichess');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [practiceQueue, setPracticeQueue] = useState<PracticeQueueItem[]>([]);
+  const [practiceLoading, setPracticeLoading] = useState(false);
+  const [practiceError, setPracticeError] = useState<string | null>(null);
+  const [includeFailedAttempt, setIncludeFailedAttempt] = useState(false);
   const [jobProgress, setJobProgress] = useState<
     Array<{
       step: string;
@@ -300,10 +386,32 @@ function App() {
     }
   };
 
+  const loadPracticeQueue = async (
+    nextSource: 'lichess' | 'chesscom' = source,
+    includeFailed = includeFailedAttempt,
+  ) => {
+    setPracticeLoading(true);
+    setPracticeError(null);
+    try {
+      const payload = await fetchPracticeQueue(nextSource, includeFailed);
+      setPracticeQueue(payload.items);
+    } catch (err) {
+      console.error(err);
+      setPracticeError('Failed to load practice queue');
+    } finally {
+      setPracticeLoading(false);
+    }
+  };
+
   useEffect(() => {
     load(source);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source]);
+
+  useEffect(() => {
+    loadPracticeQueue(source, includeFailedAttempt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source, includeFailedAttempt]);
 
   useEffect(() => {
     return () => {
@@ -354,6 +462,7 @@ function App() {
         setJobStatus('complete');
         const payload = await fetchDashboard(source);
         setData(payload);
+        await loadPracticeQueue(source, includeFailedAttempt);
         setLoading(false);
       });
 
@@ -387,6 +496,7 @@ function App() {
     try {
       const payload = await triggerMetricsRefresh(source);
       setData(payload);
+      await loadPracticeQueue(source, includeFailedAttempt);
     } catch (err) {
       console.error(err);
       setError('Metrics refresh failed');
@@ -512,6 +622,15 @@ function App() {
 
       {data ? <MetricsGrid data={motifBreakdown} /> : null}
       {data ? <MetricsTrends data={trendRows} /> : null}
+      {practiceError ? (
+        <div className="card p-3 text-rust">{practiceError}</div>
+      ) : null}
+      <PracticeQueue
+        data={practiceQueue}
+        includeFailedAttempt={includeFailedAttempt}
+        onToggleIncludeFailedAttempt={setIncludeFailedAttempt}
+        loading={practiceLoading}
+      />
       {data ? <TacticsTable data={data.tactics} /> : null}
       {data ? <PositionsList data={data.positions} /> : null}
     </div>

@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from tactix.chesscom_client import fetch_incremental_games as fetch_chesscom_games
+from tactix.chesscom_client import (
+    ChesscomFetchResult,
+    fetch_incremental_games as fetch_chesscom_games,
+    read_cursor as read_chesscom_cursor,
+    write_cursor as write_chesscom_cursor,
+)
 from tactix.config import Settings, get_settings
 from tactix.duckdb_store import (
     fetch_metrics,
@@ -38,10 +43,25 @@ def run_daily_game_sync(
     settings.apply_source_defaults()
     settings.ensure_dirs()
 
-    since_ms = read_checkpoint(settings.checkpoint_path)
+    since_ms = 0
+    cursor_value: str | None = None
+    next_cursor: str | None = None
+    chesscom_result: ChesscomFetchResult | None = None
+    last_timestamp_value = 0
+
     if settings.source == "chesscom":
-        games = fetch_chesscom_games(settings, since_ms)
+        cursor_value = read_chesscom_cursor(settings.checkpoint_path)
+        if cursor_value:
+            try:
+                last_timestamp_value = int(cursor_value.split(":", 1)[0])
+            except ValueError:
+                last_timestamp_value = 0
+        chesscom_result = fetch_chesscom_games(settings, cursor_value)
+        games = chesscom_result.games
+        next_cursor = chesscom_result.next_cursor or cursor_value
+        last_timestamp_value = chesscom_result.last_timestamp_ms
     else:
+        since_ms = read_checkpoint(settings.checkpoint_path)
         games = fetch_lichess_games(settings, since_ms)
 
     conn = get_connection(settings.duckdb_path)
@@ -61,15 +81,22 @@ def run_daily_game_sync(
             "positions": 0,
             "tactics": 0,
             "metrics_version": metrics_version,
-            "checkpoint_ms": since_ms,
+            "checkpoint_ms": since_ms if settings.source != "chesscom" else None,
+            "cursor": next_cursor or cursor_value,
+            "last_timestamp_ms": last_timestamp_value or since_ms,
             "since_ms": since_ms,
         }
 
     upsert_raw_pgns(conn, games)
 
     if games:
-        new_since = max(since_ms, latest_timestamp(games))
-        write_checkpoint(settings.checkpoint_path, new_since)
+        if settings.source == "chesscom":
+            write_chesscom_cursor(settings.checkpoint_path, next_cursor)
+        else:
+            new_since = max(since_ms, latest_timestamp(games))
+            write_checkpoint(settings.checkpoint_path, new_since)
+            chesscom_result = None
+            last_timestamp_value = new_since
 
     positions = []
     for game in games:
@@ -101,7 +128,16 @@ def run_daily_game_sync(
         "positions": len(positions),
         "tactics": len(tactics_rows),
         "metrics_version": metrics_version,
-        "checkpoint_ms": read_checkpoint(settings.checkpoint_path),
+        "checkpoint_ms": read_checkpoint(settings.checkpoint_path)
+        if settings.source != "chesscom"
+        else None,
+        "cursor": next_cursor or cursor_value,
+        "last_timestamp_ms": last_timestamp_value
+        or (
+            chesscom_result.last_timestamp_ms
+            if chesscom_result
+            else latest_timestamp(games)
+        ),
         "since_ms": since_ms,
     }
 

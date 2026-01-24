@@ -44,9 +44,7 @@ def daily_game_sync_dag():
             logical_date,
         )
         result = run_daily_game_sync(settings)
-        result["execution_date"] = (
-            logical_date.isoformat() if logical_date else None
-        )
+        result["execution_date"] = logical_date.isoformat() if logical_date else None
         return result
 
     @task(task_id="notify_dashboard")

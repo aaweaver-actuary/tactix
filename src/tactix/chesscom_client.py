@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import List
+from pathlib import Path
+from typing import List, Tuple
 
 import requests
 
@@ -10,6 +12,7 @@ from tactix.logging_utils import get_logger
 from tactix.pgn_utils import (
     extract_game_id,
     extract_last_timestamp_ms,
+    latest_timestamp,
     split_pgn_chunks,
 )
 
@@ -18,10 +21,51 @@ logger = get_logger(__name__)
 ARCHIVES_URL = "https://api.chess.com/pub/player/{username}/games/archives"
 
 
+@dataclass(slots=True)
+class ChesscomFetchResult:
+    games: List[dict]
+    next_cursor: str | None
+    last_timestamp_ms: int
+
+
 def _auth_headers(token: str | None) -> dict[str, str]:
     if not token:
         return {}
     return {"Authorization": f"Bearer {token}"}
+
+
+def _parse_cursor(cursor: str | None) -> Tuple[int, str]:
+    if not cursor:
+        return 0, ""
+    if ":" in cursor:
+        prefix, suffix = cursor.split(":", 1)
+        try:
+            return int(prefix), suffix
+        except ValueError:
+            return 0, cursor
+    if cursor.isdigit():
+        return int(cursor), ""
+    return 0, cursor
+
+
+def _build_cursor(last_ts: int, game_id: str) -> str:
+    return f"{last_ts}:{game_id}"
+
+
+def read_cursor(path: Path) -> str | None:
+    try:
+        raw = path.read_text().strip()
+    except FileNotFoundError:
+        return None
+    return raw or None
+
+
+def write_cursor(path: Path, cursor: str | None) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if cursor is None:
+        path.write_text("")
+        return
+    path.write_text(cursor)
 
 
 def _load_fixture_games(settings: Settings, since_ms: int) -> List[dict]:
@@ -109,7 +153,52 @@ def _fetch_remote_games(settings: Settings, since_ms: int) -> List[dict]:
     return games
 
 
-def fetch_incremental_games(settings: Settings, since_ms: int) -> List[dict]:
+def _filter_by_cursor(rows: List[dict], cursor: str | None) -> List[dict]:
+    since_ts, since_game = _parse_cursor(cursor)
+    filtered: List[dict] = []
+    for game in sorted(rows, key=lambda g: int(g.get("last_timestamp_ms", 0))):
+        last_ts = int(game.get("last_timestamp_ms", 0))
+        game_id = str(game.get("game_id", ""))
+        if since_ts and last_ts < since_ts:
+            continue
+        if since_ts and last_ts == since_ts and since_game:
+            # ensure true increment when multiple games share a timestamp
+            if game_id <= since_game:
+                continue
+        filtered.append(game)
+    return filtered
+
+
+def fetch_incremental_games(
+    settings: Settings, cursor: str | None
+) -> ChesscomFetchResult:
     if not settings.chesscom_token and settings.chesscom_use_fixture_when_no_token:
-        return _load_fixture_games(settings, since_ms)
-    return _fetch_remote_games(settings, since_ms)
+        raw_games = _load_fixture_games(settings, since_ms=0)
+    else:
+        raw_games = _fetch_remote_games(settings, since_ms=0)
+
+    games = _filter_by_cursor(raw_games, cursor)
+    for game in games:
+        game["cursor"] = _build_cursor(
+            int(game.get("last_timestamp_ms", 0)), str(game.get("game_id", ""))
+        )
+
+    last_ts = latest_timestamp(games) or _parse_cursor(cursor)[0]
+    next_cursor = None
+    if games:
+        newest = max(games, key=lambda g: int(g.get("last_timestamp_ms", 0)))
+        next_cursor = _build_cursor(
+            int(newest.get("last_timestamp_ms", 0)), str(newest.get("game_id", ""))
+        )
+    elif cursor:
+        next_cursor = cursor
+
+    logger.info(
+        "Fetched %s Chess.com PGNs with cursor=%s next_cursor=%s",
+        len(games),
+        cursor,
+        next_cursor,
+    )
+    return ChesscomFetchResult(
+        games=games, next_cursor=next_cursor, last_timestamp_ms=last_ts
+    )

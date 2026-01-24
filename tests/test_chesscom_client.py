@@ -26,14 +26,17 @@ class ChesscomClientTests(unittest.TestCase):
         )
         settings.apply_source_defaults()
 
-        games = fetch_incremental_games(settings, since_ms=0)
+        result = fetch_incremental_games(settings, cursor=None)
+        games = result.games
         self.assertGreaterEqual(len(games), 2)
 
         last_ts = latest_timestamp(games)
         self.assertGreater(last_ts, 0)
+        self.assertIsNotNone(result.next_cursor)
 
-        newer = fetch_incremental_games(settings, since_ms=last_ts)
-        self.assertEqual(newer, [])
+        newer = fetch_incremental_games(settings, cursor=result.next_cursor)
+        self.assertEqual(newer.games, [])
+        self.assertEqual(newer.next_cursor, result.next_cursor)
 
 
 if __name__ == "__main__":

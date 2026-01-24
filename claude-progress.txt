@@ -36,3 +36,9 @@ Session 2026-01-24 (feature 003 – Lichess incremental since):
 - Added regression tests for incremental skip/metrics_version bump (pipeline_state) and scheduler logical_date interval (airflow_dag); full pytest now 16/16 passing.
 - Reset checkpoint, ran pipeline twice on Lichess fixtures: run1 fetched 2 games (raw_pgns=2, positions=16, tactics=16, metrics_version=1, checkpoint=1717335000000); run2 fetched 0 (counts unchanged, metrics_version=2).
 - Puppeteer dashboard verification captured `verification/dashboard-lichess-since.png`; Lichess metrics_version now 3 after UI-triggered run.
+
+Session 2026-01-24 (feature 004 – Chess.com cursor incremental)
+- Added cursor-based Chess.com incremental fetch (cursor files, cursor metadata on raw_pgns) and pipeline support returning cursor/last_timestamp_ms.
+- New regression tests for Chess.com cursor client and pipeline skip; DuckDB schema migrates cursor column; metrics_version still bumps on skipped runs.
+- Ran targeted pytest modules: tests/test_chesscom_client.py, tests/test_pipeline_state.py (all cases), tests/test_stockfish_and_pipeline.py, tests/test_airflow_dag.py, tests/test_lichess_client.py, tests/test_position_extractor.py, tests/test_tactics_analyzer.py (all passing).
+- Verified chesscom pipeline on fresh cursor path: run1 fetched 2 games (positions=12, tactics=12), run2 skipped with cursor preserved; metrics_version incremented. Puppeteer UI run (source=chesscom) captured `verification/dashboard-chesscom-cursor.png` with cache bust; feature 004 marked passing.

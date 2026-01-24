@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS raw_pgns (
     source TEXT,
     fetched_at TIMESTAMP,
     pgn TEXT,
-    last_timestamp_ms BIGINT
+    last_timestamp_ms BIGINT,
+    cursor TEXT
 );
 """
 
@@ -96,6 +97,7 @@ def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute(TACTIC_OUTCOMES_SCHEMA)
     conn.execute(METRICS_VERSION_SCHEMA)
     conn.execute(METRICS_SUMMARY_SCHEMA)
+    _ensure_column(conn, "raw_pgns", "cursor", "TEXT")
     _ensure_column(conn, "metrics_summary", "source", "TEXT")
     if conn.execute("SELECT COUNT(*) FROM metrics_version").fetchone()[0] == 0:
         conn.execute("INSERT INTO metrics_version VALUES (0, CURRENT_TIMESTAMP)")
@@ -122,8 +124,8 @@ def upsert_raw_pgns(
     try:
         conn.executemany(
             """
-            INSERT OR REPLACE INTO raw_pgns (game_id, user, source, fetched_at, pgn, last_timestamp_ms)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO raw_pgns (game_id, user, source, fetched_at, pgn, last_timestamp_ms, cursor)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 (
@@ -133,6 +135,7 @@ def upsert_raw_pgns(
                     row.get("fetched_at", datetime.now(timezone.utc)),
                     row["pgn"],
                     row.get("last_timestamp_ms", 0),
+                    row.get("cursor"),
                 )
                 for row in rows_list
             ],

@@ -39,8 +39,10 @@ export type DashboardPayload = {
   metrics_version: number;
 };
 
+const API_BASE = (import.meta.env.VITE_API_BASE || '').trim();
+
 const client = axios.create({
-  baseURL: '',
+  baseURL: API_BASE || undefined,
 });
 
 export async function fetchDashboard(): Promise<DashboardPayload> {

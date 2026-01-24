@@ -4,6 +4,53 @@ const { spawn } = require('child_process');
 const puppeteer = require('puppeteer');
 
 const CLIENT_DIR = path.resolve(__dirname, '..', 'client');
+const ROOT_DIR = path.resolve(__dirname, '..');
+const BACKEND_CMD = path.join(ROOT_DIR, '.venv', 'bin', 'python');
+
+function startBackend() {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(
+      BACKEND_CMD,
+      [
+        '-m',
+        'uvicorn',
+        'tactix.api:app',
+        '--host',
+        '0.0.0.0',
+        '--port',
+        '8000',
+      ],
+      {
+        cwd: ROOT_DIR,
+        env: { ...process.env },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    );
+
+    const onData = (data) => {
+      const text = data.toString();
+      if (text.includes('Uvicorn running')) {
+        cleanup();
+        resolve(proc);
+      }
+    };
+
+    const onError = (err) => {
+      cleanup();
+      reject(err);
+    };
+
+    function cleanup() {
+      proc.stdout.off('data', onData);
+      proc.stderr.off('data', onData);
+      proc.off('error', onError);
+    }
+
+    proc.stdout.on('data', onData);
+    proc.stderr.on('data', onData);
+    proc.on('error', onError);
+  });
+}
 
 function startPreview() {
   return new Promise((resolve, reject) => {
@@ -38,10 +85,15 @@ function startPreview() {
 }
 
 (async () => {
+  console.log('Starting backend...');
+  const backend = await startBackend();
+  console.log('Starting preview server...');
   const server = await startPreview();
   try {
+    console.log('Launching browser...');
     const browser = await puppeteer.launch({ headless: 'new' });
     const page = await browser.newPage();
+    console.log('Navigating to dashboard...');
     await page.goto('http://localhost:4173/', { waitUntil: 'networkidle0' });
     await page.waitForSelector('h1');
     await page.click('button.button');
@@ -57,5 +109,6 @@ function startPreview() {
     await browser.close();
   } finally {
     server.kill();
+    backend.kill();
   }
 })();

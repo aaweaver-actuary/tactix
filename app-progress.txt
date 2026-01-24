@@ -10,3 +10,10 @@ Session 2026-01-24 (backend + UI scaffold)
 - Scaffolded React/Vite/Tailwind dashboard with cache-busting indicator and buttons to trigger sync via API.
 - Updated pyproject for Python 3.12 stack and added Airflow/analytics dependencies; Python 3.12 not yet installed locally, uv sync pending.
 - Outstanding: install Python 3.12 + recreate venv, run uv sync, wire real Stockfish 17 binary with checksum, add robust motif detection and tests (unit/integration/puppeteer), run Airflow DAG end-to-end, capture screenshots, and flip feature 001 after verification.
+
+Session 2026-01-24 (feature 001 end-to-end verification)
+- Installed Python 3.12 venv, synced dependencies, and ran full pytest suite (11 passing) covering checkpoints, extractor, Stockfish determinism, Airflow DAG load, and pipeline/metrics writing.
+- Reset checkpoint and ran `run_daily_game_sync` using fixture PGNs; DuckDB now holds raw_pgns=2, positions=48, tactics=48, outcomes=48 with metrics_version=10.
+- Defaulted Stockfish config to PATH (`stockfish`) while allowing env override; analysis still deterministic.
+- Rebuilt frontend with `VITE_API_BASE=http://localhost:8000`, axios honors env base, and Puppeteer script now starts/stops FastAPI + preview automatically; captured dashboard screenshot at `verification/feature001-dashboard.png`.
+- Feature 001 verified through UI (pipeline trigger, metrics refresh, dashboard data), passes=true in feature_list.json.

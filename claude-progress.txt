@@ -17,3 +17,9 @@ Session 2026-01-24 (feature 001 end-to-end):
 - UI verification via Puppeteer (screenshot at `verification/feature-001-dashboard.png`) shows live counts (positions=20, tactics=20, metrics_version=6) and motif breakdown populated without errors.
 - Updated feature_list.json: feature "001 - Airflow Lichess full pipeline for rapid games" set passes=true after UI + data verification.
 - Known gap: could not run Airflow scheduler itself due to environment; DAG definition present and tested indirectly via pipeline callable.
+
+Session 2026-01-24 (pipeline rerun + UI confirmation):
+- Full pytest suite passing (11 tests covering checkpointing, extractor, determinism, DAG load, DuckDB writes, pipeline state).
+- Reset checkpoint, reran `run_daily_game_sync` with fixtures; DuckDB counts now raw_pgns=2, positions=48, tactics=48, outcomes=48; metrics_version=10; Stockfish default uses PATH binary unless overridden.
+- Rebuilt frontend with `VITE_API_BASE=http://localhost:8000` and updated axios client to respect env base; Puppeteer script now starts/stops FastAPI + preview automatically and captured refreshed dashboard screenshot at `verification/feature001-dashboard.png`.
+- UI verified end-to-end (pipeline trigger, metrics refresh, dashboard with live counts); feature 001 remains passing.

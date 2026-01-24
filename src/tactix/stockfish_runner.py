@@ -26,6 +26,7 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
     def __init__(self, settings: Settings):
         self.settings = settings
         self.engine: Optional[chess.engine.SimpleEngine] = None
+        self.applied_options: dict[str, object] = {}
 
     def __enter__(self) -> "StockfishEngine":
         self._start_engine()
@@ -55,8 +56,55 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
             return str(path)
         resolved = shutil.which(configured)
         if resolved:
+            self.settings.stockfish_path = Path(resolved)
             return resolved
         return None
+
+    def _build_engine_options(self) -> dict[str, object]:
+        return {
+            "Threads": self.settings.stockfish_threads,
+            "Hash": self.settings.stockfish_hash_mb,
+            "Skill Level": self.settings.stockfish_skill_level,
+            "UCI_AnalyseMode": self.settings.stockfish_uci_analyse_mode,
+            "UCI_LimitStrength": self.settings.stockfish_limit_strength,
+            "UCI_Elo": self.settings.stockfish_uci_elo,
+            "Use NNUE": self.settings.stockfish_use_nnue,
+            "MultiPV": self.settings.stockfish_multipv,
+            "Random Seed": self.settings.stockfish_random_seed,
+            "Seed": self.settings.stockfish_random_seed,
+        }
+
+    def _configure_engine(self) -> None:
+        if not self.engine:
+            return
+        options = self.engine.options
+        desired = self._build_engine_options()
+        applied: dict[str, object] = {}
+        for name, value in desired.items():
+            if value is None:
+                continue
+            if name in options:
+                option_meta = options[name]
+                is_managed_attr = getattr(option_meta, "is_managed", None)
+                if is_managed_attr is not None:
+                    is_managed = (
+                        is_managed_attr() if callable(is_managed_attr) else bool(is_managed_attr)
+                    )
+                else:
+                    is_managed = bool(getattr(option_meta, "managed", False))
+                if is_managed:
+                    continue
+                applied[name] = value
+        if applied:
+            self.engine.configure(applied)
+        self.applied_options = dict(applied)
+        engine_id = getattr(self.engine, "id", {})
+        engine_name = engine_id.get("name") if isinstance(engine_id, dict) else None
+        logger.info(
+            "Stockfish configured (%s) with options: %s",
+            engine_name or "unknown",
+            applied,
+        )
 
     def analyse(self, board: chess.Board) -> EngineResult:
         if self.engine:
@@ -88,12 +136,7 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
         if command:
             logger.info("Starting Stockfish via %s", command)
             self.engine = chess.engine.SimpleEngine.popen_uci(command)
-            self.engine.configure(
-                {
-                    "Threads": self.settings.stockfish_threads,
-                    "Hash": self.settings.stockfish_hash_mb,
-                }
-            )
+            self._configure_engine()
         else:
             logger.warning(
                 "Stockfish binary not found (configured=%s); using material heuristic",

@@ -73,3 +73,11 @@ Session 2026-01-24 (feature 008 – Position extraction ply/clock capture)
 - UI verification screenshot: `verification/dashboard-chesscom-position-clocks.png`.
 - Updated feature_list.json: feature 008 marked passes=true after UI + test verification.
 - Current passing count: 8.
+
+Session 2026-01-24 (feature 009 – Stockfish deterministic settings)
+- Enforced deterministic Stockfish configuration (threads/hash/skill/analysis mode/NNUE/seed) and tracked applied options per engine restart.
+- Added determinism assertions to ensure settings are applied and remain stable after engine restarts.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest -q` (24 passed).
+- UI verification screenshot: `verification/dashboard-lichess-deterministic-stockfish.png`.
+- Updated feature_list.json: feature 009 marked passes=true after UI + test verification.
+- Current passing count: 9.

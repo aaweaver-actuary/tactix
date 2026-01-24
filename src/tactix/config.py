@@ -47,6 +47,17 @@ class Settings:
     stockfish_movetime_ms: int = int(os.getenv("STOCKFISH_MOVETIME_MS", "150"))
     stockfish_depth: Optional[int] = int(os.getenv("STOCKFISH_DEPTH", "0")) or None
     stockfish_multipv: int = int(os.getenv("STOCKFISH_MULTIPV", "3"))
+    stockfish_skill_level: int = int(os.getenv("STOCKFISH_SKILL_LEVEL", "20"))
+    stockfish_limit_strength: bool = os.getenv("STOCKFISH_LIMIT_STRENGTH", "0") == "1"
+    stockfish_uci_elo: Optional[int] = int(os.getenv("STOCKFISH_UCI_ELO", "0")) or None
+    stockfish_uci_analyse_mode: bool = (
+        os.getenv("STOCKFISH_UCI_ANALYSE_MODE", "1") == "1"
+    )
+    stockfish_use_nnue: bool = os.getenv("STOCKFISH_USE_NNUE", "1") == "1"
+    stockfish_ponder: bool = os.getenv("STOCKFISH_PONDER", "0") == "1"
+    stockfish_random_seed: Optional[int] = int(
+        os.getenv("STOCKFISH_RANDOM_SEED", "0")
+    ) or None
     stockfish_max_retries: int = int(os.getenv("STOCKFISH_MAX_RETRIES", "2"))
     stockfish_retry_backoff_ms: int = int(
         os.getenv("STOCKFISH_RETRY_BACKOFF_MS", "250")

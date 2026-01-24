@@ -25,13 +25,42 @@ class StockfishAndPipelineTests(unittest.TestCase):
             stockfish_depth=10,
             stockfish_threads=1,
             stockfish_multipv=2,
+            stockfish_skill_level=20,
+            stockfish_limit_strength=False,
+            stockfish_uci_analyse_mode=True,
+            stockfish_ponder=False,
+            stockfish_use_nnue=True,
+            stockfish_random_seed=1,
         )
         board = chess.Board()
         with StockfishEngine(settings) as engine:
             first = engine.analyse(board)
             second = engine.analyse(board)
+            engine.restart()
+            third = engine.analyse(board)
+            self.assertIn("Threads", engine.applied_options)
+            self.assertIn("Hash", engine.applied_options)
+            expected = {
+                "Threads": settings.stockfish_threads,
+                "Hash": settings.stockfish_hash_mb,
+                "Skill Level": settings.stockfish_skill_level,
+                "UCI_AnalyseMode": settings.stockfish_uci_analyse_mode,
+                "UCI_LimitStrength": settings.stockfish_limit_strength,
+                "UCI_Elo": settings.stockfish_uci_elo,
+                "MultiPV": settings.stockfish_multipv,
+                "Use NNUE": settings.stockfish_use_nnue,
+                "Random Seed": settings.stockfish_random_seed,
+                "Seed": settings.stockfish_random_seed,
+            }
+            for name, value in expected.items():
+                if value is None:
+                    continue
+                if name in engine.applied_options:
+                    self.assertEqual(engine.applied_options[name], value)
         self.assertEqual(first.best_move, second.best_move)
         self.assertEqual(first.score_cp, second.score_cp)
+        self.assertEqual(first.best_move, third.best_move)
+        self.assertEqual(first.score_cp, third.score_cp)
 
     def test_pipeline_writes_duckdb_tables(self) -> None:
         tmp_dir = Path(tempfile.mkdtemp())

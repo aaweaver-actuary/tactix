@@ -17,6 +17,7 @@ from tactix.duckdb_store import (
     insert_positions,
     insert_tactic_outcomes,
     insert_tactics,
+    delete_game_rows,
     update_metrics_summary,
     upsert_raw_pgns,
     write_metrics_version,
@@ -63,6 +64,7 @@ def run_daily_game_sync(
     else:
         since_ms = read_checkpoint(settings.checkpoint_path)
         games = fetch_lichess_games(settings, since_ms)
+        last_timestamp_value = since_ms
 
     conn = get_connection(settings.duckdb_path)
     init_schema(conn)
@@ -87,16 +89,9 @@ def run_daily_game_sync(
             "since_ms": since_ms,
         }
 
+    game_ids = [game["game_id"] for game in games]
+    delete_game_rows(conn, game_ids)
     upsert_raw_pgns(conn, games)
-
-    if games:
-        if settings.source == "chesscom":
-            write_chesscom_cursor(settings.checkpoint_path, next_cursor)
-        else:
-            new_since = max(since_ms, latest_timestamp(games))
-            write_checkpoint(settings.checkpoint_path, new_since)
-            chesscom_result = None
-            last_timestamp_value = new_since
 
     positions = []
     for game in games:
@@ -121,6 +116,18 @@ def run_daily_game_sync(
     metrics_version = write_metrics_version(conn)
     settings.metrics_version_file.write_text(str(metrics_version))
 
+    checkpoint_value: int | None = None
+    if settings.source == "chesscom":
+        write_chesscom_cursor(settings.checkpoint_path, next_cursor)
+        if chesscom_result:
+            last_timestamp_value = chesscom_result.last_timestamp_ms
+        elif games:
+            last_timestamp_value = latest_timestamp(games)
+    else:
+        checkpoint_value = max(since_ms, latest_timestamp(games))
+        write_checkpoint(settings.checkpoint_path, checkpoint_value)
+        last_timestamp_value = checkpoint_value
+
     return {
         "source": settings.source,
         "user": settings.user,
@@ -128,16 +135,9 @@ def run_daily_game_sync(
         "positions": len(positions),
         "tactics": len(tactics_rows),
         "metrics_version": metrics_version,
-        "checkpoint_ms": read_checkpoint(settings.checkpoint_path)
-        if settings.source != "chesscom"
-        else None,
+        "checkpoint_ms": checkpoint_value,
         "cursor": next_cursor or cursor_value,
-        "last_timestamp_ms": last_timestamp_value
-        or (
-            chesscom_result.last_timestamp_ms
-            if chesscom_result
-            else latest_timestamp(games)
-        ),
+        "last_timestamp_ms": last_timestamp_value,
         "since_ms": since_ms,
     }
 

@@ -19,6 +19,8 @@ def default_args():
         "depends_on_past": False,
         "retries": 2,
         "retry_delay": timedelta(minutes=5),
+        "retry_exponential_backoff": True,
+        "max_retry_delay": timedelta(minutes=20),
     }
 
 

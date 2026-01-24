@@ -42,3 +42,10 @@ Session 2026-01-24 (feature 004 – Chess.com cursor incremental)
 - New regression tests for Chess.com cursor client and pipeline skip; DuckDB schema migrates cursor column; metrics_version still bumps on skipped runs.
 - Ran targeted pytest modules: tests/test_chesscom_client.py, tests/test_pipeline_state.py (all cases), tests/test_stockfish_and_pipeline.py, tests/test_airflow_dag.py, tests/test_lichess_client.py, tests/test_position_extractor.py, tests/test_tactics_analyzer.py (all passing).
 - Verified chesscom pipeline on fresh cursor path: run1 fetched 2 games (positions=12, tactics=12), run2 skipped with cursor preserved; metrics_version incremented. Puppeteer UI run (source=chesscom) captured `verification/dashboard-chesscom-cursor.png` with cache bust; feature 004 marked passing.
+
+Session 2026-01-24 (feature 005 – Pipeline resumes after network interruption)
+- Hardened Lichess fetch with tenacity retries; pipeline deletes per-game positions/tactics before reinserting and writes checkpoint/cursor only after successful batches.
+- Added DuckDB cleanup helper for retries and enabled Airflow daily_game_sync exponential backoff defaults.
+- New resume tests (analysis failure dedupe + fetch failure checkpoint) in pipeline_state; full pytest 19/19 passing.
+- Manual simulated failure run: first run errored after raw_pgns=2/positions=16 with checkpoint=0 and metrics_version=0; rerun succeeded with tactics/outcomes=16, checkpoint=1717335000000, metrics_version=1.
+- Reset checkpoint, reran pipeline (metrics_version=5) and captured dashboard screenshot `verification/dashboard-lichess-resume.png`; feature_list.json entry 005 flipped to passes=true.

@@ -147,6 +147,24 @@ def upsert_raw_pgns(
     return len(rows_list)
 
 
+def delete_game_rows(conn: duckdb.DuckDBPyConnection, game_ids: list[str]) -> None:
+    if not game_ids:
+        return
+    conn.execute("BEGIN TRANSACTION")
+    try:
+        for game_id in game_ids:
+            conn.execute(
+                "DELETE FROM tactic_outcomes WHERE tactic_id IN (SELECT tactic_id FROM tactics WHERE game_id = ?)",
+                [game_id],
+            )
+            conn.execute("DELETE FROM tactics WHERE game_id = ?", [game_id])
+            conn.execute("DELETE FROM positions WHERE game_id = ?", [game_id])
+        conn.execute("COMMIT")
+    except Exception:  # noqa: BLE001
+        conn.execute("ROLLBACK")
+        raise
+
+
 def insert_positions(
     conn: duckdb.DuckDBPyConnection,
     rows: Iterable[Mapping[str, object]],

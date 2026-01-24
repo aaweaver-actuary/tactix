@@ -1,11 +1,19 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
 
 import berserk
 import chess.pgn
+from tenacity import (  # type: ignore
+    before_sleep_log,
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from tactix.config import Settings
 from tactix.logging_utils import get_logger
@@ -67,10 +75,14 @@ def build_client(settings: Settings) -> berserk.Client:
     return berserk.Client(session=session, timeout=15)
 
 
-def fetch_incremental_games(settings: Settings, since_ms: int) -> List[dict]:
-    if not settings.lichess_token and settings.use_fixture_when_no_token:
-        return _load_fixture_games(settings, since_ms)
-
+@retry(
+    retry=retry_if_exception_type(Exception),
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    reraise=True,
+    before_sleep=before_sleep_log(logger, logging.WARNING),
+)
+def _fetch_remote_games(settings: Settings, since_ms: int) -> List[dict]:
     client = build_client(settings)
     logger.info("Fetching Lichess games for user=%s since=%s", settings.user, since_ms)
     games: List[dict] = []
@@ -98,3 +110,9 @@ def fetch_incremental_games(settings: Settings, since_ms: int) -> List[dict]:
         )
     logger.info("Fetched %s PGNs", len(games))
     return games
+
+
+def fetch_incremental_games(settings: Settings, since_ms: int) -> List[dict]:
+    if not settings.lichess_token and settings.use_fixture_when_no_token:
+        return _load_fixture_games(settings, since_ms)
+    return _fetch_remote_games(settings, since_ms)

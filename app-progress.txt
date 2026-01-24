@@ -36,3 +36,10 @@ Session 2026-01-24 (feature 004 – Chess.com cursor incremental)
 - DuckDB schema now includes cursor column; added Chess.com client + pipeline regression tests for cursor skip and metrics_version bump on no-op runs (pytest modules all passing).
 - Verified incremental behavior on fresh cursor path: run1 fetched 2 games (positions=12, tactics=12), run2 skipped with cursor unchanged; metrics_version incremented.
 - Puppeteer UI (source=chesscom) triggered pipeline and captured `verification/dashboard-chesscom-cursor.png`; feature_list.json 004 marked passes=true.
+
+Session 2026-01-24 (feature 005 – Lichess resume mid-fetch)
+- Added retrying Lichess fetch with tenacity, per-game cleanup before reinserts, and deferred checkpoint/cursor writes until successful completion.
+- New DuckDB cleanup helper for retries and Airflow exponential backoff defaults on daily_game_sync tasks.
+- Regression tests cover analyze failure resume and fetch failure checkpoint; full pytest (19) passing.
+- Simulated mid-run failure: first run left raw_pgns=2/positions=16/tactics=0, rerun produced tactics=16/outcomes=16 with checkpoint=1717335000000 and metrics_version=1.
+- Puppeteer dashboard verification captured `verification/dashboard-lichess-resume.png`; feature 005 set to passes=true.

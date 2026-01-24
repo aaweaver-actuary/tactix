@@ -105,8 +105,7 @@ def _ensure_column(
     conn: duckdb.DuckDBPyConnection, table: str, column: str, definition: str
 ) -> None:
     columns = {
-        row[1]
-        for row in conn.execute(f"PRAGMA table_info('{table}')").fetchall()
+        row[1] for row in conn.execute(f"PRAGMA table_info('{table}')").fetchall()
     }
     if column not in columns:
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")

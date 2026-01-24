@@ -31,7 +31,9 @@ class Settings:
         os.getenv("TACTIX_CHECKPOINT_PATH", DEFAULT_DATA_DIR / "lichess_since.txt")
     )
     chesscom_checkpoint_path: Path = Path(
-        os.getenv("TACTIX_CHESSCOM_CHECKPOINT_PATH", DEFAULT_DATA_DIR / "chesscom_since.txt")
+        os.getenv(
+            "TACTIX_CHESSCOM_CHECKPOINT_PATH", DEFAULT_DATA_DIR / "chesscom_since.txt"
+        )
     )
     stockfish_path: Path = Path(os.getenv("STOCKFISH_PATH", "stockfish"))
     stockfish_threads: int = int(os.getenv("STOCKFISH_THREADS", "1"))

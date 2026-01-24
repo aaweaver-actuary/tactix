@@ -7,6 +7,8 @@ const CLIENT_DIR = path.resolve(__dirname, '..', 'client');
 const ROOT_DIR = path.resolve(__dirname, '..');
 const BACKEND_CMD = path.join(ROOT_DIR, '.venv', 'bin', 'python');
 const SOURCE = process.env.TACTIX_SOURCE || 'lichess';
+const SCREENSHOT_NAME =
+  process.env.TACTIX_SCREENSHOT_NAME || `dashboard-${SOURCE}.png`;
 
 function startBackend() {
   return new Promise((resolve, reject) => {
@@ -123,7 +125,7 @@ function startPreview() {
     await page.waitForSelector('table');
 
     const outDir = path.resolve(__dirname);
-    const outPath = path.join(outDir, `dashboard-${SOURCE}.png`);
+    const outPath = path.join(outDir, SCREENSHOT_NAME);
     fs.mkdirSync(outDir, { recursive: true });
     await page.screenshot({ path: outPath, fullPage: true });
     console.log('Saved screenshot to', outPath);

@@ -4,6 +4,7 @@ from pathlib import Path
 import unittest
 
 from tactix.config import Settings
+from tactix.duckdb_store import fetch_version, get_connection
 from tactix.lichess_client import read_checkpoint
 from tactix.pipeline import run_daily_game_sync
 
@@ -66,6 +67,53 @@ class PipelineStateTests(unittest.TestCase):
         ckpt_value = read_checkpoint(settings.checkpoint_path)
         self.assertGreater(ckpt_value, 0)
         self.assertEqual(ckpt_value, int(settings.checkpoint_path.read_text().strip()))
+
+    def test_incremental_run_skips_existing_games(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "tactix.duckdb",
+            checkpoint_path=self.tmp_dir / "since.txt",
+            metrics_version_file=self.tmp_dir / "metrics.txt",
+            fixture_pgn_path=self.fixture_path,
+            use_fixture_when_no_token=True,
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=50,
+            stockfish_depth=8,
+            stockfish_multipv=2,
+        )
+
+        first = run_daily_game_sync(settings)
+        conn = get_connection(settings.duckdb_path)
+        raw_first = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
+        positions_first = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+        tactics_first = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        outcomes_first = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
+        metrics_version_first = fetch_version(conn)
+        checkpoint_first = read_checkpoint(settings.checkpoint_path)
+
+        self.assertGreater(first["fetched_games"], 0)
+        self.assertGreater(checkpoint_first, 0)
+        self.assertEqual(tactics_first, outcomes_first)
+
+        second = run_daily_game_sync(settings)
+        raw_second = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
+        positions_second = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+        tactics_second = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        outcomes_second = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
+        metrics_version_second = fetch_version(conn)
+        checkpoint_second = read_checkpoint(settings.checkpoint_path)
+        conn.close()
+
+        self.assertEqual(second["fetched_games"], 0)
+        self.assertEqual(second["positions"], 0)
+        self.assertEqual(second["tactics"], 0)
+        self.assertEqual(raw_second, raw_first)
+        self.assertEqual(positions_second, positions_first)
+        self.assertEqual(tactics_second, tactics_first)
+        self.assertEqual(outcomes_second, outcomes_first)
+        self.assertEqual(checkpoint_second, checkpoint_first)
+        self.assertEqual(metrics_version_second, metrics_version_first + 1)
 
 
 if __name__ == "__main__":

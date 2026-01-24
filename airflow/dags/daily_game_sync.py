@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from airflow.decorators import dag, task
+from airflow.operators.python import get_current_context
+from airflow.utils import timezone
 
 from tactix.config import get_settings
 from tactix.logging_utils import get_logger
@@ -23,7 +25,7 @@ def default_args():
 @dag(
     dag_id="daily_game_sync",
     schedule="@daily",
-    start_date=datetime(2024, 1, 1),
+    start_date=timezone.datetime(2024, 1, 1),
     catchup=False,
     default_args=default_args(),
     tags=["lichess", "chesscom", "tactix"],
@@ -34,8 +36,18 @@ def daily_game_sync_dag():
 
     @task(task_id="run_pipeline")
     def run_pipeline() -> dict[str, object]:
-        logger.info("Starting end-to-end pipeline run for source=%s", settings.source)
-        return run_daily_game_sync(settings)
+        context = get_current_context()
+        logical_date = context.get("logical_date") if context else None
+        logger.info(
+            "Starting end-to-end pipeline run for source=%s logical_date=%s",
+            settings.source,
+            logical_date,
+        )
+        result = run_daily_game_sync(settings)
+        result["execution_date"] = (
+            logical_date.isoformat() if logical_date else None
+        )
+        return result
 
     @task(task_id="notify_dashboard")
     def notify_dashboard(_: dict[str, object]) -> dict[str, object]:

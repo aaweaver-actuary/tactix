@@ -30,3 +30,9 @@ Session 2026-01-24 (feature 002 – Chess.com blitz pipeline):
 - New chesscom fixtures and tests (client + pipeline state + stockfish integration); DuckDB schema migrated with source column; tactics/metrics filtered by source in queries.
 - Commands: full pytest (14 passed), `VITE_API_BASE=http://localhost:8000 npm --prefix client run build`, chesscom pipeline run to `data/tactix_chesscom.duckdb` (raw_pgns=2, positions=12, tactics=12, metrics_version=1).
 - Updated feature_list.json: feature 002 marked passes=true after UI + data verification.
+
+Session 2026-01-24 (feature 003 – Lichess incremental since):
+- Hardened Lichess incremental sync: pipeline short-circuits when no new games, returns checkpoint metadata, and Airflow DAG records logical execution_date with a timezone-aware start date.
+- Added regression tests for incremental skip/metrics_version bump (pipeline_state) and scheduler logical_date interval (airflow_dag); full pytest now 16/16 passing.
+- Reset checkpoint, ran pipeline twice on Lichess fixtures: run1 fetched 2 games (raw_pgns=2, positions=16, tactics=16, metrics_version=1, checkpoint=1717335000000); run2 fetched 0 (counts unchanged, metrics_version=2).
+- Puppeteer dashboard verification captured `verification/dashboard-lichess-since.png`; Lichess metrics_version now 3 after UI-triggered run.

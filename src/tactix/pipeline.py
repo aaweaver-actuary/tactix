@@ -47,6 +47,24 @@ def run_daily_game_sync(
     conn = get_connection(settings.duckdb_path)
     init_schema(conn)
 
+    if not games:
+        logger.info(
+            "No new games for source=%s at checkpoint=%s", settings.source, since_ms
+        )
+        update_metrics_summary(conn)
+        metrics_version = write_metrics_version(conn)
+        settings.metrics_version_file.write_text(str(metrics_version))
+        return {
+            "source": settings.source,
+            "user": settings.user,
+            "fetched_games": 0,
+            "positions": 0,
+            "tactics": 0,
+            "metrics_version": metrics_version,
+            "checkpoint_ms": since_ms,
+            "since_ms": since_ms,
+        }
+
     upsert_raw_pgns(conn, games)
 
     if games:
@@ -83,7 +101,11 @@ def run_daily_game_sync(
         "positions": len(positions),
         "tactics": len(tactics_rows),
         "metrics_version": metrics_version,
+        "checkpoint_ms": read_checkpoint(settings.checkpoint_path),
+        "since_ms": since_ms,
     }
+
+
 def get_dashboard_payload(
     settings: Settings | None = None, source: str | None = None
 ) -> dict[str, object]:

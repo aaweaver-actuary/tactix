@@ -101,9 +101,13 @@ class StockfishAndPipelineTests(unittest.TestCase):
         self.assertGreater(result["tactics"], 0)
 
         conn = get_connection(settings.duckdb_path)
-        raw_pgns = conn.execute("SELECT source, COUNT(*) FROM raw_pgns GROUP BY source").fetchall()
+        raw_pgns = conn.execute(
+            "SELECT source, COUNT(*) FROM raw_pgns GROUP BY source"
+        ).fetchall()
         self.assertIn(("chesscom", 2), raw_pgns)
-        positions = conn.execute("SELECT COUNT(*) FROM positions WHERE source='chesscom'").fetchone()[0]
+        positions = conn.execute(
+            "SELECT COUNT(*) FROM positions WHERE source='chesscom'"
+        ).fetchone()[0]
         tactics = conn.execute(
             "SELECT COUNT(*) FROM tactics t JOIN positions p ON p.position_id = t.position_id WHERE p.source='chesscom'"
         ).fetchone()[0]

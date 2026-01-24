@@ -7,7 +7,11 @@ import requests
 
 from tactix.config import Settings
 from tactix.logging_utils import get_logger
-from tactix.pgn_utils import extract_game_id, extract_last_timestamp_ms, split_pgn_chunks
+from tactix.pgn_utils import (
+    extract_game_id,
+    extract_last_timestamp_ms,
+    split_pgn_chunks,
+)
 
 logger = get_logger(__name__)
 
@@ -49,7 +53,9 @@ def _load_fixture_games(settings: Settings, since_ms: int) -> List[dict]:
 def _fetch_remote_games(settings: Settings, since_ms: int) -> List[dict]:
     url = ARCHIVES_URL.format(username=settings.user)
     try:
-        archives_resp = requests.get(url, headers=_auth_headers(settings.chesscom_token), timeout=15)
+        archives_resp = requests.get(
+            url, headers=_auth_headers(settings.chesscom_token), timeout=15
+        )
         archives_resp.raise_for_status()
     except Exception as exc:  # noqa: BLE001
         logger.warning("Falling back to fixtures; archive fetch failed: %s", exc)

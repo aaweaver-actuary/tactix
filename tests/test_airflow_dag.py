@@ -30,6 +30,21 @@ class AirflowDagTests(unittest.TestCase):
         )
         self.assertEqual(str(dag.schedule_interval), "@daily")
 
+    def test_analyze_tactics_dag_loads(self) -> None:
+        dag_folder = Path(__file__).resolve().parents[1] / "airflow" / "dags"
+        dagbag = DagBag(
+            dag_folder=str(dag_folder), include_examples=False, read_dags_from_db=False
+        )
+
+        self.assertFalse(dagbag.import_errors)
+        dag = dagbag.dags.get("analyze_tactics")
+        self.assertIsNotNone(dag)
+        self.assertEqual(dag.dag_id, "analyze_tactics")
+        self.assertEqual(
+            {task.task_id for task in dag.tasks}, {"run_pipeline", "notify_dashboard"}
+        )
+        self.assertEqual(str(dag.schedule_interval), "@daily")
+
     def test_daily_schedule_uses_expected_execution_date(self) -> None:
         dag_folder = Path(__file__).resolve().parents[1] / "airflow" / "dags"
         dagbag = DagBag(

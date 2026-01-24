@@ -206,6 +206,19 @@ def insert_positions(
     return position_ids
 
 
+def fetch_positions_for_games(
+    conn: duckdb.DuckDBPyConnection, game_ids: list[str]
+) -> list[dict[str, object]]:
+    if not game_ids:
+        return []
+    placeholders = ", ".join(["?"] * len(game_ids))
+    result = conn.execute(
+        f"SELECT * FROM positions WHERE game_id IN ({placeholders}) ORDER BY position_id",
+        game_ids,
+    )
+    return _rows_to_dicts(result)
+
+
 def insert_tactics(
     conn: duckdb.DuckDBPyConnection,
     rows: Iterable[Mapping[str, object]],
@@ -276,6 +289,69 @@ def insert_tactic_outcomes(
     except Exception:  # noqa: BLE001
         conn.execute("ROLLBACK")
         raise
+
+
+def upsert_tactic_with_outcome(
+    conn: duckdb.DuckDBPyConnection,
+    tactic_row: Mapping[str, object],
+    outcome_row: Mapping[str, object],
+) -> int:
+    position_id = tactic_row.get("position_id")
+    if position_id is None:
+        raise ValueError("position_id is required for tactic upsert")
+    conn.execute("BEGIN TRANSACTION")
+    try:
+        conn.execute(
+            "DELETE FROM tactic_outcomes WHERE tactic_id IN (SELECT tactic_id FROM tactics WHERE position_id = ?)",
+            [position_id],
+        )
+        conn.execute("DELETE FROM tactics WHERE position_id = ?", [position_id])
+
+        tactic_id = (
+            conn.execute("SELECT COALESCE(MAX(tactic_id), 0) FROM tactics").fetchone()[
+                0
+            ]
+            + 1
+        )
+        conn.execute(
+            """
+            INSERT INTO tactics (tactic_id, game_id, position_id, motif, severity, best_uci, eval_cp)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                tactic_id,
+                tactic_row["game_id"],
+                position_id,
+                tactic_row.get("motif", "unknown"),
+                tactic_row.get("severity", 0.0),
+                tactic_row.get("best_uci", ""),
+                tactic_row.get("eval_cp", 0),
+            ),
+        )
+        outcome_id = (
+            conn.execute(
+                "SELECT COALESCE(MAX(outcome_id), 0) FROM tactic_outcomes"
+            ).fetchone()[0]
+            + 1
+        )
+        conn.execute(
+            """
+            INSERT INTO tactic_outcomes (outcome_id, tactic_id, result, user_uci, eval_delta)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                outcome_id,
+                tactic_id,
+                outcome_row.get("result", "unclear"),
+                outcome_row.get("user_uci", ""),
+                outcome_row.get("eval_delta", 0),
+            ),
+        )
+        conn.execute("COMMIT")
+    except Exception:  # noqa: BLE001
+        conn.execute("ROLLBACK")
+        raise
+    return tactic_id
 
 
 def write_metrics_version(conn: duckdb.DuckDBPyConnection) -> int:

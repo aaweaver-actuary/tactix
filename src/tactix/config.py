@@ -35,12 +35,22 @@ class Settings:
             "TACTIX_CHESSCOM_CHECKPOINT_PATH", DEFAULT_DATA_DIR / "chesscom_since.txt"
         )
     )
+    analysis_checkpoint_path: Path = Path(
+        os.getenv(
+            "TACTIX_ANALYSIS_CHECKPOINT_PATH",
+            DEFAULT_DATA_DIR / "analysis_checkpoint_lichess.json",
+        )
+    )
     stockfish_path: Path = Path(os.getenv("STOCKFISH_PATH", "stockfish"))
     stockfish_threads: int = int(os.getenv("STOCKFISH_THREADS", "1"))
     stockfish_hash_mb: int = int(os.getenv("STOCKFISH_HASH", "256"))
     stockfish_movetime_ms: int = int(os.getenv("STOCKFISH_MOVETIME_MS", "150"))
     stockfish_depth: Optional[int] = int(os.getenv("STOCKFISH_DEPTH", "0")) or None
     stockfish_multipv: int = int(os.getenv("STOCKFISH_MULTIPV", "3"))
+    stockfish_max_retries: int = int(os.getenv("STOCKFISH_MAX_RETRIES", "2"))
+    stockfish_retry_backoff_ms: int = int(
+        os.getenv("STOCKFISH_RETRY_BACKOFF_MS", "250")
+    )
     metrics_version_file: Path = Path(
         os.getenv(
             "TACTIX_METRICS_VERSION_PATH", DEFAULT_DATA_DIR / "metrics_version.txt"
@@ -70,16 +80,24 @@ class Settings:
         if self.source == "chesscom":
             self.user = self.chesscom_user
             self.checkpoint_path = self.chesscom_checkpoint_path
+            self.analysis_checkpoint_path = (
+                self.data_dir / "analysis_checkpoint_chesscom.json"
+            )
             self.fixture_pgn_path = self.chesscom_fixture_pgn_path
             self.use_fixture_when_no_token = self.chesscom_use_fixture_when_no_token
         elif not self.user:
             self.user = self.lichess_user
+        if self.source == "lichess":
+            self.analysis_checkpoint_path = (
+                self.data_dir / "analysis_checkpoint_lichess.json"
+            )
 
     def ensure_dirs(self) -> None:
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
         self.chesscom_checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
         self.metrics_version_file.parent.mkdir(parents=True, exist_ok=True)
+        self.analysis_checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
 
 
 def get_settings(source: str | None = None) -> Settings:

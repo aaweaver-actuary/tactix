@@ -77,6 +77,52 @@ def _infer_motif(board: chess.Board, best_move: chess.Move | None) -> str:
     return "initiative"
 
 
+def analyze_position(
+    position: Dict[str, object], engine: StockfishEngine
+) -> tuple[Dict[str, object], Dict[str, object]] | None:
+    fen = str(position["fen"])
+    user_move_uci = str(position["uci"])
+    board = chess.Board(fen)
+    motif_board = board.copy()
+
+    engine_result: EngineResult = engine.analyse(board)
+    best_move = engine_result.best_move.uci() if engine_result.best_move else None
+    base_cp = engine_result.score_cp
+
+    try:
+        user_move = chess.Move.from_uci(user_move_uci)
+    except ValueError:
+        logger.warning("Invalid UCI move %s; skipping position", user_move_uci)
+        return None
+
+    if user_move not in board.legal_moves:
+        logger.warning("Illegal move %s for FEN %s", user_move_uci, fen)
+        return None
+
+    board.push(user_move)
+    after_cp = engine.analyse(board).score_cp
+
+    result, delta = _classify_result(best_move, user_move_uci, base_cp, after_cp)
+    motif = _infer_motif(motif_board, engine_result.best_move)
+    severity = abs(delta) / 100.0
+
+    tactic_row = {
+        "game_id": position["game_id"],
+        "position_id": position.get("position_id"),
+        "motif": motif,
+        "severity": severity,
+        "best_uci": best_move or "",
+        "eval_cp": base_cp,
+    }
+    outcome_row = {
+        "tactic_id": None,  # filled by caller
+        "result": result,
+        "user_uci": user_move_uci,
+        "eval_delta": delta,
+    }
+    return tactic_row, outcome_row
+
+
 def analyze_positions(
     positions: Iterable[Dict[str, object]],
     settings: Settings,
@@ -86,51 +132,10 @@ def analyze_positions(
 
     with StockfishEngine(settings) as engine:
         for pos in positions:
-            fen = str(pos["fen"])
-            user_move_uci = str(pos["uci"])
-            board = chess.Board(fen)
-            motif_board = board.copy()
-
-            engine_result: EngineResult = engine.analyse(board)
-            best_move = (
-                engine_result.best_move.uci() if engine_result.best_move else None
-            )
-            base_cp = engine_result.score_cp
-
-            try:
-                user_move = chess.Move.from_uci(user_move_uci)
-            except ValueError:
-                logger.warning("Invalid UCI move %s; skipping position", user_move_uci)
+            result = analyze_position(pos, engine)
+            if result is None:
                 continue
-
-            if user_move not in board.legal_moves:
-                logger.warning("Illegal move %s for FEN %s", user_move_uci, fen)
-                continue
-
-            board.push(user_move)
-            after_cp = engine.analyse(board).score_cp
-
-            result, delta = _classify_result(
-                best_move, user_move_uci, base_cp, after_cp
-            )
-            motif = _infer_motif(motif_board, engine_result.best_move)
-            severity = abs(delta) / 100.0
-
-            tactic_row = {
-                "game_id": pos["game_id"],
-                "position_id": pos.get("position_id"),
-                "motif": motif,
-                "severity": severity,
-                "best_uci": best_move or "",
-                "eval_cp": base_cp,
-            }
+            tactic_row, outcome_row = result
             tactics_rows.append(tactic_row)
-            outcomes_rows.append(
-                {
-                    "tactic_id": None,  # filled by caller
-                    "result": result,
-                    "user_uci": user_move_uci,
-                    "eval_delta": delta,
-                }
-            )
+            outcomes_rows.append(outcome_row)
     return tactics_rows, outcomes_rows

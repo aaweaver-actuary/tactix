@@ -49,3 +49,11 @@ Session 2026-01-24 (feature 005 – Pipeline resumes after network interruption)
 - New resume tests (analysis failure dedupe + fetch failure checkpoint) in pipeline_state; full pytest 19/19 passing.
 - Manual simulated failure run: first run errored after raw_pgns=2/positions=16 with checkpoint=0 and metrics_version=0; rerun succeeded with tactics/outcomes=16, checkpoint=1717335000000, metrics_version=1.
 - Reset checkpoint, reran pipeline (metrics_version=5) and captured dashboard screenshot `verification/dashboard-lichess-resume.png`; feature_list.json entry 005 flipped to passes=true.
+
+Session 2026-01-24 (feature 006 – Stockfish crash resume + regression verification)
+- Added analysis checkpointing and per-position tactic upserts to resume safely after Stockfish crashes; introduced Stockfish restart + retry/backoff controls and new analyze_tactics Airflow DAG for Chess.com.
+- Added favicon + console error trapping for Puppeteer runs to keep UI verification clean.
+- Tests: full pytest (21 passed).
+- UI verification screenshots: `verification/dashboard-lichess-regression.png`, `verification/dashboard-chesscom-regression.png`, `verification/dashboard-chesscom-stockfish-resume.png`.
+- Updated feature_list.json: feature 006 marked passes=true after UI + test verification.
+- Current passing count: 6.

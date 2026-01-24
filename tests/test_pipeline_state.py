@@ -3,6 +3,7 @@ import tempfile
 from pathlib import Path
 import unittest
 from unittest.mock import patch
+import chess.engine
 
 from tactix.config import Settings
 from tactix.duckdb_store import fetch_version, get_connection
@@ -77,6 +78,7 @@ class PipelineStateTests(unittest.TestCase):
             duckdb_path=self.tmp_dir / "tactix.duckdb",
             checkpoint_path=self.tmp_dir / "since.txt",
             metrics_version_file=self.tmp_dir / "metrics.txt",
+            analysis_checkpoint_path=self.tmp_dir / "analysis_checkpoint.json",
             fixture_pgn_path=self.fixture_path,
             use_fixture_when_no_token=True,
             stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
@@ -189,37 +191,48 @@ class PipelineStateTests(unittest.TestCase):
         )
 
         failure_called = {"count": 0}
+        from tactix.pipeline import _analyse_with_retries as real_analyse
 
-        def fail_once_analyze(*args, **kwargs):
-            if failure_called["count"] == 0:
-                failure_called["count"] += 1
+        def fail_once_analyze(engine, pos, settings):
+            failure_called["count"] += 1
+            if failure_called["count"] == 3:
                 raise RuntimeError("simulated analysis failure")
-            from tactix.tactics_analyzer import analyze_positions as real_analyze
+            return real_analyse(engine, pos, settings)
 
-            return real_analyze(*args, **kwargs)
-
-        with patch("tactix.pipeline.analyze_positions", side_effect=fail_once_analyze):
+        with patch(
+            "tactix.pipeline._analyse_with_retries", side_effect=fail_once_analyze
+        ):
             with self.assertRaises(RuntimeError):
                 run_daily_game_sync(settings)
 
         self.assertEqual(read_checkpoint(settings.checkpoint_path), 0)
         self.assertFalse(settings.metrics_version_file.exists())
+        self.assertTrue(settings.analysis_checkpoint_path.exists())
 
         conn = get_connection(settings.duckdb_path)
         raw_after_failure = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
-        positions_after_failure = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
-        tactics_after_failure = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        positions_after_failure = conn.execute(
+            "SELECT COUNT(*) FROM positions"
+        ).fetchone()[0]
+        tactics_after_failure = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[
+            0
+        ]
         conn.close()
 
         self.assertGreater(raw_after_failure, 0)
         self.assertGreater(positions_after_failure, 0)
-        self.assertEqual(tactics_after_failure, 0)
+        self.assertGreater(tactics_after_failure, 0)
+        self.assertLess(tactics_after_failure, positions_after_failure)
 
         result = run_daily_game_sync(settings)
         conn = get_connection(settings.duckdb_path)
         raw_after_recovery = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
-        positions_after_recovery = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
-        tactics_after_recovery = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        positions_after_recovery = conn.execute(
+            "SELECT COUNT(*) FROM positions"
+        ).fetchone()[0]
+        tactics_after_recovery = conn.execute(
+            "SELECT COUNT(*) FROM tactics"
+        ).fetchone()[0]
         outcomes_after_recovery = conn.execute(
             "SELECT COUNT(*) FROM tactic_outcomes"
         ).fetchone()[0]
@@ -230,9 +243,71 @@ class PipelineStateTests(unittest.TestCase):
         self.assertEqual(positions_after_recovery, positions_after_failure)
         self.assertEqual(tactics_after_recovery, outcomes_after_recovery)
         self.assertGreater(result["checkpoint_ms"], 0)
-        self.assertEqual(read_checkpoint(settings.checkpoint_path), result["checkpoint_ms"])
+        self.assertEqual(
+            read_checkpoint(settings.checkpoint_path), result["checkpoint_ms"]
+        )
         self.assertTrue(settings.metrics_version_file.exists())
         self.assertGreater(metrics_version_after, 0)
+        self.assertFalse(settings.analysis_checkpoint_path.exists())
+
+    def test_resume_after_stockfish_crash(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "tactix.duckdb",
+            checkpoint_path=self.tmp_dir / "since.txt",
+            metrics_version_file=self.tmp_dir / "metrics.txt",
+            analysis_checkpoint_path=self.tmp_dir / "analysis_checkpoint.json",
+            fixture_pgn_path=self.fixture_path,
+            use_fixture_when_no_token=True,
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=50,
+            stockfish_depth=8,
+            stockfish_multipv=2,
+            stockfish_max_retries=0,
+        )
+
+        call_count = {"count": 0}
+        from tactix.stockfish_runner import StockfishEngine
+
+        original_analyse = StockfishEngine.analyse
+
+        def crash_once(self, board):
+            call_count["count"] += 1
+            if call_count["count"] == 4:
+                raise chess.engine.EngineTerminatedError("simulated crash")
+            return original_analyse(self, board)
+
+        with patch("tactix.stockfish_runner.StockfishEngine.analyse", new=crash_once):
+            with self.assertRaises(chess.engine.EngineTerminatedError):
+                run_daily_game_sync(settings)
+
+        self.assertTrue(settings.analysis_checkpoint_path.exists())
+
+        conn = get_connection(settings.duckdb_path)
+        tactics_after_failure = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[
+            0
+        ]
+        positions_after_failure = conn.execute(
+            "SELECT COUNT(*) FROM positions"
+        ).fetchone()[0]
+        conn.close()
+        self.assertGreater(tactics_after_failure, 0)
+        self.assertLess(tactics_after_failure, positions_after_failure)
+
+        result = run_daily_game_sync(settings)
+        conn = get_connection(settings.duckdb_path)
+        tactics_after_recovery = conn.execute(
+            "SELECT COUNT(*) FROM tactics"
+        ).fetchone()[0]
+        outcomes_after_recovery = conn.execute(
+            "SELECT COUNT(*) FROM tactic_outcomes"
+        ).fetchone()[0]
+        conn.close()
+
+        self.assertEqual(tactics_after_recovery, outcomes_after_recovery)
+        self.assertGreater(result["checkpoint_ms"], 0)
+        self.assertFalse(settings.analysis_checkpoint_path.exists())
 
     def test_fetch_failure_does_not_advance_checkpoint(self) -> None:
         settings = Settings(
@@ -250,7 +325,8 @@ class PipelineStateTests(unittest.TestCase):
         )
 
         with patch(
-            "tactix.pipeline.fetch_lichess_games", side_effect=RuntimeError("network down")
+            "tactix.pipeline.fetch_lichess_games",
+            side_effect=RuntimeError("network down"),
         ):
             with self.assertRaises(RuntimeError):
                 run_daily_game_sync(settings)

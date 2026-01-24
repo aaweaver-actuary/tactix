@@ -96,6 +96,20 @@ function startPreview() {
     console.log('Launching browser...');
     const browser = await puppeteer.launch({ headless: 'new' });
     const page = await browser.newPage();
+    const consoleErrors = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        consoleErrors.push(msg.text());
+      }
+    });
+    page.on('pageerror', (err) => {
+      consoleErrors.push(err.toString());
+    });
+    page.on('requestfailed', (request) => {
+      consoleErrors.push(
+        `Request failed: ${request.url()} (${request.failure()?.errorText || 'unknown'})`,
+      );
+    });
     console.log('Navigating to dashboard...');
     await page.goto('http://localhost:4173/', { waitUntil: 'networkidle0' });
     await page.waitForSelector('h1');
@@ -129,6 +143,11 @@ function startPreview() {
     fs.mkdirSync(outDir, { recursive: true });
     await page.screenshot({ path: outPath, fullPage: true });
     console.log('Saved screenshot to', outPath);
+
+    if (consoleErrors.length) {
+      console.error('Console errors detected:', consoleErrors);
+      throw new Error('Console errors detected during UI verification');
+    }
 
     await browser.close();
   } finally {

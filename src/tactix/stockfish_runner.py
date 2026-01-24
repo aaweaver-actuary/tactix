@@ -28,27 +28,25 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
         self.engine: Optional[chess.engine.SimpleEngine] = None
 
     def __enter__(self) -> "StockfishEngine":
-        command = self._resolve_command()
-        if command:
-            logger.info("Starting Stockfish via %s", command)
-            self.engine = chess.engine.SimpleEngine.popen_uci(command)
-            self.engine.configure(
-                {
-                    "Threads": self.settings.stockfish_threads,
-                    "Hash": self.settings.stockfish_hash_mb,
-                }
-            )
-        else:
-            logger.warning(
-                "Stockfish binary not found (configured=%s); using material heuristic",
-                self.settings.stockfish_path,
-            )
-            self.engine = None
+        self._start_engine()
         return self
 
     def __exit__(self, exc_type, exc, exc_tb) -> None:  # type: ignore[override]
         if self.engine:
             self.engine.quit()
+
+    def restart(self) -> None:
+        if self.engine:
+            try:
+                self.engine.quit()
+            except (
+                chess.engine.EngineError,
+                chess.engine.EngineTerminatedError,
+                OSError,
+            ):
+                logger.warning("Stockfish engine failed to quit cleanly; restarting")
+        self.engine = None
+        self._start_engine()
 
     def _resolve_command(self) -> Optional[str]:
         configured = str(Path(self.settings.stockfish_path))
@@ -84,6 +82,24 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
         # Fallback heuristic based on material balance
         material_score = self._material_score(board)
         return EngineResult(best_move=None, score_cp=material_score, depth=0)
+
+    def _start_engine(self) -> None:
+        command = self._resolve_command()
+        if command:
+            logger.info("Starting Stockfish via %s", command)
+            self.engine = chess.engine.SimpleEngine.popen_uci(command)
+            self.engine.configure(
+                {
+                    "Threads": self.settings.stockfish_threads,
+                    "Hash": self.settings.stockfish_hash_mb,
+                }
+            )
+        else:
+            logger.warning(
+                "Stockfish binary not found (configured=%s); using material heuristic",
+                self.settings.stockfish_path,
+            )
+            self.engine = None
 
     def _build_limit(self) -> chess.engine.Limit:
         if self.settings.stockfish_depth:

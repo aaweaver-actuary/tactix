@@ -9,6 +9,7 @@ const BACKEND_CMD = path.join(ROOT_DIR, '.venv', 'bin', 'python');
 const SOURCE = process.env.TACTIX_SOURCE || 'lichess';
 const SCREENSHOT_NAME =
   process.env.TACTIX_SCREENSHOT_NAME || `dashboard-${SOURCE}.png`;
+const ACTION_LABEL = process.env.TACTIX_ACTION_LABEL || 'Run + Refresh';
 
 function startBackend() {
   return new Promise((resolve, reject) => {
@@ -133,7 +134,7 @@ function startPreview() {
         );
         if (target) target.click();
       },
-      'Run + Refresh',
+      ACTION_LABEL,
     );
     await new Promise((resolve) => setTimeout(resolve, 2000));
     await page.waitForSelector('table');

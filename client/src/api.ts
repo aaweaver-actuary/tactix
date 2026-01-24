@@ -2,12 +2,19 @@ import axios from 'axios';
 
 export type MetricsRow = {
   source: string;
+  metric_type: string;
   motif: string;
+  window_days: number | null;
+  trend_date: string | null;
+  rating_bucket: string | null;
+  time_control: string | null;
   total: number;
   found: number;
   missed: number;
   failed_attempt: number;
   unclear: number;
+  found_rate: number | null;
+  miss_rate: number | null;
   updated_at: string;
 };
 
@@ -63,5 +70,12 @@ export async function triggerPipeline(
   source?: string,
 ): Promise<DashboardPayload> {
   await client.post('/api/jobs/daily_game_sync', null, { params: { source } });
+  return fetchDashboard(source);
+}
+
+export async function triggerMetricsRefresh(
+  source?: string,
+): Promise<DashboardPayload> {
+  await client.post('/api/jobs/refresh_metrics', null, { params: { source } });
   return fetchDashboard(source);
 }

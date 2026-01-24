@@ -89,3 +89,13 @@ Session 2026-01-24 (feature 010 – Tactics outcome classification per move)
 - UI verification screenshot: `verification/dashboard-chesscom-outcome-classification.png`.
 - Updated feature_list.json: feature 010 marked passes=true after UI + test verification.
 - Current passing count: 10.
+
+Session 2026-01-24 (feature 011 – Metrics refresh motif breakdown + trends)
+- Extended raw PGN metadata storage (user_rating, time_control) and upgraded metrics_summary to include motif breakdowns, rating/time control splits, and rolling 7/30 trend rows.
+- Added refresh_metrics pipeline entrypoint + Airflow DAG, plus dashboard UI support for metrics-only refresh and trend table.
+- New test coverage for metrics refresh outputs (trend rows + rolling windows).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest` (26 passed).
+- UI verification screenshot: `verification/dashboard-lichess-metrics-trends.png` (Refresh metrics action).
+- Note: Airflow CLI not available in environment; refreshed metrics via API/puppeteer instead.
+- Updated feature_list.json: feature 011 marked passes=true after UI + test verification.
+- Current passing count: 11.

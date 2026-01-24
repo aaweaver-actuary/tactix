@@ -54,6 +54,32 @@ def extract_last_timestamp_ms(pgn: str) -> int:
     return int(time.time() * 1000)
 
 
+def _parse_elo(raw: str | None) -> int | None:
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        return None
+
+
+def extract_pgn_metadata(pgn: str, user: str) -> dict[str, object]:
+    game = chess.pgn.read_game(StringIO(pgn))
+    if not game:
+        return {"user_rating": None, "time_control": None}
+    headers = game.headers
+    time_control = headers.get("TimeControl") or None
+    user_lower = user.lower()
+    white = headers.get("White", "").lower()
+    black = headers.get("Black", "").lower()
+    rating = None
+    if white == user_lower:
+        rating = _parse_elo(headers.get("WhiteElo"))
+    elif black == user_lower:
+        rating = _parse_elo(headers.get("BlackElo"))
+    return {"user_rating": rating, "time_control": time_control}
+
+
 def latest_timestamp(rows: Iterable[dict]) -> int:
     ts = 0
     for row in rows:

@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { DashboardPayload, fetchDashboard, triggerPipeline } from './api';
+import {
+  DashboardPayload,
+  fetchDashboard,
+  triggerMetricsRefresh,
+  triggerPipeline,
+} from './api';
 
 const SOURCE_OPTIONS: { id: 'lichess' | 'chesscom'; label: string; note: string }[] = [
   { id: 'lichess', label: 'Lichess · Rapid', note: 'Perf: rapid' },
@@ -97,6 +102,76 @@ function MetricsGrid({ data }: { data: DashboardPayload['metrics'] }) {
   );
 }
 
+function MetricsTrends({ data }: { data: DashboardPayload['metrics'] }) {
+  const latestByMotif = useMemo(() => {
+    const map = new Map<
+      string,
+      { seven?: DashboardPayload['metrics'][number]; thirty?: DashboardPayload['metrics'][number] }
+    >();
+    data.forEach((row) => {
+      if (row.metric_type !== 'trend' || !row.trend_date) return;
+      const current = map.get(row.motif) || {};
+      const isSeven = row.window_days === 7;
+      const slot = isSeven ? 'seven' : row.window_days === 30 ? 'thirty' : null;
+      if (!slot) return;
+      const existing = current[slot];
+      if (!existing || new Date(row.trend_date) > new Date(existing.trend_date || 0)) {
+        current[slot] = row;
+      }
+      map.set(row.motif, current);
+    });
+    return Array.from(map.entries()).map(([motif, value]) => ({ motif, ...value }));
+  }, [data]);
+
+  if (!latestByMotif.length) return null;
+
+  const formatPercent = (value: number | null) =>
+    value === null || Number.isNaN(value) ? '--' : `${(value * 100).toFixed(1)}%`;
+
+  return (
+    <div className="card p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-lg font-display text-sand">Motif trends</h3>
+        <Badge label="Rolling 7/30" />
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="text-sand/60">
+            <tr>
+              <th className="text-left py-2">Motif</th>
+              <th className="text-left">7d found</th>
+              <th className="text-left">30d found</th>
+              <th className="text-left">Last update</th>
+            </tr>
+          </thead>
+          <tbody className="text-sand/90">
+            {latestByMotif.map((row) => {
+              const lastDate = row.seven?.trend_date || row.thirty?.trend_date || '--';
+              return (
+                <tr
+                  key={row.motif}
+                  className="odd:bg-white/0 even:bg-white/5/5 border-b border-white/5"
+                >
+                  <td className="py-2 font-display text-sm uppercase tracking-wide">
+                    {row.motif}
+                  </td>
+                  <td className="font-mono text-xs text-teal">
+                    {formatPercent(row.seven?.found_rate ?? null)}
+                  </td>
+                  <td className="font-mono text-xs text-teal">
+                    {formatPercent(row.thirty?.found_rate ?? null)}
+                  </td>
+                  <td className="font-mono text-xs text-sand/70">{lastDate}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function PositionsList({ data }: { data: DashboardPayload['positions'] }) {
   return (
     <div className="card p-4">
@@ -126,6 +201,7 @@ function PositionsList({ data }: { data: DashboardPayload['positions'] }) {
 
 function Hero({
   onRun,
+  onRefresh,
   loading,
   version,
   source,
@@ -133,6 +209,7 @@ function Hero({
   onSourceChange,
 }: {
   onRun: () => void;
+  onRefresh: () => void;
   loading: boolean;
   version: number;
   source: 'lichess' | 'chesscom';
@@ -164,7 +241,7 @@ function Hero({
               {opt.label}
             </button>
           ))}
-        </div>
+              onClick={onRefresh}
       </div>
       <div className="flex gap-3">
         <button
@@ -225,6 +302,20 @@ function App() {
     }
   };
 
+  const handleRefreshMetrics = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const payload = await triggerMetricsRefresh(source);
+      setData(payload);
+    } catch (err) {
+      console.error(err);
+      setError('Metrics refresh failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const totals = useMemo(() => {
     if (!data) return { positions: 0, tactics: 0 };
     return {
@@ -233,10 +324,31 @@ function App() {
     };
   }, [data]);
 
+  const motifBreakdown = useMemo(() => {
+    if (!data) return [];
+    return data.metrics.filter(
+      (row) =>
+        row.metric_type === 'motif_breakdown' &&
+        row.rating_bucket === 'all' &&
+        row.time_control === 'all',
+    );
+  }, [data]);
+
+  const trendRows = useMemo(() => {
+    if (!data) return [];
+    return data.metrics.filter(
+      (row) =>
+        row.metric_type === 'trend' &&
+        row.rating_bucket === 'all' &&
+        row.time_control === 'all',
+    );
+  }, [data]);
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
       <Hero
         onRun={handleRun}
+        onRefresh={handleRefreshMetrics}
         loading={loading}
         version={data?.metrics_version ?? 0}
         source={source}
@@ -264,11 +376,14 @@ function App() {
         />
       </div>
 
-      {data ? <MetricsGrid data={data.metrics} /> : null}
+      {data ? <MetricsGrid data={motifBreakdown} /> : null}
+      {data ? <MetricsTrends data={trendRows} /> : null}
       {data ? <TacticsTable data={data.tactics} /> : null}
       {data ? <PositionsList data={data.positions} /> : null}
     </div>
   );
 }
-
+          onClick={handleRefreshMetrics}
 export default App;
+
+          Refresh metrics

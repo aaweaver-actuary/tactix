@@ -258,6 +258,29 @@ def run_daily_game_sync(
     }
 
 
+def run_refresh_metrics(
+    settings: Settings | None = None, source: str | None = None
+) -> dict[str, object]:
+    settings = settings or get_settings(source=source)
+    if source:
+        settings.source = source
+    settings.apply_source_defaults()
+    settings.ensure_dirs()
+
+    conn = get_connection(settings.duckdb_path)
+    init_schema(conn)
+    update_metrics_summary(conn)
+    metrics_version = write_metrics_version(conn)
+    settings.metrics_version_file.write_text(str(metrics_version))
+
+    return {
+        "source": settings.source,
+        "user": settings.user,
+        "metrics_version": metrics_version,
+        "metrics_rows": len(fetch_metrics(conn, source=settings.source)),
+    }
+
+
 def get_dashboard_payload(
     settings: Settings | None = None, source: str | None = None
 ) -> dict[str, object]:

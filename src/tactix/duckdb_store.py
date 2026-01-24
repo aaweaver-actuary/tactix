@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Iterable, List, Mapping
 
 import duckdb
-
 from tactix.logging_utils import get_logger
+from tactix.pgn_utils import extract_pgn_metadata
 
 logger = get_logger(__name__)
 
@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS raw_pgns (
     pgn TEXT,
     pgn_hash TEXT,
     pgn_version INTEGER,
+    user_rating INTEGER,
+    time_control TEXT,
     ingested_at TIMESTAMP,
     last_timestamp_ms BIGINT,
     cursor TEXT
@@ -79,12 +81,19 @@ CREATE TABLE IF NOT EXISTS metrics_version (
 METRICS_SUMMARY_SCHEMA = """
 CREATE TABLE IF NOT EXISTS metrics_summary (
     source TEXT,
+    metric_type TEXT,
     motif TEXT,
+    window_days INTEGER,
+    trend_date DATE,
+    rating_bucket TEXT,
+    time_control TEXT,
     total BIGINT,
     found BIGINT,
     missed BIGINT,
     failed_attempt BIGINT,
     unclear BIGINT,
+    found_rate DOUBLE,
+    miss_rate DOUBLE,
     updated_at TIMESTAMP
 );
 """
@@ -106,6 +115,13 @@ def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
     _ensure_raw_pgns_versioned(conn)
     _ensure_column(conn, "positions", "side_to_move", "TEXT")
     _ensure_column(conn, "metrics_summary", "source", "TEXT")
+    _ensure_column(conn, "metrics_summary", "metric_type", "TEXT")
+    _ensure_column(conn, "metrics_summary", "window_days", "INTEGER")
+    _ensure_column(conn, "metrics_summary", "trend_date", "DATE")
+    _ensure_column(conn, "metrics_summary", "rating_bucket", "TEXT")
+    _ensure_column(conn, "metrics_summary", "time_control", "TEXT")
+    _ensure_column(conn, "metrics_summary", "found_rate", "DOUBLE")
+    _ensure_column(conn, "metrics_summary", "miss_rate", "DOUBLE")
     if conn.execute("SELECT COUNT(*) FROM metrics_version").fetchone()[0] == 0:
         conn.execute("INSERT INTO metrics_version VALUES (0, CURRENT_TIMESTAMP)")
 
@@ -137,6 +153,7 @@ def _ensure_raw_pgns_versioned(conn: duckdb.DuckDBPyConnection) -> None:
             for row in legacy_rows:
                 next_id += 1
                 pgn_text = row[4] or ""
+                metadata = extract_pgn_metadata(pgn_text, str(row[1]))
                 inserts.append(
                     (
                         next_id,
@@ -147,6 +164,8 @@ def _ensure_raw_pgns_versioned(conn: duckdb.DuckDBPyConnection) -> None:
                         pgn_text,
                         _hash_pgn(pgn_text),
                         1,
+                        metadata.get("user_rating"),
+                        metadata.get("time_control"),
                         datetime.now(timezone.utc),
                         row[5],
                         row[6],
@@ -164,11 +183,13 @@ def _ensure_raw_pgns_versioned(conn: duckdb.DuckDBPyConnection) -> None:
                         pgn,
                         pgn_hash,
                         pgn_version,
+                        user_rating,
+                        time_control,
                         ingested_at,
                         last_timestamp_ms,
                         cursor
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     inserts,
                 )
@@ -180,6 +201,8 @@ def _ensure_raw_pgns_versioned(conn: duckdb.DuckDBPyConnection) -> None:
     else:
         _ensure_column(conn, "raw_pgns", "pgn_hash", "TEXT")
         _ensure_column(conn, "raw_pgns", "pgn_version", "INTEGER")
+        _ensure_column(conn, "raw_pgns", "user_rating", "INTEGER")
+        _ensure_column(conn, "raw_pgns", "time_control", "TEXT")
         _ensure_column(conn, "raw_pgns", "ingested_at", "TIMESTAMP")
         _ensure_column(conn, "raw_pgns", "cursor", "TEXT")
 
@@ -212,6 +235,7 @@ def upsert_raw_pgns(
             game_id = str(row["game_id"])
             source = str(row["source"])
             pgn_text = str(row["pgn"])
+            metadata = extract_pgn_metadata(pgn_text, str(row["user"]))
             pgn_hash = _hash_pgn(pgn_text)
             key = (game_id, source)
             if key in latest_cache:
@@ -247,11 +271,13 @@ def upsert_raw_pgns(
                     pgn,
                     pgn_hash,
                     pgn_version,
+                    user_rating,
+                    time_control,
                     ingested_at,
                     last_timestamp_ms,
                     cursor
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     next_id,
@@ -262,6 +288,8 @@ def upsert_raw_pgns(
                     pgn_text,
                     pgn_hash,
                     new_version,
+                    metadata.get("user_rating"),
+                    metadata.get("time_control"),
                     datetime.now(timezone.utc),
                     row.get("last_timestamp_ms", 0),
                     row.get("cursor"),
@@ -495,20 +523,253 @@ def update_metrics_summary(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute("DELETE FROM metrics_summary")
     conn.execute(
         """
-        INSERT INTO metrics_summary (source, motif, total, found, missed, failed_attempt, unclear, updated_at)
+        INSERT INTO metrics_summary (
+            source,
+            metric_type,
+            motif,
+            window_days,
+            trend_date,
+            rating_bucket,
+            time_control,
+            total,
+            found,
+            missed,
+            failed_attempt,
+            unclear,
+            found_rate,
+            miss_rate,
+            updated_at
+        )
+        WITH latest_pgns AS (
+            SELECT * EXCLUDE (rn)
+            FROM (
+                SELECT
+                    *,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY game_id, source
+                        ORDER BY pgn_version DESC
+                    ) AS rn
+                FROM raw_pgns
+            )
+            WHERE rn = 1
+        ),
+        tactic_events AS (
+            SELECT
+                COALESCE(p.source, 'unknown') AS source,
+                t.motif AS motif,
+                COALESCE(o.result, 'unclear') AS result,
+                COALESCE(r.time_control, 'unknown') AS time_control,
+                CASE
+                    WHEN r.user_rating IS NULL THEN 'unknown'
+                    WHEN r.user_rating < 1200 THEN '<1200'
+                    WHEN r.user_rating < 1400 THEN '1200-1399'
+                    WHEN r.user_rating < 1600 THEN '1400-1599'
+                    WHEN r.user_rating < 1800 THEN '1600-1799'
+                    ELSE '1800+'
+                END AS rating_bucket,
+                CAST(date_trunc('day', to_timestamp(r.last_timestamp_ms / 1000)) AS DATE) AS trend_date
+            FROM tactics t
+            LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
+            LEFT JOIN positions p ON p.position_id = t.position_id
+            LEFT JOIN latest_pgns r ON r.game_id = p.game_id AND r.source = p.source
+        ),
+        breakdown AS (
+            SELECT
+                source,
+                'motif_breakdown' AS metric_type,
+                motif,
+                NULL::INTEGER AS window_days,
+                NULL::DATE AS trend_date,
+                'all' AS rating_bucket,
+                'all' AS time_control,
+                COUNT(*) AS total,
+                SUM(CASE WHEN result = 'found' THEN 1 ELSE 0 END) AS found,
+                SUM(CASE WHEN result = 'missed' THEN 1 ELSE 0 END) AS missed,
+                SUM(CASE WHEN result = 'failed_attempt' THEN 1 ELSE 0 END) AS failed_attempt,
+                SUM(CASE WHEN result = 'unclear' THEN 1 ELSE 0 END) AS unclear
+            FROM tactic_events
+            GROUP BY source, motif
+        ),
+        breakdown_split AS (
+            SELECT
+                source,
+                'motif_breakdown' AS metric_type,
+                motif,
+                NULL::INTEGER AS window_days,
+                NULL::DATE AS trend_date,
+                rating_bucket,
+                time_control,
+                COUNT(*) AS total,
+                SUM(CASE WHEN result = 'found' THEN 1 ELSE 0 END) AS found,
+                SUM(CASE WHEN result = 'missed' THEN 1 ELSE 0 END) AS missed,
+                SUM(CASE WHEN result = 'failed_attempt' THEN 1 ELSE 0 END) AS failed_attempt,
+                SUM(CASE WHEN result = 'unclear' THEN 1 ELSE 0 END) AS unclear
+            FROM tactic_events
+            GROUP BY source, motif, rating_bucket, time_control
+        ),
+        daily AS (
+            SELECT
+                source,
+                motif,
+                rating_bucket,
+                time_control,
+                trend_date,
+                COUNT(*) AS total,
+                SUM(CASE WHEN result = 'found' THEN 1 ELSE 0 END) AS found,
+                SUM(CASE WHEN result = 'missed' THEN 1 ELSE 0 END) AS missed,
+                SUM(CASE WHEN result = 'failed_attempt' THEN 1 ELSE 0 END) AS failed_attempt,
+                SUM(CASE WHEN result = 'unclear' THEN 1 ELSE 0 END) AS unclear
+            FROM tactic_events
+            WHERE trend_date IS NOT NULL
+            GROUP BY source, motif, rating_bucket, time_control, trend_date
+        ),
+        rolling AS (
+            SELECT
+                *,
+                AVG(found::DOUBLE / NULLIF(total, 0)) OVER (
+                    PARTITION BY source, motif, rating_bucket, time_control
+                    ORDER BY trend_date
+                    ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+                ) AS found_rate_7,
+                AVG(missed::DOUBLE / NULLIF(total, 0)) OVER (
+                    PARTITION BY source, motif, rating_bucket, time_control
+                    ORDER BY trend_date
+                    ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+                ) AS miss_rate_7,
+                AVG(found::DOUBLE / NULLIF(total, 0)) OVER (
+                    PARTITION BY source, motif, rating_bucket, time_control
+                    ORDER BY trend_date
+                    ROWS BETWEEN 29 PRECEDING AND CURRENT ROW
+                ) AS found_rate_30,
+                AVG(missed::DOUBLE / NULLIF(total, 0)) OVER (
+                    PARTITION BY source, motif, rating_bucket, time_control
+                    ORDER BY trend_date
+                    ROWS BETWEEN 29 PRECEDING AND CURRENT ROW
+                ) AS miss_rate_30
+            FROM daily
+        ),
+        trend_7 AS (
+            SELECT
+                source,
+                'trend' AS metric_type,
+                motif,
+                7 AS window_days,
+                trend_date,
+                rating_bucket,
+                time_control,
+                total,
+                found,
+                missed,
+                failed_attempt,
+                unclear,
+                found_rate_7 AS found_rate,
+                miss_rate_7 AS miss_rate
+            FROM rolling
+        ),
+        trend_30 AS (
+            SELECT
+                source,
+                'trend' AS metric_type,
+                motif,
+                30 AS window_days,
+                trend_date,
+                rating_bucket,
+                time_control,
+                total,
+                found,
+                missed,
+                failed_attempt,
+                unclear,
+                found_rate_30 AS found_rate,
+                miss_rate_30 AS miss_rate
+            FROM rolling
+        ),
+        unioned AS (
+            SELECT
+                source,
+                metric_type,
+                motif,
+                window_days,
+                trend_date,
+                rating_bucket,
+                time_control,
+                total,
+                found,
+                missed,
+                failed_attempt,
+                unclear,
+                found::DOUBLE / NULLIF(total, 0) AS found_rate,
+                missed::DOUBLE / NULLIF(total, 0) AS miss_rate
+            FROM breakdown
+            UNION ALL
+            SELECT
+                source,
+                metric_type,
+                motif,
+                window_days,
+                trend_date,
+                rating_bucket,
+                time_control,
+                total,
+                found,
+                missed,
+                failed_attempt,
+                unclear,
+                found::DOUBLE / NULLIF(total, 0) AS found_rate,
+                missed::DOUBLE / NULLIF(total, 0) AS miss_rate
+            FROM breakdown_split
+            UNION ALL
+            SELECT
+                source,
+                metric_type,
+                motif,
+                window_days,
+                trend_date,
+                rating_bucket,
+                time_control,
+                total,
+                found,
+                missed,
+                failed_attempt,
+                unclear,
+                found_rate,
+                miss_rate
+            FROM trend_7
+            UNION ALL
+            SELECT
+                source,
+                metric_type,
+                motif,
+                window_days,
+                trend_date,
+                rating_bucket,
+                time_control,
+                total,
+                found,
+                missed,
+                failed_attempt,
+                unclear,
+                found_rate,
+                miss_rate
+            FROM trend_30
+        )
         SELECT
-            COALESCE(p.source, 'unknown') AS source,
-            t.motif,
-            COUNT(*) AS total,
-            SUM(CASE WHEN o.result = 'found' THEN 1 ELSE 0 END) AS found,
-            SUM(CASE WHEN o.result = 'missed' THEN 1 ELSE 0 END) AS missed,
-            SUM(CASE WHEN o.result = 'failed_attempt' THEN 1 ELSE 0 END) AS failed_attempt,
-            SUM(CASE WHEN o.result = 'unclear' THEN 1 ELSE 0 END) AS unclear,
+            source,
+            metric_type,
+            motif,
+            window_days,
+            trend_date,
+            rating_bucket,
+            time_control,
+            total,
+            found,
+            missed,
+            failed_attempt,
+            unclear,
+            found_rate,
+            miss_rate,
             CURRENT_TIMESTAMP AS updated_at
-        FROM tactics t
-        LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
-        LEFT JOIN positions p ON p.position_id = t.position_id
-        GROUP BY COALESCE(p.source, 'unknown'), t.motif
+        FROM unioned
         """
     )
 

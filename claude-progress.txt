@@ -146,3 +146,12 @@ Session 2026-01-24 (feature 016 – API authentication with local token)
 - UI verification screenshot: `verification/dashboard-auth-token.png` (Chess.com workflow via puppeteer).
 - Updated feature_list.json: feature 016 marked passes=true after UI + test verification.
 - Current passing count: 16.
+
+Session 2026-01-24 (feature 017 – Motif breakdown filters)
+- Added dashboard filter controls (source, motif, time control, rating band, date range) and wired them to API query params.
+- Extended dashboard queries to filter metrics, tactics, and positions by motif/rating/time/date with new DuckDB filtering helpers.
+- Added filter regression test coverage in `tests/test_dashboard_filters.py`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest` (36 passed).
+- UI verification screenshot: `verification/dashboard-motif-filters.png`.
+- Updated feature_list.json: feature 017 marked passes=true after UI + test verification.
+- Current passing count: 17.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 from queue import Empty, Queue
 from threading import Thread
 
@@ -88,8 +89,23 @@ def trigger_migrations(source: str | None = Query(None)) -> dict[str, object]:
 
 
 @app.get("/api/dashboard")
-def dashboard(source: str | None = Query(None)) -> dict[str, object]:
-    return get_dashboard_payload(get_settings(source=source), source=source)
+def dashboard(
+    source: str | None = Query(None),
+    motif: str | None = Query(None),
+    rating_bucket: str | None = Query(None),
+    time_control: str | None = Query(None),
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None),
+) -> dict[str, object]:
+    return get_dashboard_payload(
+        get_settings(source=source),
+        source=source,
+        motif=motif,
+        rating_bucket=rating_bucket,
+        time_control=time_control,
+        start_date=start_date,
+        end_date=end_date,
+    )
 
 
 @app.get("/api/practice/queue")

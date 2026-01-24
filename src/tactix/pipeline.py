@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import time
+from datetime import datetime
 from collections.abc import Callable
 
 import chess.engine
@@ -414,7 +415,13 @@ def run_refresh_metrics(
 
 
 def get_dashboard_payload(
-    settings: Settings | None = None, source: str | None = None
+    settings: Settings | None = None,
+    source: str | None = None,
+    motif: str | None = None,
+    rating_bucket: str | None = None,
+    time_control: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
 ) -> dict[str, object]:
     settings = settings or get_settings(source=source)
     if source:
@@ -426,8 +433,31 @@ def get_dashboard_payload(
     return {
         "source": active_source,
         "user": settings.user,
-        "metrics": fetch_metrics(conn, source=active_source),
-        "positions": fetch_recent_positions(conn, source=active_source),
-        "tactics": fetch_recent_tactics(conn, source=active_source),
+        "metrics": fetch_metrics(
+            conn,
+            source=active_source,
+            motif=motif,
+            rating_bucket=rating_bucket,
+            time_control=time_control,
+            start_date=start_date,
+            end_date=end_date,
+        ),
+        "positions": fetch_recent_positions(
+            conn,
+            source=active_source,
+            rating_bucket=rating_bucket,
+            time_control=time_control,
+            start_date=start_date,
+            end_date=end_date,
+        ),
+        "tactics": fetch_recent_tactics(
+            conn,
+            source=active_source,
+            motif=motif,
+            rating_bucket=rating_bucket,
+            time_control=time_control,
+            start_date=start_date,
+            end_date=end_date,
+        ),
         "metrics_version": fetch_version(conn),
     }

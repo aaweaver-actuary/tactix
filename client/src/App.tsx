@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   DashboardPayload,
+  DashboardFilters,
   PracticeAttemptResponse,
   PracticeQueueItem,
   fetchDashboard,
@@ -181,7 +182,7 @@ function PracticeQueue({
 
 function MetricsGrid({ data }: { data: DashboardPayload['metrics'] }) {
   return (
-    <div className="card p-4">
+    <div className="card p-4" data-testid="motif-breakdown">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-display text-sand">Motif breakdown</h3>
         <Badge label="Updated" />
@@ -375,6 +376,13 @@ function Hero({
 function App() {
   const [data, setData] = useState<DashboardPayload | null>(null);
   const [source, setSource] = useState<'lichess' | 'chesscom'>('lichess');
+  const [filters, setFilters] = useState({
+    motif: 'all',
+    timeControl: 'all',
+    ratingBucket: 'all',
+    startDate: '',
+    endDate: '',
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [practiceQueue, setPracticeQueue] = useState<PracticeQueueItem[]>([]);
@@ -395,11 +403,27 @@ function App() {
   );
   const streamAbortRef = useRef<AbortController | null>(null);
 
-  const load = async (nextSource: 'lichess' | 'chesscom' = source) => {
+  const normalizedFilters = useMemo<DashboardFilters>(
+    () => ({
+      motif: filters.motif !== 'all' ? filters.motif : undefined,
+      time_control:
+        filters.timeControl !== 'all' ? filters.timeControl : undefined,
+      rating_bucket:
+        filters.ratingBucket !== 'all' ? filters.ratingBucket : undefined,
+      start_date: filters.startDate || undefined,
+      end_date: filters.endDate || undefined,
+    }),
+    [filters],
+  );
+
+  const load = async (
+    nextSource: 'lichess' | 'chesscom' = source,
+    nextFilters: DashboardFilters = normalizedFilters,
+  ) => {
     setLoading(true);
     setError(null);
     try {
-      const payload = await fetchDashboard(nextSource);
+      const payload = await fetchDashboard(nextSource, nextFilters);
       setData(payload);
     } catch (err) {
       console.error(err);
@@ -427,9 +451,9 @@ function App() {
   };
 
   useEffect(() => {
-    load(source);
+    load(source, normalizedFilters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source]);
+  }, [source, normalizedFilters]);
 
   useEffect(() => {
     loadPracticeQueue(source, includeFailedAttempt);
@@ -465,6 +489,7 @@ function App() {
     job: string,
     nextSource: 'lichess' | 'chesscom',
     disconnectMessage: string,
+    nextFilters: DashboardFilters = normalizedFilters,
   ) => {
     streamAbortRef.current?.abort();
     const controller = new AbortController();
@@ -504,7 +529,7 @@ function App() {
 
       if (eventName === 'complete') {
         setJobStatus('complete');
-        const dashboard = await fetchDashboard(nextSource);
+        const dashboard = await fetchDashboard(nextSource, nextFilters);
         setData(dashboard);
         await loadPracticeQueue(nextSource, includeFailedAttempt);
         setLoading(false);
@@ -558,6 +583,7 @@ function App() {
         'daily_game_sync',
         source,
         'Pipeline stream disconnected',
+        normalizedFilters,
       );
     } catch (err) {
       console.error(err);
@@ -577,6 +603,7 @@ function App() {
         'migrations',
         source,
         'Migration stream disconnected',
+        normalizedFilters,
       );
     } catch (err) {
       console.error(err);
@@ -590,7 +617,7 @@ function App() {
     setLoading(true);
     setError(null);
     try {
-      const payload = await triggerMetricsRefresh(source);
+      const payload = await triggerMetricsRefresh(source, normalizedFilters);
       setData(payload);
       await loadPracticeQueue(source, includeFailedAttempt);
     } catch (err) {
@@ -635,24 +662,57 @@ function App() {
     };
   }, [data]);
 
+  const selectedRatingBucket =
+    filters.ratingBucket === 'all' ? 'all' : filters.ratingBucket;
+  const selectedTimeControl =
+    filters.timeControl === 'all' ? 'all' : filters.timeControl;
+
   const motifBreakdown = useMemo(() => {
     if (!data) return [];
     return data.metrics.filter(
       (row) =>
         row.metric_type === 'motif_breakdown' &&
-        row.rating_bucket === 'all' &&
-        row.time_control === 'all',
+        row.rating_bucket === selectedRatingBucket &&
+        row.time_control === selectedTimeControl,
     );
-  }, [data]);
+  }, [data, selectedRatingBucket, selectedTimeControl]);
 
   const trendRows = useMemo(() => {
     if (!data) return [];
     return data.metrics.filter(
       (row) =>
         row.metric_type === 'trend' &&
-        row.rating_bucket === 'all' &&
-        row.time_control === 'all',
+        row.rating_bucket === selectedRatingBucket &&
+        row.time_control === selectedTimeControl,
     );
+  }, [data, selectedRatingBucket, selectedTimeControl]);
+
+  const motifOptions = useMemo(() => {
+    const values = new Set<string>();
+    data?.metrics.forEach((row) => {
+      if (row.motif) values.add(row.motif);
+    });
+    return ['all', ...Array.from(values).sort()];
+  }, [data]);
+
+  const timeControlOptions = useMemo(() => {
+    const values = new Set<string>();
+    data?.metrics.forEach((row) => {
+      const value = row.time_control || 'unknown';
+      if (value !== 'all') values.add(value);
+    });
+    return ['all', ...Array.from(values).sort()];
+  }, [data]);
+
+  const ratingOptions = useMemo(() => {
+    const values = new Set<string>();
+    data?.metrics.forEach((row) => {
+      const value = row.rating_bucket || 'unknown';
+      if (value !== 'all') values.add(value);
+    });
+    const ordered = ['<1200', '1200-1399', '1400-1599', '1600-1799', '1800+', 'unknown'];
+    const custom = Array.from(values).filter((value) => !ordered.includes(value));
+    return ['all', ...ordered.filter((value) => values.has(value)), ...custom.sort()];
   }, [data]);
 
   return (
@@ -724,6 +784,139 @@ function App() {
           </ol>
         </div>
       ) : null}
+
+      <div className="card p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-display text-sand">Filters</h3>
+          <Badge label="Live" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+          <label className="text-xs text-sand/60 flex flex-col gap-2">
+            Site / source
+            <select
+              className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
+              value={source}
+              onChange={(event) =>
+                setSource(event.target.value as 'lichess' | 'chesscom')
+              }
+              disabled={loading}
+              data-testid="filter-source"
+            >
+              {SOURCE_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs text-sand/60 flex flex-col gap-2">
+            Motif
+            <select
+              className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
+              value={filters.motif}
+              onChange={(event) =>
+                setFilters((prev) => ({ ...prev, motif: event.target.value }))
+              }
+              disabled={loading}
+              data-testid="filter-motif"
+            >
+              {motifOptions.map((motif) => (
+                <option key={motif} value={motif}>
+                  {motif === 'all' ? 'All motifs' : motif}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs text-sand/60 flex flex-col gap-2">
+            Time control
+            <select
+              className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
+              value={filters.timeControl}
+              onChange={(event) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  timeControl: event.target.value,
+                }))
+              }
+              disabled={loading}
+              data-testid="filter-time-control"
+            >
+              {timeControlOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value === 'all' ? 'All time controls' : value}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs text-sand/60 flex flex-col gap-2">
+            Rating band
+            <select
+              className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
+              value={filters.ratingBucket}
+              onChange={(event) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  ratingBucket: event.target.value,
+                }))
+              }
+              disabled={loading}
+              data-testid="filter-rating"
+            >
+              {ratingOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value === 'all' ? 'All ratings' : value}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex flex-col gap-2 text-xs text-sand/60">
+            Date range
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={filters.startDate}
+                onChange={(event) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    startDate: event.target.value,
+                  }))
+                }
+                className="flex-1 rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
+                disabled={loading}
+                data-testid="filter-start-date"
+              />
+              <input
+                type="date"
+                value={filters.endDate}
+                onChange={(event) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    endDate: event.target.value,
+                  }))
+                }
+                className="flex-1 rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
+                disabled={loading}
+                data-testid="filter-end-date"
+              />
+            </div>
+            <button
+              className="self-start text-xs text-sand/50 hover:text-sand"
+              onClick={() =>
+                setFilters({
+                  motif: 'all',
+                  timeControl: 'all',
+                  ratingBucket: 'all',
+                  startDate: '',
+                  endDate: '',
+                })
+              }
+              disabled={loading}
+            >
+              Reset filters
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <MetricCard

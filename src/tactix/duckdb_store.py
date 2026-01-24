@@ -902,45 +902,183 @@ def _rows_to_dicts(result: duckdb.DuckDBPyRelation) -> list[dict[str, object]]:
     return [dict(zip(columns, row)) for row in result.fetchall()]
 
 
+def _normalize_filter(value: str | None) -> str | None:
+    if value is None:
+        return None
+    trimmed = value.strip()
+    if not trimmed or trimmed.lower() == "all":
+        return None
+    return trimmed
+
+
+def _rating_bucket_clause(bucket: str) -> str:
+    if bucket == "unknown":
+        return "r.user_rating IS NULL"
+    if bucket == "<1200":
+        return "r.user_rating IS NOT NULL AND r.user_rating < 1200"
+    if bucket == "1200-1399":
+        return "r.user_rating >= 1200 AND r.user_rating < 1400"
+    if bucket == "1400-1599":
+        return "r.user_rating >= 1400 AND r.user_rating < 1600"
+    if bucket == "1600-1799":
+        return "r.user_rating >= 1600 AND r.user_rating < 1800"
+    if bucket == "1800+":
+        return "r.user_rating >= 1800"
+    return "1 = 1"
+
+
 def fetch_metrics(
-    conn: duckdb.DuckDBPyConnection, source: str | None = None
+    conn: duckdb.DuckDBPyConnection,
+    source: str | None = None,
+    motif: str | None = None,
+    rating_bucket: str | None = None,
+    time_control: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
 ) -> list[dict[str, object]]:
+    normalized_motif = _normalize_filter(motif)
+    normalized_rating = _normalize_filter(rating_bucket)
+    normalized_time = _normalize_filter(time_control)
+
+    query = "SELECT * FROM metrics_summary"
+    params: list[object] = []
+    conditions: list[str] = []
     if source:
-        result = conn.execute(
-            "SELECT * FROM metrics_summary WHERE source = ?", [source]
+        conditions.append("source = ?")
+        params.append(source)
+    if normalized_motif:
+        conditions.append("motif = ?")
+        params.append(normalized_motif)
+    if normalized_rating:
+        conditions.append("rating_bucket = ?")
+        params.append(normalized_rating)
+    if normalized_time:
+        conditions.append("COALESCE(time_control, 'unknown') = ?")
+        params.append(normalized_time)
+    date_filters: list[str] = []
+    if start_date:
+        date_filters.append("trend_date >= ?")
+        params.append(start_date)
+    if end_date:
+        date_filters.append("trend_date <= ?")
+        params.append(end_date)
+    if date_filters:
+        conditions.append(
+            f"(metric_type != 'trend' OR ({' AND '.join(date_filters)}))"
         )
-    else:
-        result = conn.execute("SELECT * FROM metrics_summary")
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    result = conn.execute(query, params)
     return _rows_to_dicts(result)
 
 
 def fetch_recent_positions(
-    conn: duckdb.DuckDBPyConnection, limit: int = 20, source: str | None = None
+    conn: duckdb.DuckDBPyConnection,
+    limit: int = 20,
+    source: str | None = None,
+    rating_bucket: str | None = None,
+    time_control: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
 ) -> list[dict[str, object]]:
-    query = "SELECT * FROM positions"
+    normalized_rating = _normalize_filter(rating_bucket)
+    normalized_time = _normalize_filter(time_control)
+    query = """
+        WITH latest_pgns AS (
+            SELECT * EXCLUDE (rn)
+            FROM (
+                SELECT
+                    *,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY game_id, source
+                        ORDER BY pgn_version DESC
+                    ) AS rn
+                FROM raw_pgns
+            )
+            WHERE rn = 1
+        )
+        SELECT p.*
+        FROM positions p
+        LEFT JOIN latest_pgns r ON r.game_id = p.game_id AND r.source = p.source
+    """
     params: list[object] = []
+    conditions: list[str] = []
     if source:
-        query += " WHERE source = ?"
+        conditions.append("p.source = ?")
         params.append(source)
-    query += " ORDER BY created_at DESC LIMIT ?"
+    if normalized_time:
+        conditions.append("COALESCE(r.time_control, 'unknown') = ?")
+        params.append(normalized_time)
+    if normalized_rating:
+        conditions.append(_rating_bucket_clause(normalized_rating))
+    if start_date:
+        conditions.append("CAST(p.created_at AS DATE) >= ?")
+        params.append(start_date)
+    if end_date:
+        conditions.append("CAST(p.created_at AS DATE) <= ?")
+        params.append(end_date)
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    query += " ORDER BY p.created_at DESC LIMIT ?"
     params.append(limit)
     result = conn.execute(query, params)
     return _rows_to_dicts(result)
 
 
 def fetch_recent_tactics(
-    conn: duckdb.DuckDBPyConnection, limit: int = 20, source: str | None = None
+    conn: duckdb.DuckDBPyConnection,
+    limit: int = 20,
+    source: str | None = None,
+    motif: str | None = None,
+    rating_bucket: str | None = None,
+    time_control: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
 ) -> list[dict[str, object]]:
+    normalized_motif = _normalize_filter(motif)
+    normalized_rating = _normalize_filter(rating_bucket)
+    normalized_time = _normalize_filter(time_control)
     query = """
+        WITH latest_pgns AS (
+            SELECT * EXCLUDE (rn)
+            FROM (
+                SELECT
+                    *,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY game_id, source
+                        ORDER BY pgn_version DESC
+                    ) AS rn
+                FROM raw_pgns
+            )
+            WHERE rn = 1
+        )
         SELECT t.*, o.result, o.eval_delta, o.user_uci, p.source
         FROM tactics t
         LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
         LEFT JOIN positions p ON p.position_id = t.position_id
+        LEFT JOIN latest_pgns r ON r.game_id = p.game_id AND r.source = p.source
     """
     params: list[object] = []
+    conditions: list[str] = []
     if source:
-        query += " WHERE p.source = ?"
+        conditions.append("p.source = ?")
         params.append(source)
+    if normalized_motif:
+        conditions.append("t.motif = ?")
+        params.append(normalized_motif)
+    if normalized_time:
+        conditions.append("COALESCE(r.time_control, 'unknown') = ?")
+        params.append(normalized_time)
+    if normalized_rating:
+        conditions.append(_rating_bucket_clause(normalized_rating))
+    if start_date:
+        conditions.append("CAST(t.created_at AS DATE) >= ?")
+        params.append(start_date)
+    if end_date:
+        conditions.append("CAST(t.created_at AS DATE) <= ?")
+        params.append(end_date)
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
     query += " ORDER BY t.created_at DESC LIMIT ?"
     params.append(limit)
     result = conn.execute(query, params)

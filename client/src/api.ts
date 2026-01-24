@@ -51,6 +51,14 @@ export type DashboardPayload = {
   metrics_version: number;
 };
 
+export type DashboardFilters = {
+  motif?: string;
+  rating_bucket?: string;
+  time_control?: string;
+  start_date?: string;
+  end_date?: string;
+};
+
 export type PracticeQueueItem = {
   tactic_id: number;
   game_id: string;
@@ -125,9 +133,15 @@ export function getJobStreamUrl(job: string, source?: string): string {
 
 export async function fetchDashboard(
   source?: string,
+  filters: DashboardFilters = {},
 ): Promise<DashboardPayload> {
+  const params = Object.fromEntries(
+    Object.entries({ t: Date.now(), source, ...filters }).filter(
+      ([, value]) => value !== undefined && value !== '',
+    ),
+  );
   const res = await client.get<DashboardPayload>('/api/dashboard', {
-    params: { t: Date.now(), source },
+    params,
   });
   return res.data;
 }
@@ -141,9 +155,10 @@ export async function triggerPipeline(
 
 export async function triggerMetricsRefresh(
   source?: string,
+  filters: DashboardFilters = {},
 ): Promise<DashboardPayload> {
   await client.post('/api/jobs/refresh_metrics', null, { params: { source } });
-  return fetchDashboard(source);
+  return fetchDashboard(source, filters);
 }
 
 export async function triggerMigrations(source?: string): Promise<{

@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS metrics_version (
 
 METRICS_SUMMARY_SCHEMA = """
 CREATE TABLE IF NOT EXISTS metrics_summary (
+    source TEXT,
     motif TEXT,
     total BIGINT,
     found BIGINT,
@@ -95,8 +96,20 @@ def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute(TACTIC_OUTCOMES_SCHEMA)
     conn.execute(METRICS_VERSION_SCHEMA)
     conn.execute(METRICS_SUMMARY_SCHEMA)
+    _ensure_column(conn, "metrics_summary", "source", "TEXT")
     if conn.execute("SELECT COUNT(*) FROM metrics_version").fetchone()[0] == 0:
         conn.execute("INSERT INTO metrics_version VALUES (0, CURRENT_TIMESTAMP)")
+
+
+def _ensure_column(
+    conn: duckdb.DuckDBPyConnection, table: str, column: str, definition: str
+) -> None:
+    columns = {
+        row[1]
+        for row in conn.execute(f"PRAGMA table_info('{table}')").fetchall()
+    }
+    if column not in columns:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
 
 def upsert_raw_pgns(
@@ -256,8 +269,9 @@ def update_metrics_summary(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute("DELETE FROM metrics_summary")
     conn.execute(
         """
-        INSERT INTO metrics_summary
+        INSERT INTO metrics_summary (source, motif, total, found, missed, failed_attempt, unclear, updated_at)
         SELECT
+            COALESCE(p.source, 'unknown') AS source,
             t.motif,
             COUNT(*) AS total,
             SUM(CASE WHEN o.result = 'found' THEN 1 ELSE 0 END) AS found,
@@ -267,7 +281,8 @@ def update_metrics_summary(conn: duckdb.DuckDBPyConnection) -> None:
             CURRENT_TIMESTAMP AS updated_at
         FROM tactics t
         LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
-        GROUP BY t.motif
+        LEFT JOIN positions p ON p.position_id = t.position_id
+        GROUP BY COALESCE(p.source, 'unknown'), t.motif
         """
     )
 
@@ -277,38 +292,48 @@ def _rows_to_dicts(result: duckdb.DuckDBPyRelation) -> list[dict[str, object]]:
     return [dict(zip(columns, row)) for row in result.fetchall()]
 
 
-def fetch_metrics(conn: duckdb.DuckDBPyConnection) -> list[dict[str, object]]:
-    result = conn.execute("SELECT * FROM metrics_summary")
+def fetch_metrics(
+    conn: duckdb.DuckDBPyConnection, source: str | None = None
+) -> list[dict[str, object]]:
+    if source:
+        result = conn.execute(
+            "SELECT * FROM metrics_summary WHERE source = ?", [source]
+        )
+    else:
+        result = conn.execute("SELECT * FROM metrics_summary")
     return _rows_to_dicts(result)
 
 
 def fetch_recent_positions(
-    conn: duckdb.DuckDBPyConnection, limit: int = 20
+    conn: duckdb.DuckDBPyConnection, limit: int = 20, source: str | None = None
 ) -> list[dict[str, object]]:
-    result = conn.execute(
-        """
-        SELECT * FROM positions
-        ORDER BY created_at DESC
-        LIMIT ?
-        """,
-        [limit],
-    )
+    query = "SELECT * FROM positions"
+    params: list[object] = []
+    if source:
+        query += " WHERE source = ?"
+        params.append(source)
+    query += " ORDER BY created_at DESC LIMIT ?"
+    params.append(limit)
+    result = conn.execute(query, params)
     return _rows_to_dicts(result)
 
 
 def fetch_recent_tactics(
-    conn: duckdb.DuckDBPyConnection, limit: int = 20
+    conn: duckdb.DuckDBPyConnection, limit: int = 20, source: str | None = None
 ) -> list[dict[str, object]]:
-    result = conn.execute(
-        """
-        SELECT t.*, o.result, o.eval_delta, o.user_uci
+    query = """
+        SELECT t.*, o.result, o.eval_delta, o.user_uci, p.source
         FROM tactics t
         LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
-        ORDER BY t.created_at DESC
-        LIMIT ?
-        """,
-        [limit],
-    )
+        LEFT JOIN positions p ON p.position_id = t.position_id
+    """
+    params: list[object] = []
+    if source:
+        query += " WHERE p.source = ?"
+        params.append(source)
+    query += " ORDER BY t.created_at DESC LIMIT ?"
+    params.append(limit)
+    result = conn.execute(query, params)
     return _rows_to_dicts(result)
 
 

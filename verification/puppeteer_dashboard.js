@@ -6,6 +6,7 @@ const puppeteer = require('puppeteer');
 const CLIENT_DIR = path.resolve(__dirname, '..', 'client');
 const ROOT_DIR = path.resolve(__dirname, '..');
 const BACKEND_CMD = path.join(ROOT_DIR, '.venv', 'bin', 'python');
+const SOURCE = process.env.TACTIX_SOURCE || 'lichess';
 
 function startBackend() {
   return new Promise((resolve, reject) => {
@@ -96,12 +97,33 @@ function startPreview() {
     console.log('Navigating to dashboard...');
     await page.goto('http://localhost:4173/', { waitUntil: 'networkidle0' });
     await page.waitForSelector('h1');
-    await page.click('button.button');
+    if (SOURCE === 'chesscom') {
+        await page.$$eval(
+          'button',
+          (buttons, label) => {
+            const target = buttons.find(
+              (btn) => btn.textContent && btn.textContent.includes(label),
+            );
+            if (target) target.click();
+          },
+          'Chess.com',
+        );
+    }
+    await page.$$eval(
+      'button',
+      (buttons, label) => {
+        const target = buttons.find(
+          (btn) => btn.textContent && btn.textContent.includes(label),
+        );
+        if (target) target.click();
+      },
+      'Run + Refresh',
+    );
     await new Promise((resolve) => setTimeout(resolve, 2000));
     await page.waitForSelector('table');
 
     const outDir = path.resolve(__dirname);
-    const outPath = path.join(outDir, 'feature001-dashboard.png');
+    const outPath = path.join(outDir, `dashboard-${SOURCE}.png`);
     fs.mkdirSync(outDir, { recursive: true });
     await page.screenshot({ path: outPath, fullPage: true });
     console.log('Saved screenshot to', outPath);

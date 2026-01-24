@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DashboardPayload, fetchDashboard, triggerPipeline } from './api';
 
+const SOURCE_OPTIONS: { id: 'lichess' | 'chesscom'; label: string; note: string }[] = [
+  { id: 'lichess', label: 'Lichess · Rapid', note: 'Perf: rapid' },
+  { id: 'chesscom', label: 'Chess.com · Blitz', note: 'Time class: blitz' },
+];
+
 function Badge({ label }: { label: string }) {
   return (
     <span className="px-2 py-1 text-xs rounded-full bg-rust/30 text-sand border border-rust/60">
@@ -123,21 +128,43 @@ function Hero({
   onRun,
   loading,
   version,
+  source,
+  user,
+  onSourceChange,
 }: {
   onRun: () => void;
   loading: boolean;
   version: number;
+  source: 'lichess' | 'chesscom';
+  user: string;
+  onSourceChange: (next: 'lichess' | 'chesscom') => void;
 }) {
   return (
     <div className="card p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
         <p className="text-sm text-sand/70">Airflow DAG · daily_game_sync</p>
         <h1 className="text-3xl md:text-4xl font-display text-sand mt-2">
-          Lichess rapid pipeline
+          {source === 'lichess' ? 'Lichess rapid pipeline' : 'Chess.com blitz pipeline'}
         </h1>
         <p className="text-sand/70 mt-2">
-          Execution stamped via metrics version {version}
+          Execution stamped via metrics version {version} · user {user}
         </p>
+        <div className="flex gap-2 mt-3 flex-wrap">
+          {SOURCE_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              className={`button px-3 py-2 rounded-md border text-sm ${
+                source === opt.id
+                  ? 'bg-teal text-night border-teal'
+                  : 'border-sand/30 text-sand'
+              }`}
+              onClick={() => onSourceChange(opt.id)}
+              disabled={loading}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="flex gap-3">
         <button
@@ -161,14 +188,15 @@ function Hero({
 
 function App() {
   const [data, setData] = useState<DashboardPayload | null>(null);
+  const [source, setSource] = useState<'lichess' | 'chesscom'>('lichess');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = async (nextSource: 'lichess' | 'chesscom' = source) => {
     setLoading(true);
     setError(null);
     try {
-      const payload = await fetchDashboard();
+      const payload = await fetchDashboard(nextSource);
       setData(payload);
     } catch (err) {
       console.error(err);
@@ -179,14 +207,15 @@ function App() {
   };
 
   useEffect(() => {
-    load();
-  }, []);
+    load(source);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source]);
 
   const handleRun = async () => {
     setLoading(true);
     setError(null);
     try {
-      const payload = await triggerPipeline();
+      const payload = await triggerPipeline(source);
       setData(payload);
     } catch (err) {
       console.error(err);
@@ -210,6 +239,9 @@ function App() {
         onRun={handleRun}
         loading={loading}
         version={data?.metrics_version ?? 0}
+        source={source}
+        user={data?.user ?? 'unknown'}
+        onSourceChange={setSource}
       />
 
       {error ? <div className="card p-3 text-rust">{error}</div> : null}

@@ -26,15 +26,15 @@ def default_args():
     start_date=datetime(2024, 1, 1),
     catchup=False,
     default_args=default_args(),
-    tags=["lichess", "tactix"],
-    description="Fetch Lichess rapid games, extract positions, run tactics, refresh metrics",
+    tags=["lichess", "chesscom", "tactix"],
+    description="Fetch chess games (Lichess or Chess.com), extract positions, run tactics, refresh metrics",
 )
 def daily_game_sync_dag():
     settings = get_settings()
 
     @task(task_id="run_pipeline")
     def run_pipeline() -> dict[str, object]:
-        logger.info("Starting end-to-end pipeline run")
+        logger.info("Starting end-to-end pipeline run for source=%s", settings.source)
         return run_daily_game_sync(settings)
 
     @task(task_id="notify_dashboard")

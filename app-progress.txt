@@ -17,3 +17,10 @@ Session 2026-01-24 (feature 001 end-to-end verification)
 - Defaulted Stockfish config to PATH (`stockfish`) while allowing env override; analysis still deterministic.
 - Rebuilt frontend with `VITE_API_BASE=http://localhost:8000`, axios honors env base, and Puppeteer script now starts/stops FastAPI + preview automatically; captured dashboard screenshot at `verification/feature001-dashboard.png`.
 - Feature 001 verified through UI (pipeline trigger, metrics refresh, dashboard data), passes=true in feature_list.json.
+
+Session 2026-01-24 (feature 002 – Chess.com blitz pipeline)
+- Added Chess.com client + shared PGN utilities; settings/pipeline/API now source-aware with metrics grouped by source.
+- Frontend dashboard includes source toggle; puppeteer script selects Chess.com and captures `verification/dashboard-chesscom.png`.
+- Added chesscom fixtures and tests (client + pipeline state + integration); DuckDB metrics_summary migrated with source column.
+- Ran full pytest (14 passed), rebuilt frontend with `VITE_API_BASE=http://localhost:8000`, executed chesscom pipeline to `data/tactix_chesscom.duckdb` (raw_pgns=2, positions=12, tactics=12, metrics_version=1).
+- Marked feature 002 passes=true after UI verification.

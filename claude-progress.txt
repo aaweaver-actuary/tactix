@@ -23,3 +23,10 @@ Session 2026-01-24 (pipeline rerun + UI confirmation):
 - Reset checkpoint, reran `run_daily_game_sync` with fixtures; DuckDB counts now raw_pgns=2, positions=48, tactics=48, outcomes=48; metrics_version=10; Stockfish default uses PATH binary unless overridden.
 - Rebuilt frontend with `VITE_API_BASE=http://localhost:8000` and updated axios client to respect env base; Puppeteer script now starts/stops FastAPI + preview automatically and captured refreshed dashboard screenshot at `verification/feature001-dashboard.png`.
 - UI verified end-to-end (pipeline trigger, metrics refresh, dashboard with live counts); feature 001 remains passing.
+
+Session 2026-01-24 (feature 002 – Chess.com blitz pipeline):
+- Added shared PGN utilities + Chess.com client with fixture fallback, source-aware settings, and metrics_summary aggregation by source.
+- Pipeline, API, and DAG now accept source overrides; dashboard gains source toggle and passes source to pipeline; puppeteer script auto-selects Chess.com and saves `verification/dashboard-chesscom.png`.
+- New chesscom fixtures and tests (client + pipeline state + stockfish integration); DuckDB schema migrated with source column; tactics/metrics filtered by source in queries.
+- Commands: full pytest (14 passed), `VITE_API_BASE=http://localhost:8000 npm --prefix client run build`, chesscom pipeline run to `data/tactix_chesscom.duckdb` (raw_pgns=2, positions=12, tactics=12, metrics_version=1).
+- Updated feature_list.json: feature 002 marked passes=true after UI + data verification.

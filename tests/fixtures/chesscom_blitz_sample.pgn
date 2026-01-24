@@ -1,0 +1,22 @@
+[Event "Chess.com Blitz Fixture 1"]
+[Site "https://www.chess.com/game/live/1234567890"]
+[UTCDate "2024.07.01"]
+[UTCTime "15:00:00"]
+[White "chesscom"]
+[Black "blitzbot"]
+[TimeControl "300"]
+[Result "1-0"]
+
+1. e4 { [%clk 0:05:00] } e5 { [%clk 0:05:00] } 2. Nf3 { [%clk 0:04:55] } Nc6 { [%clk 0:04:57] } 3. Bb5 { [%clk 0:04:50] } a6 { [%clk 0:04:54] } 4. Ba4 { [%clk 0:04:45] } Nf6 { [%clk 0:04:52] } 5. O-O { [%clk 0:04:40] } Be7 { [%clk 0:04:50] } 6. Re1 { [%clk 0:04:35] } b5 { [%clk 0:04:48] } 1-0
+
+
+[Event "Chess.com Blitz Fixture 2"]
+[Site "https://www.chess.com/game/live/9876543210"]
+[UTCDate "2024.07.02"]
+[UTCTime "16:15:00"]
+[White "opponent"]
+[Black "chesscom"]
+[TimeControl "300"]
+[Result "0-1"]
+
+1. d4 { [%clk 0:05:00] } d5 { [%clk 0:05:00] } 2. c4 { [%clk 0:04:55] } e6 { [%clk 0:04:58] } 3. Nc3 { [%clk 0:04:50] } Nf6 { [%clk 0:04:56] } 4. Bg5 { [%clk 0:04:45] } Bb4 { [%clk 0:04:54] } 5. e3 { [%clk 0:04:40] } h6 { [%clk 0:04:52] } 6. Bh4 { [%clk 0:04:36] } c5 { [%clk 0:04:50] } 0-1

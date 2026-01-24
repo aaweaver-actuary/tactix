@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 export type MetricsRow = {
+  source: string;
   motif: string;
   total: number;
   found: number;
@@ -12,6 +13,7 @@ export type MetricsRow = {
 
 export type TacticRow = {
   tactic_id: number;
+  source: string | null;
   motif: string;
   result: string;
   user_uci: string;
@@ -23,6 +25,7 @@ export type TacticRow = {
 
 export type PositionRow = {
   position_id: number;
+  source: string;
   game_id: string;
   fen: string;
   san: string;
@@ -33,6 +36,8 @@ export type PositionRow = {
 };
 
 export type DashboardPayload = {
+  source: string;
+  user: string;
   metrics: MetricsRow[];
   positions: PositionRow[];
   tactics: TacticRow[];
@@ -45,14 +50,14 @@ const client = axios.create({
   baseURL: API_BASE || undefined,
 });
 
-export async function fetchDashboard(): Promise<DashboardPayload> {
+export async function fetchDashboard(source?: string): Promise<DashboardPayload> {
   const res = await client.get<DashboardPayload>('/api/dashboard', {
-    params: { t: Date.now() },
+    params: { t: Date.now(), source },
   });
   return res.data;
 }
 
-export async function triggerPipeline(): Promise<DashboardPayload> {
-  await client.post('/api/jobs/daily_game_sync');
-  return fetchDashboard();
+export async function triggerPipeline(source?: string): Promise<DashboardPayload> {
+  await client.post('/api/jobs/daily_game_sync', null, { params: { source } });
+  return fetchDashboard(source);
 }

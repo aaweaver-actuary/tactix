@@ -1,49 +1,22 @@
 from __future__ import annotations
 
-import re
-import time
 from datetime import datetime, timezone
-from io import StringIO
 from pathlib import Path
-from typing import Iterable, List
+from typing import List
 
 import berserk
 import chess.pgn
 
 from tactix.config import Settings
 from tactix.logging_utils import get_logger
+from tactix.pgn_utils import (
+    extract_game_id,
+    extract_last_timestamp_ms,
+    latest_timestamp,
+    split_pgn_chunks,
+)
 
 logger = get_logger(__name__)
-
-SITE_RE = re.compile(r"lichess\.org/([A-Za-z0-9]{8})")
-FIXTURE_SPLIT_RE = re.compile(r"\n\n(?=\[Event )")
-
-
-def _extract_game_id(pgn: str) -> str:
-    game = chess.pgn.read_game(StringIO(pgn))
-    if game and "Site" in game.headers:
-        match = SITE_RE.search(game.headers.get("Site", ""))
-        if match:
-            return match.group(1)
-    return str(abs(hash(pgn)))
-
-
-def _extract_last_timestamp_ms(pgn: str) -> int:
-    game = chess.pgn.read_game(StringIO(pgn))
-    if not game:
-        return int(time.time() * 1000)
-    utc_date = game.headers.get("UTCDate")
-    utc_time = game.headers.get("UTCTime")
-    if utc_date and utc_time:
-        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y.%m.%d %H:%M:%S"):
-            try:
-                dt = datetime.strptime(f"{utc_date} {utc_time}", fmt).replace(
-                    tzinfo=timezone.utc
-                )
-                return int(dt.timestamp() * 1000)
-            except ValueError:
-                continue
-    return int(time.time() * 1000)
 
 
 def _load_fixture_games(settings: Settings, since_ms: int) -> List[dict]:
@@ -52,19 +25,15 @@ def _load_fixture_games(settings: Settings, since_ms: int) -> List[dict]:
         logger.warning("Fixture PGN path missing: %s", path)
         return []
 
-    chunks = [
-        chunk.strip()
-        for chunk in FIXTURE_SPLIT_RE.split(path.read_text())
-        if chunk.strip()
-    ]
+    chunks = split_pgn_chunks(path.read_text())
     games: List[dict] = []
     for raw in chunks:
-        last_ts = _extract_last_timestamp_ms(raw)
+        last_ts = extract_last_timestamp_ms(raw)
         if since_ms and last_ts <= since_ms:
             continue
         games.append(
             {
-                "game_id": _extract_game_id(raw),
+                "game_id": extract_game_id(raw),
                 "user": settings.user,
                 "source": settings.source,
                 "fetched_at": datetime.now(timezone.utc),
@@ -115,8 +84,8 @@ def fetch_incremental_games(settings: Settings, since_ms: int) -> List[dict]:
         opening=True,
         max=200,
     ):
-        game_id = _extract_game_id(pgn)
-        last_ts = _extract_last_timestamp_ms(pgn)
+        game_id = extract_game_id(pgn)
+        last_ts = extract_last_timestamp_ms(pgn)
         games.append(
             {
                 "game_id": game_id,
@@ -129,10 +98,3 @@ def fetch_incremental_games(settings: Settings, since_ms: int) -> List[dict]:
         )
     logger.info("Fetched %s PGNs", len(games))
     return games
-
-
-def latest_timestamp(rows: Iterable[dict]) -> int:
-    ts = 0
-    for row in rows:
-        ts = max(ts, int(row.get("last_timestamp_ms", 0)))
-    return ts

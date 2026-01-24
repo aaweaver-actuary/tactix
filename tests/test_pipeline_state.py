@@ -14,6 +14,9 @@ class PipelineStateTests(unittest.TestCase):
         self.fixture_path = (
             Path(__file__).resolve().parent / "fixtures" / "lichess_rapid_sample.pgn"
         )
+        self.chesscom_fixture_path = (
+            Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
+        )
 
     def test_checkpoint_and_metrics_files_written(self) -> None:
         settings = Settings(
@@ -22,6 +25,32 @@ class PipelineStateTests(unittest.TestCase):
             metrics_version_file=self.tmp_dir / "metrics.txt",
             fixture_pgn_path=self.fixture_path,
             use_fixture_when_no_token=True,
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+        )
+
+        result = run_daily_game_sync(settings)
+
+        self.assertGreater(result["metrics_version"], 0)
+        self.assertTrue(settings.metrics_version_file.exists())
+        self.assertEqual(
+            int(settings.metrics_version_file.read_text().strip()),
+            result["metrics_version"],
+        )
+
+        ckpt_value = read_checkpoint(settings.checkpoint_path)
+        self.assertGreater(ckpt_value, 0)
+        self.assertEqual(ckpt_value, int(settings.checkpoint_path.read_text().strip()))
+
+    def test_chesscom_checkpoint_and_metrics_files_written(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            duckdb_path=self.tmp_dir / "tactix_chesscom.duckdb",
+            checkpoint_path=self.tmp_dir / "since_lichess.txt",
+            chesscom_checkpoint_path=self.tmp_dir / "chesscom_since.txt",
+            metrics_version_file=self.tmp_dir / "metrics_chesscom.txt",
+            fixture_pgn_path=self.chesscom_fixture_path,
+            chesscom_fixture_pgn_path=self.chesscom_fixture_path,
+            chesscom_use_fixture_when_no_token=True,
             stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
         )
 

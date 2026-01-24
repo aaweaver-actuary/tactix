@@ -128,3 +128,12 @@ Session 2026-01-24 (feature 014 – Practice attempt grading)
 - Precheck UI verification: `verification/precheck-dashboard-lichess.png`, `verification/precheck-dashboard-chesscom.png`.
 - Updated feature_list.json: feature 014 marked passes=true after UI + test verification.
 - Current passing count: 14.
+
+Session 2026-01-24 (feature 015 – DuckDB schema migration preserves data)
+- Implemented versioned DuckDB schema migrations with schema_version tracking and a migration entrypoint.
+- Added migrations Airflow DAG and API/SSE job support plus UI button to trigger migrations.
+- Added legacy schema migration test to confirm data preserved across versions.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest` (31 passed).
+- UI verification screenshots: `verification/dashboard-lichess-migrations.png`, `verification/dashboard-lichess-migration.png`.
+- Updated feature_list.json: feature 015 marked passes=true after UI + test verification.
+- Current passing count: 15.

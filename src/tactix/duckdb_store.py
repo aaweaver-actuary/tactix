@@ -114,6 +114,15 @@ CREATE TABLE IF NOT EXISTS training_attempts (
 );
 """
 
+SCHEMA_VERSION_SCHEMA = """
+CREATE TABLE IF NOT EXISTS schema_version (
+    version INTEGER,
+    updated_at TIMESTAMP
+);
+"""
+
+SCHEMA_VERSION = 3
+
 
 def get_connection(db_path: Path) -> duckdb.DuckDBPyConnection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -122,6 +131,40 @@ def get_connection(db_path: Path) -> duckdb.DuckDBPyConnection:
 
 
 def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
+    migrate_schema(conn)
+    if conn.execute("SELECT COUNT(*) FROM metrics_version").fetchone()[0] == 0:
+        conn.execute("INSERT INTO metrics_version VALUES (0, CURRENT_TIMESTAMP)")
+
+
+def migrate_schema(conn: duckdb.DuckDBPyConnection) -> None:
+    conn.execute(SCHEMA_VERSION_SCHEMA)
+    current_version = _get_schema_version(conn)
+    for target_version, migration in _SCHEMA_MIGRATIONS:
+        if current_version >= target_version:
+            continue
+        logger.info("Applying DuckDB schema migration v%s", target_version)
+        migration(conn)
+        _set_schema_version(conn, target_version)
+        current_version = target_version
+
+
+def get_schema_version(conn: duckdb.DuckDBPyConnection) -> int:
+    return _get_schema_version(conn)
+
+
+def _get_schema_version(conn: duckdb.DuckDBPyConnection) -> int:
+    row = conn.execute("SELECT version FROM schema_version LIMIT 1").fetchone()
+    if not row:
+        return 0
+    return int(row[0] or 0)
+
+
+def _set_schema_version(conn: duckdb.DuckDBPyConnection, version: int) -> None:
+    conn.execute("DELETE FROM schema_version")
+    conn.execute("INSERT INTO schema_version VALUES (?, CURRENT_TIMESTAMP)", [version])
+
+
+def _migration_base_tables(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute(RAW_PGNS_SCHEMA)
     conn.execute(POSITIONS_SCHEMA)
     conn.execute(TACTICS_SCHEMA)
@@ -129,7 +172,13 @@ def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute(METRICS_VERSION_SCHEMA)
     conn.execute(METRICS_SUMMARY_SCHEMA)
     conn.execute(TRAINING_ATTEMPTS_SCHEMA)
+
+
+def _migration_raw_pgns_versioning(conn: duckdb.DuckDBPyConnection) -> None:
     _ensure_raw_pgns_versioned(conn)
+
+
+def _migration_add_columns(conn: duckdb.DuckDBPyConnection) -> None:
     _ensure_column(conn, "positions", "side_to_move", "TEXT")
     _ensure_column(conn, "metrics_summary", "source", "TEXT")
     _ensure_column(conn, "metrics_summary", "metric_type", "TEXT")
@@ -146,8 +195,13 @@ def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
     _ensure_column(conn, "training_attempts", "motif", "TEXT")
     _ensure_column(conn, "training_attempts", "severity", "DOUBLE")
     _ensure_column(conn, "training_attempts", "eval_delta", "INTEGER")
-    if conn.execute("SELECT COUNT(*) FROM metrics_version").fetchone()[0] == 0:
-        conn.execute("INSERT INTO metrics_version VALUES (0, CURRENT_TIMESTAMP)")
+
+
+_SCHEMA_MIGRATIONS = [
+    (1, _migration_base_tables),
+    (2, _migration_raw_pgns_versioning),
+    (3, _migration_add_columns),
+]
 
 
 def _hash_pgn(pgn: str) -> str:

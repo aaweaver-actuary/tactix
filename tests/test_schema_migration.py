@@ -1,0 +1,91 @@
+import tempfile
+import unittest
+from pathlib import Path
+
+from tactix.duckdb_store import get_connection, get_schema_version, migrate_schema
+
+
+class SchemaMigrationTests(unittest.TestCase):
+    def test_migration_preserves_legacy_data(self) -> None:
+        tmp_dir = Path(tempfile.mkdtemp())
+        conn = get_connection(tmp_dir / "tactix.duckdb")
+
+        conn.execute(
+            """
+            CREATE TABLE raw_pgns (
+                game_id TEXT,
+                user TEXT,
+                source TEXT,
+                fetched_at TIMESTAMP,
+                pgn TEXT,
+                last_timestamp_ms BIGINT,
+                cursor TEXT
+            )
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO raw_pgns
+                (game_id, user, source, fetched_at, pgn, last_timestamp_ms, cursor)
+            VALUES
+                ('game-1', 'lichess_user', 'lichess', CURRENT_TIMESTAMP, 'PGN DATA', 123, 'cursor-1')
+            """
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE positions (
+                position_id BIGINT PRIMARY KEY,
+                game_id TEXT,
+                user TEXT,
+                source TEXT,
+                fen TEXT,
+                ply INTEGER,
+                move_number INTEGER,
+                uci TEXT,
+                san TEXT,
+                clock_seconds DOUBLE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO positions
+                (position_id, game_id, user, source, fen, ply, move_number, uci, san, clock_seconds)
+            VALUES
+                (1, 'game-1', 'lichess_user', 'lichess', 'fen', 3, 2, 'e2e4', 'e4', 120.5)
+            """
+        )
+
+        migrate_schema(conn)
+
+        self.assertEqual(get_schema_version(conn), 3)
+
+        raw_rows = conn.execute(
+            "SELECT raw_pgn_id, game_id, pgn, pgn_version, last_timestamp_ms, cursor FROM raw_pgns"
+        ).fetchall()
+        self.assertEqual(len(raw_rows), 1)
+        raw_pgn_id, game_id, pgn, version, last_ts, cursor = raw_rows[0]
+        self.assertIsNotNone(raw_pgn_id)
+        self.assertEqual(game_id, "game-1")
+        self.assertEqual(pgn, "PGN DATA")
+        self.assertEqual(version, 1)
+        self.assertEqual(last_ts, 123)
+        self.assertEqual(cursor, "cursor-1")
+
+        positions_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info('positions')").fetchall()
+        }
+        self.assertIn("side_to_move", positions_columns)
+        positions_row = conn.execute(
+            "SELECT game_id, fen, ply, move_number, uci, san, clock_seconds, side_to_move FROM positions"
+        ).fetchone()
+        self.assertEqual(positions_row[0], "game-1")
+        self.assertEqual(positions_row[1], "fen")
+        self.assertEqual(positions_row[2], 3)
+        self.assertEqual(positions_row[3], 2)
+        self.assertEqual(positions_row[4], "e2e4")
+        self.assertEqual(positions_row[5], "e4")
+        self.assertEqual(positions_row[6], 120.5)
+        self.assertIsNone(positions_row[7])

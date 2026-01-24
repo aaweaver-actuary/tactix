@@ -286,6 +286,7 @@ function PositionsList({ data }: { data: DashboardPayload['positions'] }) {
 function Hero({
   onRun,
   onRefresh,
+  onMigrate,
   loading,
   version,
   source,
@@ -294,6 +295,7 @@ function Hero({
 }: {
   onRun: () => void;
   onRefresh: () => void;
+  onMigrate: () => void;
   loading: boolean;
   version: number;
   source: 'lichess' | 'chesscom';
@@ -305,7 +307,9 @@ function Hero({
       <div>
         <p className="text-sm text-sand/70">Airflow DAG · daily_game_sync</p>
         <h1 className="text-3xl md:text-4xl font-display text-sand mt-2">
-          {source === 'lichess' ? 'Lichess rapid pipeline' : 'Chess.com blitz pipeline'}
+          {source === 'lichess'
+            ? 'Lichess rapid pipeline'
+            : 'Chess.com blitz pipeline'}
         </h1>
         <p className="text-sand/70 mt-2">
           Execution stamped via metrics version {version} · user {user}
@@ -334,6 +338,13 @@ function Hero({
           disabled={loading}
         >
           {loading ? 'Running…' : 'Run + Refresh'}
+        </button>
+        <button
+          className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
+          onClick={onMigrate}
+          disabled={loading}
+        >
+          Run migrations
         </button>
         <button
           className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
@@ -374,6 +385,7 @@ function App() {
       fetched_games?: number;
       positions?: number;
       metrics_version?: number;
+      schema_version?: number;
       job?: string;
     }>
   >([]);
@@ -511,6 +523,69 @@ function App() {
     }
   };
 
+  const handleMigrations = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      streamRef.current?.close();
+      setJobProgress([]);
+      setJobStatus('running');
+
+      const streamUrl = getJobStreamUrl('migrations', source);
+      const eventSource = new EventSource(streamUrl);
+      streamRef.current = eventSource;
+
+      eventSource.addEventListener('progress', (event) => {
+        const messageEvent = event as MessageEvent<string>;
+        try {
+          const payload = JSON.parse(messageEvent.data);
+          setJobProgress((prev) => [...prev, payload]);
+        } catch (parseError) {
+          console.error(parseError);
+        }
+      });
+
+      eventSource.addEventListener('complete', async (event) => {
+        const messageEvent = event as MessageEvent<string>;
+        try {
+          const payload = JSON.parse(messageEvent.data);
+          setJobProgress((prev) => [...prev, payload]);
+        } catch (parseError) {
+          console.error(parseError);
+        }
+        eventSource.close();
+        streamRef.current = null;
+        setJobStatus('complete');
+        const payload = await fetchDashboard(source);
+        setData(payload);
+        await loadPracticeQueue(source, includeFailedAttempt);
+        setLoading(false);
+      });
+
+      eventSource.addEventListener('error', (event) => {
+        const messageEvent = event as MessageEvent<string>;
+        if (messageEvent.data) {
+          try {
+            const payload = JSON.parse(messageEvent.data);
+            setJobProgress((prev) => [...prev, payload]);
+          } catch (parseError) {
+            console.error(parseError);
+          }
+        }
+        setJobStatus('error');
+        setLoading(false);
+        setError('Migration stream disconnected');
+        eventSource.close();
+        streamRef.current = null;
+      });
+    } catch (err) {
+      console.error(err);
+      setError('Migration run failed');
+      setJobStatus('error');
+      setLoading(false);
+    }
+  };
+
   const handleRefreshMetrics = async () => {
     setLoading(true);
     setError(null);
@@ -584,6 +659,7 @@ function App() {
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
       <Hero
         onRun={handleRun}
+        onMigrate={handleMigrations}
         onRefresh={handleRefreshMetrics}
         loading={loading}
         version={data?.metrics_version ?? 0}
@@ -621,7 +697,9 @@ function App() {
                       ? `${entry.positions} positions`
                       : entry.metrics_version !== undefined
                         ? `v${entry.metrics_version}`
-                        : null;
+                        : entry.schema_version !== undefined
+                          ? `schema v${entry.schema_version}`
+                          : null;
               const timestamp = entry.timestamp
                 ? new Date(entry.timestamp * 1000).toLocaleTimeString()
                 : null;
@@ -639,9 +717,7 @@ function App() {
                   {entry.message ? (
                     <span className="text-sand/70">{entry.message}</span>
                   ) : null}
-                  {detail ? (
-                    <Badge label={detail} />
-                  ) : null}
+                  {detail ? <Badge label={detail} /> : null}
                 </li>
               );
             })}
@@ -721,8 +797,12 @@ function App() {
             {practiceFeedback ? (
               <div className="rounded-md border border-white/10 bg-white/5 p-3 text-sm">
                 <div className="flex items-center gap-2">
-                  <Badge label={practiceFeedback.correct ? 'Correct' : 'Missed'} />
-                  <span className="text-sand/80">{practiceFeedback.message}</span>
+                  <Badge
+                    label={practiceFeedback.correct ? 'Correct' : 'Missed'}
+                  />
+                  <span className="text-sand/80">
+                    {practiceFeedback.message}
+                  </span>
                 </div>
                 <p className="mt-2 font-mono text-xs text-sand/70">
                   You played {practiceFeedback.attempted_uci} · best{' '}

@@ -13,6 +13,7 @@ from tactix.config import get_settings
 from tactix.pipeline import (
     get_dashboard_payload,
     run_daily_game_sync,
+    run_migrations,
     run_refresh_metrics,
 )
 from tactix.duckdb_store import (
@@ -52,6 +53,12 @@ def trigger_daily_sync(source: str | None = Query(None)) -> dict[str, object]:
 @app.post("/api/jobs/refresh_metrics")
 def trigger_refresh_metrics(source: str | None = Query(None)) -> dict[str, object]:
     result = run_refresh_metrics(get_settings(source=source), source=source)
+    return {"status": "ok", "result": result}
+
+
+@app.post("/api/jobs/migrations")
+def trigger_migrations(source: str | None = Query(None)) -> dict[str, object]:
+    result = run_migrations(get_settings(source=source), source=source)
     return {"status": "ok", "result": result}
 
 
@@ -143,6 +150,8 @@ def stream_jobs(
                 result = run_daily_game_sync(settings, source=source, progress=progress)
             elif job == "refresh_metrics":
                 result = run_refresh_metrics(settings, source=source, progress=progress)
+            elif job == "migrations":
+                result = run_migrations(settings, source=source, progress=progress)
             else:
                 raise ValueError(f"Unsupported job: {job}")
             queue.put(

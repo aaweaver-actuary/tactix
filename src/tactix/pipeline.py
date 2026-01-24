@@ -18,11 +18,13 @@ from tactix.duckdb_store import (
     fetch_positions_for_games,
     fetch_recent_positions,
     fetch_recent_tactics,
+    get_schema_version,
     fetch_version,
     get_connection,
     init_schema,
     insert_positions,
     delete_game_rows,
+    migrate_schema,
     update_metrics_summary,
     upsert_raw_pgns,
     upsert_tactic_with_outcome,
@@ -53,6 +55,41 @@ def _emit_progress(
     payload: dict[str, object] = {"step": step, "timestamp": time.time()}
     payload.update(fields)
     progress(payload)
+
+
+def run_migrations(
+    settings: Settings | None = None,
+    source: str | None = None,
+    progress: ProgressCallback | None = None,
+) -> dict[str, object]:
+    settings = settings or get_settings(source=source)
+    if source:
+        settings.source = source
+    settings.apply_source_defaults()
+    settings.ensure_dirs()
+
+    _emit_progress(
+        progress,
+        "migrations_start",
+        source=settings.source,
+        message="Starting DuckDB schema migrations",
+    )
+
+    conn = get_connection(settings.duckdb_path)
+    migrate_schema(conn)
+    schema_version = get_schema_version(conn)
+
+    _emit_progress(
+        progress,
+        "migrations_complete",
+        source=settings.source,
+        schema_version=schema_version,
+    )
+
+    return {
+        "source": settings.source,
+        "schema_version": schema_version,
+    }
 
 
 def _analysis_signature(game_ids: list[str], positions_count: int, source: str) -> str:

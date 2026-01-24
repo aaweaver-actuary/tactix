@@ -135,6 +135,18 @@ export async function triggerMetricsRefresh(
   return fetchDashboard(source);
 }
 
+export async function triggerMigrations(
+  source?: string,
+): Promise<{
+  status: string;
+  result: { source: string; schema_version: number };
+}> {
+  const res = await client.post('/api/jobs/migrations', null, {
+    params: { source },
+  });
+  return res.data;
+}
+
 export async function fetchPracticeQueue(
   source?: string,
   includeFailedAttempt = false,

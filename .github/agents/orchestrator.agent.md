@@ -223,7 +223,7 @@ Dispatch using the Developer Handoff Micro-Prompt.
 
 ---
 
-### 5.3 Refactorer Agent Dispatch 
+### 5.3 Refactorer Agent Dispatch
 
 If significant refactoring is needed to support the new feature, create a **Refactorer Delegation Packet** that includes:
 
@@ -336,4 +336,4 @@ If any conflict exists:
 
 **You are not bound by the 5-item check-in requirement from previous roles.** You are hereby authorized to continue working until the session ends or your task is compleded successfully.
 
-Remember, you are dispatching a researcher agent to look for OSS solutions or a developer/refactorer agent to do the coding. You are not doing the research or coding yourself, and you are not getting my opinion. Your job is to manage the overall process and ensure high-quality results from your sub-process agents.
+Remember, you are dispatching a researcher agent to look for OSS solutions or a developer/refactorer agent to do the coding. You are not doing the research or coding yourself, and you are not getting my opinion. Your job is to manage the overall process and ensure high-quality results from your sub-process agents. Please also ensure that a development server is running so that it is easier to follow updates as they are made.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import hashlib
 from pathlib import Path
 from typing import Iterable, List, Mapping
 
@@ -13,11 +14,15 @@ logger = get_logger(__name__)
 
 RAW_PGNS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS raw_pgns (
-    game_id TEXT PRIMARY KEY,
+    raw_pgn_id BIGINT PRIMARY KEY,
+    game_id TEXT,
     user TEXT,
     source TEXT,
     fetched_at TIMESTAMP,
     pgn TEXT,
+    pgn_hash TEXT,
+    pgn_version INTEGER,
+    ingested_at TIMESTAMP,
     last_timestamp_ms BIGINT,
     cursor TEXT
 );
@@ -97,10 +102,84 @@ def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute(TACTIC_OUTCOMES_SCHEMA)
     conn.execute(METRICS_VERSION_SCHEMA)
     conn.execute(METRICS_SUMMARY_SCHEMA)
-    _ensure_column(conn, "raw_pgns", "cursor", "TEXT")
+    _ensure_raw_pgns_versioned(conn)
     _ensure_column(conn, "metrics_summary", "source", "TEXT")
     if conn.execute("SELECT COUNT(*) FROM metrics_version").fetchone()[0] == 0:
         conn.execute("INSERT INTO metrics_version VALUES (0, CURRENT_TIMESTAMP)")
+
+
+def _hash_pgn(pgn: str) -> str:
+    return hashlib.sha256(pgn.encode("utf-8")).hexdigest()
+
+
+def _ensure_raw_pgns_versioned(conn: duckdb.DuckDBPyConnection) -> None:
+    columns = {
+        row[1] for row in conn.execute("PRAGMA table_info('raw_pgns')").fetchall()
+    }
+    if "raw_pgn_id" not in columns:
+        conn.execute("BEGIN TRANSACTION")
+        try:
+            existing_tables = {
+                row[0]
+                for row in conn.execute("SHOW TABLES").fetchall()
+            }
+            if "raw_pgns_legacy" in existing_tables:
+                conn.execute("DROP TABLE raw_pgns_legacy")
+            conn.execute("ALTER TABLE raw_pgns RENAME TO raw_pgns_legacy")
+            conn.execute(RAW_PGNS_SCHEMA)
+            legacy_rows = conn.execute(
+                "SELECT game_id, user, source, fetched_at, pgn, last_timestamp_ms, cursor FROM raw_pgns_legacy"
+            ).fetchall()
+            next_id = 0
+            inserts = []
+            for row in legacy_rows:
+                next_id += 1
+                pgn_text = row[4] or ""
+                inserts.append(
+                    (
+                        next_id,
+                        row[0],
+                        row[1],
+                        row[2],
+                        row[3],
+                        pgn_text,
+                        _hash_pgn(pgn_text),
+                        1,
+                        datetime.now(timezone.utc),
+                        row[5],
+                        row[6],
+                    )
+                )
+            if inserts:
+                conn.executemany(
+                    """
+                    INSERT INTO raw_pgns (
+                        raw_pgn_id,
+                        game_id,
+                        user,
+                        source,
+                        fetched_at,
+                        pgn,
+                        pgn_hash,
+                        pgn_version,
+                        ingested_at,
+                        last_timestamp_ms,
+                        cursor
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    inserts,
+                )
+            conn.execute("DROP TABLE raw_pgns_legacy")
+            conn.execute("COMMIT")
+        except Exception:  # noqa: BLE001
+            conn.execute("ROLLBACK")
+            raise
+    else:
+        _ensure_column(conn, "raw_pgns", "pgn_hash", "TEXT")
+        _ensure_column(conn, "raw_pgns", "pgn_version", "INTEGER")
+        _ensure_column(conn, "raw_pgns", "ingested_at", "TIMESTAMP")
+        _ensure_column(conn, "raw_pgns", "cursor", "TEXT")
 
 
 def _ensure_column(
@@ -122,29 +201,77 @@ def upsert_raw_pgns(
         return 0
     conn.execute("BEGIN TRANSACTION")
     try:
-        conn.executemany(
-            """
-            INSERT OR REPLACE INTO raw_pgns (game_id, user, source, fetched_at, pgn, last_timestamp_ms, cursor)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
-            [
+        next_id = conn.execute(
+            "SELECT COALESCE(MAX(raw_pgn_id), 0) FROM raw_pgns"
+        ).fetchone()[0]
+        latest_cache: dict[tuple[str, str], tuple[str | None, int]] = {}
+        inserted = 0
+        for row in rows_list:
+            game_id = str(row["game_id"])
+            source = str(row["source"])
+            pgn_text = str(row["pgn"])
+            pgn_hash = _hash_pgn(pgn_text)
+            key = (game_id, source)
+            if key in latest_cache:
+                latest_hash, latest_version = latest_cache[key]
+            else:
+                existing = conn.execute(
+                    """
+                    SELECT pgn_hash, pgn_version
+                    FROM raw_pgns
+                    WHERE game_id = ? AND source = ?
+                    ORDER BY pgn_version DESC
+                    LIMIT 1
+                    """,
+                    [game_id, source],
+                ).fetchone()
+                if existing:
+                    latest_hash, latest_version = existing[0], int(existing[1] or 0)
+                else:
+                    latest_hash, latest_version = None, 0
+            if latest_hash == pgn_hash:
+                latest_cache[key] = (latest_hash, latest_version)
+                continue
+            next_id += 1
+            new_version = latest_version + 1
+            conn.execute(
+                """
+                INSERT INTO raw_pgns (
+                    raw_pgn_id,
+                    game_id,
+                    user,
+                    source,
+                    fetched_at,
+                    pgn,
+                    pgn_hash,
+                    pgn_version,
+                    ingested_at,
+                    last_timestamp_ms,
+                    cursor
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
                 (
-                    row["game_id"],
+                    next_id,
+                    game_id,
                     row["user"],
-                    row["source"],
+                    source,
                     row.get("fetched_at", datetime.now(timezone.utc)),
-                    row["pgn"],
+                    pgn_text,
+                    pgn_hash,
+                    new_version,
+                    datetime.now(timezone.utc),
                     row.get("last_timestamp_ms", 0),
                     row.get("cursor"),
-                )
-                for row in rows_list
-            ],
-        )
+                ),
+            )
+            latest_cache[key] = (pgn_hash, new_version)
+            inserted += 1
         conn.execute("COMMIT")
     except Exception:  # noqa: BLE001
         conn.execute("ROLLBACK")
         raise
-    return len(rows_list)
+    return inserted
 
 
 def delete_game_rows(conn: duckdb.DuckDBPyConnection, game_ids: list[str]) -> None:

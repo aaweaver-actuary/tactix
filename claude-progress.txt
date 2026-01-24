@@ -57,3 +57,11 @@ Session 2026-01-24 (feature 006 – Stockfish crash resume + regression verifica
 - UI verification screenshots: `verification/dashboard-lichess-regression.png`, `verification/dashboard-chesscom-regression.png`, `verification/dashboard-chesscom-stockfish-resume.png`.
 - Updated feature_list.json: feature 006 marked passes=true after UI + test verification.
 - Current passing count: 6.
+
+Session 2026-01-24 (feature 007 – Raw PGN versioning)
+- Migrated raw_pgns schema to include versioned PGN metadata (hash, version, ingested_at) and insert-only updates when PGNs change.
+- Added unit coverage for verbatim PGN storage and version increments on change.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest` (22 passed).
+- UI verification screenshot: `verification/dashboard-lichess-pgn-versioning.png`.
+- Updated feature_list.json: feature 007 marked passes=true after UI + test verification.
+- Current passing count: 7.

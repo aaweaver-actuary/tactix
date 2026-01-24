@@ -40,7 +40,6 @@ def extract_positions(
     user_color = chess.WHITE if user_lower == white else chess.BLACK
     board = game.board()
     positions: List[Dict[str, object]] = []
-    ply_index = 0
 
     for node in game.mainline():
         move = node.move
@@ -48,21 +47,22 @@ def extract_positions(
             continue
         is_user_to_move = board.turn == user_color
         if is_user_to_move:
+            side_to_move = "white" if board.turn == chess.WHITE else "black"
             positions.append(
                 {
                     "game_id": game_id or game.headers.get("Site", ""),
                     "user": user,
                     "source": source,
                     "fen": board.fen(),
-                    "ply": ply_index,
+                    "ply": board.ply(),
                     "move_number": board.fullmove_number,
+                    "side_to_move": side_to_move,
                     "uci": move.uci(),
                     "san": board.san(move),
                     "clock_seconds": _clock_from_comment(node.comment or ""),
                 }
             )
         board.push(move)
-        ply_index += 1
 
     logger.info("Extracted %s positions for user", len(positions))
     return positions

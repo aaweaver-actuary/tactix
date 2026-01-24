@@ -65,3 +65,11 @@ Session 2026-01-24 (feature 007 – Raw PGN versioning)
 - UI verification screenshot: `verification/dashboard-lichess-pgn-versioning.png`.
 - Updated feature_list.json: feature 007 marked passes=true after UI + test verification.
 - Current passing count: 7.
+
+Session 2026-01-24 (feature 008 – Position extraction ply/clock capture)
+- Added side-to-move capture and ply tracking via `board.ply()` in position extraction; persisted `side_to_move` in DuckDB positions.
+- Added Chess.com fixture coverage for ply, move number, user move, and clocks (white + black).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest` (24 passed).
+- UI verification screenshot: `verification/dashboard-chesscom-position-clocks.png`.
+- Updated feature_list.json: feature 008 marked passes=true after UI + test verification.
+- Current passing count: 8.

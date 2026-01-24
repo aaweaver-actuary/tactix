@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS positions (
     fen TEXT,
     ply INTEGER,
     move_number INTEGER,
+    side_to_move TEXT,
     uci TEXT,
     san TEXT,
     clock_seconds DOUBLE,
@@ -103,6 +104,7 @@ def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute(METRICS_VERSION_SCHEMA)
     conn.execute(METRICS_SUMMARY_SCHEMA)
     _ensure_raw_pgns_versioned(conn)
+    _ensure_column(conn, "positions", "side_to_move", "TEXT")
     _ensure_column(conn, "metrics_summary", "source", "TEXT")
     if conn.execute("SELECT COUNT(*) FROM metrics_version").fetchone()[0] == 0:
         conn.execute("INSERT INTO metrics_version VALUES (0, CURRENT_TIMESTAMP)")
@@ -309,8 +311,8 @@ def insert_positions(
             position_id = start_id + idx
             conn.execute(
                 """
-                INSERT INTO positions (position_id, game_id, user, source, fen, ply, move_number, uci, san, clock_seconds)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO positions (position_id, game_id, user, source, fen, ply, move_number, side_to_move, uci, san, clock_seconds)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     position_id,
@@ -320,6 +322,7 @@ def insert_positions(
                     row["fen"],
                     row["ply"],
                     row["move_number"],
+                    row.get("side_to_move"),
                     row["uci"],
                     row.get("san", ""),
                     row.get("clock_seconds"),

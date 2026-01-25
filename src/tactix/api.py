@@ -161,6 +161,7 @@ def practice_next(
         limit=1,
         source=source or settings.source,
         include_failed_attempt=include_failed_attempt,
+        exclude_seen=True,
     )
     return {
         "source": source or settings.source,

@@ -1354,6 +1354,7 @@ def fetch_practice_queue(
     limit: int = 20,
     source: str | None = None,
     include_failed_attempt: bool = False,
+    exclude_seen: bool = False,
 ) -> list[dict[str, object]]:
     results = ["missed"]
     if include_failed_attempt:
@@ -1389,6 +1390,12 @@ def fetch_practice_queue(
     if source:
         query += " AND p.source = ?"
         params.append(source)
+    if exclude_seen:
+        query += " AND t.tactic_id NOT IN (SELECT tactic_id FROM training_attempts"
+        if source:
+            query += " WHERE source = ?"
+            params.append(source)
+        query += ")"
     query += " ORDER BY t.created_at DESC LIMIT ?"
     params.append(limit)
     result = conn.execute(query, params)

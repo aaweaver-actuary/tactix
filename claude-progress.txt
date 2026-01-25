@@ -198,6 +198,15 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
 
+Session 2026-01-25 (feature 028 – Practice next unseen)
+- Added unseen-tactic filtering to practice queue fetch (exclude tactics with training attempts) and wired `/api/practice/next` to use it.
+- Added API test ensuring `/api/practice/next` excludes previously seen tactics via training_attempts.
+- Added Puppeteer verification script for feature 028 and captured UI screenshot.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_practice_next.py`.
+- UI verification screenshot: `verification/feature-028-practice-next-unseen.png`.
+- Updated feature_list.json: feature 028 marked passes=true after verification.
+- Current passing count: 30.
+
 Session 2026-01-25 (feature 025b – Lichess username from .env)
 - Updated settings to prefer `LICHESS_USERNAME` and refresh user config after `load_dotenv()`.
 - Added unit tests for env loading, API call username wiring, and fixture games containing the user as white/black.

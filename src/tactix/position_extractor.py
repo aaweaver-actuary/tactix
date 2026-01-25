@@ -22,7 +22,7 @@ def _clock_from_comment(comment: str) -> Optional[float]:
     return int(hours) * 3600 + int(minutes) * 60 + int(seconds)
 
 
-def extract_positions(
+def _extract_positions_python(
     pgn: str, user: str, source: str, game_id: str | None = None
 ) -> List[Dict[str, object]]:
     game = chess.pgn.read_game(StringIO(pgn))
@@ -66,3 +66,22 @@ def extract_positions(
 
     logger.info("Extracted %s positions for user", len(positions))
     return positions
+
+
+def extract_positions(
+    pgn: str, user: str, source: str, game_id: str | None = None
+) -> List[Dict[str, object]]:
+    try:
+        from tactix import _core
+    except Exception:  # pragma: no cover - optional Rust extension
+        return _extract_positions_python(pgn, user, source, game_id)
+
+    rust_extractor = getattr(_core, "extract_positions", None)
+    if rust_extractor is None:
+        return _extract_positions_python(pgn, user, source, game_id)
+
+    try:
+        return rust_extractor(pgn, user, source, game_id)
+    except Exception as exc:  # pragma: no cover - rust fallback
+        logger.warning("Rust extractor failed; falling back to Python: %s", exc)
+        return _extract_positions_python(pgn, user, source, game_id)

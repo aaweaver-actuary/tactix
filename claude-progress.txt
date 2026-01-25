@@ -220,3 +220,11 @@ Session 2026-01-25 (feature 024 – Promotion + en passant extraction)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_position_extractor.py`.
 - Updated feature_list.json: feature 024 marked passes=true after verification.
 - Current passing count: 24.
+
+Session 2026-01-25 (feature 025 – Castling extraction)
+- Added Rust-backed PGN extractor with pgn-reader/shakmaty and Python fallback.
+- Added castling fixture and tests for O-O and O-O-O with ply/move metadata.
+- Added Puppeteer verification script and captured screenshot: `verification/feature-025-castling-2026-01-25.png`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_position_extractor.py`.
+- Updated feature_list.json: feature 025 marked passes=true after verification.
+- Current passing count: 25.

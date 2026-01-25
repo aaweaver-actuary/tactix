@@ -29,11 +29,23 @@ def _read_promotion_en_passant_games() -> list[str]:
     ]
 
 
+def _read_castling_games() -> list[str]:
+    path = (
+        Path(__file__).resolve().parent
+        / "fixtures"
+        / "lichess_castling_both_sides.pgn"
+    )
+    return [
+        chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
+    ]
+
+
 class PositionExtractorTests(unittest.TestCase):
     def setUp(self) -> None:
         self.games = _read_fixture_games()
         self.chesscom_games = _read_chesscom_games()
         self.promotion_en_passant_games = _read_promotion_en_passant_games()
+        self.castling_games = _read_castling_games()
 
     def test_extracts_only_user_to_move_positions(self) -> None:
         pgn = self.games[0]
@@ -115,6 +127,34 @@ class PositionExtractorTests(unittest.TestCase):
         self.assertEqual(promotion["ply"], 8)
         self.assertEqual(promotion["move_number"], 5)
         self.assertEqual(promotion["side_to_move"], "white")
+
+    def test_extracts_kingside_castle(self) -> None:
+        pgn = self.castling_games[0]
+        positions = extract_positions(
+            pgn, user="castle_white", source="lichess", game_id="castle1"
+        )
+        castles = [pos for pos in positions if pos["san"] == "O-O"]
+        self.assertEqual(len(castles), 1)
+
+        castle = castles[0]
+        self.assertEqual(castle["uci"], "e1g1")
+        self.assertEqual(castle["ply"], 8)
+        self.assertEqual(castle["move_number"], 5)
+        self.assertEqual(castle["side_to_move"], "white")
+
+    def test_extracts_queenside_castle(self) -> None:
+        pgn = self.castling_games[1]
+        positions = extract_positions(
+            pgn, user="castle_black", source="lichess", game_id="castle2"
+        )
+        castles = [pos for pos in positions if pos["san"] == "O-O-O"]
+        self.assertEqual(len(castles), 1)
+
+        castle = castles[0]
+        self.assertEqual(castle["uci"], "e8c8")
+        self.assertEqual(castle["ply"], 9)
+        self.assertEqual(castle["move_number"], 5)
+        self.assertEqual(castle["side_to_move"], "black")
 
 
 if __name__ == "__main__":

@@ -150,14 +150,25 @@ def _next_page_url(data: dict, current_url: str) -> str | None:
             if href:
                 return href
 
-    page = data.get("page") or data.get("current_page")
-    total_pages = data.get("total_pages") or data.get("totalPages")
-    if isinstance(page, int) and isinstance(total_pages, int) and page < total_pages:
+    page = _coerce_int(data.get("page") or data.get("current_page"))
+    total_pages = _coerce_int(data.get("total_pages") or data.get("totalPages"))
+    if page is not None and total_pages is not None and page < total_pages:
         parsed = urlparse(current_url)
         query = parse_qs(parsed.query)
         query["page"] = [str(page + 1)]
         return urlunparse(parsed._replace(query=urlencode(query, doseq=True)))
 
+    return None
+
+
+def _coerce_int(value: object) -> int | None:
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return None
     return None
 
 

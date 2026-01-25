@@ -2,11 +2,12 @@ import tempfile
 from pathlib import Path
 import unittest
 from unittest.mock import patch
+from urllib.parse import parse_qs, urlparse
 
 import requests
 
 from tactix.config import Settings
-from tactix.chesscom_client import fetch_incremental_games
+from tactix.chesscom_client import ARCHIVES_URL, fetch_incremental_games
 from tactix.pgn_utils import latest_timestamp, split_pgn_chunks
 
 
@@ -167,6 +168,69 @@ class ChesscomClientTests(unittest.TestCase):
             result = fetch_incremental_games(settings, cursor=None)
 
         self.assertEqual(len(result.games), 2)
+
+    def test_remote_fetch_paginates_over_200_games(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            chesscom_token="token",
+            duckdb_path=self.tmp_dir / "db.duckdb",
+            chesscom_checkpoint_path=self.tmp_dir / "chesscom_since.txt",
+            metrics_version_file=self.tmp_dir / "metrics.txt",
+            chesscom_fixture_pgn_path=self.fixture_path,
+            chesscom_use_fixture_when_no_token=False,
+        )
+        settings.apply_source_defaults()
+
+        pgn_text = split_pgn_chunks(self.fixture_path.read_text())[0]
+        archive_url = "https://api.chess.com/pub/player/chesscom/games/2024/01"
+        archives_url = ARCHIVES_URL.format(username=settings.user)
+        total_pages = 5
+
+        class DummyResponse:
+            def __init__(self, status_code, json_data=None, headers=None):
+                self.status_code = status_code
+                self._json = json_data or {}
+                self.headers = headers or {}
+
+            def json(self):
+                return self._json
+
+            def raise_for_status(self):
+                if self.status_code >= 400:
+                    raise requests.HTTPError(f"{self.status_code} Error")
+
+        def page_payload(page: int) -> dict:
+            games = []
+            for index in range(50):
+                games.append(
+                    {
+                        "time_class": settings.chesscom_time_class,
+                        "pgn": pgn_text,
+                        "uuid": f"game-{page}-{index}",
+                    }
+                )
+            return {
+                "games": games,
+                "page": str(page),
+                "total_pages": str(total_pages),
+            }
+
+        def fake_get(url, *_args, **_kwargs):
+            if url == archives_url:
+                return DummyResponse(200, json_data={"archives": [archive_url]})
+
+            parsed = urlparse(url)
+            if parsed.path.endswith("/games/2024/01"):
+                page_value = parse_qs(parsed.query).get("page", ["1"])[0]
+                return DummyResponse(200, json_data=page_payload(int(page_value)))
+
+            raise AssertionError(f"Unexpected URL: {url}")
+
+        with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
+            result = fetch_incremental_games(settings, cursor=None)
+
+        self.assertEqual(len(result.games), total_pages * 50)
 
 
 if __name__ == "__main__":

@@ -189,3 +189,11 @@ Session 2026-01-25 (regression verification + feature 020 re-verify)
 - UI verification screenshots: `verification/regression-001-lichess-2026-01-25.png`, `verification/regression-016-auth-2026-01-25.png`, `verification/feature-020-chesscom-progress-2026-01-25.png`, `verification/feature-020-chesscom-dashboard-2026-01-25.png`.
 - Updated feature_list.json: feature 020 marked passes=true after UI verification.
 - Current passing count: 20.
+
+Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
+- Enhanced Chess.com pagination to handle string-based page fields and added a >200-game pagination test.
+- Added Puppeteer verification script (no eval helpers) for Chess.com pagination and captured UI screenshot.
+- Tests: `uv run pytest tests/test_chesscom_client.py`.
+- UI verification screenshot: `verification/feature-021-chesscom-pagination.png`.
+- Updated feature_list.json: feature 021 marked passes=true after verification.
+- Current passing count: 21.

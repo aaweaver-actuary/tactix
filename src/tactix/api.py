@@ -71,8 +71,17 @@ def health() -> dict[str, str]:
 
 
 @app.post("/api/jobs/daily_game_sync")
-def trigger_daily_sync(source: str | None = Query(None)) -> dict[str, object]:
-    result = run_daily_game_sync(get_settings(source=source), source=source)
+def trigger_daily_sync(
+    source: str | None = Query(None),
+    backfill_start_ms: int | None = Query(None, ge=0),
+    backfill_end_ms: int | None = Query(None, ge=0),
+) -> dict[str, object]:
+    result = run_daily_game_sync(
+        get_settings(source=source),
+        source=source,
+        window_start_ms=backfill_start_ms,
+        window_end_ms=backfill_end_ms,
+    )
     return {"status": "ok", "result": result}
 
 

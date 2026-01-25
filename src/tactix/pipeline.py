@@ -15,13 +15,16 @@ from tactix.chesscom_client import (
 )
 from tactix.config import Settings, get_settings
 from tactix.duckdb_store import (
+    fetch_latest_pgn_hashes,
     fetch_metrics,
     fetch_positions_for_games,
+    fetch_position_counts,
     fetch_recent_positions,
     fetch_recent_tactics,
     get_schema_version,
     fetch_version,
     get_connection,
+    hash_pgn,
     init_schema,
     insert_positions,
     delete_game_rows,
@@ -56,6 +59,63 @@ def _emit_progress(
     payload: dict[str, object] = {"step": step, "timestamp": time.time()}
     payload.update(fields)
     progress(payload)
+
+
+def _dedupe_games(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    seen: set[tuple[str, str, int]] = set()
+    deduped: list[dict[str, object]] = []
+    for game in rows:
+        game_id = str(game.get("game_id", ""))
+        source = str(game.get("source", ""))
+        last_ts = int(game.get("last_timestamp_ms", 0) or 0)
+        key = (game_id, source, last_ts)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(game)
+    return deduped
+
+
+def _filter_games_by_window(
+    rows: list[dict[str, object]],
+    start_ms: int | None,
+    end_ms: int | None,
+) -> list[dict[str, object]]:
+    if start_ms is None and end_ms is None:
+        return rows
+    filtered: list[dict[str, object]] = []
+    for game in rows:
+        last_ts = int(game.get("last_timestamp_ms", 0) or 0)
+        if start_ms is not None and last_ts < start_ms:
+            continue
+        if end_ms is not None and last_ts >= end_ms:
+            continue
+        filtered.append(game)
+    return filtered
+
+
+def _filter_backfill_games(
+    conn,
+    rows: list[dict[str, object]],
+    source: str,
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    if not rows:
+        return [], []
+    game_ids = [str(row.get("game_id", "")) for row in rows]
+    latest_hashes = fetch_latest_pgn_hashes(conn, game_ids, source)
+    position_counts = fetch_position_counts(conn, game_ids, source)
+    to_process: list[dict[str, object]] = []
+    skipped: list[dict[str, object]] = []
+    for game in rows:
+        game_id = str(game.get("game_id", ""))
+        pgn_text = str(game.get("pgn", ""))
+        current_hash = hash_pgn(pgn_text)
+        existing_hash = latest_hashes.get(game_id)
+        if existing_hash == current_hash and position_counts.get(game_id, 0) > 0:
+            skipped.append(game)
+            continue
+        to_process.append(game)
+    return to_process, skipped
 
 
 def run_migrations(
@@ -158,12 +218,16 @@ def run_daily_game_sync(
     settings: Settings | None = None,
     source: str | None = None,
     progress: ProgressCallback | None = None,
+    window_start_ms: int | None = None,
+    window_end_ms: int | None = None,
 ) -> dict[str, object]:
     settings = settings or get_settings(source=source)
     if source:
         settings.source = source
     settings.apply_source_defaults()
     settings.ensure_dirs()
+
+    backfill_mode = window_start_ms is not None or window_end_ms is not None
 
     _emit_progress(
         progress,
@@ -177,9 +241,12 @@ def run_daily_game_sync(
     next_cursor: str | None = None
     chesscom_result: ChesscomFetchResult | None = None
     last_timestamp_value = 0
+    checkpoint_before: int | None = None
+    cursor_before: str | None = None
 
     if settings.source == "chesscom":
-        cursor_value = read_chesscom_cursor(settings.checkpoint_path)
+        cursor_before = read_chesscom_cursor(settings.checkpoint_path)
+        cursor_value = None if backfill_mode else cursor_before
         if cursor_value:
             try:
                 last_timestamp_value = int(cursor_value.split(":", 1)[0])
@@ -190,9 +257,17 @@ def run_daily_game_sync(
         next_cursor = chesscom_result.next_cursor or cursor_value
         last_timestamp_value = chesscom_result.last_timestamp_ms
     else:
-        since_ms = read_checkpoint(settings.checkpoint_path)
+        checkpoint_before = read_checkpoint(settings.checkpoint_path)
+        since_ms = window_start_ms if backfill_mode else checkpoint_before
+        if since_ms is None:
+            since_ms = 0
         games = fetch_lichess_games(settings, since_ms)
         last_timestamp_value = since_ms
+
+    games = _dedupe_games(games)
+    games = _filter_games_by_window(games, window_start_ms, window_end_ms)
+    if games:
+        last_timestamp_value = latest_timestamp(games) or last_timestamp_value
 
     _emit_progress(
         progress,
@@ -201,6 +276,9 @@ def run_daily_game_sync(
         fetched_games=len(games),
         since_ms=since_ms,
         cursor=next_cursor or cursor_value,
+        backfill=backfill_mode,
+        backfill_start_ms=window_start_ms,
+        backfill_end_ms=window_end_ms,
     )
 
     conn = get_connection(settings.duckdb_path)
@@ -226,13 +304,57 @@ def run_daily_game_sync(
             "positions": 0,
             "tactics": 0,
             "metrics_version": metrics_version,
-            "checkpoint_ms": since_ms if settings.source != "chesscom" else None,
-            "cursor": next_cursor or cursor_value,
+            "checkpoint_ms": None
+            if backfill_mode or settings.source == "chesscom"
+            else since_ms,
+            "cursor": cursor_before if backfill_mode else (next_cursor or cursor_value),
             "last_timestamp_ms": last_timestamp_value or since_ms,
             "since_ms": since_ms,
         }
 
-    game_ids = [game["game_id"] for game in games]
+    games_to_process = games
+    skipped_games: list[dict[str, object]] = []
+    if backfill_mode:
+        games_to_process, skipped_games = _filter_backfill_games(
+            conn, games, settings.source
+        )
+        if skipped_games:
+            logger.info(
+                "Skipping %s historical games already processed for source=%s",
+                len(skipped_games),
+                settings.source,
+            )
+    if not games_to_process:
+        logger.info(
+            "No new games to process after backfill dedupe for source=%s",
+            settings.source,
+        )
+        update_metrics_summary(conn)
+        metrics_version = write_metrics_version(conn)
+        settings.metrics_version_file.write_text(str(metrics_version))
+        if not backfill_mode:
+            if settings.source == "chesscom":
+                write_chesscom_cursor(settings.checkpoint_path, next_cursor)
+            else:
+                checkpoint_value = max(since_ms, last_timestamp_value)
+                write_checkpoint(settings.checkpoint_path, checkpoint_value)
+                last_timestamp_value = checkpoint_value
+        return {
+            "source": settings.source,
+            "user": settings.user,
+            "fetched_games": len(games),
+            "positions": 0,
+            "tactics": 0,
+            "metrics_version": metrics_version,
+            "checkpoint_ms": None
+            if backfill_mode
+            else max(since_ms, last_timestamp_value),
+            "cursor": cursor_before if backfill_mode else (next_cursor or cursor_value),
+            "last_timestamp_ms": last_timestamp_value,
+            "since_ms": since_ms,
+        }
+
+    game_ids = [game["game_id"] for game in games_to_process]
     analysis_checkpoint_path = settings.analysis_checkpoint_path
     positions: list[dict[str, object]] = []
     resume_index = -1
@@ -267,7 +389,7 @@ def run_daily_game_sync(
             message="Persisting raw PGNs",
         )
         delete_game_rows(conn, game_ids)
-        upsert_raw_pgns(conn, games)
+        upsert_raw_pgns(conn, games_to_process)
 
         _emit_progress(
             progress,
@@ -276,7 +398,7 @@ def run_daily_game_sync(
             message="Extracting positions",
         )
 
-        for game in games:
+        for game in games_to_process:
             positions.extend(
                 extract_positions(
                     game["pgn"],
@@ -294,7 +416,7 @@ def run_daily_game_sync(
             game_ids, len(positions), settings.source
         )
     else:
-        upsert_raw_pgns(conn, games)
+        upsert_raw_pgns(conn, games_to_process)
 
     _emit_progress(
         progress,
@@ -349,16 +471,17 @@ def run_daily_game_sync(
     )
 
     checkpoint_value: int | None = None
-    if settings.source == "chesscom":
-        write_chesscom_cursor(settings.checkpoint_path, next_cursor)
-        if chesscom_result:
-            last_timestamp_value = chesscom_result.last_timestamp_ms
-        elif games:
-            last_timestamp_value = latest_timestamp(games)
-    else:
-        checkpoint_value = max(since_ms, latest_timestamp(games))
-        write_checkpoint(settings.checkpoint_path, checkpoint_value)
-        last_timestamp_value = checkpoint_value
+    if not backfill_mode:
+        if settings.source == "chesscom":
+            write_chesscom_cursor(settings.checkpoint_path, next_cursor)
+            if chesscom_result:
+                last_timestamp_value = chesscom_result.last_timestamp_ms
+            elif games:
+                last_timestamp_value = latest_timestamp(games)
+        else:
+            checkpoint_value = max(since_ms, latest_timestamp(games))
+            write_checkpoint(settings.checkpoint_path, checkpoint_value)
+            last_timestamp_value = checkpoint_value
 
     return {
         "source": settings.source,
@@ -368,7 +491,7 @@ def run_daily_game_sync(
         "tactics": tactics_count,
         "metrics_version": metrics_version,
         "checkpoint_ms": checkpoint_value,
-        "cursor": next_cursor or cursor_value,
+        "cursor": cursor_before if backfill_mode else (next_cursor or cursor_value),
         "last_timestamp_ms": last_timestamp_value,
         "since_ms": since_ms,
     }

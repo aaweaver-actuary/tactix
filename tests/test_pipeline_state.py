@@ -7,6 +7,7 @@ import chess.engine
 
 from tactix.config import Settings
 from tactix.duckdb_store import fetch_version, get_connection
+from tactix.pgn_utils import extract_last_timestamp_ms, split_pgn_chunks
 from tactix.lichess_client import read_checkpoint
 from tactix.chesscom_client import read_cursor
 from tactix.pipeline import run_daily_game_sync
@@ -122,6 +123,62 @@ class PipelineStateTests(unittest.TestCase):
         self.assertEqual(outcomes_second, outcomes_first)
         self.assertEqual(checkpoint_second, checkpoint_first)
         self.assertEqual(metrics_version_second, metrics_version_first + 1)
+
+    def test_backfill_replay_is_idempotent(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "tactix.duckdb",
+            checkpoint_path=self.tmp_dir / "since.txt",
+            metrics_version_file=self.tmp_dir / "metrics.txt",
+            fixture_pgn_path=self.fixture_path,
+            use_fixture_when_no_token=True,
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=50,
+            stockfish_depth=8,
+            stockfish_multipv=2,
+        )
+
+        run_daily_game_sync(settings)
+        conn = get_connection(settings.duckdb_path)
+        raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
+        positions_before = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+        tactics_before = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        outcomes_before = conn.execute(
+            "SELECT COUNT(*) FROM tactic_outcomes"
+        ).fetchone()[0]
+        checkpoint_before = read_checkpoint(settings.checkpoint_path)
+        conn.close()
+
+        pgn_text = self.fixture_path.read_text()
+        timestamps = [
+            extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)
+        ]
+        window_start = min(timestamps) - 1000
+        window_end = max(timestamps) + 1000
+
+        run_daily_game_sync(
+            settings, window_start_ms=window_start, window_end_ms=window_end
+        )
+        run_daily_game_sync(
+            settings, window_start_ms=window_start, window_end_ms=window_end
+        )
+
+        conn = get_connection(settings.duckdb_path)
+        raw_after = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
+        positions_after = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+        tactics_after = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        outcomes_after = conn.execute(
+            "SELECT COUNT(*) FROM tactic_outcomes"
+        ).fetchone()[0]
+        checkpoint_after = read_checkpoint(settings.checkpoint_path)
+        conn.close()
+
+        self.assertEqual(raw_after, raw_before)
+        self.assertEqual(positions_after, positions_before)
+        self.assertEqual(tactics_after, tactics_before)
+        self.assertEqual(outcomes_after, outcomes_before)
+        self.assertEqual(checkpoint_after, checkpoint_before)
 
     def test_chesscom_incremental_run_skips_existing_games(self) -> None:
         settings = Settings(

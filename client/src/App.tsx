@@ -11,6 +11,7 @@ import {
   getAuthHeaders,
   getJobStreamUrl,
   submitPracticeAttempt,
+  triggerBackfill,
   triggerMetricsRefresh,
 } from './api';
 
@@ -302,6 +303,7 @@ function PositionsList({ data }: { data: DashboardPayload['positions'] }) {
 
 function Hero({
   onRun,
+  onBackfill,
   onRefresh,
   onMigrate,
   loading,
@@ -311,6 +313,7 @@ function Hero({
   onSourceChange,
 }: {
   onRun: () => void;
+  onBackfill: () => void;
   onRefresh: () => void;
   onMigrate: () => void;
   loading: boolean;
@@ -355,6 +358,13 @@ function Hero({
           disabled={loading}
         >
           {loading ? 'Running…' : 'Run + Refresh'}
+        </button>
+        <button
+          className="button border border-teal/50 text-teal px-4 py-3 rounded-lg"
+          onClick={onBackfill}
+          disabled={loading}
+        >
+          Backfill history
         </button>
         <button
           className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
@@ -601,6 +611,23 @@ function App() {
     }
   };
 
+  const handleBackfill = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const windowEnd = Date.now();
+      const windowStart = windowEnd - 900 * 24 * 60 * 60 * 1000;
+      const payload = await triggerBackfill(source, windowStart, windowEnd);
+      setData(payload);
+      await loadPracticeQueue(source, includeFailedAttempt);
+    } catch (err) {
+      console.error(err);
+      setError('Backfill run failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleMigrations = async () => {
     setLoading(true);
     setError(null);
@@ -806,6 +833,7 @@ function App() {
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
       <Hero
         onRun={handleRun}
+        onBackfill={handleBackfill}
         onMigrate={handleMigrations}
         onRefresh={handleRefreshMetrics}
         loading={loading}

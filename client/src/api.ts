@@ -155,6 +155,21 @@ export async function triggerPipeline(
   return fetchDashboard(source);
 }
 
+export async function triggerBackfill(
+  source: string | undefined,
+  windowStartMs: number,
+  windowEndMs: number,
+): Promise<DashboardPayload> {
+  await client.post('/api/jobs/daily_game_sync', null, {
+    params: {
+      source,
+      backfill_start_ms: windowStartMs,
+      backfill_end_ms: windowEndMs,
+    },
+  });
+  return fetchDashboard(source);
+}
+
 export async function triggerMetricsRefresh(
   source?: string,
   filters: DashboardFilters = {},

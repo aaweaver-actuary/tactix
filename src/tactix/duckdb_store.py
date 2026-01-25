@@ -205,7 +205,7 @@ _SCHEMA_MIGRATIONS = [
 ]
 
 
-def _hash_pgn(pgn: str) -> str:
+def hash_pgn(pgn: str) -> str:
     return hashlib.sha256(pgn.encode("utf-8")).hexdigest()
 
 
@@ -238,7 +238,7 @@ def _ensure_raw_pgns_versioned(conn: duckdb.DuckDBPyConnection) -> None:
                         row[2],
                         row[3],
                         pgn_text,
-                        _hash_pgn(pgn_text),
+                        hash_pgn(pgn_text),
                         1,
                         metadata.get("user_rating"),
                         metadata.get("time_control"),
@@ -312,7 +312,7 @@ def upsert_raw_pgns(
             source = str(row["source"])
             pgn_text = str(row["pgn"])
             metadata = extract_pgn_metadata(pgn_text, str(row["user"]))
-            pgn_hash = _hash_pgn(pgn_text)
+            pgn_hash = hash_pgn(pgn_text)
             key = (game_id, source)
             if key in latest_cache:
                 latest_hash, latest_version = latest_cache[key]
@@ -378,6 +378,54 @@ def upsert_raw_pgns(
         conn.execute("ROLLBACK")
         raise
     return inserted
+
+
+def fetch_latest_pgn_hashes(
+    conn: duckdb.DuckDBPyConnection,
+    game_ids: list[str],
+    source: str,
+) -> dict[str, str]:
+    if not game_ids:
+        return {}
+    placeholders = ", ".join(["?"] * len(game_ids))
+    params: list[object] = [source, *game_ids, source]
+    rows = conn.execute(
+        f"""
+        SELECT raw.game_id, raw.pgn_hash
+        FROM raw_pgns AS raw
+        JOIN (
+            SELECT game_id, MAX(pgn_version) AS max_version
+            FROM raw_pgns
+            WHERE source = ? AND game_id IN ({placeholders})
+            GROUP BY game_id
+        ) AS latest
+        ON raw.game_id = latest.game_id AND raw.pgn_version = latest.max_version
+        WHERE raw.source = ?
+        """,
+        params,
+    ).fetchall()
+    return {str(row[0]): str(row[1]) for row in rows if row[0] is not None}
+
+
+def fetch_position_counts(
+    conn: duckdb.DuckDBPyConnection,
+    game_ids: list[str],
+    source: str,
+) -> dict[str, int]:
+    if not game_ids:
+        return {}
+    placeholders = ", ".join(["?"] * len(game_ids))
+    params: list[object] = [*game_ids, source]
+    rows = conn.execute(
+        f"""
+        SELECT game_id, COUNT(*)
+        FROM positions
+        WHERE game_id IN ({placeholders}) AND source = ?
+        GROUP BY game_id
+        """,
+        params,
+    ).fetchall()
+    return {str(row[0]): int(row[1]) for row in rows if row[0] is not None}
 
 
 def delete_game_rows(conn: duckdb.DuckDBPyConnection, game_ids: list[str]) -> None:
@@ -964,9 +1012,7 @@ def fetch_metrics(
         date_filters.append("trend_date <= ?")
         params.append(end_date)
     if date_filters:
-        conditions.append(
-            f"(metric_type != 'trend' OR ({' AND '.join(date_filters)}))"
-        )
+        conditions.append(f"(metric_type != 'trend' OR ({' AND '.join(date_filters)}))")
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
     result = conn.execute(query, params)

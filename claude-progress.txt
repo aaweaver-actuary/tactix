@@ -164,3 +164,11 @@ Session 2026-01-24 (feature 018 – React training board legal moves + feedback)
 - UI verification screenshot: `verification/dashboard-training-board-feedback.png`.
 - Updated feature_list.json: feature 018 marked passes=true after UI + test verification.
 - Current passing count: 18.
+
+Session 2026-01-24 (feature 019 – Airflow backfill replay)
+- Added backfill window support in the pipeline/Airflow DAG with dedupe against existing PGN hashes + positions to avoid duplicate inserts.
+- Extended API + React dashboard with a Backfill history action and created a Puppeteer backfill verification script.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest` (37 passed).
+- UI verification screenshot: `verification/dashboard-lichess-backfill.png`.
+- Updated feature_list.json: feature 019 marked passes=true after UI + test verification.
+- Current passing count: 19.

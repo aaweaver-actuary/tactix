@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from airflow.decorators import dag, task
 from airflow.operators.python import get_current_context
@@ -24,6 +24,14 @@ def default_args():
     }
 
 
+def _to_epoch_ms(value: datetime | None) -> int | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return int(value.timestamp() * 1000)
+
+
 @dag(
     dag_id="daily_game_sync",
     schedule="@daily",
@@ -40,12 +48,22 @@ def daily_game_sync_dag():
     def run_pipeline() -> dict[str, object]:
         context = get_current_context()
         logical_date = context.get("logical_date") if context else None
+        dag_run = context.get("dag_run") if context else None
+        run_type = str(getattr(dag_run, "run_type", "")) if dag_run else ""
+        is_backfill = run_type == "backfill"
+        data_interval_start = context.get("data_interval_start") if context else None
+        data_interval_end = context.get("data_interval_end") if context else None
         logger.info(
-            "Starting end-to-end pipeline run for source=%s logical_date=%s",
+            "Starting end-to-end pipeline run for source=%s logical_date=%s backfill=%s",
             settings.source,
             logical_date,
+            is_backfill,
         )
-        result = run_daily_game_sync(settings)
+        result = run_daily_game_sync(
+            settings,
+            window_start_ms=_to_epoch_ms(data_interval_start) if is_backfill else None,
+            window_end_ms=_to_epoch_ms(data_interval_end) if is_backfill else None,
+        )
         result["execution_date"] = logical_date.isoformat() if logical_date else None
         return result
 

@@ -16,6 +16,11 @@ DEFAULT_LICHESS_ANALYSIS_CHECKPOINT = (
     DEFAULT_DATA_DIR / "analysis_checkpoint_lichess.json"
 )
 DEFAULT_LICHESS_FIXTURE = Path("tests/fixtures/lichess_rapid_sample.pgn")
+DEFAULT_CHESSCOM_CHECKPOINT = DEFAULT_DATA_DIR / "chesscom_since.txt"
+DEFAULT_CHESSCOM_ANALYSIS_CHECKPOINT = (
+    DEFAULT_DATA_DIR / "analysis_checkpoint_chesscom.json"
+)
+DEFAULT_CHESSCOM_FIXTURE = Path("tests/fixtures/chesscom_blitz_sample.pgn")
 
 
 @dataclass(slots=True)
@@ -47,6 +52,7 @@ class Settings:
     )
     chesscom_token: Optional[str] = os.getenv("CHESSCOM_TOKEN")
     chesscom_time_class: str = os.getenv("CHESSCOM_TIME_CLASS", "blitz")
+    chesscom_profile: str = os.getenv("TACTIX_CHESSCOM_PROFILE", "")
     chesscom_max_retries: int = int(os.getenv("CHESSCOM_MAX_RETRIES", "3"))
     chesscom_retry_backoff_ms: int = int(os.getenv("CHESSCOM_RETRY_BACKOFF_MS", "500"))
     duckdb_path: Path = Path(
@@ -56,9 +62,7 @@ class Settings:
         os.getenv("TACTIX_CHECKPOINT_PATH", DEFAULT_LICHESS_CHECKPOINT)
     )
     chesscom_checkpoint_path: Path = Path(
-        os.getenv(
-            "TACTIX_CHESSCOM_CHECKPOINT_PATH", DEFAULT_DATA_DIR / "chesscom_since.txt"
-        )
+        os.getenv("TACTIX_CHESSCOM_CHECKPOINT_PATH", DEFAULT_CHESSCOM_CHECKPOINT)
     )
     analysis_checkpoint_path: Path = Path(
         os.getenv(
@@ -104,7 +108,7 @@ class Settings:
     chesscom_fixture_pgn_path: Path = Path(
         os.getenv(
             "TACTIX_CHESSCOM_FIXTURE_PGN_PATH",
-            "tests/fixtures/chesscom_blitz_sample.pgn",
+            DEFAULT_CHESSCOM_FIXTURE,
         )
     )
     use_fixture_when_no_token: bool = os.getenv("TACTIX_USE_FIXTURE", "1") == "1"
@@ -123,12 +127,20 @@ class Settings:
         self.source = (self.source or "lichess").lower()
         if self.source == "chesscom":
             self.user = self.chesscom_user
+            if not self.chesscom_profile:
+                inferred_profile = (
+                    "correspondence"
+                    if self.chesscom_time_class == "daily"
+                    else self.chesscom_time_class
+                )
+                self.chesscom_profile = inferred_profile or "blitz"
             self.checkpoint_path = self.chesscom_checkpoint_path
             self.analysis_checkpoint_path = (
                 self.data_dir / "analysis_checkpoint_chesscom.json"
             )
             self.fixture_pgn_path = self.chesscom_fixture_pgn_path
             self.use_fixture_when_no_token = self.chesscom_use_fixture_when_no_token
+            self.apply_chesscom_profile()
         elif not self.user:
             self.user = self.lichess_user
         if self.source == "lichess":
@@ -136,6 +148,56 @@ class Settings:
                 self.data_dir / "analysis_checkpoint_lichess.json"
             )
             self.apply_lichess_profile()
+
+    def apply_chesscom_profile(self, profile: str | None = None) -> None:
+        profile_value = (profile or self.chesscom_profile or "").strip()
+        if not profile_value:
+            return
+        if self.source != "chesscom":
+            return
+        self.chesscom_profile = profile_value
+        time_class = "daily" if profile_value == "correspondence" else profile_value
+        self.chesscom_time_class = time_class
+        default_checkpoint = self.data_dir / "chesscom_since.txt"
+        profile_checkpoint = self.data_dir / f"chesscom_since_{profile_value}.txt"
+        if (
+            self.checkpoint_path == default_checkpoint
+            or self.checkpoint_path.name.startswith("chesscom_since_")
+        ):
+            self.checkpoint_path = profile_checkpoint
+        if (
+            self.chesscom_checkpoint_path == DEFAULT_CHESSCOM_CHECKPOINT
+            or self.chesscom_checkpoint_path == default_checkpoint
+            or self.chesscom_checkpoint_path.name.startswith("chesscom_since_")
+        ):
+            self.chesscom_checkpoint_path = self.checkpoint_path
+        default_analysis = self.data_dir / "analysis_checkpoint_chesscom.json"
+        profile_analysis = (
+            self.data_dir / f"analysis_checkpoint_chesscom_{profile_value}.json"
+        )
+        if (
+            self.analysis_checkpoint_path == DEFAULT_CHESSCOM_ANALYSIS_CHECKPOINT
+            or self.analysis_checkpoint_path == default_analysis
+            or self.analysis_checkpoint_path.name.startswith(
+                "analysis_checkpoint_chesscom_"
+            )
+        ):
+            self.analysis_checkpoint_path = profile_analysis
+        repo_root = Path(__file__).resolve().parents[2]
+        candidate = repo_root / f"tests/fixtures/chesscom_{profile_value}_sample.pgn"
+        if candidate.exists():
+            if (
+                self.chesscom_fixture_pgn_path == DEFAULT_CHESSCOM_FIXTURE
+                or self.chesscom_fixture_pgn_path.name.startswith("chesscom_")
+                and self.chesscom_fixture_pgn_path.name.endswith("_sample.pgn")
+            ):
+                self.chesscom_fixture_pgn_path = candidate
+            if (
+                self.fixture_pgn_path == DEFAULT_CHESSCOM_FIXTURE
+                or self.fixture_pgn_path.name.startswith("chesscom_")
+                and self.fixture_pgn_path.name.endswith("_sample.pgn")
+            ):
+                self.fixture_pgn_path = candidate
 
     def apply_lichess_profile(self, profile: str | None = None) -> None:
         profile_value = (profile or self.lichess_profile or "").strip()
@@ -188,5 +250,6 @@ def get_settings(source: str | None = None, profile: str | None = None) -> Setti
         settings.source = source
     settings.apply_source_defaults()
     settings.apply_lichess_profile(profile)
+    settings.apply_chesscom_profile(profile)
     settings.ensure_dirs()
     return settings

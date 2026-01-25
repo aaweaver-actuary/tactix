@@ -349,3 +349,52 @@ Session 2026-01-25 (feature 037 – Lichess classical incremental sync)
 - UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_037_lichess_classical_incremental.js`.
 - UI verification screenshot: `verification/feature-037-lichess-classical-incremental-2026-01-25.png`.
 - Updated feature_list.json: feature "Ingestion Lichess classical games via incremental sync" marked passes=true after verification.
+
+Session 2026-01-25 (feature – Lichess classical full backfill sync)
+- Added classical fixture window filtering test and backfill idempotency coverage for the classical profile.
+- Added Puppeteer verification script for classical backfill.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_lichess_client.py /Users/andy/tactix/tests/test_pipeline_state.py`.
+- UI verification: `TACTIX_UI_URL=http://localhost:5174 node /Users/andy/tactix/verification/puppeteer_feature_038_lichess_classical_backfill.js`.
+- UI verification screenshot: `verification/feature-038-lichess-classical-backfill-2026-01-25.png`.
+- Updated feature_list.json: feature "Ingestion Lichess classical games via full backfill sync" marked passes=true after verification.
+
+Session 2026-01-25 (feature 040 – Lichess correspondence incremental sync)
+- Added correspondence profile to Lichess UI/types and perf mapping, plus correspondence fixture PGN support.
+- Added tests for correspondence profile paths, fixture filtering, perf_type mapping, and incremental checkpointing.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_config_env.py tests/test_lichess_client.py tests/test_pipeline_state.py`.
+- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_040_lichess_correspondence_incremental.js`.
+- UI verification screenshot: `verification/feature-040-lichess-correspondence-incremental-2026-01-25.png`.
+- Updated feature_list.json: feature "Ingestion Lichess correspondence games via incremental sync" marked passes=true after verification.
+
+Session 2026-01-25 (feature 041 – Lichess correspondence full backfill sync)
+- Added correspondence backfill idempotency coverage and strengthened fixture window filtering assertions.
+- Added Puppeteer verification script for correspondence backfill.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_lichess_client.py tests/test_pipeline_state.py`.
+- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_041_lichess_correspondence_backfill.js`.
+- UI verification screenshot: `verification/feature-041-lichess-correspondence-backfill-2026-01-25.png`.
+- Updated feature_list.json: feature "Ingestion Lichess correspondence games via full backfill sync" marked passes=true after verification.
+
+Session 2026-01-25 (feature 042 – Chess.com bullet incremental sync)
+- Added Chess.com profile support with time class mapping, profile-specific checkpoint/analysis paths, and bullet fixture coverage.
+- Dashboard now exposes Chess.com time class selection and labels; new Puppeteer script added for bullet incremental verification.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_chesscom_client.py tests/test_config_env.py tests/test_pipeline_state.py`, `cd /Users/andy/tactix/client && npx vitest run src/_components/Hero.test.tsx`.
+- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_042_chesscom_bullet_incremental.js`.
+- UI verification screenshot: `verification/feature-042-chesscom-bullet-incremental-2026-01-25.png`.
+- Updated feature_list.json: feature "Ingestion Chess.com bullet games via incremental sync" marked passes=true after verification.
+
+Session 2026-01-25 (feature 043 – Chess.com bullet full backfill sync)
+- Ensured Chess.com profile fixture paths resolve from repo root and update `chesscom_fixture_pgn_path` on profile selection.
+- Added Chess.com bullet backfill idempotency coverage with profile-specific checkpoint + fixture assertions.
+- Added Puppeteer verification script for Chess.com bullet backfill.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_pipeline_state.py`.
+- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_043_chesscom_bullet_backfill.js`.
+- UI verification screenshot: `verification/feature-043-chesscom-bullet-backfill-2026-01-25.png`.
+- Updated feature_list.json: feature "Ingestion Chess.com bullet games via full backfill sync" marked passes=true after verification.
+
+Session 2026-01-25 (feature 044 – Chess.com blitz incremental sync)
+- Defaulted Chess.com profile to inferred time class to ensure blitz uses profile-specific checkpoint + fixtures; allowed profile overrides to retarget checkpoint/analysis/fixture paths when switching profiles.
+- Added tests for Chess.com blitz profile settings, blitz incremental pipeline checkpointing, and remote fetch filtering by time_class=blitz.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_config_env.py tests/test_chesscom_client.py tests/test_pipeline_state.py`.
+- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_044_chesscom_blitz_incremental.js`.
+- UI verification screenshot: `verification/feature-044-chesscom-blitz-incremental-2026-01-25.png`.
+- Updated feature_list.json: feature "Ingestion Chess.com blitz games via incremental sync" marked passes=true after verification.

@@ -75,6 +75,53 @@ class ConfigEnvTests(unittest.TestCase):
             settings.fixture_pgn_path.name.endswith("lichess_classical_sample.pgn")
         )
 
+    def test_get_settings_applies_lichess_correspondence_profile_paths(self) -> None:
+        settings = config.get_settings(source="lichess", profile="correspondence")
+
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("lichess_since_correspondence.txt")
+        )
+        self.assertTrue(
+            settings.analysis_checkpoint_path.name.endswith(
+                "analysis_checkpoint_lichess_correspondence.json"
+            )
+        )
+        self.assertTrue(
+            settings.fixture_pgn_path.name.endswith("lichess_correspondence_sample.pgn")
+        )
+
+    def test_get_settings_applies_chesscom_bullet_profile_paths(self) -> None:
+        settings = config.get_settings(source="chesscom", profile="bullet")
+
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("chesscom_since_bullet.txt")
+        )
+        self.assertTrue(
+            settings.analysis_checkpoint_path.name.endswith(
+                "analysis_checkpoint_chesscom_bullet.json"
+            )
+        )
+        self.assertTrue(
+            settings.fixture_pgn_path.name.endswith("chesscom_bullet_sample.pgn")
+        )
+        self.assertEqual(settings.chesscom_time_class, "bullet")
+
+    def test_get_settings_applies_chesscom_blitz_profile_paths(self) -> None:
+        settings = config.get_settings(source="chesscom", profile="blitz")
+
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("chesscom_since_blitz.txt")
+        )
+        self.assertTrue(
+            settings.analysis_checkpoint_path.name.endswith(
+                "analysis_checkpoint_chesscom_blitz.json"
+            )
+        )
+        self.assertTrue(
+            settings.fixture_pgn_path.name.endswith("chesscom_blitz_sample.pgn")
+        )
+        self.assertEqual(settings.chesscom_time_class, "blitz")
+
 
 if __name__ == "__main__":
     unittest.main()

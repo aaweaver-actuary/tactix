@@ -20,6 +20,9 @@ class ChesscomClientTests(unittest.TestCase):
         self.fixture_path = (
             Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
         )
+        self.bullet_fixture_path = (
+            Path(__file__).resolve().parent / "fixtures" / "chesscom_bullet_sample.pgn"
+        )
 
     def test_fixture_fetch_respects_since(self) -> None:
         settings = Settings(
@@ -107,6 +110,128 @@ class ChesscomClientTests(unittest.TestCase):
 
         self.assertEqual(len(result.games), 1)
         self.assertIn(archive_url, captured_urls)
+
+    def test_remote_fetch_filters_by_bullet_profile(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            chesscom_token="token",
+            chesscom_profile="bullet",
+            duckdb_path=self.tmp_dir / "db.duckdb",
+            chesscom_checkpoint_path=self.tmp_dir / "chesscom_since.txt",
+            metrics_version_file=self.tmp_dir / "metrics.txt",
+            chesscom_fixture_pgn_path=self.bullet_fixture_path,
+            chesscom_use_fixture_when_no_token=False,
+        )
+        settings.apply_source_defaults()
+        settings.apply_chesscom_profile("bullet")
+
+        pgn_text = split_pgn_chunks(self.bullet_fixture_path.read_text())[0]
+        archive_url = "https://api.chess.com/pub/player/chesscom/games/2024/07"
+
+        class DummyResponse:
+            def __init__(self, status_code, json_data=None, headers=None):
+                self.status_code = status_code
+                self._json = json_data or {}
+                self.headers = headers or {}
+
+            def json(self):
+                return self._json
+
+            def raise_for_status(self):
+                if self.status_code >= 400:
+                    raise requests.HTTPError(f"{self.status_code} Error")
+
+        responses = [
+            DummyResponse(200, json_data={"archives": [archive_url]}),
+            DummyResponse(
+                200,
+                json_data={
+                    "games": [
+                        {
+                            "time_class": "blitz",
+                            "pgn": pgn_text,
+                            "uuid": "game-blitz",
+                        },
+                        {
+                            "time_class": "bullet",
+                            "pgn": pgn_text,
+                            "uuid": "game-bullet",
+                        },
+                    ]
+                },
+            ),
+        ]
+
+        def fake_get(*_args, **_kwargs):
+            return responses.pop(0)
+
+        with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
+            result = fetch_incremental_games(settings, cursor=None)
+
+        self.assertEqual(len(result.games), 1)
+        self.assertEqual(result.games[0]["game_id"], "game-bullet")
+
+    def test_remote_fetch_filters_by_blitz_profile(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            chesscom_token="token",
+            chesscom_profile="blitz",
+            duckdb_path=self.tmp_dir / "db.duckdb",
+            chesscom_checkpoint_path=self.tmp_dir / "chesscom_since.txt",
+            metrics_version_file=self.tmp_dir / "metrics.txt",
+            chesscom_fixture_pgn_path=self.fixture_path,
+            chesscom_use_fixture_when_no_token=False,
+        )
+        settings.apply_source_defaults()
+        settings.apply_chesscom_profile("blitz")
+
+        pgn_text = split_pgn_chunks(self.fixture_path.read_text())[0]
+        archive_url = "https://api.chess.com/pub/player/chesscom/games/2024/07"
+
+        class DummyResponse:
+            def __init__(self, status_code, json_data=None, headers=None):
+                self.status_code = status_code
+                self._json = json_data or {}
+                self.headers = headers or {}
+
+            def json(self):
+                return self._json
+
+            def raise_for_status(self):
+                if self.status_code >= 400:
+                    raise requests.HTTPError(f"{self.status_code} Error")
+
+        responses = [
+            DummyResponse(200, json_data={"archives": [archive_url]}),
+            DummyResponse(
+                200,
+                json_data={
+                    "games": [
+                        {
+                            "time_class": "bullet",
+                            "pgn": pgn_text,
+                            "uuid": "game-bullet",
+                        },
+                        {
+                            "time_class": "blitz",
+                            "pgn": pgn_text,
+                            "uuid": "game-blitz",
+                        },
+                    ]
+                },
+            ),
+        ]
+
+        def fake_get(*_args, **_kwargs):
+            return responses.pop(0)
+
+        with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
+            result = fetch_incremental_games(settings, cursor=None)
+
+        self.assertEqual(len(result.games), 1)
+        self.assertEqual(result.games[0]["game_id"], "game-blitz")
 
     def test_fetched_games_include_user_as_white_or_black(self) -> None:
         settings = Settings(

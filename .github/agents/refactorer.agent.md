@@ -61,6 +61,18 @@ Then locate where UI code lives:
 find . -maxdepth 4 -type d -name "components" -o -name "src" -o -name "client" | sed 's|^\./||'
 ```
 
+If UI verification is needed, prefer Docker Compose:
+
+```
+docker compose -f docker/compose.yml up --build -d
+curl -s http://localhost:8000/api/health
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:5173
+```
+
+Notes:
+- Airflow may take 1–2 minutes to become available on first boot.
+- Services/ports: API 8000, UI 5173, Airflow 8080 (network: tactix-net).
+
 ---
 
 ## Step 2 — Choose Refactor Targets (High Signal Only)

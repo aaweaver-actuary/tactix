@@ -59,6 +59,23 @@ for the application you're building.
 
 ### STEP 2: START SERVERS (IF NOT RUNNING)
 
+Prefer Docker Compose for a consistent local setup unless explicitly asked to run services directly.
+
+```bash
+# Docker (recommended)
+docker compose -f docker/compose.yml up --build -d
+
+# Health checks
+curl -s http://localhost:8000/api/health
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:5173
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080
+```
+
+Notes:
+- Airflow may take 1–2 minutes to become available on first boot.
+- Services/ports: API 8000, UI 5173, Airflow 8080 (network: tactix-net).
+- Log notable orchestration events to tmp-logs/.
+
 If `init.sh` exists, run it:
 
 ```bash

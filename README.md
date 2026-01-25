@@ -12,6 +12,24 @@
 2) Install deps (Python, JS, optional Airflow bootstrap, Rust build if present): `./init.sh`
 3) To auto-start dev servers (when app code exists): `START_SERVERS=1 ./init.sh`
 
+### Docker (recommended for consistent local setup)
+From the repo root:
+
+1) Build and start all services:
+	- `docker compose -f docker/compose.yml up --build -d`
+2) Check service health:
+	- API: `curl -s http://localhost:8000/api/health`
+	- Dashboard: http://localhost:5173
+	- Airflow UI: http://localhost:8080
+
+Notes:
+- Airflow may take ~1–2 minutes to become available on first boot.
+- The stack uses the `tactix-net` bridge network. The containers expose ports 8000 (API), 5173 (UI), and 8080 (Airflow).
+- Data persists via the `data/` volume mounted into containers.
+
+To stop the stack:
+- `docker compose -f docker/compose.yml down`
+
 ### Services (once implemented)
 - FastAPI: http://localhost:8000 (SSE for job streams, analytics/practice APIs)
 - React/Vite dashboard: http://localhost:5173

@@ -97,6 +97,20 @@ git log --oneline -20
 
 If the repo is not under git, stop and initialize git before continuing.
 
+Docker status check (run after re-orient when Docker is expected):
+
+```
+docker compose -f docker/compose.yml ps
+curl -s http://localhost:8000/api/health
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:5173
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080
+```
+
+Notes:
+- Airflow may take 1–2 minutes to become available on first boot.
+- Services/ports: API 8000, UI 5173, Airflow 8080 (network: tactix-net).
+- Log orchestration events in tmp-logs/ when relevant.
+
 ---
 
 ## Step 2 — Regression Check (MANDATORY if any features are passing)

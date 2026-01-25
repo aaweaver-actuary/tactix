@@ -59,6 +59,11 @@ git status --porcelain || true
 git log --oneline -20 || true
 ```
 
+Environment notes (for compatibility checks):
+- Docker Compose stack in docker/compose.yml
+- Services/ports: API 8000, UI 5173, Airflow 8080 (network: tactix-net)
+- Prefer OSS options that are container-friendly and can run under these services.
+
 You must read the orchestrator’s delegation packet carefully and treat it as authoritative.
 
 ---

@@ -197,3 +197,11 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - UI verification screenshot: `verification/feature-021-chesscom-pagination.png`.
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
+
+Session 2026-01-25 (feature 022 – Lichess OAuth token refresh)
+- Added Lichess OAuth refresh flow with token cache, auth error detection, and retry on 401/403.
+- Added unit test coverage for refresh-on-auth-failure retry behavior.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_lichess_client.py` (3 passed).
+- UI verification screenshot: `verification/feature-022-lichess-oauth-refresh.png`.
+- Updated feature_list.json: feature 022 marked passes=true after UI + test verification.
+- Current passing count: 22.

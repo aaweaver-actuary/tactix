@@ -22,6 +22,16 @@ class Settings:
     lichess_user: str = os.getenv("LICHESS_USER", "lichess")
     source: str = os.getenv("TACTIX_SOURCE", "lichess")
     lichess_token: Optional[str] = os.getenv("LICHESS_TOKEN")
+    lichess_oauth_client_id: Optional[str] = os.getenv("LICHESS_OAUTH_CLIENT_ID")
+    lichess_oauth_client_secret: Optional[str] = os.getenv(
+        "LICHESS_OAUTH_CLIENT_SECRET"
+    )
+    lichess_oauth_refresh_token: Optional[str] = os.getenv(
+        "LICHESS_OAUTH_REFRESH_TOKEN"
+    )
+    lichess_oauth_token_url: str = os.getenv(
+        "LICHESS_OAUTH_TOKEN_URL", "https://lichess.org/api/token"
+    )
     chesscom_user: str = os.getenv("CHESSCOM_USER", "chesscom")
     chesscom_token: Optional[str] = os.getenv("CHESSCOM_TOKEN")
     chesscom_time_class: str = os.getenv("CHESSCOM_TIME_CLASS", "blitz")
@@ -84,6 +94,9 @@ class Settings:
     chesscom_use_fixture_when_no_token: bool = (
         os.getenv("TACTIX_CHESSCOM_USE_FIXTURE", "1") == "1"
     )
+    lichess_token_cache_path: Path = Path(
+        os.getenv("LICHESS_TOKEN_CACHE_PATH", DEFAULT_DATA_DIR / "lichess_token.json")
+    )
 
     @property
     def data_dir(self) -> Path:
@@ -112,6 +125,7 @@ class Settings:
         self.chesscom_checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
         self.metrics_version_file.parent.mkdir(parents=True, exist_ok=True)
         self.analysis_checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+        self.lichess_token_cache_path.parent.mkdir(parents=True, exist_ok=True)
 
 
 def get_settings(source: str | None = None) -> Settings:

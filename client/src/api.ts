@@ -91,6 +91,7 @@ export type PracticeAttemptRequest = {
   position_id: number;
   attempted_uci: string;
   source?: string;
+  served_at_ms?: number;
 };
 
 export type PracticeAttemptResponse = {
@@ -102,11 +103,13 @@ export type PracticeAttemptResponse = {
   best_uci: string;
   best_san?: string | null;
   correct: boolean;
+  success?: boolean;
   motif: string;
   severity: number;
   eval_delta: number;
   message: string;
   explanation?: string | null;
+  latency_ms?: number | null;
 };
 
 export const API_BASE = (import.meta.env.VITE_API_BASE || '').trim();

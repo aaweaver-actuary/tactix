@@ -61,6 +61,9 @@ export default function App() {
   const [practiceSubmitError, setPracticeSubmitError] = useState<string | null>(
     null,
   );
+  const [practiceServedAtMs, setPracticeServedAtMs] = useState<number | null>(
+    null,
+  );
   const [jobProgress, setJobProgress] = useState<JobProgressItem[]>([]);
   const [jobStatus, setJobStatus] = useState<
     'idle' | 'running' | 'error' | 'complete'
@@ -136,6 +139,7 @@ export default function App() {
       setPracticeSubmitError(null);
       setPracticeLastMove(null);
       setPracticeFen(currentPractice?.fen ?? '');
+      setPracticeServedAtMs(currentPractice ? Date.now() : null);
     }
     resetPracticeData();
   }, [currentPractice]);
@@ -382,6 +386,7 @@ export default function App() {
         position_id: currentPractice.position_id,
         attempted_uci: payload.uci,
         source,
+        served_at_ms: practiceServedAtMs ?? undefined,
       });
       setPracticeFeedback(response);
       await loadPracticeQueue(source, includeFailedAttempt);

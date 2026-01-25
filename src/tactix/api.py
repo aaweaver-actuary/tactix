@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time as time_module
 from collections.abc import Iterator
 from datetime import date, datetime, time
 from queue import Empty, Queue
@@ -70,6 +71,7 @@ class PracticeAttemptRequest(BaseModel):
     position_id: int
     attempted_uci: str
     source: str | None = None
+    served_at_ms: int | None = None
 
 
 @app.get("/api/health")
@@ -175,12 +177,17 @@ def practice_attempt(payload: PracticeAttemptRequest) -> dict[str, object]:
     settings = get_settings(source=payload.source)
     conn = get_connection(settings.duckdb_path)
     init_schema(conn)
+    latency_ms: int | None = None
+    if payload.served_at_ms is not None:
+        now_ms = int(time_module.time() * 1000)
+        latency_ms = max(0, now_ms - payload.served_at_ms)
     try:
         result = grade_practice_attempt(
             conn,
             tactic_id=payload.tactic_id,
             position_id=payload.position_id,
             attempted_uci=payload.attempted_uci,
+            latency_ms=latency_ms,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

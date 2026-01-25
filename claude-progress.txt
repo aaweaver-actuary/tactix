@@ -271,3 +271,11 @@ Session 2026-01-25 (feature 025 – Castling extraction)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_position_extractor.py`.
 - Updated feature_list.json: feature 025 marked passes=true after verification.
 - Current passing count: 25.
+
+Session 2026-01-25 (feature 029 – Practice attempt success + latency)
+- Added `success` + `latency_ms` tracking in training_attempts, request `served_at_ms` support, and API latency computation; client now sends served timestamp.
+- Added API test covering `/api/practice/attempt` recording success + non-negative latency; seeded one Chess.com tactic_outcomes row to `missed` to enable UI practice queue verification.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_practice_attempt_latency.py tests/test_practice_attempt_grading.py tests/test_practice_next.py`.
+- UI verification screenshot: `verification/feature-029-practice-attempt-latency.png`.
+- Updated feature_list.json: feature 029 marked passes=true after verification.
+- Current passing count: 31.

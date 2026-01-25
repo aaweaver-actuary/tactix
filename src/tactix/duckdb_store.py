@@ -107,10 +107,12 @@ CREATE TABLE IF NOT EXISTS training_attempts (
     source TEXT,
     attempted_uci TEXT,
     correct BOOLEAN,
+    success BOOLEAN,
     best_uci TEXT,
     motif TEXT,
     severity DOUBLE,
     eval_delta INTEGER,
+    latency_ms BIGINT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 """
@@ -122,7 +124,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 );
 """
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 
 def get_connection(db_path: Path) -> duckdb.DuckDBPyConnection:
@@ -200,10 +202,16 @@ def _migration_add_columns(conn: duckdb.DuckDBPyConnection) -> None:
     _ensure_column(conn, "training_attempts", "eval_delta", "INTEGER")
 
 
+def _migration_add_training_attempt_latency(conn: duckdb.DuckDBPyConnection) -> None:
+    _ensure_column(conn, "training_attempts", "success", "BOOLEAN")
+    _ensure_column(conn, "training_attempts", "latency_ms", "BIGINT")
+
+
 _SCHEMA_MIGRATIONS = [
     (1, _migration_base_tables),
     (2, _migration_raw_pgns_versioning),
     (3, _migration_add_columns),
+    (4, _migration_add_training_attempt_latency),
 ]
 
 
@@ -598,12 +606,14 @@ def record_training_attempt(
                 source,
                 attempted_uci,
                 correct,
+                success,
                 best_uci,
                 motif,
                 severity,
-                eval_delta
+                eval_delta,
+                latency_ms
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 attempt_id,
@@ -612,10 +622,12 @@ def record_training_attempt(
                 attempt.get("source"),
                 attempt.get("attempted_uci", ""),
                 bool(attempt.get("correct", False)),
+                bool(attempt.get("success", attempt.get("correct", False))),
                 attempt.get("best_uci", ""),
                 attempt.get("motif", "unknown"),
                 attempt.get("severity", 0.0),
                 attempt.get("eval_delta", 0),
+                attempt.get("latency_ms"),
             ),
         )
         conn.execute("COMMIT")
@@ -1298,6 +1310,7 @@ def grade_practice_attempt(
     tactic_id: int,
     position_id: int,
     attempted_uci: str,
+    latency_ms: int | None = None,
 ) -> dict[str, object]:
     tactic = fetch_practice_tactic(conn, tactic_id)
     if not tactic or tactic.get("position_id") != position_id:
@@ -1321,10 +1334,12 @@ def grade_practice_attempt(
             "source": tactic.get("source"),
             "attempted_uci": trimmed_attempt,
             "correct": correct,
+            "success": correct,
             "best_uci": best_uci,
             "motif": tactic.get("motif", "unknown"),
             "severity": tactic.get("severity", 0.0),
             "eval_delta": tactic.get("eval_delta", 0) or 0,
+            "latency_ms": latency_ms,
         },
     )
     message = (
@@ -1340,12 +1355,14 @@ def grade_practice_attempt(
         "attempted_uci": trimmed_attempt,
         "best_uci": best_uci,
         "correct": correct,
+        "success": correct,
         "motif": tactic.get("motif", "unknown"),
         "severity": tactic.get("severity", 0.0),
         "eval_delta": tactic.get("eval_delta", 0) or 0,
         "message": message,
         "best_san": best_san,
         "explanation": explanation,
+        "latency_ms": latency_ms,
     }
 
 

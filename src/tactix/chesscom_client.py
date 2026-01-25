@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import List, Tuple
+import time
 
 import requests
 
@@ -32,6 +34,49 @@ def _auth_headers(token: str | None) -> dict[str, str]:
     if not token:
         return {}
     return {"Authorization": f"Bearer {token}"}
+
+
+def _parse_retry_after(value: str | None) -> float | None:
+    if not value:
+        return None
+    try:
+        seconds = float(value)
+        return max(seconds, 0.0)
+    except ValueError:
+        try:
+            dt = parsedate_to_datetime(value)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            delta = (dt - datetime.now(timezone.utc)).total_seconds()
+            return max(delta, 0.0)
+        except Exception:  # noqa: BLE001
+            return None
+
+
+def _get_with_backoff(settings: Settings, url: str, timeout: int) -> requests.Response:
+    max_retries = max(settings.chesscom_max_retries, 0)
+    base_backoff = max(settings.chesscom_retry_backoff_ms, 0) / 1000.0
+    attempt = 0
+    while True:
+        response = requests.get(
+            url, headers=_auth_headers(settings.chesscom_token), timeout=timeout
+        )
+        if response.status_code != 429:
+            response.raise_for_status()
+            return response
+        retry_after = _parse_retry_after(response.headers.get("Retry-After"))
+        if attempt >= max_retries:
+            response.raise_for_status()
+        wait_seconds = max(base_backoff * (2**attempt), retry_after or 0.0)
+        logger.warning(
+            "Chess.com rate limited (429). Retrying in %.2fs (attempt %s/%s).",
+            wait_seconds,
+            attempt + 1,
+            max_retries,
+        )
+        if wait_seconds:
+            time.sleep(wait_seconds)
+        attempt += 1
 
 
 def _parse_cursor(cursor: str | None) -> Tuple[int, str]:
@@ -97,10 +142,7 @@ def _load_fixture_games(settings: Settings, since_ms: int) -> List[dict]:
 def _fetch_remote_games(settings: Settings, since_ms: int) -> List[dict]:
     url = ARCHIVES_URL.format(username=settings.user)
     try:
-        archives_resp = requests.get(
-            url, headers=_auth_headers(settings.chesscom_token), timeout=15
-        )
-        archives_resp.raise_for_status()
+        archives_resp = _get_with_backoff(settings, url, timeout=15)
     except Exception as exc:  # noqa: BLE001
         logger.warning("Falling back to fixtures; archive fetch failed: %s", exc)
         return _load_fixture_games(settings, since_ms)
@@ -114,11 +156,7 @@ def _fetch_remote_games(settings: Settings, since_ms: int) -> List[dict]:
     # iterate newest to oldest but stop once we cross the checkpoint
     for archive_url in reversed(archives[-6:]):
         try:
-            data = requests.get(
-                archive_url,
-                headers=_auth_headers(settings.chesscom_token),
-                timeout=20,
-            ).json()
+            data = _get_with_backoff(settings, archive_url, timeout=20).json()
         except Exception as exc:  # noqa: BLE001
             logger.warning("Failed to fetch archive %s: %s", archive_url, exc)
             continue

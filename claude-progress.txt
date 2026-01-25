@@ -172,3 +172,11 @@ Session 2026-01-24 (feature 019 – Airflow backfill replay)
 - UI verification screenshot: `verification/dashboard-lichess-backfill.png`.
 - Updated feature_list.json: feature 019 marked passes=true after UI + test verification.
 - Current passing count: 19.
+
+Session 2026-01-25 (feature 020 – Chess.com 429 exponential backoff)
+- Added Chess.com API 429 retry handling with exponential backoff + Retry-After support.
+- Added regression test for 429 backoff behavior and updated settings for retry tuning.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest` (38 passed).
+- UI verification screenshot: `verification/dashboard-chesscom-429-retry.png`.
+- Updated feature_list.json: feature 020 marked passes=true after UI + test verification.
+- Current passing count: 20.

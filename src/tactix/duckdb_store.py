@@ -740,6 +740,8 @@ def update_metrics_summary(conn: duckdb.DuckDBPyConnection) -> None:
                     WHEN r.user_rating < 1800 THEN '1600-1799'
                     ELSE '1800+'
                 END AS rating_bucket,
+                p.game_id AS game_id,
+                r.last_timestamp_ms AS last_timestamp_ms,
                 CAST(date_trunc('day', to_timestamp(r.last_timestamp_ms / 1000)) AS DATE) AS trend_date
             FROM tactics t
             LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
@@ -780,46 +782,48 @@ def update_metrics_summary(conn: duckdb.DuckDBPyConnection) -> None:
             FROM tactic_events
             GROUP BY source, motif, rating_bucket, time_control
         ),
-        daily AS (
+        per_game AS (
             SELECT
                 source,
                 motif,
                 rating_bucket,
                 time_control,
-                trend_date,
+                game_id,
+                MAX(last_timestamp_ms) AS last_timestamp_ms,
+                MAX(trend_date) AS trend_date,
                 COUNT(*) AS total,
                 SUM(CASE WHEN result = 'found' THEN 1 ELSE 0 END) AS found,
                 SUM(CASE WHEN result = 'missed' THEN 1 ELSE 0 END) AS missed,
                 SUM(CASE WHEN result = 'failed_attempt' THEN 1 ELSE 0 END) AS failed_attempt,
                 SUM(CASE WHEN result = 'unclear' THEN 1 ELSE 0 END) AS unclear
             FROM tactic_events
-            WHERE trend_date IS NOT NULL
-            GROUP BY source, motif, rating_bucket, time_control, trend_date
+            WHERE last_timestamp_ms IS NOT NULL
+            GROUP BY source, motif, rating_bucket, time_control, game_id
         ),
         rolling AS (
             SELECT
                 *,
                 AVG(found::DOUBLE / NULLIF(total, 0)) OVER (
                     PARTITION BY source, motif, rating_bucket, time_control
-                    ORDER BY trend_date
+                    ORDER BY last_timestamp_ms
                     ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
                 ) AS found_rate_7,
                 AVG(missed::DOUBLE / NULLIF(total, 0)) OVER (
                     PARTITION BY source, motif, rating_bucket, time_control
-                    ORDER BY trend_date
+                    ORDER BY last_timestamp_ms
                     ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
                 ) AS miss_rate_7,
                 AVG(found::DOUBLE / NULLIF(total, 0)) OVER (
                     PARTITION BY source, motif, rating_bucket, time_control
-                    ORDER BY trend_date
+                    ORDER BY last_timestamp_ms
                     ROWS BETWEEN 29 PRECEDING AND CURRENT ROW
                 ) AS found_rate_30,
                 AVG(missed::DOUBLE / NULLIF(total, 0)) OVER (
                     PARTITION BY source, motif, rating_bucket, time_control
-                    ORDER BY trend_date
+                    ORDER BY last_timestamp_ms
                     ROWS BETWEEN 29 PRECEDING AND CURRENT ROW
                 ) AS miss_rate_30
-            FROM daily
+            FROM per_game
         ),
         trend_7 AS (
             SELECT

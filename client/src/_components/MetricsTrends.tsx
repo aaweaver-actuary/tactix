@@ -9,7 +9,7 @@ interface MetricsTrendsProps {
 /**
  * Displays a table of motif trends based on the latest available metrics data.
  *
- * For each motif, shows the most recent 7-day and 30-day trend metrics, including
+ * For each motif, shows the most recent 7-game and 30-game trend metrics, including
  * the found rate (as a percentage) and the last update date. Only metrics with
  * `metric_type` of `'trend'` and a valid `trend_date` are considered.
  *
@@ -57,15 +57,15 @@ export default function MetricsTrends({ metricsData }: MetricsTrendsProps) {
     <div className="card p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-display text-sand">Motif trends</h3>
-        <Badge label="Rolling 7/30" />
+        <Badge label="Rolling 7/30 games" />
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-sand/60">
             <tr>
               <th className="text-left py-2">Motif</th>
-              <th className="text-left">7d found</th>
-              <th className="text-left">30d found</th>
+              <th className="text-left">7g found</th>
+              <th className="text-left">30g found</th>
               <th className="text-left">Last update</th>
             </tr>
           </thead>

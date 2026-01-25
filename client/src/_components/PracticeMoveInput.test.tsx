@@ -9,10 +9,12 @@ describe('PracticeMoveInput', () => {
         practiceMove="e2e4"
         setPracticeMove={() => {}}
         practiceSubmitting={false}
-      />
+      />,
     );
 
-    const input = screen.getByPlaceholderText('Enter your move (UCI e.g., e2e4)') as HTMLInputElement;
+    const input = screen.getByPlaceholderText(
+      'Enter your move (UCI e.g., e2e4)',
+    ) as HTMLInputElement;
     expect(input).toBeInTheDocument();
     expect(input.value).toBe('e2e4');
   });
@@ -23,10 +25,12 @@ describe('PracticeMoveInput', () => {
         practiceMove=""
         setPracticeMove={() => {}}
         practiceSubmitting={true}
-      />
+      />,
     );
 
-    const input = screen.getByPlaceholderText('Enter your move (UCI e.g., e2e4)');
+    const input = screen.getByPlaceholderText(
+      'Enter your move (UCI e.g., e2e4)',
+    );
     expect(input).toBeDisabled();
   });
 
@@ -37,10 +41,12 @@ describe('PracticeMoveInput', () => {
         practiceMove=""
         setPracticeMove={setPracticeMove}
         practiceSubmitting={false}
-      />
+      />,
     );
 
-    const input = screen.getByPlaceholderText('Enter your move (UCI e.g., e2e4)');
+    const input = screen.getByPlaceholderText(
+      'Enter your move (UCI e.g., e2e4)',
+    );
     fireEvent.change(input, { target: { value: 'g1f3' } });
 
     expect(setPracticeMove).toHaveBeenCalledWith('g1f3');

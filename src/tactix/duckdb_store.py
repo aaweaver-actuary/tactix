@@ -133,7 +133,9 @@ def get_connection(db_path: Path) -> duckdb.DuckDBPyConnection:
 
 def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
     migrate_schema(conn)
-    if conn.execute("SELECT COUNT(*) FROM metrics_version").fetchone()[0] == 0:
+    count_row = conn.execute("SELECT COUNT(*) FROM metrics_version").fetchone()
+    count = int(count_row[0]) if count_row else 0
+    if count == 0:
         conn.execute("INSERT INTO metrics_version VALUES (0, CURRENT_TIMESTAMP)")
 
 
@@ -302,9 +304,10 @@ def upsert_raw_pgns(
         return 0
     conn.execute("BEGIN TRANSACTION")
     try:
-        next_id = conn.execute(
+        next_row = conn.execute(
             "SELECT COALESCE(MAX(raw_pgn_id), 0) FROM raw_pgns"
-        ).fetchone()[0]
+        ).fetchone()
+        next_id = int(next_row[0]) if next_row else 0
         latest_cache: dict[tuple[str, str], tuple[str | None, int]] = {}
         inserted = 0
         for row in rows_list:
@@ -453,9 +456,10 @@ def insert_positions(
     rows_list = list(rows)
     if not rows_list:
         return []
-    start_id = conn.execute(
+    start_row = conn.execute(
         "SELECT COALESCE(MAX(position_id), 0) FROM positions"
-    ).fetchone()[0]
+    ).fetchone()
+    start_id = int(start_row[0]) if start_row else 0
     conn.execute("BEGIN TRANSACTION")
     position_ids: List[int] = []
     try:
@@ -508,9 +512,10 @@ def insert_tactics(
     rows_list = list(rows)
     if not rows_list:
         return []
-    start_id = conn.execute(
+    start_row = conn.execute(
         "SELECT COALESCE(MAX(tactic_id), 0) FROM tactics"
-    ).fetchone()[0]
+    ).fetchone()
+    start_id = int(start_row[0]) if start_row else 0
     conn.execute("BEGIN TRANSACTION")
     tactic_ids: List[int] = []
     try:
@@ -546,9 +551,10 @@ def insert_tactic_outcomes(
     rows_list = list(rows)
     if not rows_list:
         return
-    start_id = conn.execute(
+    start_row = conn.execute(
         "SELECT COALESCE(MAX(outcome_id), 0) FROM tactic_outcomes"
-    ).fetchone()[0]
+    ).fetchone()
+    start_id = int(start_row[0]) if start_row else 0
     conn.execute("BEGIN TRANSACTION")
     try:
         conn.executemany(
@@ -579,12 +585,10 @@ def record_training_attempt(
 ) -> int:
     conn.execute("BEGIN TRANSACTION")
     try:
-        attempt_id = (
-            conn.execute(
-                "SELECT COALESCE(MAX(attempt_id), 0) FROM training_attempts"
-            ).fetchone()[0]
-            + 1
-        )
+        attempt_row = conn.execute(
+            "SELECT COALESCE(MAX(attempt_id), 0) FROM training_attempts"
+        ).fetchone()
+        attempt_id = (int(attempt_row[0]) if attempt_row else 0) + 1
         conn.execute(
             """
             INSERT INTO training_attempts (
@@ -637,12 +641,10 @@ def upsert_tactic_with_outcome(
         )
         conn.execute("DELETE FROM tactics WHERE position_id = ?", [position_id])
 
-        tactic_id = (
-            conn.execute("SELECT COALESCE(MAX(tactic_id), 0) FROM tactics").fetchone()[
-                0
-            ]
-            + 1
-        )
+        tactic_row_id = conn.execute(
+            "SELECT COALESCE(MAX(tactic_id), 0) FROM tactics"
+        ).fetchone()
+        tactic_id = (int(tactic_row_id[0]) if tactic_row_id else 0) + 1
         conn.execute(
             """
             INSERT INTO tactics (tactic_id, game_id, position_id, motif, severity, best_uci, eval_cp)
@@ -658,12 +660,10 @@ def upsert_tactic_with_outcome(
                 tactic_row.get("eval_cp", 0),
             ),
         )
-        outcome_id = (
-            conn.execute(
-                "SELECT COALESCE(MAX(outcome_id), 0) FROM tactic_outcomes"
-            ).fetchone()[0]
-            + 1
-        )
+        outcome_row_id = conn.execute(
+            "SELECT COALESCE(MAX(outcome_id), 0) FROM tactic_outcomes"
+        ).fetchone()
+        outcome_id = (int(outcome_row_id[0]) if outcome_row_id else 0) + 1
         conn.execute(
             """
             INSERT INTO tactic_outcomes (outcome_id, tactic_id, result, user_uci, eval_delta)
@@ -688,7 +688,8 @@ def write_metrics_version(conn: duckdb.DuckDBPyConnection) -> int:
     conn.execute(
         "UPDATE metrics_version SET version = version + 1, updated_at = CURRENT_TIMESTAMP"
     )
-    return conn.execute("SELECT version FROM metrics_version").fetchone()[0]
+    version_row = conn.execute("SELECT version FROM metrics_version").fetchone()
+    return int(version_row[0]) if version_row else 0
 
 
 def update_metrics_summary(conn: duckdb.DuckDBPyConnection) -> None:
@@ -946,7 +947,9 @@ def update_metrics_summary(conn: duckdb.DuckDBPyConnection) -> None:
     )
 
 
-def _rows_to_dicts(result: duckdb.DuckDBPyRelation) -> list[dict[str, object]]:
+def _rows_to_dicts(
+    result: duckdb.DuckDBPyConnection | duckdb.DuckDBPyRelation,
+) -> list[dict[str, object]]:
     columns = [desc[0] for desc in result.description]
     return [dict(zip(columns, row)) for row in result.fetchall()]
 
@@ -1199,11 +1202,14 @@ def grade_practice_attempt(
     trimmed_attempt = attempted_uci.strip()
     if not trimmed_attempt:
         raise ValueError("attempted_uci is required")
-    best_uci = (tactic.get("best_uci") or "").strip()
+    best_uci_raw = tactic.get("best_uci")
+    best_uci = str(best_uci_raw).strip() if best_uci_raw is not None else ""
     correct = bool(best_uci) and trimmed_attempt.lower() == best_uci.lower()
-    best_san, explanation = _format_practice_explanation(
-        tactic.get("fen"), best_uci, tactic.get("motif")
-    )
+    fen_value = tactic.get("fen")
+    fen = str(fen_value) if fen_value is not None else None
+    motif_value = tactic.get("motif")
+    motif = str(motif_value) if motif_value is not None else None
+    best_san, explanation = _format_practice_explanation(fen, best_uci, motif)
     attempt_id = record_training_attempt(
         conn,
         {
@@ -1287,4 +1293,5 @@ def fetch_practice_queue(
 
 
 def fetch_version(conn: duckdb.DuckDBPyConnection) -> int:
-    return conn.execute("SELECT version FROM metrics_version").fetchone()[0]
+    version_row = conn.execute("SELECT version FROM metrics_version").fetchone()
+    return int(version_row[0]) if version_row else 0

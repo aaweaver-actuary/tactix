@@ -92,9 +92,10 @@ class ChesscomClientTests(unittest.TestCase):
         def fake_get(*_args, **_kwargs):
             return responses.pop(0)
 
-        with patch("tactix.chesscom_client.requests.get", side_effect=fake_get), patch(
-            "tactix.chesscom_client.time.sleep"
-        ) as sleep_mock:
+        with (
+            patch("tactix.chesscom_client.requests.get", side_effect=fake_get),
+            patch("tactix.chesscom_client.time.sleep") as sleep_mock,
+        ):
             result = fetch_incremental_games(settings, cursor=None)
 
         self.assertEqual(len(result.games), 1)

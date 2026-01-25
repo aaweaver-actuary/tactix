@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fetchPracticeQueue from './fetchPracticeQueue';
 
-const getMock = vi.fn();
+const getMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../api', () => ({
   client: {

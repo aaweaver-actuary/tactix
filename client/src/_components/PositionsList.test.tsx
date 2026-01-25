@@ -4,9 +4,7 @@ import PositionsList from './PositionsList';
 
 describe('PositionsList', () => {
   it('renders the header and badge', () => {
-    const html = renderToStaticMarkup(
-      <PositionsList positionsData={[]} />
-    );
+    const html = renderToStaticMarkup(<PositionsList positionsData={[]} />);
 
     expect(html).toContain('Latest positions');
     expect(html).toContain('Fen');
@@ -24,7 +22,7 @@ describe('PositionsList', () => {
     ];
 
     const html = renderToStaticMarkup(
-      <PositionsList positionsData={positionsData} />
+      <PositionsList positionsData={positionsData} />,
     );
 
     expect(html).toContain(positionsData[0].fen);
@@ -43,7 +41,7 @@ describe('PositionsList', () => {
     ];
 
     const html = renderToStaticMarkup(
-      <PositionsList positionsData={positionsData} />
+      <PositionsList positionsData={positionsData} />,
     );
 
     expect(html).toContain(positionsData[0].fen);

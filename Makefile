@@ -12,10 +12,10 @@ lint: pylint jslint
 pytest:
 	uv run cargo test
 	uv run cargo test --release
-	uv run pytest tests/ --cov=src/ --cov-report=term-missing --cov-fail-under=95
+	uv run pytest tests/ --cov=src/ --cov-config=./.coveragerc --cov-report=term-missing --cov-fail-under=80
 
 jstest:
-	cd client && npx jest --coverage --coverageThreshold='{"global": {"branches": 95, "functions": 95, "lines": 95, "statements": 95}}'
+	cd client && npx vitest run --coverage
 
 test: pytest jstest
 

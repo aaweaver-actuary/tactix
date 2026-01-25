@@ -1,19 +1,18 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { vi } from 'vitest';
 import PracticeQueue from './PracticeQueue';
 
-jest.mock('./Badge', () => ({
+vi.mock('./Badge', () => ({
   __esModule: true,
   default: ({ label }: { label: string }) => (
     <span data-testid="badge">{label}</span>
   ),
 }));
 
-jest.mock('./Text', () => ({
+vi.mock('./Text', () => ({
   __esModule: true,
-  default: ({ value }: { value: string }) => (
-    <p data-testid="text">{value}</p>
-  ),
+  default: ({ value }: { value: string }) => <p data-testid="text">{value}</p>,
 }));
 
 const baseItem = {
@@ -34,7 +33,7 @@ describe('PracticeQueue', () => {
       <PracticeQueue
         data={[]}
         includeFailedAttempt={true}
-        onToggleIncludeFailedAttempt={jest.fn()}
+        onToggleIncludeFailedAttempt={vi.fn()}
         loading={false}
       />,
     );
@@ -56,7 +55,7 @@ describe('PracticeQueue', () => {
       <PracticeQueue
         data={[]}
         includeFailedAttempt={false}
-        onToggleIncludeFailedAttempt={jest.fn()}
+        onToggleIncludeFailedAttempt={vi.fn()}
         loading={true}
       />,
     );
@@ -74,7 +73,7 @@ describe('PracticeQueue', () => {
       <PracticeQueue
         data={[]}
         includeFailedAttempt={false}
-        onToggleIncludeFailedAttempt={jest.fn()}
+        onToggleIncludeFailedAttempt={vi.fn()}
         loading={false}
       />,
     );
@@ -105,7 +104,7 @@ describe('PracticeQueue', () => {
       <PracticeQueue
         data={data}
         includeFailedAttempt={false}
-        onToggleIncludeFailedAttempt={jest.fn()}
+        onToggleIncludeFailedAttempt={vi.fn()}
         loading={false}
       />,
     );
@@ -134,7 +133,7 @@ describe('PracticeQueue', () => {
   });
 
   it('calls onToggleIncludeFailedAttempt with next value when checkbox changes', () => {
-    const onToggleIncludeFailedAttempt = jest.fn();
+    const onToggleIncludeFailedAttempt = vi.fn();
     render(
       <PracticeQueue
         data={[]}

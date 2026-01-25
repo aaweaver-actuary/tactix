@@ -1,8 +1,9 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { vi } from 'vitest';
 import TacticsTable from './TacticsTable';
 
-jest.mock('./Badge', () => ({
+vi.mock('./Badge', () => ({
   __esModule: true,
   default: ({ label }: { label: string }) => (
     <span data-testid="badge">{label}</span>
@@ -28,7 +29,7 @@ const sampleData = [
 
 function renderToDocument() {
   const html = renderToStaticMarkup(
-    <TacticsTable tacticsData={sampleData as any} />
+    <TacticsTable tacticsData={sampleData as any} />,
   );
   const parser = new DOMParser();
   return parser.parseFromString(html, 'text/html');
@@ -41,7 +42,7 @@ describe('TacticsTable', () => {
     expect(doc.querySelector('h3')?.textContent).toBe('Recent tactics');
 
     const headers = Array.from(doc.querySelectorAll('th')).map((th) =>
-      th.textContent?.trim()
+      th.textContent?.trim(),
     );
     expect(headers).toEqual(['Motif', 'Result', 'Move', 'Delta (cp)']);
   });
@@ -52,23 +53,23 @@ describe('TacticsTable', () => {
     const rows = Array.from(doc.querySelectorAll('tbody tr'));
     expect(rows).toHaveLength(2);
 
-    const firstRowCells = Array.from(rows[0].querySelectorAll('td')).map(
-      (td) => td.textContent?.trim()
+    const firstRowCells = Array.from(rows[0].querySelectorAll('td')).map((td) =>
+      td.textContent?.trim(),
     );
     expect(firstRowCells).toContain('pin');
     expect(firstRowCells).toContain('e2e4');
     expect(firstRowCells).toContain('120');
 
     const secondRowCells = Array.from(rows[1].querySelectorAll('td')).map(
-      (td) => td.textContent?.trim()
+      (td) => td.textContent?.trim(),
     );
     expect(secondRowCells).toContain('fork');
     expect(secondRowCells).toContain('g1f3');
     expect(secondRowCells).toContain('-85');
 
-    const badges = Array.from(doc.querySelectorAll('[data-testid="badge"]')).map(
-      (el) => el.textContent?.trim()
-    );
+    const badges = Array.from(
+      doc.querySelectorAll('[data-testid="badge"]'),
+    ).map((el) => el.textContent?.trim());
     expect(badges).toEqual(['Live', 'correct', 'wrong']);
   });
 });

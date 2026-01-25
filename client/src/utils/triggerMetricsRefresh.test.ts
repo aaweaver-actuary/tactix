@@ -1,14 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import triggerMetricsRefresh from './triggerMetricsRefresh';
-import { client } from '../api';
-import fetchDashboard from '../utils/fetchDashboard';
+
+const postMock = vi.hoisted(() => vi.fn());
+const fetchDashboardMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../api', () => ({
-  client: { post: vi.fn() },
+  client: { post: postMock },
 }));
 
 vi.mock('../utils/fetchDashboard', () => ({
-  fetchDashboard: vi.fn(),
+  default: fetchDashboardMock,
 }));
 
 describe('triggerMetricsRefresh', () => {
@@ -17,38 +18,30 @@ describe('triggerMetricsRefresh', () => {
   });
 
   it('posts refresh and returns dashboard without source/filters', async () => {
-    (client.post as any).mockResolvedValue(undefined);
-    (fetchDashboard as any).mockResolvedValue({ ok: true });
+    postMock.mockResolvedValue(undefined);
+    fetchDashboardMock.mockResolvedValue({ ok: true });
 
     const result = await triggerMetricsRefresh();
 
-    expect(client.post).toHaveBeenCalledWith(
-      '/api/jobs/refresh_metrics',
-      null,
-      {
-        params: { source: undefined },
-      },
-    );
-    expect(fetchDashboard).toHaveBeenCalledWith(undefined, {});
+    expect(postMock).toHaveBeenCalledWith('/api/jobs/refresh_metrics', null, {
+      params: { source: undefined },
+    });
+    expect(fetchDashboardMock).toHaveBeenCalledWith(undefined, {});
     expect(result).toEqual({ ok: true });
   });
 
   it('passes source and filters through', async () => {
-    (client.post as any).mockResolvedValue(undefined);
-    (fetchDashboard as any).mockResolvedValue({ data: 'dash' });
+    postMock.mockResolvedValue(undefined);
+    fetchDashboardMock.mockResolvedValue({ data: 'dash' });
 
     const result = await triggerMetricsRefresh('alpha', {
       region: 'us',
     } as any);
 
-    expect(client.post).toHaveBeenCalledWith(
-      '/api/jobs/refresh_metrics',
-      null,
-      {
-        params: { source: 'alpha' },
-      },
-    );
-    expect(fetchDashboard).toHaveBeenCalledWith('alpha', { region: 'us' });
+    expect(postMock).toHaveBeenCalledWith('/api/jobs/refresh_metrics', null, {
+      params: { source: 'alpha' },
+    });
+    expect(fetchDashboardMock).toHaveBeenCalledWith('alpha', { region: 'us' });
     expect(result).toEqual({ data: 'dash' });
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import triggerMigrations from './triggerMigrations';
 
-const postMock = vi.fn();
+const postMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../api', () => ({
   client: {

@@ -32,9 +32,15 @@ describe('MetricsGrid', () => {
     render(
       <MetricsGrid
         metricsData={[
-          { motif: 'Motif A', found: 5, total: 10, missed: 3, failed_attempt: 2 },
+          {
+            motif: 'Motif A',
+            found: 5,
+            total: 10,
+            missed: 3,
+            failed_attempt: 2,
+          },
         ]}
-      />
+      />,
     );
 
     expect(screen.getByTestId('motif-breakdown')).toBeInTheDocument();
@@ -46,10 +52,22 @@ describe('MetricsGrid', () => {
     render(
       <MetricsGrid
         metricsData={[
-          { motif: 'Motif A', found: 5, total: 10, missed: 3, failed_attempt: 2 },
-          { motif: 'Motif B', found: 8, total: 12, missed: 2, failed_attempt: 2 },
+          {
+            motif: 'Motif A',
+            found: 5,
+            total: 10,
+            missed: 3,
+            failed_attempt: 2,
+          },
+          {
+            motif: 'Motif B',
+            found: 8,
+            total: 12,
+            missed: 2,
+            failed_attempt: 2,
+          },
         ]}
-      />
+      />,
     );
 
     const cards = screen.getAllByTestId('metric-card');

@@ -18,3 +18,7 @@ data/
 .airflow/
 airflow/airflow.db
 airflow/logs/
+.coverage
+client/package-lock.json
+client/coverage/
+client/node_modules/

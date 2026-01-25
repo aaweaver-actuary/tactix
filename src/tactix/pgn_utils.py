@@ -5,6 +5,7 @@ import time
 from datetime import datetime, timezone
 from io import StringIO
 from typing import Iterable
+from collections.abc import Mapping
 
 import chess.pgn
 
@@ -80,8 +81,18 @@ def extract_pgn_metadata(pgn: str, user: str) -> dict[str, object]:
     return {"user_rating": rating, "time_control": time_control}
 
 
-def latest_timestamp(rows: Iterable[dict]) -> int:
+def latest_timestamp(rows: Iterable[Mapping[str, object]]) -> int:
     ts = 0
     for row in rows:
-        ts = max(ts, int(row.get("last_timestamp_ms", 0)))
+        value = row.get("last_timestamp_ms", 0)
+        if isinstance(value, (int, float, bool)):
+            current = int(value)
+        elif isinstance(value, str):
+            try:
+                current = int(value)
+            except ValueError:
+                current = 0
+        else:
+            current = 0
+        ts = max(ts, current)
     return ts

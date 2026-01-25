@@ -1,0 +1,3 @@
+[run]
+omit =
+    src/tactix/__init__.py

@@ -26,13 +26,13 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
     def __init__(self, settings: Settings):
         self.settings = settings
         self.engine: Optional[chess.engine.SimpleEngine] = None
-        self.applied_options: dict[str, object] = {}
+        self.applied_options: dict[str, str | int | None] = {}
 
     def __enter__(self) -> "StockfishEngine":
         self._start_engine()
         return self
 
-    def __exit__(self, exc_type, exc, exc_tb) -> None:  # type: ignore[override]
+    def __exit__(self, exc_type, exc, exc_tb) -> None:
         if self.engine:
             self.engine.quit()
 
@@ -79,7 +79,7 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
             return
         options = self.engine.options
         desired = self._build_engine_options()
-        applied: dict[str, object] = {}
+        applied: dict[str, str | int | None] = {}
         for name, value in desired.items():
             if value is None:
                 continue
@@ -96,7 +96,13 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
                     is_managed = bool(getattr(option_meta, "managed", False))
                 if is_managed:
                     continue
-                applied[name] = value
+                if isinstance(value, bool):
+                    coerced: str | int | None = int(value)
+                elif isinstance(value, (int, str)) or value is None:
+                    coerced = value
+                else:
+                    continue
+                applied[name] = coerced
         if applied:
             self.engine.configure(applied)
         self.applied_options = dict(applied)
@@ -118,15 +124,23 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
                 options={"Clear Hash": True},
             )
             if isinstance(info, list):
-                info_primary = info[0]
+                info_primary = info[0] if info else {}
             else:
                 info_primary = info
-            best_move = info_primary.get("pv", [None])[0]
-            score = info_primary["score"].pov(board.turn).score(mate_score=100000)
+            pv = info_primary.get("pv")
+            best_move = pv[0] if isinstance(pv, list) and pv else None
+            score_obj = info_primary.get("score")
+            score = (
+                score_obj.pov(board.turn).score(mate_score=100000)
+                if score_obj is not None
+                else 0
+            )
+            depth_value = info_primary.get("depth")
+            depth = int(depth_value) if isinstance(depth_value, (int, float)) else 0
             return EngineResult(
                 best_move=best_move,
                 score_cp=int(score or 0),
-                depth=info_primary.get("depth", 0),
+                depth=depth,
             )
 
         # Fallback heuristic based on material balance

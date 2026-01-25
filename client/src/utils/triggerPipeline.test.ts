@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import triggerPipeline from './triggerPipeline';
 
-const postMock = vi.fn();
+const postMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../api', () => ({
   client: { post: postMock },
 }));
 
-const fetchDashboardMock = vi.fn();
+const fetchDashboardMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../utils/fetchDashboard', () => ({
-  fetchDashboard: fetchDashboardMock,
+  default: fetchDashboardMock,
 }));
 
 describe('triggerPipeline', () => {

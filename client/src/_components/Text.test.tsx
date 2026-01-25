@@ -42,7 +42,7 @@ describe('Text', () => {
 
   it('renders uppercase mode with tracking and mt', async () => {
     const { className, text } = await getRenderedInfo(
-      <Text value="Caps" mode="uppercase" size="sm" mt="4" />
+      <Text value="Caps" mode="uppercase" size="sm" mt="4" />,
     );
     expect(text).toBe('Caps');
     expect(className).toContain('text-sm');
@@ -53,7 +53,7 @@ describe('Text', () => {
 
   it('renders teal mode', async () => {
     const { className } = await getRenderedInfo(
-      <Text value="Teal" mode="teal" size="lg" />
+      <Text value="Teal" mode="teal" size="lg" />,
     );
     expect(className).toContain('text-lg');
     expect(className).toContain('font-display');
@@ -62,7 +62,7 @@ describe('Text', () => {
 
   it('renders monospace mode', async () => {
     const { className } = await getRenderedInfo(
-      <Text value="Mono" mode="monospace" />
+      <Text value="Mono" mode="monospace" />,
     );
     expect(className).toContain('font-mono');
     expect(className).toContain('text-sand/60');
@@ -70,14 +70,14 @@ describe('Text', () => {
 
   it('renders error mode', async () => {
     const { className } = await getRenderedInfo(
-      <Text value="Error" mode="error" />
+      <Text value="Error" mode="error" />,
     );
     expect(className).toContain('text-rust');
   });
 
   it('falls back to normal for unknown mode', async () => {
     const { className } = await getRenderedInfo(
-      <Text value="Fallback" mode={'unknown' as any} />
+      <Text value="Fallback" mode={'unknown' as any} />,
     );
     expect(className).toContain('text-sand/60');
   });

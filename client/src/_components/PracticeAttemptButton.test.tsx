@@ -28,7 +28,7 @@ describe('PracticeAttemptButton', () => {
         <PracticeAttemptButton
           handlePracticeAttempt={handlePracticeAttempt}
           practiceSubmitting={false}
-        />
+        />,
       );
     });
 
@@ -46,7 +46,7 @@ describe('PracticeAttemptButton', () => {
         <PracticeAttemptButton
           handlePracticeAttempt={handlePracticeAttempt}
           practiceSubmitting={true}
-        />
+        />,
       );
     });
 
@@ -63,7 +63,7 @@ describe('PracticeAttemptButton', () => {
         <PracticeAttemptButton
           handlePracticeAttempt={handlePracticeAttempt}
           practiceSubmitting={false}
-        />
+        />,
       );
     });
 

@@ -4,7 +4,8 @@ import hashlib
 import json
 import time
 from datetime import datetime
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
+from typing import TypedDict, cast
 
 import chess.engine
 from tactix.chesscom_client import (
@@ -48,7 +49,59 @@ from tactix.tactics_analyzer import analyze_position
 logger = get_logger(__name__)
 
 
+class GameRow(TypedDict):
+    game_id: str
+    user: str
+    source: str
+    fetched_at: datetime
+    pgn: str
+    last_timestamp_ms: int
+
+
 ProgressCallback = Callable[[dict[str, object]], None]
+
+
+def _coerce_int(value: object) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return 0
+    return 0
+
+
+def _coerce_str(value: object) -> str:
+    if isinstance(value, str):
+        return value
+    if value is None:
+        return ""
+    return str(value)
+
+
+def _coerce_pgn(value: object) -> str:
+    if isinstance(value, (bytes, bytearray)):
+        return value.decode("utf-8", errors="replace")
+    return _coerce_str(value)
+
+
+def _normalize_game_row(row: Mapping[str, object], settings: Settings) -> GameRow:
+    fetched_at = row.get("fetched_at")
+    if not isinstance(fetched_at, datetime):
+        fetched_at = datetime.now()
+    return {
+        "game_id": _coerce_str(row.get("game_id")),
+        "user": _coerce_str(row.get("user")) or settings.user,
+        "source": _coerce_str(row.get("source")) or settings.source,
+        "fetched_at": fetched_at,
+        "pgn": _coerce_pgn(row.get("pgn")),
+        "last_timestamp_ms": _coerce_int(row.get("last_timestamp_ms")),
+    }
 
 
 def _emit_progress(
@@ -61,13 +114,13 @@ def _emit_progress(
     progress(payload)
 
 
-def _dedupe_games(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+def _dedupe_games(rows: list[GameRow]) -> list[GameRow]:
     seen: set[tuple[str, str, int]] = set()
-    deduped: list[dict[str, object]] = []
+    deduped: list[GameRow] = []
     for game in rows:
-        game_id = str(game.get("game_id", ""))
-        source = str(game.get("source", ""))
-        last_ts = int(game.get("last_timestamp_ms", 0) or 0)
+        game_id = game["game_id"]
+        source = game["source"]
+        last_ts = game["last_timestamp_ms"]
         key = (game_id, source, last_ts)
         if key in seen:
             continue
@@ -77,15 +130,15 @@ def _dedupe_games(rows: list[dict[str, object]]) -> list[dict[str, object]]:
 
 
 def _filter_games_by_window(
-    rows: list[dict[str, object]],
+    rows: list[GameRow],
     start_ms: int | None,
     end_ms: int | None,
-) -> list[dict[str, object]]:
+) -> list[GameRow]:
     if start_ms is None and end_ms is None:
         return rows
-    filtered: list[dict[str, object]] = []
+    filtered: list[GameRow] = []
     for game in rows:
-        last_ts = int(game.get("last_timestamp_ms", 0) or 0)
+        last_ts = game["last_timestamp_ms"]
         if start_ms is not None and last_ts < start_ms:
             continue
         if end_ms is not None and last_ts >= end_ms:
@@ -96,19 +149,19 @@ def _filter_games_by_window(
 
 def _filter_backfill_games(
     conn,
-    rows: list[dict[str, object]],
+    rows: list[GameRow],
     source: str,
-) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+) -> tuple[list[GameRow], list[GameRow]]:
     if not rows:
         return [], []
-    game_ids = [str(row.get("game_id", "")) for row in rows]
+    game_ids = [row["game_id"] for row in rows]
     latest_hashes = fetch_latest_pgn_hashes(conn, game_ids, source)
     position_counts = fetch_position_counts(conn, game_ids, source)
-    to_process: list[dict[str, object]] = []
-    skipped: list[dict[str, object]] = []
+    to_process: list[GameRow] = []
+    skipped: list[GameRow] = []
     for game in rows:
-        game_id = str(game.get("game_id", ""))
-        pgn_text = str(game.get("pgn", ""))
+        game_id = game["game_id"]
+        pgn_text = game["pgn"]
         current_hash = hash_pgn(pgn_text)
         existing_hash = latest_hashes.get(game_id)
         if existing_hash == current_hash and position_counts.get(game_id, 0) > 0:
@@ -244,6 +297,7 @@ def run_daily_game_sync(
     checkpoint_before: int | None = None
     cursor_before: str | None = None
 
+    raw_games: list[Mapping[str, object]]
     if settings.source == "chesscom":
         cursor_before = read_chesscom_cursor(settings.checkpoint_path)
         cursor_value = None if backfill_mode else cursor_before
@@ -253,7 +307,7 @@ def run_daily_game_sync(
             except ValueError:
                 last_timestamp_value = 0
         chesscom_result = fetch_chesscom_games(settings, cursor_value)
-        games = chesscom_result.games
+        raw_games = [cast(Mapping[str, object], row) for row in chesscom_result.games]
         next_cursor = chesscom_result.next_cursor or cursor_value
         last_timestamp_value = chesscom_result.last_timestamp_ms
     else:
@@ -261,8 +315,13 @@ def run_daily_game_sync(
         since_ms = window_start_ms if backfill_mode else checkpoint_before
         if since_ms is None:
             since_ms = 0
-        games = fetch_lichess_games(settings, since_ms)
+        raw_games = [
+            cast(Mapping[str, object], row)
+            for row in fetch_lichess_games(settings, since_ms)
+        ]
         last_timestamp_value = since_ms
+
+    games = [_normalize_game_row(game, settings) for game in raw_games]
 
     games = _dedupe_games(games)
     games = _filter_games_by_window(games, window_start_ms, window_end_ms)
@@ -313,7 +372,7 @@ def run_daily_game_sync(
         }
 
     games_to_process = games
-    skipped_games: list[dict[str, object]] = []
+    skipped_games: list[GameRow] = []
     if backfill_mode:
         games_to_process, skipped_games = _filter_backfill_games(
             conn, games, settings.source

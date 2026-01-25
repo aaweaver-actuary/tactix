@@ -48,6 +48,7 @@ class PracticeAttemptGradingTests(unittest.TestCase):
 
         result = grade_practice_attempt(conn, tactic_id, position_ids[0], "a2a4")
         self.assertTrue(result["correct"])
+        self.assertIn("a2a4", result["explanation"])
         rows = conn.execute(
             """
             SELECT attempted_uci, correct, best_uci, motif, severity, eval_delta

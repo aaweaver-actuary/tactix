@@ -10,16 +10,27 @@ const source = process.env.TACTIX_SOURCE || 'chesscom';
 
 async function selectSource(page) {
   if (source !== 'chesscom') return;
-  await page.$$eval(
-    'button',
-    (buttons, label) => {
-      const target = buttons.find(
-        (btn) => btn.textContent && btn.textContent.includes(label),
-      );
-      if (target) target.click();
-    },
-    'Chess.com',
-  );
+  try {
+    await page.waitForFunction(
+      () => {
+        const el = document.querySelector('select[data-testid="filter-source"]');
+        return el && !el.disabled;
+      },
+      { timeout: 60000 },
+    );
+    await page.select('select[data-testid="filter-source"]', 'chesscom');
+  } catch (err) {
+    await page.$$eval(
+      'button',
+      (buttons, label) => {
+        const target = buttons.find(
+          (btn) => btn.textContent && btn.textContent.includes(label),
+        );
+        if (target) target.click();
+      },
+      'Chess.com',
+    );
+  }
 }
 
 (async () => {
@@ -76,19 +87,37 @@ async function selectSource(page) {
       const best = spans.find((span) => span.textContent?.startsWith('Best '));
       return best?.textContent || '';
     });
-    const bestMove = bestLabel.replace('Best ', '').trim() || 'e2e4';
+    const rawBestMove = bestLabel.replace('Best ', '').trim();
+    const bestMove = rawBestMove && rawBestMove !== '--' ? rawBestMove : 'e2e4';
 
-    await page.click('input[placeholder*="UCI"]');
-    await page.keyboard.type(bestMove);
-    await page.$$eval(
-      'button',
-      (buttons) => {
-        const target = buttons.find(
-          (btn) => btn.textContent && btn.textContent.includes('Submit attempt'),
-        );
-        if (target) target.click();
-      },
+    const inputSelector = 'input[placeholder*="UCI"]';
+    const submitSelector = 'button';
+
+    const illegalMove = `${bestMove.slice(0, 2)}${bestMove.slice(0, 2)}`;
+    await page.click(inputSelector, { clickCount: 3 });
+    await page.keyboard.type(illegalMove);
+    await page.$$eval(submitSelector, (buttons) => {
+      const target = buttons.find(
+        (btn) => btn.textContent && btn.textContent.includes('Submit attempt'),
+      );
+      if (target) target.click();
+    });
+    await page.waitForFunction(
+      () =>
+        Array.from(document.querySelectorAll('p')).some((el) =>
+          el.textContent?.includes('Illegal move'),
+        ),
+      { timeout: 60000 },
     );
+
+    await page.click(inputSelector, { clickCount: 3 });
+    await page.keyboard.type(bestMove);
+    await page.$$eval(submitSelector, (buttons) => {
+      const target = buttons.find(
+        (btn) => btn.textContent && btn.textContent.includes('Submit attempt'),
+      );
+      if (target) target.click();
+    });
 
     await page.waitForSelector('span', { timeout: 60000 });
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -104,6 +133,18 @@ async function selectSource(page) {
       process.exit(1);
     }
   } catch (err) {
+    try {
+      const outDir = path.resolve(__dirname);
+      fs.mkdirSync(outDir, { recursive: true });
+      const outPath = path.join(outDir, `failed-${screenshotName}`);
+      await page.screenshot({ path: outPath, fullPage: true });
+      console.error('Saved failure screenshot to', outPath);
+    } catch (screenshotErr) {
+      console.error('Failed to capture failure screenshot:', screenshotErr);
+    }
+    if (consoleErrors.length) {
+      console.error('Console errors detected:', consoleErrors);
+    }
     console.error('Practice attempt verification failed:', err);
     process.exit(1);
   } finally {

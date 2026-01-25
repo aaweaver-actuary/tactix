@@ -5,6 +5,7 @@ import hashlib
 from pathlib import Path
 from typing import Iterable, List, Mapping
 
+import chess
 import duckdb
 from tactix.logging_utils import get_logger
 from tactix.pgn_utils import extract_pgn_metadata
@@ -1120,6 +1121,26 @@ def fetch_practice_tactic(
     return rows[0] if rows else None
 
 
+def _format_practice_explanation(
+    fen: str | None, best_uci: str, motif: str | None
+) -> tuple[str | None, str | None]:
+    if not best_uci:
+        return None, None
+    best_san = None
+    if fen:
+        try:
+            board = chess.Board(str(fen))
+            move = chess.Move.from_uci(best_uci)
+            if move in board.legal_moves:
+                best_san = board.san(move)
+        except Exception:  # noqa: BLE001
+            best_san = None
+    line = best_san or best_uci
+    motif_label = motif or "tactic"
+    explanation = f"{motif_label} tactic. Best line: {line}."
+    return best_san, explanation
+
+
 def grade_practice_attempt(
     conn: duckdb.DuckDBPyConnection,
     tactic_id: int,
@@ -1134,6 +1155,9 @@ def grade_practice_attempt(
         raise ValueError("attempted_uci is required")
     best_uci = (tactic.get("best_uci") or "").strip()
     correct = bool(best_uci) and trimmed_attempt.lower() == best_uci.lower()
+    best_san, explanation = _format_practice_explanation(
+        tactic.get("fen"), best_uci, tactic.get("motif")
+    )
     attempt_id = record_training_attempt(
         conn,
         {
@@ -1165,6 +1189,8 @@ def grade_practice_attempt(
         "severity": tactic.get("severity", 0.0),
         "eval_delta": tactic.get("eval_delta", 0) or 0,
         "message": message,
+        "best_san": best_san,
+        "explanation": explanation,
     }
 
 

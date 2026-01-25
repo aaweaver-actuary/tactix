@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Chess } from 'chess.js';
+import { Chessboard } from 'react-chessboard';
 import {
   DashboardPayload,
   DashboardFilters,
@@ -390,6 +392,10 @@ function App() {
   const [practiceError, setPracticeError] = useState<string | null>(null);
   const [includeFailedAttempt, setIncludeFailedAttempt] = useState(false);
   const [practiceMove, setPracticeMove] = useState('');
+  const [practiceFen, setPracticeFen] = useState('');
+  const [practiceLastMove, setPracticeLastMove] = useState<
+    { from: string; to: string } | null
+  >(null);
   const [practiceSubmitting, setPracticeSubmitting] = useState(false);
   const [practiceFeedback, setPracticeFeedback] = useState<PracticeAttemptResponse | null>(
     null,
@@ -469,7 +475,9 @@ function App() {
     setPracticeMove('');
     setPracticeFeedback(null);
     setPracticeSubmitError(null);
-  }, [currentPractice?.tactic_id]);
+    setPracticeLastMove(null);
+    setPracticeFen(currentPractice?.fen ?? '');
+  }, [currentPractice?.tactic_id, currentPractice?.fen]);
 
   useEffect(() => {
     return () => {
@@ -628,20 +636,54 @@ function App() {
     }
   };
 
-  const handlePracticeAttempt = async () => {
-    if (!currentPractice) return;
-    const trimmed = practiceMove.trim();
-    if (!trimmed) {
-      setPracticeSubmitError('Enter a move in UCI notation (e.g., e2e4).');
-      return;
+  const buildPracticeMove = (fen: string, rawMove: string) => {
+    const trimmed = rawMove.trim().toLowerCase();
+    if (trimmed.length < 4) return null;
+    const from = trimmed.slice(0, 2);
+    const to = trimmed.slice(2, 4);
+    const board = new Chess(fen);
+    const piece = board.get(from);
+    const needsPromotion =
+      piece?.type === 'p' && (to.endsWith('8') || to.endsWith('1'));
+    const promotion = trimmed.length > 4 ? trimmed[4] : needsPromotion ? 'q' : undefined;
+    let move = null;
+    try {
+      move = board.move({ from, to, promotion });
+    } catch (err) {
+      console.warn('Invalid move attempt', err);
+      return null;
     }
+    if (!move) return null;
+    return {
+      uci: `${from}${to}${promotion ?? ''}`,
+      nextFen: board.fen(),
+      from,
+      to,
+    };
+  };
+
+  const submitPracticeMove = async (payload: {
+    uci: string;
+    nextFen?: string;
+    from?: string;
+    to?: string;
+  }) => {
+    if (!currentPractice) return;
     setPracticeSubmitting(true);
     setPracticeSubmitError(null);
+    setPracticeFeedback(null);
+    setPracticeMove(payload.uci);
+    if (payload.nextFen) {
+      setPracticeFen(payload.nextFen);
+    }
+    if (payload.from && payload.to) {
+      setPracticeLastMove({ from: payload.from, to: payload.to });
+    }
     try {
       const response = await submitPracticeAttempt({
         tactic_id: currentPractice.tactic_id,
         position_id: currentPractice.position_id,
-        attempted_uci: trimmed,
+        attempted_uci: payload.uci,
         source,
       });
       setPracticeFeedback(response);
@@ -652,6 +694,36 @@ function App() {
     } finally {
       setPracticeSubmitting(false);
     }
+  };
+
+  const handlePracticeAttempt = async (overrideMove?: string) => {
+    if (!currentPractice) return;
+    const candidate = overrideMove ?? practiceMove;
+    if (!candidate.trim()) {
+      setPracticeSubmitError('Enter a move in UCI notation (e.g., e2e4).');
+      return;
+    }
+    const baseFen = practiceFen || currentPractice.fen;
+    const moveResult = buildPracticeMove(baseFen, candidate);
+    if (!moveResult) {
+      setPracticeSubmitError('Illegal move for this position. Try a legal UCI move.');
+      return;
+    }
+    await submitPracticeMove(moveResult);
+  };
+
+  const handlePracticeDrop = (from: string, to: string, piece: string) => {
+    if (!currentPractice || practiceSubmitting) return false;
+    const baseFen = practiceFen || currentPractice.fen;
+    const isPawn = typeof piece === 'string' && piece.endsWith('P');
+    const promotion = isPawn && (to.endsWith('8') || to.endsWith('1')) ? 'q' : '';
+    const moveResult = buildPracticeMove(baseFen, `${from}${to}${promotion}`);
+    if (!moveResult) {
+      setPracticeSubmitError('Illegal move for this position.');
+      return false;
+    }
+    void submitPracticeMove(moveResult);
+    return true;
   };
 
   const totals = useMemo(() => {
@@ -686,6 +758,21 @@ function App() {
         row.time_control === selectedTimeControl,
     );
   }, [data, selectedRatingBucket, selectedTimeControl]);
+
+  const practiceOrientation =
+    currentPractice?.side_to_move === 'b' ? 'black' : 'white';
+
+  const practiceHighlightStyles = useMemo(() => {
+    if (!practiceLastMove) return {};
+    return {
+      [practiceLastMove.from]: {
+        backgroundColor: 'rgba(14, 116, 144, 0.4)',
+      },
+      [practiceLastMove.to]: {
+        backgroundColor: 'rgba(14, 116, 144, 0.4)',
+      },
+    };
+  }, [practiceLastMove]);
 
   const motifOptions = useMemo(() => {
     const values = new Set<string>();
@@ -953,56 +1040,89 @@ function App() {
         </div>
         {currentPractice ? (
           <>
-            <div className="space-y-1">
-              <p className="text-xs text-sand/60">FEN</p>
-              <p className="font-mono text-xs text-sand/80">
-                {currentPractice.fen}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 text-xs text-sand/70">
-              <Badge
-                label={`Move ${currentPractice.move_number}.${currentPractice.ply}`}
-              />
-              <Badge label={`Best ${currentPractice.best_uci || '--'}`} />
-              {currentPractice.clock_seconds !== null ? (
-                <Badge label={`${currentPractice.clock_seconds}s`} />
-              ) : null}
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <input
-                value={practiceMove}
-                onChange={(event) => setPracticeMove(event.target.value)}
-                placeholder="Enter your move (UCI e.g. e2e4)"
-                className="flex-1 min-w-[220px] rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand placeholder:text-sand/40"
-                disabled={practiceSubmitting}
-              />
-              <button
-                className="button bg-teal text-night px-4 py-2 rounded-md font-display"
-                onClick={handlePracticeAttempt}
-                disabled={practiceSubmitting}
-              >
-                {practiceSubmitting ? 'Submitting…' : 'Submit attempt'}
-              </button>
-            </div>
-            {practiceSubmitError ? (
-              <p className="text-sm text-rust">{practiceSubmitError}</p>
-            ) : null}
-            {practiceFeedback ? (
-              <div className="rounded-md border border-white/10 bg-white/5 p-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <Badge
-                    label={practiceFeedback.correct ? 'Correct' : 'Missed'}
-                  />
-                  <span className="text-sand/80">
-                    {practiceFeedback.message}
-                  </span>
-                </div>
-                <p className="mt-2 font-mono text-xs text-sand/70">
-                  You played {practiceFeedback.attempted_uci} · best{' '}
-                  {practiceFeedback.best_uci || '--'}
+            <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">
+              <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                <Chessboard
+                  id="practice-board"
+                  position={practiceFen || currentPractice.fen}
+                  onPieceDrop={handlePracticeDrop}
+                  boardOrientation={practiceOrientation}
+                  arePiecesDraggable={!practiceSubmitting}
+                  isDraggablePiece={(piece) => {
+                    const fen = practiceFen || currentPractice.fen;
+                    if (!fen) return false;
+                    if (typeof piece !== 'string') return false;
+                    const board = new Chess(fen);
+                    const turn = board.turn();
+                    const pieceColor = piece.startsWith('w') ? 'w' : 'b';
+                    return turn === pieceColor;
+                  }}
+                  customSquareStyles={practiceHighlightStyles}
+                />
+                <p className="mt-2 text-xs text-sand/60">
+                  Legal moves only. Drag a piece to submit.
                 </p>
               </div>
-            ) : null}
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <p className="text-xs text-sand/60">FEN</p>
+                  <p className="font-mono text-xs text-sand/80">
+                    {currentPractice.fen}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs text-sand/70">
+                  <Badge
+                    label={`Move ${currentPractice.move_number}.${currentPractice.ply}`}
+                  />
+                  <Badge label={`Best ${currentPractice.best_uci || '--'}`} />
+                  {currentPractice.clock_seconds !== null ? (
+                    <Badge label={`${currentPractice.clock_seconds}s`} />
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <input
+                    value={practiceMove}
+                    onChange={(event) => setPracticeMove(event.target.value)}
+                    placeholder="Enter your move (UCI e.g., e2e4)"
+                    className="flex-1 min-w-[220px] rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand placeholder:text-sand/40"
+                    disabled={practiceSubmitting}
+                  />
+                  <button
+                    className="button bg-teal text-night px-4 py-2 rounded-md font-display"
+                    onClick={() => handlePracticeAttempt()}
+                    disabled={practiceSubmitting}
+                  >
+                    {practiceSubmitting ? 'Submitting…' : 'Submit attempt'}
+                  </button>
+                </div>
+                {practiceSubmitError ? (
+                  <p className="text-sm text-rust">{practiceSubmitError}</p>
+                ) : null}
+                {practiceFeedback ? (
+                  <div className="rounded-md border border-white/10 bg-white/5 p-3 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        label={practiceFeedback.correct ? 'Correct' : 'Missed'}
+                      />
+                      <span className="text-sand/80">
+                        {practiceFeedback.message}
+                      </span>
+                    </div>
+                    {practiceFeedback.explanation ? (
+                      <p className="mt-2 text-xs text-sand/70">
+                        {practiceFeedback.explanation}
+                      </p>
+                    ) : null}
+                    <p className="mt-2 font-mono text-xs text-sand/70">
+                      You played {practiceFeedback.attempted_uci} · best{' '}
+                      {practiceFeedback.best_san
+                        ? `${practiceFeedback.best_san} (${practiceFeedback.best_uci || '--'})`
+                        : practiceFeedback.best_uci || '--'}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
           </>
         ) : (
           <p className="text-sm text-sand/60">No practice items queued yet.</p>

@@ -100,11 +100,13 @@ export type PracticeAttemptResponse = {
   source: string | null;
   attempted_uci: string;
   best_uci: string;
+  best_san?: string | null;
   correct: boolean;
   motif: string;
   severity: number;
   eval_delta: number;
   message: string;
+  explanation?: string | null;
 };
 
 const API_BASE = (import.meta.env.VITE_API_BASE || '').trim();

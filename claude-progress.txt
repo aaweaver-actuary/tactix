@@ -155,3 +155,12 @@ Session 2026-01-24 (feature 017 – Motif breakdown filters)
 - UI verification screenshot: `verification/dashboard-motif-filters.png`.
 - Updated feature_list.json: feature 017 marked passes=true after UI + test verification.
 - Current passing count: 17.
+
+Session 2026-01-24 (feature 018 – React training board legal moves + feedback)
+- Added React chessboard practice UI with chess.js legal-move enforcement, drag-to-submit, and best-line feedback.
+- Extended practice attempt responses with SAN/explanation and surfaced them in the UI.
+- Updated practice attempt verification to cover illegal + legal move flows.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest` (36 passed).
+- UI verification screenshot: `verification/dashboard-training-board-feedback.png`.
+- Updated feature_list.json: feature 018 marked passes=true after UI + test verification.
+- Current passing count: 18.

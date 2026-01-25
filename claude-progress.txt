@@ -198,6 +198,14 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
 
+Session 2026-01-25 (feature 025b – Lichess username from .env)
+- Updated settings to prefer `LICHESS_USERNAME` and refresh user config after `load_dotenv()`.
+- Added unit tests for env loading, API call username wiring, and fixture games containing the user as white/black.
+- Added Puppeteer verification script and captured UI screenshot: `verification/feature-025b-lichess-env-2026-01-25.png`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_config_env.py tests/test_lichess_client.py`.
+- Updated feature_list.json: feature 025b marked passes=true after verification.
+- Current passing count: 29.
+
 Session 2026-01-25 (feature 025a – Chess.com env username)
 - Loaded .env in Chess.com Airflow DAG and applied `CHESSCOM_USERNAME` in settings.
 - Updated settings resolution to refresh `CHESSCOM_USERNAME` and added unit coverage for env loading, API calls, and PGN user presence.

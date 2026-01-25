@@ -1,7 +1,10 @@
 import tempfile
+from io import StringIO
 from pathlib import Path
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+
+import chess.pgn
 
 from tactix.config import Settings
 from tactix.lichess_client import (
@@ -80,6 +83,64 @@ class LichessClientTests(unittest.TestCase):
         self.assertEqual(fetch_once.call_count, 2)
         refresh.assert_called_once()
         self.assertEqual(settings.lichess_token, "new-token")
+
+    def test_fetch_remote_games_uses_username(self) -> None:
+        settings = Settings(
+            user="envuser",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "db.duckdb",
+            checkpoint_path=self.tmp_dir / "since.txt",
+            metrics_version_file=self.tmp_dir / "metrics.txt",
+            lichess_token="token",
+            use_fixture_when_no_token=False,
+        )
+
+        pgn = (
+            "[Event \"Fixture\"]\n"
+            "[Site \"https://lichess.org/abcd1234\"]\n"
+            "[UTCDate \"2024.06.01\"]\n"
+            "[UTCTime \"12:00:00\"]\n"
+            "[White \"envuser\"]\n"
+            "[Black \"opponent\"]\n"
+            "[Result \"1-0\"]\n\n"
+            "1. e4 e5 1-0\n"
+        )
+
+        games_api = MagicMock()
+        games_api.export_by_player.return_value = [pgn]
+        fake_client = MagicMock()
+        fake_client.games = games_api
+
+        with patch("tactix.lichess_client.build_client", return_value=fake_client):
+            from tactix import lichess_client
+
+            result = lichess_client._fetch_remote_games_once(settings, since_ms=0)
+
+        self.assertEqual(len(result), 1)
+        games_api.export_by_player.assert_called_once()
+        called_user = games_api.export_by_player.call_args[0][0]
+        self.assertEqual(called_user, "envuser")
+
+    def test_fixture_games_include_user_as_white_or_black(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "db.duckdb",
+            checkpoint_path=self.tmp_dir / "since.txt",
+            metrics_version_file=self.tmp_dir / "metrics.txt",
+            fixture_pgn_path=self.fixture_path,
+            use_fixture_when_no_token=True,
+        )
+
+        games = fetch_incremental_games(settings, since_ms=0)
+        self.assertGreater(len(games), 0)
+        for row in games:
+            game = chess.pgn.read_game(StringIO(row["pgn"]))
+            self.assertIsNotNone(game)
+            headers = game.headers
+            white = headers.get("White", "").lower()
+            black = headers.get("Black", "").lower()
+            self.assertIn("lichess", {white, black})
 
 
 if __name__ == "__main__":

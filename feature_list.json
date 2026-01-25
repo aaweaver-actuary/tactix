@@ -497,7 +497,7 @@
       "Run end-to-end tests to ensure the workflow functions correctly with the .env configuration",
       "Write unit tests to ensure the username is included as either the white or black player in the fetched games"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

@@ -18,8 +18,12 @@ class Settings:
     """Central configuration for ingestion, analysis, and UI refresh."""
 
     api_token: str = os.getenv("TACTIX_API_TOKEN", "local-dev-token")
-    user: str = os.getenv("TACTIX_USER", os.getenv("LICHESS_USER", "lichess"))
-    lichess_user: str = os.getenv("LICHESS_USER", "lichess")
+    user: str = os.getenv(
+        "TACTIX_USER", os.getenv("LICHESS_USERNAME", os.getenv("LICHESS_USER", "lichess"))
+    )
+    lichess_user: str = os.getenv(
+        "LICHESS_USERNAME", os.getenv("LICHESS_USER", "lichess")
+    )
     source: str = os.getenv("TACTIX_SOURCE", "lichess")
     lichess_token: Optional[str] = os.getenv("LICHESS_TOKEN")
     lichess_oauth_client_id: Optional[str] = os.getenv("LICHESS_OAUTH_CLIENT_ID")
@@ -137,6 +141,11 @@ class Settings:
 def get_settings(source: str | None = None) -> Settings:
     settings = Settings()
     load_dotenv()
+    lichess_username = os.getenv("LICHESS_USERNAME") or os.getenv("LICHESS_USER")
+    if lichess_username:
+        settings.lichess_user = lichess_username
+        if not os.getenv("TACTIX_USER"):
+            settings.user = lichess_username
     chesscom_username = os.getenv("CHESSCOM_USERNAME")
     if chesscom_username:
         settings.chesscom_user = chesscom_username

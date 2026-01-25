@@ -198,6 +198,106 @@ class MetricsRefreshTests(unittest.TestCase):
         self.assertEqual(found_rates_7, sorted(expected_7))
         self.assertEqual(found_rates_30, sorted(expected_30))
 
+    def test_metrics_refresh_time_trouble_correlation_by_time_control(self) -> None:
+        tmp_dir = Path(tempfile.mkdtemp())
+        db_path = tmp_dir / "metrics_time_trouble.duckdb"
+        conn = get_connection(db_path)
+        init_schema(conn)
+
+        base_time = datetime(2024, 1, 2, tzinfo=timezone.utc)
+        scenarios = [
+            ("300+0", 20, "missed"),
+            ("300+0", 25, "missed"),
+            ("300+0", 100, "found"),
+            ("300+0", 120, "found"),
+            ("600+5", 20, "found"),
+            ("600+5", 25, "found"),
+            ("600+5", 100, "missed"),
+            ("600+5", 120, "missed"),
+        ]
+
+        rows = []
+        positions = []
+        for idx, (time_control, clock_seconds, result) in enumerate(
+            scenarios, start=1
+        ):
+            game_id = f"game-{idx}"
+            timestamp = int((base_time + timedelta(minutes=idx)).timestamp() * 1000)
+            rows.append(
+                {
+                    "game_id": game_id,
+                    "user": "lichess",
+                    "source": "lichess",
+                    "fetched_at": base_time,
+                    "pgn": (
+                        '[Event "Test"]\n'
+                        f'[Site "https://lichess.org/{game_id}"]\n'
+                        '[White "lichess"]\n'
+                        '[Black "opponent"]\n'
+                        '[Result "1-0"]\n'
+                        f'[TimeControl "{time_control}"]\n\n'
+                        "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 1-0"
+                    ),
+                    "last_timestamp_ms": timestamp,
+                }
+            )
+            positions.append(
+                {
+                    "game_id": game_id,
+                    "user": "lichess",
+                    "source": "lichess",
+                    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+                    "ply": idx,
+                    "move_number": idx,
+                    "side_to_move": "w",
+                    "uci": "e2e4",
+                    "san": "e4",
+                    "clock_seconds": clock_seconds,
+                    "result": result,
+                }
+            )
+
+        upsert_raw_pgns(conn, rows)
+        position_ids = insert_positions(conn, positions)
+
+        for pos, position_id in zip(positions, position_ids, strict=False):
+            upsert_tactic_with_outcome(
+                conn,
+                {
+                    "game_id": pos["game_id"],
+                    "position_id": position_id,
+                    "motif": "discovered_attack",
+                    "severity": 1.0,
+                    "best_uci": "e2e4",
+                    "eval_cp": 120,
+                },
+                {
+                    "result": pos["result"],
+                    "user_uci": "e2e4",
+                    "eval_delta": 30,
+                },
+            )
+
+        update_metrics_summary(conn)
+        metrics = fetch_metrics(conn, source="lichess")
+        time_trouble = [
+            row
+            for row in metrics
+            if row.get("metric_type") == "time_trouble_correlation"
+        ]
+
+        self.assertEqual(len(time_trouble), 2)
+        by_control = {row.get("time_control"): row for row in time_trouble}
+        self.assertIn("300+0", by_control)
+        self.assertIn("600+5", by_control)
+
+        self.assertEqual(by_control["300+0"].get("total"), 4)
+        self.assertEqual(by_control["600+5"].get("total"), 4)
+        self.assertAlmostEqual(float(by_control["300+0"]["miss_rate"]), 0.5, places=4)
+        self.assertAlmostEqual(float(by_control["600+5"]["miss_rate"]), 0.5, places=4)
+        self.assertAlmostEqual(float(by_control["300+0"]["found_rate"]), 1.0, places=4)
+        self.assertAlmostEqual(float(by_control["600+5"]["found_rate"]), -1.0, places=4)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -24,6 +24,7 @@ import {
   PracticeQueue,
   MetricsGrid,
   MetricsTrends,
+  TimeTroubleCorrelation,
   PositionsList,
   Hero,
   PracticeAttemptButton,
@@ -321,7 +322,7 @@ export default function App() {
     }
   }
 
-  function resetJobState() {
+  function resetJobState(): void {
     streamAbortRef.current?.abort();
     streamAbortRef.current = null;
     setJobProgress([]);
@@ -458,6 +459,18 @@ export default function App() {
     );
   }, [data, selectedRatingBucket, selectedTimeControl]);
 
+  const timeTroubleRows = useMemo(() => {
+    if (!data) return [];
+    return data.metrics.filter(
+      (row) =>
+        row.metric_type === 'time_trouble_correlation' &&
+        row.rating_bucket === 'all' &&
+        (selectedTimeControl === 'all'
+          ? row.time_control !== 'all'
+          : row.time_control === selectedTimeControl),
+    );
+  }, [data, selectedTimeControl]);
+
   const practiceOrientation =
     currentPractice?.side_to_move === 'b' ? 'black' : 'white';
 
@@ -476,7 +489,7 @@ export default function App() {
   const motifOptions = useMemo(() => {
     const values = new Set<string>();
     data?.metrics.forEach((row) => {
-      if (row.motif) values.add(row.motif);
+      if (row.motif && row.motif !== 'all') values.add(row.motif);
     });
     return ['all', ...Array.from(values).sort()];
   }, [data]);
@@ -505,7 +518,7 @@ export default function App() {
       'unknown',
     ];
     const custom = Array.from(values).filter(
-      (value) => !ordered.includes(value),
+      (value) => value !== 'all' && !ordered.includes(value),
     );
     return [
       'all',
@@ -738,6 +751,7 @@ export default function App() {
 
       {data ? <MetricsGrid metricsData={motifBreakdown} /> : null}
       {data ? <MetricsTrends metricsData={trendRows} /> : null}
+      {data ? <TimeTroubleCorrelation metricsData={timeTroubleRows} /> : null}
       {practiceError ? (
         <div className="card p-3 text-rust">{practiceError}</div>
       ) : null}

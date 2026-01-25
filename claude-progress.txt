@@ -198,6 +198,15 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
 
+Session 2026-01-25 (feature 027 – Time-trouble correlation per time control)
+- Added time-trouble correlation aggregation per time control with TimeControl fallback parsing, and surfaced the metric in the dashboard with explanatory copy.
+- Added unit coverage for per-control time-trouble correlation; added UI component test for correlation rendering; fixed duplicate filter option keys.
+- Seeded Chess.com fixture data after resetting cursor and refreshed metrics.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_metrics_refresh.py`.
+- UI verification screenshot: `verification/feature-027-time-trouble-correlation-2026-01-25.png`.
+- Updated feature_list.json: feature 027 marked passes=true after verification.
+- Current passing count: 22.
+
 Session 2026-01-25 (feature 026 – Rolling averages for 7/30 games)
 - Switched metrics refresh rolling windows to be per-game (ordered by game timestamp) and updated dashboard labels to 7g/30g.
 - Added regression test ensuring 7/30 rolling averages are computed per game even with multiple games on the same day.

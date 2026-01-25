@@ -731,7 +731,15 @@ def update_metrics_summary(conn: duckdb.DuckDBPyConnection) -> None:
                 COALESCE(p.source, 'unknown') AS source,
                 t.motif AS motif,
                 COALESCE(o.result, 'unclear') AS result,
-                COALESCE(r.time_control, 'unknown') AS time_control,
+                COALESCE(
+                    r.time_control,
+                    NULLIF(
+                        regexp_extract(r.pgn, '\\[TimeControl "([^\\"]+)"\\]', 1),
+                        ''
+                    ),
+                    'unknown'
+                ) AS time_control,
+                p.clock_seconds AS clock_seconds,
                 CASE
                     WHEN r.user_rating IS NULL THEN 'unknown'
                     WHEN r.user_rating < 1200 THEN '<1200'
@@ -861,6 +869,80 @@ def update_metrics_summary(conn: duckdb.DuckDBPyConnection) -> None:
                 miss_rate_30 AS miss_rate
             FROM rolling
         ),
+        time_trouble_inputs AS (
+            SELECT
+                source,
+                time_control,
+                result,
+                clock_seconds,
+                TRY_CAST(regexp_extract(time_control, '^(\\d+)', 1) AS DOUBLE)
+                    AS initial_seconds
+            FROM tactic_events
+            WHERE clock_seconds IS NOT NULL
+        ),
+        time_trouble_scored AS (
+            SELECT
+                source,
+                time_control,
+                CASE
+                    WHEN initial_seconds IS NULL OR initial_seconds <= 0 THEN NULL
+                    ELSE LEAST(30.0, initial_seconds * 0.1)
+                END AS threshold_seconds,
+                CASE
+                    WHEN initial_seconds IS NULL OR initial_seconds <= 0 THEN NULL
+                    WHEN clock_seconds <= LEAST(30.0, initial_seconds * 0.1)
+                    THEN 1
+                    ELSE 0
+                END AS time_trouble,
+                CASE
+                    WHEN result IN ('missed', 'failed_attempt') THEN 1
+                    ELSE 0
+                END AS missed_like
+            FROM time_trouble_inputs
+        ),
+        time_trouble_metrics AS (
+            SELECT
+                source,
+                'time_trouble_correlation' AS metric_type,
+                'all' AS motif,
+                NULL::INTEGER AS window_days,
+                NULL::DATE AS trend_date,
+                'all' AS rating_bucket,
+                time_control,
+                total,
+                found,
+                missed,
+                0 AS failed_attempt,
+                0 AS unclear,
+                CASE
+                    WHEN avg_time_trouble IS NULL
+                        OR avg_missed IS NULL
+                        OR avg_time_trouble IN (0, 1)
+                        OR avg_missed IN (0, 1)
+                    THEN NULL
+                    ELSE (
+                        avg_joint - (avg_time_trouble * avg_missed)
+                    ) / SQRT(
+                        (avg_time_trouble * (1 - avg_time_trouble))
+                        * (avg_missed * (1 - avg_missed))
+                    )
+                END AS found_rate,
+                avg_time_trouble AS miss_rate
+            FROM (
+                SELECT
+                    source,
+                    time_control,
+                    COUNT(*) AS total,
+                    SUM(CASE WHEN missed_like = 0 THEN 1 ELSE 0 END) AS found,
+                    SUM(CASE WHEN missed_like = 1 THEN 1 ELSE 0 END) AS missed,
+                    AVG(time_trouble::DOUBLE) AS avg_time_trouble,
+                    AVG(missed_like::DOUBLE) AS avg_missed,
+                    AVG((time_trouble * missed_like)::DOUBLE) AS avg_joint
+                FROM time_trouble_scored
+                WHERE time_trouble IS NOT NULL AND missed_like IS NOT NULL
+                GROUP BY source, time_control
+            ) stats
+        ),
         unioned AS (
             SELECT
                 source,
@@ -929,6 +1011,23 @@ def update_metrics_summary(conn: duckdb.DuckDBPyConnection) -> None:
                 found_rate,
                 miss_rate
             FROM trend_30
+            UNION ALL
+            SELECT
+                source,
+                metric_type,
+                motif,
+                window_days,
+                trend_date,
+                rating_bucket,
+                time_control,
+                total,
+                found,
+                missed,
+                failed_attempt,
+                unclear,
+                found_rate,
+                miss_rate
+            FROM time_trouble_metrics
         )
         SELECT
             source,

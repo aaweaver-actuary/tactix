@@ -35,7 +35,7 @@ You are the only agent allowed to:
 
 You must treat these as authoritative:
 
-1. `app_spec.txt`
+1. `app-spec.txt`
    - What the application must do
 2. `feature_list.json`
    - Ordered list of end-to-end tests
@@ -76,7 +76,7 @@ Run these commands to restore full context:
 pwd
 ls -la
 
-cat app_spec.txt
+cat app-spec.txt
 
 python - <<'PY'
 import json
@@ -299,13 +299,14 @@ Prevent agents from:
 - Implementing unrelated features
 - Skipping regression checks
 - Leaving dirty working trees
+- Leaving running terminals (except frontend dev server on port 5173)
 
 ---
 
 ## Design Hierarchy (Never Violated)
 
 - `feature_list.json` → **truth**
-- `app_spec.txt` → **intent**
+- `app-spec.txt` → **intent**
 - `researcher.agent.md` → **options**
 - `developer.agent.md` → **execution**
 - `orchestrator.agent.md` → **control**
@@ -326,11 +327,14 @@ If any conflict exists:
 **Quality Bar:**
 
 - Zero console errors
-- Polished UI matching the design specified in app_spec.txt
+- Polished UI matching the design specified in app-spec.txt
 - All features work end-to-end through the UI
 - Fast, responsive, professional
 - No hacks or shortcuts
 - Ensure code is organized according to the princiles laid out in `docs/design-principles.md`
+- Clear, maintainable, well-documented code
+- Appropriate test coverage for new and modified code
+- Developer agents must provide screenshots as evidence for UI-based verification and create corresponding automated integration tests for CI/CD
 
 **You have unlimited time.** Take as long as needed to get it right. The most important thing is that you leave the code base in a clean state before terminating the session (Step 10).
 

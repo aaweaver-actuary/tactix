@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import List
 
 import berserk
-import chess.pgn
 from tenacity import (  # type: ignore
     before_sleep_log,
     retry,
@@ -20,7 +19,6 @@ from tactix.logging_utils import get_logger
 from tactix.pgn_utils import (
     extract_game_id,
     extract_last_timestamp_ms,
-    latest_timestamp,
     split_pgn_chunks,
 )
 

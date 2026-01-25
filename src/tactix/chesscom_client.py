@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import List, Tuple
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 import time
 
 import requests
@@ -139,6 +140,45 @@ def _load_fixture_games(settings: Settings, since_ms: int) -> List[dict]:
     return games
 
 
+def _next_page_url(data: dict, current_url: str) -> str | None:
+    for key in ("next_page", "next", "next_url", "nextPage"):
+        candidate = data.get(key)
+        if isinstance(candidate, str) and candidate:
+            return candidate
+        if isinstance(candidate, dict):
+            href = candidate.get("href") or candidate.get("url")
+            if href:
+                return href
+
+    page = data.get("page") or data.get("current_page")
+    total_pages = data.get("total_pages") or data.get("totalPages")
+    if isinstance(page, int) and isinstance(total_pages, int) and page < total_pages:
+        parsed = urlparse(current_url)
+        query = parse_qs(parsed.query)
+        query["page"] = [str(page + 1)]
+        return urlunparse(parsed._replace(query=urlencode(query, doseq=True)))
+
+    return None
+
+
+def _fetch_archive_pages(settings: Settings, archive_url: str) -> List[dict]:
+    games: List[dict] = []
+    next_url: str | None = archive_url
+    seen_urls: set[str] = set()
+
+    while next_url:
+        if next_url in seen_urls:
+            logger.warning("Pagination loop detected for %s", archive_url)
+            break
+        seen_urls.add(next_url)
+
+        data = _get_with_backoff(settings, next_url, timeout=20).json()
+        games.extend(data.get("games", []))
+        next_url = _next_page_url(data, next_url)
+
+    return games
+
+
 def _fetch_remote_games(settings: Settings, since_ms: int) -> List[dict]:
     url = ARCHIVES_URL.format(username=settings.user)
     try:
@@ -156,13 +196,13 @@ def _fetch_remote_games(settings: Settings, since_ms: int) -> List[dict]:
     # iterate newest to oldest but stop once we cross the checkpoint
     for archive_url in reversed(archives[-6:]):
         try:
-            data = _get_with_backoff(settings, archive_url, timeout=20).json()
+            archive_games = _fetch_archive_pages(settings, archive_url)
         except Exception as exc:  # noqa: BLE001
             logger.warning("Failed to fetch archive %s: %s", archive_url, exc)
             continue
 
-        archive_games = data.get("games", [])
         archive_max_ts = 0
+        seen_game_ids: set[str] = set()
         for game in archive_games:
             if game.get("time_class") != settings.chesscom_time_class:
                 continue
@@ -174,9 +214,13 @@ def _fetch_remote_games(settings: Settings, since_ms: int) -> List[dict]:
             if since_ms and last_ts <= since_ms:
                 continue
             game_id = game.get("uuid") or extract_game_id(pgn)
+            game_id_str = str(game_id)
+            if game_id_str in seen_game_ids:
+                continue
+            seen_game_ids.add(game_id_str)
             games.append(
                 {
-                    "game_id": str(game_id),
+                    "game_id": game_id_str,
                     "user": settings.user,
                     "source": settings.source,
                     "fetched_at": datetime.now(timezone.utc),

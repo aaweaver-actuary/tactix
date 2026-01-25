@@ -88,7 +88,9 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
                 is_managed_attr = getattr(option_meta, "is_managed", None)
                 if is_managed_attr is not None:
                     is_managed = (
-                        is_managed_attr() if callable(is_managed_attr) else bool(is_managed_attr)
+                        is_managed_attr()
+                        if callable(is_managed_attr)
+                        else bool(is_managed_attr)
                     )
                 else:
                     is_managed = bool(getattr(option_meta, "managed", False))

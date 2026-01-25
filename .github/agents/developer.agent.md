@@ -100,7 +100,6 @@ For example, if this were a chat app, you should perform a test that logs into t
   - Missing hover states
   - Console errors
 
-
 #### STEP 3.1: REVIEW DESIGN PRINCIPLES
 
 Before starting verification tests, review the `design-principles.md` file to ensure that the codebase adheres to best practices in extraction, modularity, refactoring, API design, imports, function size, and testing requirements. This will help maintain code quality and consistency throughout the development process.
@@ -224,6 +223,13 @@ Available tools:
 Test like a human user with mouse and keyboard. Don't take shortcuts by using JavaScript evaluation.
 Don't use the puppeteer "active tab" tool.
 
+After testing this way, add screenshots to verification/ directory and reference them in your notes. Then create a similar integration test that does use JavaScript evaluation for faster automated testing, but only after you've done the manual browser automation testing first.
+
+You should end up with two sets of tests that check the same thing for each feature:
+
+1. Manual browser automation tests with screenshots for verification
+2. Automated integration tests for CI/CD
+
 ---
 
 ## IMPORTANT REMINDERS
@@ -243,6 +249,8 @@ Don't use the puppeteer "active tab" tool.
 
 **You have unlimited time.** Take as long as needed to get it right. The most important thing is that you
 leave the code base in a clean state before terminating the session (Step 10).
+
+**Clean up unused resources before ending the session.** This includes closing any terminal tabs and ensuring no background processes are left running. The one exception is to keep the frontend development server running on port 5173 for easier monitoring of changes in future sessions.
 
 ---
 

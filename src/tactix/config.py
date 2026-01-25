@@ -26,9 +26,7 @@ class Settings:
     chesscom_token: Optional[str] = os.getenv("CHESSCOM_TOKEN")
     chesscom_time_class: str = os.getenv("CHESSCOM_TIME_CLASS", "blitz")
     chesscom_max_retries: int = int(os.getenv("CHESSCOM_MAX_RETRIES", "3"))
-    chesscom_retry_backoff_ms: int = int(
-        os.getenv("CHESSCOM_RETRY_BACKOFF_MS", "500")
-    )
+    chesscom_retry_backoff_ms: int = int(os.getenv("CHESSCOM_RETRY_BACKOFF_MS", "500"))
     duckdb_path: Path = Path(
         os.getenv("TACTIX_DUCKDB_PATH", DEFAULT_DATA_DIR / "tactix.duckdb")
     )

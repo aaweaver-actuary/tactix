@@ -34,6 +34,13 @@ describe('getJobStreamUrl', () => {
     );
   });
 
+  it('adds profile param when provided', async () => {
+    const getJobStreamUrl = await loadWithApiBase('https://example.com');
+    expect(getJobStreamUrl('abc', 'lichess', 'bullet')).toBe(
+      'https://example.com/api/jobs/stream?job=abc&source=lichess&profile=bullet',
+    );
+  });
+
   it('encodes query params', async () => {
     const getJobStreamUrl = await loadWithApiBase('https://example.com');
     expect(getJobStreamUrl('a b', 'x/y')).toBe(

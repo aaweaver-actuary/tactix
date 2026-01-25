@@ -19,6 +19,17 @@ class PipelineStateTests(unittest.TestCase):
         self.fixture_path = (
             Path(__file__).resolve().parent / "fixtures" / "lichess_rapid_sample.pgn"
         )
+        self.bullet_fixture_path = (
+            Path(__file__).resolve().parent / "fixtures" / "lichess_bullet_sample.pgn"
+        )
+        self.blitz_fixture_path = (
+            Path(__file__).resolve().parent / "fixtures" / "lichess_blitz_sample.pgn"
+        )
+        self.classical_fixture_path = (
+            Path(__file__).resolve().parent
+            / "fixtures"
+            / "lichess_classical_sample.pgn"
+        )
         self.chesscom_fixture_path = (
             Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
         )
@@ -74,7 +85,7 @@ class PipelineStateTests(unittest.TestCase):
 
     def test_incremental_run_skips_existing_games(self) -> None:
         settings = Settings(
-            user="lichess",
+            user="andy_andy_andy",
             source="lichess",
             duckdb_path=self.tmp_dir / "tactix.duckdb",
             checkpoint_path=self.tmp_dir / "since.txt",
@@ -123,6 +134,406 @@ class PipelineStateTests(unittest.TestCase):
         self.assertEqual(outcomes_second, outcomes_first)
         self.assertEqual(checkpoint_second, checkpoint_first)
         self.assertEqual(metrics_version_second, metrics_version_first + 1)
+
+    def test_lichess_rapid_incremental_sync_uses_profile_checkpoint(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "tactix_rapid.duckdb",
+            checkpoint_path=self.tmp_dir / "lichess_since.txt",
+            metrics_version_file=self.tmp_dir / "metrics_rapid.txt",
+            analysis_checkpoint_path=self.tmp_dir / "analysis_checkpoint_lichess.json",
+            fixture_pgn_path=self.fixture_path,
+            use_fixture_when_no_token=True,
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=50,
+            stockfish_depth=8,
+            stockfish_multipv=2,
+            lichess_profile="rapid",
+        )
+
+        first = run_daily_game_sync(settings, profile="rapid")
+        self.assertGreater(first["fetched_games"], 0)
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("lichess_since_rapid.txt")
+        )
+        checkpoint_first = read_checkpoint(settings.checkpoint_path)
+        self.assertGreater(checkpoint_first, 0)
+
+        second = run_daily_game_sync(settings, profile="rapid")
+        checkpoint_second = read_checkpoint(settings.checkpoint_path)
+
+        self.assertEqual(second["fetched_games"], 0)
+        self.assertEqual(second["positions"], 0)
+        self.assertEqual(second["tactics"], 0)
+        self.assertEqual(checkpoint_second, checkpoint_first)
+
+    def test_lichess_classical_incremental_sync_uses_profile_checkpoint(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "tactix_classical.duckdb",
+            checkpoint_path=self.tmp_dir / "lichess_since.txt",
+            metrics_version_file=self.tmp_dir / "metrics_classical.txt",
+            analysis_checkpoint_path=self.tmp_dir / "analysis_checkpoint_lichess.json",
+            fixture_pgn_path=self.classical_fixture_path,
+            use_fixture_when_no_token=True,
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=50,
+            stockfish_depth=8,
+            stockfish_multipv=2,
+            lichess_profile="classical",
+        )
+
+        first = run_daily_game_sync(settings, profile="classical")
+        self.assertGreater(first["fetched_games"], 0)
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("lichess_since_classical.txt")
+        )
+        checkpoint_first = read_checkpoint(settings.checkpoint_path)
+        self.assertGreater(checkpoint_first, 0)
+
+        second = run_daily_game_sync(settings, profile="classical")
+        checkpoint_second = read_checkpoint(settings.checkpoint_path)
+
+        self.assertEqual(second["fetched_games"], 0)
+        self.assertEqual(second["positions"], 0)
+        self.assertEqual(second["tactics"], 0)
+        self.assertEqual(checkpoint_second, checkpoint_first)
+
+    def test_lichess_classical_backfill_window_is_idempotent(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "tactix_classical.duckdb",
+            checkpoint_path=self.tmp_dir / "lichess_since.txt",
+            metrics_version_file=self.tmp_dir / "metrics_classical.txt",
+            analysis_checkpoint_path=self.tmp_dir / "analysis_checkpoint_lichess.json",
+            fixture_pgn_path=self.classical_fixture_path,
+            use_fixture_when_no_token=True,
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=50,
+            stockfish_depth=8,
+            stockfish_multipv=2,
+            lichess_profile="classical",
+        )
+
+        pgn_text = self.classical_fixture_path.read_text()
+        timestamps = [
+            extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)
+        ]
+        window_start = min(timestamps) - 1000
+        window_end = max(timestamps) + 1000
+
+        first = run_daily_game_sync(
+            settings,
+            window_start_ms=window_start,
+            window_end_ms=window_end,
+            profile="classical",
+        )
+        self.assertGreater(first["fetched_games"], 0)
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("lichess_since_classical.txt")
+        )
+        self.assertTrue(
+            settings.fixture_pgn_path.name.endswith("lichess_classical_sample.pgn")
+        )
+        checkpoint_after_first = read_checkpoint(settings.checkpoint_path)
+        self.assertEqual(checkpoint_after_first, 0)
+
+        conn = get_connection(settings.duckdb_path)
+        raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
+        positions_before = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+        tactics_before = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        outcomes_before = conn.execute(
+            "SELECT COUNT(*) FROM tactic_outcomes"
+        ).fetchone()[0]
+        conn.close()
+
+        run_daily_game_sync(
+            settings,
+            window_start_ms=window_start,
+            window_end_ms=window_end,
+            profile="classical",
+        )
+
+        conn = get_connection(settings.duckdb_path)
+        raw_after = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
+        positions_after = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+        tactics_after = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        outcomes_after = conn.execute(
+            "SELECT COUNT(*) FROM tactic_outcomes"
+        ).fetchone()[0]
+        conn.close()
+
+        self.assertEqual(raw_after, raw_before)
+        self.assertEqual(positions_after, positions_before)
+        self.assertEqual(tactics_after, tactics_before)
+        self.assertEqual(outcomes_after, outcomes_before)
+
+    def test_lichess_rapid_backfill_window_is_idempotent(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "tactix_rapid.duckdb",
+            checkpoint_path=self.tmp_dir / "lichess_since.txt",
+            metrics_version_file=self.tmp_dir / "metrics_rapid.txt",
+            analysis_checkpoint_path=self.tmp_dir / "analysis_checkpoint_lichess.json",
+            fixture_pgn_path=self.fixture_path,
+            use_fixture_when_no_token=True,
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=50,
+            stockfish_depth=8,
+            stockfish_multipv=2,
+            lichess_profile="rapid",
+        )
+
+        pgn_text = self.fixture_path.read_text()
+        timestamps = [
+            extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)
+        ]
+        window_start = min(timestamps) - 1000
+        window_end = max(timestamps) + 1000
+
+        first = run_daily_game_sync(
+            settings,
+            window_start_ms=window_start,
+            window_end_ms=window_end,
+            profile="rapid",
+        )
+        self.assertGreater(first["fetched_games"], 0)
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("lichess_since_rapid.txt")
+        )
+        self.assertTrue(
+            settings.fixture_pgn_path.name.endswith("lichess_rapid_sample.pgn")
+        )
+        checkpoint_after_first = read_checkpoint(settings.checkpoint_path)
+        self.assertEqual(checkpoint_after_first, 0)
+
+        conn = get_connection(settings.duckdb_path)
+        raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
+        positions_before = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+        tactics_before = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        outcomes_before = conn.execute(
+            "SELECT COUNT(*) FROM tactic_outcomes"
+        ).fetchone()[0]
+        conn.close()
+
+        run_daily_game_sync(
+            settings,
+            window_start_ms=window_start,
+            window_end_ms=window_end,
+            profile="rapid",
+        )
+
+        conn = get_connection(settings.duckdb_path)
+        raw_after = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
+        positions_after = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+        tactics_after = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        outcomes_after = conn.execute(
+            "SELECT COUNT(*) FROM tactic_outcomes"
+        ).fetchone()[0]
+        conn.close()
+
+        self.assertEqual(raw_after, raw_before)
+        self.assertEqual(positions_after, positions_before)
+        self.assertEqual(tactics_after, tactics_before)
+        self.assertEqual(outcomes_after, outcomes_before)
+
+    def test_lichess_bullet_incremental_sync_uses_profile_checkpoint(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "tactix_bullet.duckdb",
+            checkpoint_path=self.tmp_dir / "lichess_since.txt",
+            metrics_version_file=self.tmp_dir / "metrics_bullet.txt",
+            analysis_checkpoint_path=self.tmp_dir / "analysis_checkpoint_lichess.json",
+            fixture_pgn_path=self.bullet_fixture_path,
+            use_fixture_when_no_token=True,
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=50,
+            stockfish_depth=8,
+            stockfish_multipv=2,
+            lichess_profile="bullet",
+        )
+
+        first = run_daily_game_sync(settings, profile="bullet")
+        self.assertGreater(first["fetched_games"], 0)
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("lichess_since_bullet.txt")
+        )
+        checkpoint_first = read_checkpoint(settings.checkpoint_path)
+        self.assertGreater(checkpoint_first, 0)
+
+        second = run_daily_game_sync(settings, profile="bullet")
+        checkpoint_second = read_checkpoint(settings.checkpoint_path)
+
+        self.assertEqual(second["fetched_games"], 0)
+        self.assertEqual(second["positions"], 0)
+        self.assertEqual(second["tactics"], 0)
+        self.assertEqual(checkpoint_second, checkpoint_first)
+
+    def test_lichess_bullet_backfill_window_is_idempotent(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "tactix_bullet.duckdb",
+            checkpoint_path=self.tmp_dir / "lichess_since.txt",
+            metrics_version_file=self.tmp_dir / "metrics_bullet.txt",
+            analysis_checkpoint_path=self.tmp_dir / "analysis_checkpoint_lichess.json",
+            fixture_pgn_path=self.bullet_fixture_path,
+            use_fixture_when_no_token=True,
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=50,
+            stockfish_depth=8,
+            stockfish_multipv=2,
+            lichess_profile="bullet",
+        )
+
+        pgn_text = self.bullet_fixture_path.read_text()
+        timestamps = [
+            extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)
+        ]
+        window_start = min(timestamps) - 1000
+        window_end = max(timestamps) + 1000
+
+        first = run_daily_game_sync(
+            settings,
+            window_start_ms=window_start,
+            window_end_ms=window_end,
+            profile="bullet",
+        )
+        self.assertGreater(first["fetched_games"], 0)
+        checkpoint_after_first = read_checkpoint(settings.checkpoint_path)
+        self.assertEqual(checkpoint_after_first, 0)
+
+        conn = get_connection(settings.duckdb_path)
+        raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
+        positions_before = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+        tactics_before = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        outcomes_before = conn.execute(
+            "SELECT COUNT(*) FROM tactic_outcomes"
+        ).fetchone()[0]
+        conn.close()
+
+        run_daily_game_sync(
+            settings,
+            window_start_ms=window_start,
+            window_end_ms=window_end,
+            profile="bullet",
+        )
+
+        conn = get_connection(settings.duckdb_path)
+        raw_after = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
+        positions_after = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+        tactics_after = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        outcomes_after = conn.execute(
+            "SELECT COUNT(*) FROM tactic_outcomes"
+        ).fetchone()[0]
+        conn.close()
+
+        self.assertEqual(raw_after, raw_before)
+        self.assertEqual(positions_after, positions_before)
+        self.assertEqual(tactics_after, tactics_before)
+        self.assertEqual(outcomes_after, outcomes_before)
+
+    def test_lichess_blitz_incremental_sync_uses_profile_checkpoint(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "tactix_blitz.duckdb",
+            checkpoint_path=self.tmp_dir / "lichess_since.txt",
+            metrics_version_file=self.tmp_dir / "metrics_blitz.txt",
+            analysis_checkpoint_path=self.tmp_dir / "analysis_checkpoint_lichess.json",
+            fixture_pgn_path=self.blitz_fixture_path,
+            use_fixture_when_no_token=True,
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=50,
+            stockfish_depth=8,
+            stockfish_multipv=2,
+            lichess_profile="blitz",
+        )
+
+        first = run_daily_game_sync(settings, profile="blitz")
+        self.assertGreater(first["fetched_games"], 0)
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("lichess_since_blitz.txt")
+        )
+        checkpoint_first = read_checkpoint(settings.checkpoint_path)
+        self.assertGreater(checkpoint_first, 0)
+
+        second = run_daily_game_sync(settings, profile="blitz")
+        checkpoint_second = read_checkpoint(settings.checkpoint_path)
+
+        self.assertEqual(second["fetched_games"], 0)
+        self.assertEqual(second["positions"], 0)
+        self.assertEqual(second["tactics"], 0)
+        self.assertEqual(checkpoint_second, checkpoint_first)
+
+    def test_lichess_blitz_backfill_window_is_idempotent(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "tactix_blitz.duckdb",
+            checkpoint_path=self.tmp_dir / "lichess_since.txt",
+            metrics_version_file=self.tmp_dir / "metrics_blitz.txt",
+            analysis_checkpoint_path=self.tmp_dir / "analysis_checkpoint_lichess.json",
+            fixture_pgn_path=self.blitz_fixture_path,
+            use_fixture_when_no_token=True,
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=50,
+            stockfish_depth=8,
+            stockfish_multipv=2,
+            lichess_profile="blitz",
+        )
+
+        pgn_text = self.blitz_fixture_path.read_text()
+        timestamps = [
+            extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)
+        ]
+        window_start = min(timestamps) - 1000
+        window_end = max(timestamps) + 1000
+
+        first = run_daily_game_sync(
+            settings,
+            window_start_ms=window_start,
+            window_end_ms=window_end,
+            profile="blitz",
+        )
+        self.assertGreater(first["fetched_games"], 0)
+        checkpoint_after_first = read_checkpoint(settings.checkpoint_path)
+        self.assertEqual(checkpoint_after_first, 0)
+
+        conn = get_connection(settings.duckdb_path)
+        raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
+        positions_before = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+        tactics_before = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        outcomes_before = conn.execute(
+            "SELECT COUNT(*) FROM tactic_outcomes"
+        ).fetchone()[0]
+        conn.close()
+
+        run_daily_game_sync(
+            settings,
+            window_start_ms=window_start,
+            window_end_ms=window_end,
+            profile="blitz",
+        )
+
+        conn = get_connection(settings.duckdb_path)
+        raw_after = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
+        positions_after = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+        tactics_after = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        outcomes_after = conn.execute(
+            "SELECT COUNT(*) FROM tactic_outcomes"
+        ).fetchone()[0]
+        conn.close()
+
+        self.assertEqual(raw_after, raw_before)
+        self.assertEqual(positions_after, positions_before)
+        self.assertEqual(tactics_after, tactics_before)
+        self.assertEqual(outcomes_after, outcomes_before)
 
     def test_backfill_replay_is_idempotent(self) -> None:
         settings = Settings(

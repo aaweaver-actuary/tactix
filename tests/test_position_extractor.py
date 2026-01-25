@@ -1,6 +1,8 @@
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
+import tactix.position_extractor as position_extractor
 from tactix.position_extractor import extract_positions
 
 
@@ -31,9 +33,7 @@ def _read_promotion_en_passant_games() -> list[str]:
 
 def _read_castling_games() -> list[str]:
     path = (
-        Path(__file__).resolve().parent
-        / "fixtures"
-        / "lichess_castling_both_sides.pgn"
+        Path(__file__).resolve().parent / "fixtures" / "lichess_castling_both_sides.pgn"
     )
     return [
         chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
@@ -155,6 +155,34 @@ class PositionExtractorTests(unittest.TestCase):
         self.assertEqual(castle["ply"], 9)
         self.assertEqual(castle["move_number"], 5)
         self.assertEqual(castle["side_to_move"], "black")
+
+    def test_clock_from_comment_parses_mm_ss(self) -> None:
+        seconds = position_extractor._clock_from_comment("[%clk 05:30]")
+        self.assertEqual(seconds, 330.0)
+
+    def test_clock_from_comment_parses_hh_mm_ss(self) -> None:
+        seconds = position_extractor._clock_from_comment("[%clk 01:02:03]")
+        self.assertEqual(seconds, 3723.0)
+
+    def test_clock_from_comment_invalid_returns_none(self) -> None:
+        seconds = position_extractor._clock_from_comment("[%clk bad]")
+        self.assertIsNone(seconds)
+
+    def test_extract_positions_uses_python_path_in_pytest(self) -> None:
+        with patch.dict("os.environ", {"PYTEST_CURRENT_TEST": "1"}):
+            with patch.object(
+                position_extractor,
+                "_extract_positions_python",
+                return_value=[{"uci": "e2e4"}],
+            ) as extractor:
+                result = position_extractor.extract_positions(
+                    '[Event "Test"]\n\n1. e4 e5 *',
+                    user="white",
+                    source="lichess",
+                    game_id="test",
+                )
+        self.assertEqual(result, [{"uci": "e2e4"}])
+        extractor.assert_called_once()
 
 
 if __name__ == "__main__":

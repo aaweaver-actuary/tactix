@@ -72,8 +72,8 @@ describe('MetricsTrends', () => {
 
     expect(html).toContain('Motif trends');
     expect(html).toContain('Motif');
-    expect(html).toContain('7d found');
-    expect(html).toContain('30d found');
+    expect(html).toContain('7g found');
+    expect(html).toContain('30g found');
     expect(html).toContain('Last update');
 
     expect(html).toContain('alpha');

@@ -54,4 +54,23 @@ describe('triggerBackfill', () => {
     expect(fetchDashboardMock).toHaveBeenCalledWith(undefined);
     expect(result).toBe(resultPayload);
   });
+
+  it('passes profile when provided', async () => {
+    const resultPayload = { ok: true } as any;
+    postMock.mockResolvedValue(undefined);
+    fetchDashboardMock.mockResolvedValue(resultPayload);
+
+    const result = await triggerBackfill('lichess', 10, 20, 'bullet');
+
+    expect(postMock).toHaveBeenCalledWith('/api/jobs/daily_game_sync', null, {
+      params: {
+        source: 'lichess',
+        backfill_start_ms: 10,
+        backfill_end_ms: 20,
+        profile: 'bullet',
+      },
+    });
+    expect(fetchDashboardMock).toHaveBeenCalledWith('lichess');
+    expect(result).toBe(resultPayload);
+  });
 });

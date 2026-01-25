@@ -11,6 +11,11 @@ load_dotenv()
 
 
 DEFAULT_DATA_DIR = Path(os.getenv("TACTIX_DATA_DIR", "data"))
+DEFAULT_LICHESS_CHECKPOINT = DEFAULT_DATA_DIR / "lichess_since.txt"
+DEFAULT_LICHESS_ANALYSIS_CHECKPOINT = (
+    DEFAULT_DATA_DIR / "analysis_checkpoint_lichess.json"
+)
+DEFAULT_LICHESS_FIXTURE = Path("tests/fixtures/lichess_rapid_sample.pgn")
 
 
 @dataclass(slots=True)
@@ -19,7 +24,8 @@ class Settings:
 
     api_token: str = os.getenv("TACTIX_API_TOKEN", "local-dev-token")
     user: str = os.getenv(
-        "TACTIX_USER", os.getenv("LICHESS_USERNAME", os.getenv("LICHESS_USER", "lichess"))
+        "TACTIX_USER",
+        os.getenv("LICHESS_USERNAME", os.getenv("LICHESS_USER", "lichess")),
     )
     lichess_user: str = os.getenv(
         "LICHESS_USERNAME", os.getenv("LICHESS_USER", "lichess")
@@ -47,7 +53,7 @@ class Settings:
         os.getenv("TACTIX_DUCKDB_PATH", DEFAULT_DATA_DIR / "tactix.duckdb")
     )
     checkpoint_path: Path = Path(
-        os.getenv("TACTIX_CHECKPOINT_PATH", DEFAULT_DATA_DIR / "lichess_since.txt")
+        os.getenv("TACTIX_CHECKPOINT_PATH", DEFAULT_LICHESS_CHECKPOINT)
     )
     chesscom_checkpoint_path: Path = Path(
         os.getenv(
@@ -57,7 +63,7 @@ class Settings:
     analysis_checkpoint_path: Path = Path(
         os.getenv(
             "TACTIX_ANALYSIS_CHECKPOINT_PATH",
-            DEFAULT_DATA_DIR / "analysis_checkpoint_lichess.json",
+            DEFAULT_LICHESS_ANALYSIS_CHECKPOINT,
         )
     )
     stockfish_path: Path = Path(os.getenv("STOCKFISH_PATH", "stockfish"))
@@ -91,8 +97,9 @@ class Settings:
         )
     )
     rapid_perf: str = os.getenv("TACTIX_PERF", "rapid")
+    lichess_profile: str = os.getenv("TACTIX_LICHESS_PROFILE", "")
     fixture_pgn_path: Path = Path(
-        os.getenv("TACTIX_FIXTURE_PGN_PATH", "tests/fixtures/lichess_rapid_sample.pgn")
+        os.getenv("TACTIX_FIXTURE_PGN_PATH", DEFAULT_LICHESS_FIXTURE)
     )
     chesscom_fixture_pgn_path: Path = Path(
         os.getenv(
@@ -128,6 +135,34 @@ class Settings:
             self.analysis_checkpoint_path = (
                 self.data_dir / "analysis_checkpoint_lichess.json"
             )
+            self.apply_lichess_profile()
+
+    def apply_lichess_profile(self, profile: str | None = None) -> None:
+        profile_value = (profile or self.lichess_profile or "").strip()
+        if not profile_value:
+            return
+        self.lichess_profile = profile_value
+        self.rapid_perf = profile_value
+        if self.source != "lichess":
+            return
+        default_checkpoint = self.data_dir / "lichess_since.txt"
+        if (
+            self.checkpoint_path == DEFAULT_LICHESS_CHECKPOINT
+            or self.checkpoint_path == default_checkpoint
+        ):
+            self.checkpoint_path = self.data_dir / f"lichess_since_{profile_value}.txt"
+        default_analysis = self.data_dir / "analysis_checkpoint_lichess.json"
+        if (
+            self.analysis_checkpoint_path == DEFAULT_LICHESS_ANALYSIS_CHECKPOINT
+            or self.analysis_checkpoint_path == default_analysis
+        ):
+            self.analysis_checkpoint_path = (
+                self.data_dir / f"analysis_checkpoint_lichess_{profile_value}.json"
+            )
+        if self.fixture_pgn_path == DEFAULT_LICHESS_FIXTURE:
+            candidate = Path(f"tests/fixtures/lichess_{profile_value}_sample.pgn")
+            if candidate.exists():
+                self.fixture_pgn_path = candidate
 
     def ensure_dirs(self) -> None:
         self.data_dir.mkdir(parents=True, exist_ok=True)
@@ -138,7 +173,7 @@ class Settings:
         self.lichess_token_cache_path.parent.mkdir(parents=True, exist_ok=True)
 
 
-def get_settings(source: str | None = None) -> Settings:
+def get_settings(source: str | None = None, profile: str | None = None) -> Settings:
     settings = Settings()
     load_dotenv()
     lichess_username = os.getenv("LICHESS_USERNAME") or os.getenv("LICHESS_USER")
@@ -152,5 +187,6 @@ def get_settings(source: str | None = None) -> Settings:
     if source:
         settings.source = source
     settings.apply_source_defaults()
+    settings.apply_lichess_profile(profile)
     settings.ensure_dirs()
     return settings

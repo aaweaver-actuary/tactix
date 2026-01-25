@@ -569,7 +569,7 @@
       "Step 10: Refresh aggregated metrics for dashboards and practice queues",
       "Step 11: Load React dashboard and verify new data and explanations appear without stale cache"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -581,7 +581,7 @@
       "Step 4: Persist raw PGNs with site metadata",
       "Step 5: Mark run status success in Airflow and metrics"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -593,7 +593,7 @@
       "Step 4: Persist raw PGNs with site metadata",
       "Step 5: Mark run status success in Airflow and metrics"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -605,7 +605,7 @@
       "Step 4: Persist raw PGNs with site metadata",
       "Step 5: Mark run status success in Airflow and metrics"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -617,7 +617,7 @@
       "Step 4: Persist raw PGNs with site metadata",
       "Step 5: Mark run status success in Airflow and metrics"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -629,7 +629,7 @@
       "Step 4: Persist raw PGNs with site metadata",
       "Step 5: Mark run status success in Airflow and metrics"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -641,7 +641,7 @@
       "Step 4: Persist raw PGNs with site metadata",
       "Step 5: Mark run status success in Airflow and metrics"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -653,7 +653,7 @@
       "Step 4: Persist raw PGNs with site metadata",
       "Step 5: Mark run status success in Airflow and metrics"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

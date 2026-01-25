@@ -84,12 +84,14 @@ def trigger_daily_sync(
     source: str | None = Query(None),
     backfill_start_ms: int | None = Query(None, ge=0),
     backfill_end_ms: int | None = Query(None, ge=0),
+    profile: str | None = Query(None),
 ) -> dict[str, object]:
     result = run_daily_game_sync(
-        get_settings(source=source),
+        get_settings(source=source, profile=profile),
         source=source,
         window_start_ms=backfill_start_ms,
         window_end_ms=backfill_end_ms,
+        profile=profile,
     )
     return {"status": "ok", "result": result}
 
@@ -212,8 +214,9 @@ def _coerce_date_to_datetime(
 def stream_jobs(
     job: str = Query("daily_game_sync"),
     source: str | None = Query(None),
+    profile: str | None = Query(None),
 ) -> StreamingResponse:
-    settings = get_settings(source=source)
+    settings = get_settings(source=source, profile=profile)
     queue: Queue[object] = Queue()
     sentinel = object()
 
@@ -224,7 +227,9 @@ def stream_jobs(
     def worker() -> None:
         try:
             if job == "daily_game_sync":
-                result = run_daily_game_sync(settings, source=source, progress=progress)
+                result = run_daily_game_sync(
+                    settings, source=source, progress=progress, profile=profile
+                )
             elif job == "refresh_metrics":
                 result = run_refresh_metrics(settings, source=source, progress=progress)
             elif job == "migrations":

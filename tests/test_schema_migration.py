@@ -1,8 +1,15 @@
+import os
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
-from tactix.duckdb_store import get_connection, get_schema_version, migrate_schema
+from tactix.duckdb_store import (
+    _should_attempt_wal_recovery,
+    get_connection,
+    get_schema_version,
+    migrate_schema,
+)
 
 
 class SchemaMigrationTests(unittest.TestCase):
@@ -89,3 +96,35 @@ class SchemaMigrationTests(unittest.TestCase):
         self.assertEqual(positions_row[5], "e4")
         self.assertEqual(positions_row[6], 120.5)
         self.assertIsNone(positions_row[7])
+
+    def test_migration_upgrades_non_legacy_to_latest(self) -> None:
+        tmp_dir = Path(tempfile.mkdtemp())
+        conn = get_connection(tmp_dir / "tactix_latest.duckdb")
+
+        migrate_schema(conn)
+
+        self.assertEqual(get_schema_version(conn), 4)
+        columns = {
+            row[1] for row in conn.execute("PRAGMA table_info('raw_pgns')").fetchall()
+        }
+        self.assertIn("raw_pgn_id", columns)
+        self.assertIn("pgn_hash", columns)
+        self.assertIn("pgn_version", columns)
+
+    def test_should_attempt_wal_recovery_gate(self) -> None:
+        exc = Exception("WAL replay failed")
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertFalse(_should_attempt_wal_recovery(exc))
+
+        with patch.dict(os.environ, {"PYTEST_CURRENT_TEST": "1"}, clear=True):
+            self.assertTrue(_should_attempt_wal_recovery(exc))
+
+        with patch.dict(os.environ, {"TACTIX_ENV": "dev"}, clear=True):
+            self.assertTrue(_should_attempt_wal_recovery(exc))
+
+        with patch.dict(os.environ, {"TACTIX_ALLOW_WAL_RECOVERY": "true"}, clear=True):
+            self.assertTrue(_should_attempt_wal_recovery(exc))
+
+        exc_no_wal = Exception("some other error")
+        with patch.dict(os.environ, {"PYTEST_CURRENT_TEST": "1"}, clear=True):
+            self.assertFalse(_should_attempt_wal_recovery(exc_no_wal))

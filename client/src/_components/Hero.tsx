@@ -1,5 +1,6 @@
 import { SOURCE_OPTIONS } from '../utils/SOURCE_OPTIONS';
-import { ChessPlatform } from '../types';
+import { LICHESS_PROFILE_LABELS } from '../utils/LICHESS_PROFILE_OPTIONS';
+import { ChessPlatform, LichessProfile } from '../types';
 import Text from './Text';
 
 interface HeroProps {
@@ -10,6 +11,7 @@ interface HeroProps {
   loading: boolean;
   version: number;
   source: ChessPlatform;
+  profile?: LichessProfile;
   user: string;
   onSourceChange: (next: ChessPlatform) => void;
 }
@@ -37,16 +39,19 @@ export default function Hero({
   loading,
   version,
   source,
+  profile,
   user,
   onSourceChange,
 }: HeroProps) {
+  const lichessLabel = profile ? LICHESS_PROFILE_LABELS[profile] : 'Rapid';
+
   return (
     <div className="card p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
         <Text mode="normal" size="sm" value="Airflow DAG · daily_game_sync" />
         <h1 className="text-3xl md:text-4xl font-display text-sand mt-2">
           {source === 'lichess'
-            ? 'Lichess rapid pipeline'
+            ? `Lichess ${lichessLabel.toLowerCase()} pipeline`
             : 'Chess.com blitz pipeline'}
         </h1>
         <Text
@@ -77,6 +82,7 @@ export default function Hero({
           className="button bg-teal text-night px-4 py-3 rounded-lg font-display"
           onClick={onRun}
           disabled={loading}
+          data-testid="action-run"
         >
           {loading ? 'Running…' : 'Run + Refresh'}
         </button>
@@ -84,6 +90,7 @@ export default function Hero({
           className="button border border-teal/50 text-teal px-4 py-3 rounded-lg"
           onClick={onBackfill}
           disabled={loading}
+          data-testid="action-backfill"
         >
           Backfill history
         </button>
@@ -91,6 +98,7 @@ export default function Hero({
           className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
           onClick={onMigrate}
           disabled={loading}
+          data-testid="action-migrate"
         >
           Run migrations
         </button>
@@ -98,6 +106,7 @@ export default function Hero({
           className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
           onClick={onRefresh}
           disabled={loading}
+          data-testid="action-refresh"
         >
           Refresh metrics
         </button>

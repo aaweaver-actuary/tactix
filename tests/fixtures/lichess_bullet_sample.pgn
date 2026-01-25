@@ -1,0 +1,22 @@
+[Event "Bullet Fixture Game 1"]
+[Site "lichess.org/bulb1234"]
+[UTCDate "2024.06.03"]
+[UTCTime "15:00:00"]
+[White "andy_andy_andy"]
+[Black "opponent"]
+[TimeControl "60+0"]
+[Result "1-0"]
+
+1. e4 { [%clk 0:01:00] } e5 { [%clk 0:01:00] } 2. Nf3 { [%clk 0:00:55] } Nc6 { [%clk 0:00:55] } 3. Bb5 { [%clk 0:00:50] } a6 { [%clk 0:00:50] } 4. Ba4 { [%clk 0:00:45] } Nf6 { [%clk 0:00:45] } 5. O-O { [%clk 0:00:40] } Nxe4 { [%clk 0:00:40] } 1-0
+
+
+[Event "Bullet Fixture Game 2"]
+[Site "lichess.org/bulb5678"]
+[UTCDate "2024.06.04"]
+[UTCTime "16:15:00"]
+[White "opponent"]
+[Black "andy_andy_andy"]
+[TimeControl "60+0"]
+[Result "0-1"]
+
+1. d4 { [%clk 0:01:00] } d5 { [%clk 0:01:00] } 2. c4 { [%clk 0:00:55] } e6 { [%clk 0:00:55] } 3. Nc3 { [%clk 0:00:50] } Nf6 { [%clk 0:00:50] } 4. Bg5 { [%clk 0:00:45] } Be7 { [%clk 0:00:45] } 5. e3 { [%clk 0:00:40] } O-O { [%clk 0:00:40] } 0-1

@@ -5,12 +5,14 @@ export async function triggerBackfill(
   source: string | undefined,
   windowStartMs: number,
   windowEndMs: number,
+  profile?: string,
 ): Promise<DashboardPayload> {
   await client.post('/api/jobs/daily_game_sync', null, {
     params: {
       source,
       backfill_start_ms: windowStartMs,
       backfill_end_ms: windowEndMs,
+      profile,
     },
   });
   return fetchDashboard(source);

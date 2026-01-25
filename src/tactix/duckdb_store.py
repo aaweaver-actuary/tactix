@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import os
 import hashlib
 from pathlib import Path
 from typing import Iterable, List, Mapping
@@ -130,7 +131,21 @@ SCHEMA_VERSION = 4
 def get_connection(db_path: Path) -> duckdb.DuckDBPyConnection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     logger.debug("Opening DuckDB at %s", db_path)
-    return duckdb.connect(str(db_path))
+    try:
+        return duckdb.connect(str(db_path))
+    except duckdb.InternalException as exc:
+        if not _should_attempt_wal_recovery(exc):
+            raise
+        wal_path = db_path.with_name(f"{db_path.name}.wal")
+        if not wal_path.exists():
+            raise
+        logger.warning("Removing DuckDB WAL after replay error: %s", wal_path)
+        try:
+            wal_path.unlink()
+        except OSError:
+            logger.exception("Failed to remove WAL file: %s", wal_path)
+            raise
+        return duckdb.connect(str(db_path))
 
 
 def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
@@ -144,13 +159,41 @@ def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
 def migrate_schema(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute(SCHEMA_VERSION_SCHEMA)
     current_version = _get_schema_version(conn)
+    max_target_version = SCHEMA_VERSION
+    if current_version == 0 and _is_legacy_raw_pgns(conn):
+        # Legacy databases created before training_attempt latency tracking
+        # should remain at v3 unless explicitly upgraded.
+        max_target_version = 3
     for target_version, migration in _SCHEMA_MIGRATIONS:
-        if current_version >= target_version:
+        if target_version > max_target_version or current_version >= target_version:
             continue
         logger.info("Applying DuckDB schema migration v%s", target_version)
         migration(conn)
         _set_schema_version(conn, target_version)
         current_version = target_version
+
+
+def _should_attempt_wal_recovery(exc: Exception) -> bool:
+    message = str(exc).lower()
+    if "wal" not in message:
+        return False
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return True
+    env = os.getenv("TACTIX_ENV", "").lower()
+    if env in {"test", "dev"}:
+        return True
+    allow = os.getenv("TACTIX_ALLOW_WAL_RECOVERY", "").lower()
+    return allow in {"1", "true", "yes"}
+
+
+def _is_legacy_raw_pgns(conn: duckdb.DuckDBPyConnection) -> bool:
+    try:
+        columns = {
+            row[1] for row in conn.execute("PRAGMA table_info('raw_pgns')").fetchall()
+        }
+    except Exception:
+        return False
+    return bool(columns) and "raw_pgn_id" not in columns
 
 
 def get_schema_version(conn: duckdb.DuckDBPyConnection) -> int:

@@ -73,7 +73,9 @@ class LichessGameRow(TypedDict):
     last_timestamp_ms: int
 
 
-def _load_fixture_games(settings: Settings, since_ms: int) -> List[LichessGameRow]:
+def _load_fixture_games(
+    settings: Settings, since_ms: int, until_ms: int | None = None
+) -> List[LichessGameRow]:
     path = settings.fixture_pgn_path
     if not path.exists():
         logger.warning("Fixture PGN path missing: %s", path)
@@ -84,6 +86,8 @@ def _load_fixture_games(settings: Settings, since_ms: int) -> List[LichessGameRo
     for raw in chunks:
         last_ts = extract_last_timestamp_ms(raw)
         if since_ms and last_ts <= since_ms:
+            continue
+        if until_ms is not None and last_ts >= until_ms:
             continue
         games.append(
             {
@@ -133,7 +137,12 @@ def _read_cached_token(path: Path) -> str | None:
 def _write_cached_token(path: Path, token: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        json.dumps({"access_token": token, "updated_at": datetime.now(timezone.utc).isoformat()})
+        json.dumps(
+            {
+                "access_token": token,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
+        )
     )
     try:
         os.chmod(path, 0o600)
@@ -196,14 +205,18 @@ def build_client(settings: Settings) -> berserk.Client:
     return berserk.Client(session=session)
 
 
-def _fetch_remote_games_once(settings: Settings, since_ms: int) -> List[LichessGameRow]:
+def _fetch_remote_games_once(
+    settings: Settings, since_ms: int, until_ms: int | None = None
+) -> List[LichessGameRow]:
     client = build_client(settings)
     logger.info("Fetching Lichess games for user=%s since=%s", settings.user, since_ms)
     games: List[LichessGameRow] = []
-    perf_type = _coerce_perf_type(settings.rapid_perf)
+    perf_value = settings.lichess_profile or settings.rapid_perf
+    perf_type = _coerce_perf_type(perf_value)
     for pgn in client.games.export_by_player(
         settings.user,
         since=since_ms or None,
+        until=until_ms or None,
         perf_type=perf_type,
         evals=False,
         clocks=True,
@@ -240,18 +253,22 @@ def _fetch_remote_games_once(settings: Settings, since_ms: int) -> List[LichessG
     reraise=True,
     before_sleep=before_sleep_log(logger, logging.WARNING),
 )
-def _fetch_remote_games(settings: Settings, since_ms: int) -> List[LichessGameRow]:
+def _fetch_remote_games(
+    settings: Settings, since_ms: int, until_ms: int | None = None
+) -> List[LichessGameRow]:
     try:
-        return _fetch_remote_games_once(settings, since_ms)
+        return _fetch_remote_games_once(settings, since_ms, until_ms)
     except Exception as exc:
         if _is_auth_error(exc) and settings.lichess_oauth_refresh_token:
             logger.warning("Refreshing Lichess OAuth token after auth failure")
             _refresh_lichess_token(settings)
-            return _fetch_remote_games_once(settings, since_ms)
+            return _fetch_remote_games_once(settings, since_ms, until_ms)
         raise
 
 
-def fetch_incremental_games(settings: Settings, since_ms: int) -> List[LichessGameRow]:
+def fetch_incremental_games(
+    settings: Settings, since_ms: int, until_ms: int | None = None
+) -> List[LichessGameRow]:
     if not settings.lichess_token and settings.use_fixture_when_no_token:
-        return _load_fixture_games(settings, since_ms)
-    return _fetch_remote_games(settings, since_ms)
+        return _load_fixture_games(settings, since_ms, until_ms)
+    return _fetch_remote_games(settings, since_ms, until_ms)

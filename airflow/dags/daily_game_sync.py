@@ -32,6 +32,15 @@ def _to_epoch_ms(value: datetime | None) -> int | None:
     return int(value.timestamp() * 1000)
 
 
+def _resolve_profile(dag_run) -> str | None:
+    if not dag_run:
+        return None
+    conf = getattr(dag_run, "conf", None)
+    if isinstance(conf, dict):
+        return conf.get("profile") or conf.get("lichess_profile")
+    return None
+
+
 @dag(
     dag_id="daily_game_sync",
     schedule="@daily",
@@ -42,8 +51,6 @@ def _to_epoch_ms(value: datetime | None) -> int | None:
     description="Fetch chess games (Lichess or Chess.com), extract positions, run tactics, refresh metrics",
 )
 def daily_game_sync_dag():
-    settings = get_settings()
-
     @task(task_id="run_pipeline")
     def run_pipeline() -> dict[str, object]:
         context = get_current_context()
@@ -53,6 +60,8 @@ def daily_game_sync_dag():
         is_backfill = run_type == "backfill"
         data_interval_start = context.get("data_interval_start") if context else None
         data_interval_end = context.get("data_interval_end") if context else None
+        settings = get_settings()
+        profile = _resolve_profile(dag_run) or settings.lichess_profile or None
         logger.info(
             "Starting end-to-end pipeline run for source=%s logical_date=%s backfill=%s",
             settings.source,
@@ -63,12 +72,14 @@ def daily_game_sync_dag():
             settings,
             window_start_ms=_to_epoch_ms(data_interval_start) if is_backfill else None,
             window_end_ms=_to_epoch_ms(data_interval_end) if is_backfill else None,
+            profile=profile,
         )
         result["execution_date"] = logical_date.isoformat() if logical_date else None
         return result
 
     @task(task_id="notify_dashboard")
     def notify_dashboard(_: dict[str, object]) -> dict[str, object]:
+        settings = get_settings()
         payload = get_dashboard_payload(settings)
         logger.info(
             "Dashboard payload refreshed; metrics_version=%s",

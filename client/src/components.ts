@@ -11,6 +11,7 @@ import TimeTroubleCorrelation from './_components/TimeTroubleCorrelation';
 import PositionsList from './_components/PositionsList';
 import PracticeAttemptButton from './_components/PracticeAttemptButton';
 import PracticeMoveInput from './_components/PracticeMoveInput';
+import PracticeSessionProgress from './_components/PracticeSessionProgress';
 
 export {
   Hero,
@@ -25,4 +26,5 @@ export {
   PositionsList,
   PracticeAttemptButton,
   PracticeMoveInput,
+  PracticeSessionProgress,
 };

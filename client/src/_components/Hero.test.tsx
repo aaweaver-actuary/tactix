@@ -12,6 +12,7 @@ describe('Hero', () => {
     loading: false,
     version: 42,
     source: 'lichess' as const,
+    profile: 'rapid' as const,
     user: 'andy',
     onSourceChange: jest.fn(),
   };
@@ -26,6 +27,13 @@ describe('Hero', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText('Execution stamped via metrics version 42 · user andy'),
+    ).toBeInTheDocument();
+  });
+
+  it('renders lichess profile in title', () => {
+    render(<Hero {...baseProps} profile="bullet" />);
+    expect(
+      screen.getByRole('heading', { name: /lichess bullet pipeline/i }),
     ).toBeInTheDocument();
   });
 

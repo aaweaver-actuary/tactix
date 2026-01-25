@@ -14,5 +14,6 @@ export type JobProgressItem = {
 export type PieceColor = 'w' | 'b';
 export type PieceType = 'p' | 'n' | 'b' | 'r' | 'q' | 'k';
 export type ChessPlatform = 'lichess' | 'chesscom';
+export type LichessProfile = 'rapid' | 'blitz' | 'bullet' | 'classical';
 export type TextMode = 'normal' | 'uppercase' | 'teal' | 'error' | 'monospace';
 export type TextSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';

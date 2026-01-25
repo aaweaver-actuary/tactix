@@ -273,11 +273,13 @@ def run_daily_game_sync(
     progress: ProgressCallback | None = None,
     window_start_ms: int | None = None,
     window_end_ms: int | None = None,
+    profile: str | None = None,
 ) -> dict[str, object]:
-    settings = settings or get_settings(source=source)
+    settings = settings or get_settings(source=source, profile=profile)
     if source:
         settings.source = source
     settings.apply_source_defaults()
+    settings.apply_lichess_profile(profile)
     settings.ensure_dirs()
 
     backfill_mode = window_start_ms is not None or window_end_ms is not None
@@ -315,9 +317,10 @@ def run_daily_game_sync(
         since_ms = window_start_ms if backfill_mode else checkpoint_before
         if since_ms is None:
             since_ms = 0
+        until_ms = window_end_ms if backfill_mode else None
         raw_games = [
             cast(Mapping[str, object], row)
-            for row in fetch_lichess_games(settings, since_ms)
+            for row in fetch_lichess_games(settings, since_ms, until_ms)
         ]
         last_timestamp_value = since_ms
 

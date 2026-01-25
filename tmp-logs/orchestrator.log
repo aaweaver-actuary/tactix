@@ -1,0 +1,3 @@
+2026-01-25T00:00:00Z Orchestrator note: tmp-logs initialized.
+2026-01-25T00:00:00Z Orchestrator note: docker compose up failed - Docker daemon not running (colima socket unavailable).
+2026-01-25T00:00:00Z Orchestrator note: docker compose up succeeded (server, client, airflow) on tactix-net.

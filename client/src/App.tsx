@@ -15,7 +15,7 @@ import triggerMetricsRefresh from './utils/triggerMetricsRefresh';
 import submitPracticeAttempt from './utils/submitPracticeAttempt';
 import fetchPracticeQueue from './utils/fetchPracticeQueue';
 import buildPracticeFeedback from './utils/buildPracticeFeedback';
-import { ChessPlatform, JobProgressItem } from './types';
+import { ChessPlatform, JobProgressItem, LichessProfile } from './types';
 import {
   Badge,
   Text,
@@ -29,13 +29,21 @@ import {
   Hero,
   PracticeAttemptButton,
   PracticeMoveInput,
+  PracticeSessionProgress,
 } from './components';
 import { SOURCE_OPTIONS } from './utils/SOURCE_OPTIONS';
+import { LICHESS_PROFILE_OPTIONS } from './utils/LICHESS_PROFILE_OPTIONS';
 import isPiecePlayable from './utils/isPiecePlayable';
+import {
+  PracticeSessionStats,
+  resetPracticeSessionStats,
+  updatePracticeSessionStats,
+} from './utils/practiceSession';
 
 export default function App() {
   const [data, setData] = useState<DashboardPayload | null>(null);
   const [source, setSource] = useState<ChessPlatform>('lichess');
+  const [lichessProfile, setLichessProfile] = useState<LichessProfile>('rapid');
   const [filters, setFilters] = useState({
     motif: 'all',
     timeControl: 'all',
@@ -63,6 +71,9 @@ export default function App() {
   );
   const [practiceServedAtMs, setPracticeServedAtMs] = useState<number | null>(
     null,
+  );
+  const [practiceSession, setPracticeSession] = useState<PracticeSessionStats>(
+    () => resetPracticeSessionStats(0),
   );
   const [jobProgress, setJobProgress] = useState<JobProgressItem[]>([]);
   const [jobStatus, setJobStatus] = useState<
@@ -103,12 +114,25 @@ export default function App() {
   async function loadPracticeQueue(
     nextSource: ChessPlatform = source,
     includeFailed = includeFailedAttempt,
+    resetSession = false,
   ): Promise<void> {
     setPracticeLoading(true);
     setPracticeError(null);
     try {
       const payload = await fetchPracticeQueue(nextSource, includeFailed);
       setPracticeQueue(payload.items);
+      if (resetSession) {
+        setPracticeSession(resetPracticeSessionStats(payload.items.length));
+      } else {
+        setPracticeSession((prev) => {
+          const nextTotal = Math.max(
+            prev.total,
+            prev.completed + payload.items.length,
+          );
+          if (nextTotal === prev.total) return prev;
+          return { ...prev, total: nextTotal };
+        });
+      }
     } catch (err) {
       console.error(err);
       setPracticeError('Failed to load practice queue');
@@ -123,7 +147,7 @@ export default function App() {
   }, [source, normalizedFilters]);
 
   useEffect(() => {
-    loadPracticeQueue(source, includeFailedAttempt);
+    loadPracticeQueue(source, includeFailedAttempt, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source, includeFailedAttempt]);
 
@@ -153,19 +177,20 @@ export default function App() {
 
   useEffect(() => {
     resetJobState();
-  }, [source]);
+  }, [source, lichessProfile]);
 
   const streamJobEvents = async (
     job: string,
     nextSource: ChessPlatform,
     disconnectMessage: string,
     nextFilters: DashboardFilters = normalizedFilters,
+    profile?: LichessProfile,
   ) => {
     streamAbortRef.current?.abort();
     const controller = new AbortController();
     streamAbortRef.current = controller;
 
-    const streamUrl = getJobStreamUrl(job, nextSource);
+    const streamUrl = getJobStreamUrl(job, nextSource, profile);
     const response = await fetch(streamUrl, {
       headers: getAuthHeaders(),
       signal: controller.signal,
@@ -203,7 +228,7 @@ export default function App() {
         setJobStatus('complete');
         const dashboard = await fetchDashboard(nextSource, nextFilters);
         setData(dashboard);
-        await loadPracticeQueue(nextSource, includeFailedAttempt);
+        await loadPracticeQueue(nextSource, includeFailedAttempt, true);
         setLoading(false);
         controller.abort();
         streamAbortRef.current = null;
@@ -251,11 +276,13 @@ export default function App() {
     try {
       setJobProgress([]);
       setJobStatus('running');
+      const profile = source === 'lichess' ? lichessProfile : undefined;
       await streamJobEvents(
         'daily_game_sync',
         source,
         'Pipeline stream disconnected',
         normalizedFilters,
+        profile,
       );
     } catch (err) {
       console.error(err);
@@ -271,7 +298,13 @@ export default function App() {
     try {
       const windowEnd = Date.now();
       const windowStart = windowEnd - 900 * 24 * 60 * 60 * 1000;
-      const payload = await triggerBackfill(source, windowStart, windowEnd);
+      const profile = source === 'lichess' ? lichessProfile : undefined;
+      const payload = await triggerBackfill(
+        source,
+        windowStart,
+        windowEnd,
+        profile,
+      );
       setData(payload);
       await loadPracticeQueue(source, includeFailedAttempt);
     } catch (err) {
@@ -389,6 +422,9 @@ export default function App() {
         served_at_ms: practiceServedAtMs ?? undefined,
       });
       setPracticeFeedback(response);
+      setPracticeSession((prev) =>
+        updatePracticeSessionStats(prev, response.correct),
+      );
       await loadPracticeQueue(source, includeFailedAttempt);
     } catch (err) {
       console.error(err);
@@ -542,6 +578,7 @@ export default function App() {
         loading={loading}
         version={data?.metrics_version ?? 0}
         source={source}
+        profile={source === 'lichess' ? lichessProfile : undefined}
         user={data?.user ?? 'unknown'}
         onSourceChange={setSource}
       />
@@ -608,7 +645,7 @@ export default function App() {
           <h3 className="text-lg font-display text-sand">Filters</h3>
           <Badge label="Live" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
           <label className="text-xs text-sand/60 flex flex-col gap-2">
             Site / source
             <select
@@ -627,6 +664,26 @@ export default function App() {
               ))}
             </select>
           </label>
+          {source === 'lichess' ? (
+            <label className="text-xs text-sand/60 flex flex-col gap-2">
+              Lichess profile
+              <select
+                className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
+                value={lichessProfile}
+                onChange={(event) =>
+                  setLichessProfile(event.target.value as LichessProfile)
+                }
+                disabled={loading}
+                data-testid="filter-lichess-profile"
+              >
+                {LICHESS_PROFILE_OPTIONS.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <label className="text-xs text-sand/60 flex flex-col gap-2">
             Motif
             <select
@@ -770,6 +827,7 @@ export default function App() {
         </div>
         {currentPractice ? (
           <>
+            <PracticeSessionProgress stats={practiceSession} />
             <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">
               <div className="rounded-lg border border-white/10 bg-white/5 p-3">
                 <Chessboard

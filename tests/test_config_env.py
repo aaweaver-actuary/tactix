@@ -15,6 +15,66 @@ class ConfigEnvTests(unittest.TestCase):
         self.assertEqual(settings.user, "envuser")
         self.assertEqual(settings.lichess_user, "envuser")
 
+    def test_get_settings_applies_lichess_profile_paths(self) -> None:
+        settings = config.get_settings(source="lichess", profile="bullet")
+
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("lichess_since_bullet.txt")
+        )
+        self.assertTrue(
+            settings.analysis_checkpoint_path.name.endswith(
+                "analysis_checkpoint_lichess_bullet.json"
+            )
+        )
+        self.assertTrue(
+            settings.fixture_pgn_path.name.endswith("lichess_bullet_sample.pgn")
+        )
+
+    def test_get_settings_applies_lichess_rapid_profile_paths(self) -> None:
+        settings = config.get_settings(source="lichess", profile="rapid")
+
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("lichess_since_rapid.txt")
+        )
+        self.assertTrue(
+            settings.analysis_checkpoint_path.name.endswith(
+                "analysis_checkpoint_lichess_rapid.json"
+            )
+        )
+        self.assertTrue(
+            settings.fixture_pgn_path.name.endswith("lichess_rapid_sample.pgn")
+        )
+
+    def test_get_settings_applies_lichess_blitz_profile_paths(self) -> None:
+        settings = config.get_settings(source="lichess", profile="blitz")
+
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("lichess_since_blitz.txt")
+        )
+        self.assertTrue(
+            settings.analysis_checkpoint_path.name.endswith(
+                "analysis_checkpoint_lichess_blitz.json"
+            )
+        )
+        self.assertTrue(
+            settings.fixture_pgn_path.name.endswith("lichess_blitz_sample.pgn")
+        )
+
+    def test_get_settings_applies_lichess_classical_profile_paths(self) -> None:
+        settings = config.get_settings(source="lichess", profile="classical")
+
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("lichess_since_classical.txt")
+        )
+        self.assertTrue(
+            settings.analysis_checkpoint_path.name.endswith(
+                "analysis_checkpoint_lichess_classical.json"
+            )
+        )
+        self.assertTrue(
+            settings.fixture_pgn_path.name.endswith("lichess_classical_sample.pgn")
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

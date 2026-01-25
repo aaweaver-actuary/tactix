@@ -5,7 +5,7 @@ use std::ops::ControlFlow;
 
 use pgn_reader::{RawComment, RawTag, Reader, SanPlus, Visitor};
 use shakmaty::fen::Fen;
-use shakmaty::uci::Uci;
+use shakmaty::uci::UciMove;
 use shakmaty::{CastlingMode, Chess, Color, EnPassantMode, Position};
 
 #[derive(Debug, Clone)]
@@ -81,18 +81,12 @@ impl Visitor for ExtractVisitor {
             b"FEN" => {
                 let fen = match Fen::from_ascii(value.as_bytes()) {
                     Ok(fen) => fen,
-                    Err(err) => {
-                        return ControlFlow::Break(Err(format!(
-                            "Invalid FEN tag: {err}"
-                        )))
-                    }
+                    Err(err) => return ControlFlow::Break(Err(format!("Invalid FEN tag: {err}"))),
                 };
                 let pos = match fen.into_position(CastlingMode::Standard) {
                     Ok(pos) => pos,
                     Err(err) => {
-                        return ControlFlow::Break(Err(format!(
-                            "Invalid FEN position: {err}"
-                        )))
+                        return ControlFlow::Break(Err(format!("Invalid FEN position: {err}")));
                     }
                 };
                 tags.fen = Some(pos);
@@ -102,10 +96,7 @@ impl Visitor for ExtractVisitor {
         ControlFlow::Continue(())
     }
 
-    fn begin_movetext(
-        &mut self,
-        tags: Self::Tags,
-    ) -> ControlFlow<Self::Output, Self::Movetext> {
+    fn begin_movetext(&mut self, tags: Self::Tags) -> ControlFlow<Self::Output, Self::Movetext> {
         let white = tags.white.unwrap_or_default();
         let black = tags.black.unwrap_or_default();
         let user_lower = self.user.to_lowercase();
@@ -143,11 +134,7 @@ impl Visitor for ExtractVisitor {
     ) -> ControlFlow<Self::Output> {
         let mv = match san_plus.san.to_move(&movetext.position) {
             Ok(mv) => mv,
-            Err(err) => {
-                return ControlFlow::Break(Err(format!(
-                    "Invalid SAN move: {err}"
-                )))
-            }
+            Err(err) => return ControlFlow::Break(Err(format!("Invalid SAN move: {err}"))),
         };
 
         if let Some(color) = movetext.user_color {
@@ -159,9 +146,8 @@ impl Visitor for ExtractVisitor {
                 } else {
                     "black"
                 };
-                let fen = Fen::from_position(&movetext.position, EnPassantMode::Legal)
-                    .to_string();
-                let uci = Uci::from(mv).to_string();
+                let fen = Fen::from_position(&movetext.position, EnPassantMode::Legal).to_string();
+                let uci = UciMove::from_standard(mv).to_string();
                 let san = san_plus.to_string();
                 let record = PositionRecord {
                     game_id: movetext.game_id.clone(),
@@ -183,13 +169,9 @@ impl Visitor for ExtractVisitor {
         }
 
         movetext.ply = movetext.ply.saturating_add(1);
-        movetext.position = match movetext.position.play(mv) {
+        movetext.position = match movetext.position.clone().play(mv) {
             Ok(pos) => pos,
-            Err(err) => {
-                return ControlFlow::Break(Err(format!(
-                    "Illegal move in PGN: {err}"
-                )))
-            }
+            Err(err) => return ControlFlow::Break(Err(format!("Illegal move in PGN: {err}"))),
         };
         ControlFlow::Continue(())
     }
@@ -218,19 +200,34 @@ impl Visitor for ExtractVisitor {
 fn parse_clock(comment: &[u8]) -> Option<f64> {
     let text = String::from_utf8_lossy(comment);
     let marker = text.find("%clk")?;
-    let after = &text[marker + 4..];
-    let token = after.split_whitespace().next().unwrap_or_default();
-    let mut parts = token.split(':');
-    let hours = parts.next()?.parse::<f64>().ok()?;
-    let minutes = parts.next()?.parse::<f64>().ok()?;
-    let seconds = parts.next()?.parse::<f64>().ok()?;
+    let after = text[marker + 4..].trim_start();
+    let token: String = after
+        .chars()
+        .take_while(|ch| ch.is_ascii_digit() || *ch == ':' || *ch == '.')
+        .collect();
+    if token.is_empty() {
+        return None;
+    }
+    let parts: Vec<&str> = token.split(':').collect();
+    let (hours, minutes, seconds) = match parts.len() {
+        3 => (parts[0], parts[1], parts[2]),
+        2 => ("0", parts[0], parts[1]),
+        _ => return None,
+    };
+    let hours = hours.parse::<f64>().ok()?;
+    let minutes = minutes.parse::<f64>().ok()?;
+    let seconds = seconds.parse::<f64>().ok()?;
     Some(hours * 3600.0 + minutes * 60.0 + seconds)
 }
 
 fn initial_ply(position: &Chess) -> u32 {
     let fullmoves = position.fullmoves().get();
     let base = (fullmoves - 1) * 2;
-    let offset = if position.turn() == Color::Black { 1 } else { 0 };
+    let offset = if position.turn() == Color::Black {
+        1
+    } else {
+        0
+    };
     base + offset
 }
 
@@ -248,7 +245,7 @@ fn extract_positions(
         Err(err) => {
             return Err(pyo3::exceptions::PyValueError::new_err(format!(
                 "PGN parse error: {err}"
-            )))
+            )));
         }
     };
 

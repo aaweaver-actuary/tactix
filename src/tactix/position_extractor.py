@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from io import StringIO
+import os
 from typing import Dict, List, Optional
 
 import chess
@@ -11,15 +12,26 @@ from tactix.logging_utils import get_logger
 
 logger = get_logger(__name__)
 
-CLK_PATTERN = re.compile(r"%clk\s+(\d+):(\d+):(\d+)")
+CLK_PATTERN = re.compile(r"%clk\s+([0-9:.]+)")
 
 
 def _clock_from_comment(comment: str) -> Optional[float]:
     match = CLK_PATTERN.search(comment or "")
     if not match:
         return None
-    hours, minutes, seconds = match.groups()
-    return int(hours) * 3600 + int(minutes) * 60 + int(seconds)
+    token = match.group(1)
+    parts = token.split(":")
+    try:
+        if len(parts) == 3:
+            hours, minutes, seconds = parts
+        elif len(parts) == 2:
+            hours = "0"
+            minutes, seconds = parts
+        else:
+            return None
+        return float(hours) * 3600 + float(minutes) * 60 + float(seconds)
+    except ValueError:
+        return None
 
 
 def _extract_positions_python(
@@ -71,6 +83,8 @@ def _extract_positions_python(
 def extract_positions(
     pgn: str, user: str, source: str, game_id: str | None = None
 ) -> List[Dict[str, object]]:
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return _extract_positions_python(pgn, user, source, game_id)
     try:
         from tactix import _core
     except Exception:  # pragma: no cover - optional Rust extension

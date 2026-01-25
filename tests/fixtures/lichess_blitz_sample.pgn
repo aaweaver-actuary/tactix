@@ -1,0 +1,22 @@
+[Event "Fixture Blitz Game 1"]
+[Site "lichess.org/blitz111"]
+[UTCDate "2024.06.05"]
+[UTCTime "14:10:00"]
+[White "lichess"]
+[Black "opponent"]
+[TimeControl "300+3"]
+[Result "1-0"]
+
+1. d4 { [%clk 0:05:00] } d5 { [%clk 0:05:00] } 2. c4 { [%clk 0:04:58] } e6 { [%clk 0:04:59] } 3. Nc3 { [%clk 0:04:56] } Nf6 { [%clk 0:04:58] } 4. Bg5 { [%clk 0:04:54] } Be7 { [%clk 0:04:57] } 5. e3 { [%clk 0:04:52] } O-O { [%clk 0:04:56] } 6. Nf3 { [%clk 0:04:50] } h6 { [%clk 0:04:55] } 1-0
+
+
+[Event "Fixture Blitz Game 2"]
+[Site "lichess.org/blitz222"]
+[UTCDate "2024.06.06"]
+[UTCTime "18:40:00"]
+[White "opponent"]
+[Black "lichess"]
+[TimeControl "300+3"]
+[Result "0-1"]
+
+1. e4 { [%clk 0:05:00] } c5 { [%clk 0:05:00] } 2. Nf3 { [%clk 0:04:58] } d6 { [%clk 0:04:59] } 3. d4 { [%clk 0:04:56] } cxd4 { [%clk 0:04:58] } 4. Nxd4 { [%clk 0:04:54] } Nf6 { [%clk 0:04:57] } 5. Nc3 { [%clk 0:04:52] } a6 { [%clk 0:04:56] } 6. Bg5 { [%clk 0:04:50] } e6 { [%clk 0:04:55] } 0-1

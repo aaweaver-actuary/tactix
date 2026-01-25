@@ -198,6 +198,16 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
 
+Session 2026-01-25 (coverage ≥80%):
+- Added unit tests for PracticeAttemptRequest field types, DuckDB WAL recovery gating, non-legacy migration upgrade, and clock parsing/pytest fallback in position extractor.
+- Aligned MetricsTrends test labels with UI copy (7g/30g found).
+- Tests: `uv run pytest tests/test_*.py`, `make check` (coverage 80.32%).
+
+Session 2026-01-25 (make check test fixes)
+- Added WAL-recovery retry for DuckDB connections in test/dev and gated legacy migrations at schema v3.
+- Expanded clock parsing for Python/Rust extractors and forced Python extractor in pytest to avoid stale Rust binary.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_job_stream.py tests/test_position_extractor.py tests/test_schema_migration.py` (14 passed).
+
 Session 2026-01-25 (feature 028 – Practice next unseen)
 - Added unseen-tactic filtering to practice queue fetch (exclude tactics with training attempts) and wired `/api/practice/next` to use it.
 - Added API test ensuring `/api/practice/next` excludes previously seen tactics via training_attempts.
@@ -249,6 +259,13 @@ Session 2026-01-25 (feature 022 – Lichess OAuth token refresh)
 - Updated feature_list.json: feature 022 marked passes=true after UI + test verification.
 - Current passing count: 22.
 
+Session 2026-01-25 (feature 030 – Practice session streaks + progress)
+- Enhanced PracticeSessionProgress with streak momentum bar and stable data-testid hooks.
+- Added streak percent utility and expanded unit coverage for streak/progress helpers and rendering.
+- Tests: `cd /Users/andy/tactix/client && npx vitest run src/utils/practiceSession.test.ts src/_components/PracticeSessionProgress.test.tsx`.
+- UI verification screenshot: `verification/feature-030-practice-session-progress.png`.
+- Updated feature_list.json: feature 030 marked passes=true after UI verification.
+
 Session 2026-01-25 (feature 023 – Stockfish checksum pinning)
 - Added Stockfish checksum verification with configurable warn/enforce mode and settings (STOCKFISH_SHA256 / STOCKFISH_CHECKSUM + STOCKFISH_CHECKSUM_MODE).
 - Added pytest coverage for checksum match/mismatch behavior.
@@ -279,3 +296,56 @@ Session 2026-01-25 (feature 029 – Practice attempt success + latency)
 - UI verification screenshot: `verification/feature-029-practice-attempt-latency.png`.
 - Updated feature_list.json: feature 029 marked passes=true after verification.
 - Current passing count: 31.
+
+Session 2026-01-25 (regression verification)
+- Verified feature 001 (Lichess pipeline Run + Refresh), feature 016 (API auth + refresh metrics), and feature 028 (practice next unseen) via Puppeteer UI automation on port 5173; no console errors observed.
+- UI regression screenshots: `verification/regression-001-lichess-2026-01-25.png`, `verification/regression-016-auth-2026-01-25.png`, `verification/regression-028-practice-next-unseen-2026-01-25.png`.
+
+Session 2026-01-25 (feature 031 – Lichess bullet incremental sync)
+- Added Lichess profile selection in the dashboard, profile-aware job streaming/backfill calls, and Airflow DAG support for profile overrides via dag_run config.
+- Added config and API tests for bullet profile wiring; added Lichess profile options for UI.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_config_env.py tests/test_api_profile.py tests/test_pipeline_state.py`, `cd /Users/andy/tactix/client && npx vitest run src/_components/Hero.test.tsx src/utils/getJobStreamUrl.test.ts src/utils/triggerBackfill.test.ts`.
+- UI verification screenshot: `verification/feature-031-lichess-bullet-incremental-2026-01-25.png`.
+- Updated feature_list.json: feature "Ingestion Lichess bullet games via incremental sync" marked passes=true after verification.
+
+Session 2026-01-25 (feature 032 – Lichess bullet full backfill sync)
+- Added Lichess window-end support for backfills, passing backfill windows to the Lichess export API and fixture loader.
+- Added bullet backfill idempotency coverage plus API tests for backfill window/profile params.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_lichess_client.py tests/test_pipeline_state.py tests/test_api_profile.py`.
+- UI verification screenshot: `verification/feature-032-lichess-bullet-backfill-2026-01-25.png`.
+- Updated feature_list.json: feature "Ingestion Lichess bullet games via full backfill sync" marked passes=true after verification.
+
+Session 2026-01-25 (feature 033 – Lichess blitz incremental sync)
+- Added Lichess blitz fixture PGN and coverage for profile-specific paths, perf type, and incremental checkpoint usage.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_config_env.py tests/test_lichess_client.py tests/test_pipeline_state.py`.
+- UI verification screenshot: `verification/feature-033-lichess-blitz-incremental-2026-01-25.png`.
+- Updated feature_list.json: feature "Ingestion Lichess blitz games via incremental sync" marked passes=true after verification.
+
+Session 2026-01-25 (feature – Lichess blitz full backfill):
+- Ensured blitz backfill window is idempotent and fixture filtering is covered by tests.
+- Added Puppeteer verification script for Lichess blitz backfill and captured UI screenshot.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_lichess_client.py tests/test_pipeline_state.py`.
+- UI verification screenshot: `verification/feature-034-lichess-blitz-backfill-2026-01-25.png`.
+- Updated feature_list.json: feature "Ingestion Lichess blitz games via full backfill sync" marked passes=true after verification.
+
+Session 2026-01-25 (feature – Lichess rapid incremental sync)
+- Applied profile-specific checkpointing for Lichess rapid (since file + analysis checkpoint) and added rapid profile path coverage.
+- Added pipeline test ensuring rapid incremental sync uses `lichess_since_rapid.txt`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_config_env.py tests/test_pipeline_state.py`.
+- UI verification screenshot: `verification/feature-035-lichess-rapid-incremental-2026-01-25.png`.
+- Updated feature_list.json: feature "Ingestion Lichess rapid games via incremental sync" marked passes=true after verification.
+
+Session 2026-01-25 (feature – Lichess rapid full backfill sync)
+- Added rapid backfill idempotency coverage with profile-specific checkpoint/fixture assertions and rapid fixture window filtering test.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_lichess_client.py /Users/andy/tactix/tests/test_pipeline_state.py`.
+- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_036_lichess_rapid_backfill.js`.
+- UI verification screenshot: `verification/feature-036-lichess-rapid-backfill-2026-01-25.png`.
+- Updated feature_list.json: feature "Ingestion Lichess rapid games via full backfill sync" marked passes=true after verification.
+
+Session 2026-01-25 (feature 037 – Lichess classical incremental sync)
+- Added classical profile option to Lichess UI selection and profile typing, plus classical fixture PGN support.
+- Added tests for classical profile paths and incremental checkpointing behavior.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_config_env.py tests/test_pipeline_state.py`.
+- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_037_lichess_classical_incremental.js`.
+- UI verification screenshot: `verification/feature-037-lichess-classical-incremental-2026-01-25.png`.
+- Updated feature_list.json: feature "Ingestion Lichess classical games via incremental sync" marked passes=true after verification.

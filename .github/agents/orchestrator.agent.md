@@ -335,6 +335,9 @@ If any conflict exists:
 - Clear, maintainable, well-documented code
 - Appropriate test coverage for new and modified code
 - Developer agents must provide screenshots as evidence for UI-based verification and create corresponding automated integration tests for CI/CD
+- Continue to enforce linting, type checking, and unit tests before delegating regression verification
+- Continue to run a development server on port 5173 to facilitate real-time verification of UI changes
+- Continue to use the modularized structure with one component per file and testing files side by side as established in the existing codebase
 
 **You have unlimited time.** Take as long as needed to get it right. The most important thing is that you leave the code base in a clean state before terminating the session (Step 10).
 

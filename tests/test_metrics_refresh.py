@@ -12,7 +12,11 @@ from tactix.duckdb_store import (
     upsert_raw_pgns,
     upsert_tactic_with_outcome,
 )
-from tactix.pgn_utils import extract_game_id, extract_last_timestamp_ms, split_pgn_chunks
+from tactix.pgn_utils import (
+    extract_game_id,
+    extract_last_timestamp_ms,
+    split_pgn_chunks,
+)
 
 
 class MetricsRefreshTests(unittest.TestCase):
@@ -92,7 +96,16 @@ class MetricsRefreshTests(unittest.TestCase):
         init_schema(conn)
 
         base_time = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        results = ["found", "missed", "found", "missed", "found", "missed", "found", "missed"]
+        results = [
+            "found",
+            "missed",
+            "found",
+            "missed",
+            "found",
+            "missed",
+            "found",
+            "missed",
+        ]
         rows = []
         for idx, result in enumerate(results, start=1):
             game_id = f"game-{idx}"
@@ -104,11 +117,11 @@ class MetricsRefreshTests(unittest.TestCase):
                     "source": "lichess",
                     "fetched_at": base_time,
                     "pgn": (
-                        "[Event \"Test\"]\n"
-                        f"[Site \"https://lichess.org/{game_id}\"]\n"
-                        "[White \"lichess\"]\n"
-                        "[Black \"opponent\"]\n"
-                        "[Result \"1-0\"]\n\n"
+                        '[Event "Test"]\n'
+                        f'[Site "https://lichess.org/{game_id}"]\n'
+                        '[White "lichess"]\n'
+                        '[Black "opponent"]\n'
+                        '[Result "1-0"]\n\n'
                         "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 1-0"
                     ),
                     "last_timestamp_ms": timestamp,
@@ -134,7 +147,9 @@ class MetricsRefreshTests(unittest.TestCase):
             )
         position_ids = insert_positions(conn, positions)
 
-        for pos, position_id, result in zip(positions, position_ids, results, strict=False):
+        for pos, position_id, result in zip(
+            positions, position_ids, results, strict=False
+        ):
             upsert_tactic_with_outcome(
                 conn,
                 {

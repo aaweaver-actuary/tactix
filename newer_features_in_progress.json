@@ -1,0 +1,34 @@
+[
+  {
+    "category": "functional",
+    "description": "025a - Airflow workflow collects game data from Chess.com using the user from the .env file",
+    "steps": [
+      "Import `load_dotenv` from `dotenv`",
+      "Import `os` module",
+      "Load environment variables from the .env file with `load_dotenv()`",
+      "Read the username from the .env file using `os.getenv('CHESSCOM_USERNAME')`",
+      "Use the retrieved username to fetch game data from Chess.com API",
+      "Verify that the fetched data corresponds to the specified user in the UI",
+      "Write unit tests to mock environment variable loading and API calls",
+      "Run end-to-end tests to ensure the workflow functions correctly with the .env configuration",
+      "Write unit tests to ensure the username is included as either the white or black player in the fetched games"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "025b - Airflow workflow collects game data from Lichess using the user from the .env file",
+    "steps": [
+      "Import `load_dotenv` from `dotenv`",
+      "Import `os` module",
+      "Load environment variables from the .env file with `load_dotenv()`",
+      "Read the username from the .env file using `os.getenv('LICHESS_USERNAME')`",
+      "Use the retrieved username to fetch game data from Lichess API",
+      "Verify that the fetched data corresponds to the specified user in the UI",
+      "Write unit tests to mock environment variable loading and API calls",
+      "Run end-to-end tests to ensure the workflow functions correctly with the .env configuration",
+      "Write unit tests to ensure the username is included as either the white or black player in the fetched games"
+    ],
+    "passes": false
+  }
+]

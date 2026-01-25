@@ -222,7 +222,8 @@ class Settings:
                 self.data_dir / f"analysis_checkpoint_lichess_{profile_value}.json"
             )
         if self.fixture_pgn_path == DEFAULT_LICHESS_FIXTURE:
-            candidate = Path(f"tests/fixtures/lichess_{profile_value}_sample.pgn")
+            repo_root = Path(__file__).resolve().parents[2]
+            candidate = repo_root / f"tests/fixtures/lichess_{profile_value}_sample.pgn"
             if candidate.exists():
                 self.fixture_pgn_path = candidate
 

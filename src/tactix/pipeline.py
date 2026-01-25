@@ -280,6 +280,7 @@ def run_daily_game_sync(
         settings.source = source
     settings.apply_source_defaults()
     settings.apply_lichess_profile(profile)
+    settings.apply_chesscom_profile(profile)
     settings.ensure_dirs()
 
     backfill_mode = window_start_ms is not None or window_end_ms is not None

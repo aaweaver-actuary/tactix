@@ -81,9 +81,15 @@ describe('Hero', () => {
   });
 
   it('renders chess.com title when source is not lichess', () => {
-    render(<Hero {...baseProps} source={'chess.com' as const} />);
+    render(
+      <Hero
+        {...baseProps}
+        source={'chesscom' as const}
+        chesscomProfile={'bullet' as const}
+      />,
+    );
     expect(
-      screen.getByRole('heading', { name: /chess\.com blitz pipeline/i }),
+      screen.getByRole('heading', { name: /chess\.com bullet pipeline/i }),
     ).toBeInTheDocument();
   });
 });

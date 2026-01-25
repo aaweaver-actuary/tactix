@@ -5,7 +5,7 @@ const puppeteer = require('../client/node_modules/puppeteer');
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const screenshotName =
   process.env.TACTIX_SCREENSHOT_NAME ||
-  'feature-038-lichess-classical-backfill-2026-01-25.png';
+  'feature-043-chesscom-bullet-backfill-2026-01-25.png';
 
 (async () => {
   const browser = await puppeteer.launch({ headless: 'new' });
@@ -23,20 +23,17 @@ const screenshotName =
   });
 
   try {
-    await page.goto(targetUrl, {
-      waitUntil: 'domcontentloaded',
-      timeout: 120000,
-    });
+    await page.goto(targetUrl, { waitUntil: 'networkidle0' });
 
     await page.waitForSelector('[data-testid="filter-source"]', {
       timeout: 60000,
     });
-    await page.select('[data-testid="filter-source"]', 'lichess');
+    await page.select('[data-testid="filter-source"]', 'chesscom');
 
-    await page.waitForSelector('[data-testid="filter-lichess-profile"]', {
+    await page.waitForSelector('[data-testid="filter-chesscom-profile"]', {
       timeout: 60000,
     });
-    await page.select('[data-testid="filter-lichess-profile"]', 'classical');
+    await page.select('[data-testid="filter-chesscom-profile"]', 'bullet');
 
     await page.waitForSelector('[data-testid="action-backfill"]', {
       timeout: 60000,
@@ -75,7 +72,7 @@ const screenshotName =
     if (consoleErrors.length) {
       console.error('Console errors detected:', consoleErrors);
     }
-    console.error('Feature classical backfill verification failed:', err);
+    console.error('Feature 043 verification failed:', err);
     process.exit(1);
   } finally {
     await browser.close();

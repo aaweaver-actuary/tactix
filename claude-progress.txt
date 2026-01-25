@@ -392,9 +392,24 @@ Session 2026-01-25 (feature 043 – Chess.com bullet full backfill sync)
 - Updated feature_list.json: feature "Ingestion Chess.com bullet games via full backfill sync" marked passes=true after verification.
 
 Session 2026-01-25 (feature 044 – Chess.com blitz incremental sync)
-- Defaulted Chess.com profile to inferred time class to ensure blitz uses profile-specific checkpoint + fixtures; allowed profile overrides to retarget checkpoint/analysis/fixture paths when switching profiles.
-- Added tests for Chess.com blitz profile settings, blitz incremental pipeline checkpointing, and remote fetch filtering by time_class=blitz.
-- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_config_env.py tests/test_chesscom_client.py tests/test_pipeline_state.py`.
-- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_044_chesscom_blitz_incremental.js`.
-- UI verification screenshot: `verification/feature-044-chesscom-blitz-incremental-2026-01-25.png`.
-- Updated feature_list.json: feature "Ingestion Chess.com blitz games via incremental sync" marked passes=true after verification.
+ - Defaulted Chess.com profile to inferred time class to ensure blitz uses profile-specific checkpoint + fixtures; allowed profile overrides to retarget checkpoint/analysis/fixture paths when switching profiles.
+ - Added tests for Chess.com blitz profile settings, blitz incremental pipeline checkpointing, and remote fetch filtering by time_class=blitz.
+ - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_config_env.py tests/test_chesscom_client.py tests/test_pipeline_state.py`.
+ - UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_044_chesscom_blitz_incremental.js`.
+ - UI verification screenshot: `verification/feature-044-chesscom-blitz-incremental-2026-01-25.png`.
+ - Updated feature_list.json: feature "Ingestion Chess.com blitz games via incremental sync" marked passes=true after verification.
+Session 2026-01-25 (feature 045 – Chess.com blitz full backfill sync)
+ - Added Chess.com blitz backfill idempotency coverage with profile-specific checkpoint/fixture assertions.
+ - Updated Puppeteer dashboard helper to use client-installed Puppeteer and added a Chess.com blitz backfill verification script that starts backend + dev server automatically.
+ - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_pipeline_state.py` (22 passed).
+ - UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_045_chesscom_blitz_backfill.js`.
+ - UI verification screenshots: `verification/feature-045-chesscom-blitz-backfill-2026-01-25.png`, `verification/regression-precheck-lichess-2026-01-25.png`, `verification/regression-precheck-chesscom-2026-01-25.png`.
+ - Updated feature_list.json: feature "Ingestion Chess.com blitz games via full backfill sync" marked passes=true.
+ - Frontend dev server running at http://localhost:5173 (terminal ID: a6266d5e-e3c7-4564-a930-7a7229458d56).
+Session 2026-01-25 (feature 046 – Chess.com rapid incremental sync)
+- Added Chess.com rapid fixture PGNs and profile-specific rapid tests (config, client filter, pipeline checkpoint).
+- Fixed Lichess fixture path resolution to use repo root for profile-specific fixtures.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_chesscom_client.py /Users/andy/tactix/tests/test_pipeline_state.py /Users/andy/tactix/tests/test_config_env.py` (42 passed).
+- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_046_chesscom_rapid_incremental.js`.
+- UI verification screenshot: `verification/feature-046-chesscom-rapid-incremental-2026-01-25.png`.
+- Updated feature_list.json: feature "Ingestion Chess.com rapid games via incremental sync" marked passes=true.

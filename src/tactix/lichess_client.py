@@ -44,6 +44,7 @@ _PERF_TYPES: set[str] = {
     "blitz",
     "rapid",
     "classical",
+    "correspondence",
     "chess960",
     "kingOfTheHill",
     "threeCheck",

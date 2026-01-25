@@ -22,6 +22,11 @@ class LichessClientTests(unittest.TestCase):
         self.fixture_path = (
             Path(__file__).resolve().parent / "fixtures" / "lichess_rapid_sample.pgn"
         )
+        self.correspondence_fixture_path = (
+            Path(__file__).resolve().parent
+            / "fixtures"
+            / "lichess_correspondence_sample.pgn"
+        )
 
     def test_checkpoint_roundtrip(self) -> None:
         ckpt_path = self.tmp_dir / "since.txt"
@@ -170,6 +175,41 @@ class LichessClientTests(unittest.TestCase):
             all(min_ts < row["last_timestamp_ms"] < max_ts + 1 for row in filtered)
         )
 
+    def test_fixture_fetch_filters_correspondence_window(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "db_correspondence.duckdb",
+            checkpoint_path=self.tmp_dir / "since_correspondence.txt",
+            metrics_version_file=self.tmp_dir / "metrics_correspondence.txt",
+            fixture_pgn_path=self.correspondence_fixture_path,
+            use_fixture_when_no_token=True,
+            lichess_profile="correspondence",
+        )
+
+        games = fetch_incremental_games(settings, since_ms=0)
+        self.assertGreaterEqual(len(games), 1)
+        timestamps = [
+            extract_last_timestamp_ms(chunk)
+            for chunk in split_pgn_chunks(self.correspondence_fixture_path.read_text())
+        ]
+        min_ts = min(timestamps)
+        max_ts = max(timestamps)
+
+        filtered = fetch_incremental_games(
+            settings, since_ms=min_ts, until_ms=max_ts + 1
+        )
+
+        self.assertGreater(len(filtered), 0)
+        self.assertLess(len(filtered), len(games))
+        self.assertTrue(
+            all(min_ts < row["last_timestamp_ms"] < max_ts + 1 for row in filtered)
+        )
+
+        empty = fetch_incremental_games(settings, since_ms=max_ts, until_ms=max_ts + 1)
+
+        self.assertEqual(len(empty), 0)
+
     def test_refreshes_token_on_auth_error(self) -> None:
         class FakeAuthError(Exception):
             def __init__(self, status_code: int) -> None:
@@ -292,6 +332,31 @@ class LichessClientTests(unittest.TestCase):
 
         _, kwargs = games_api.export_by_player.call_args
         self.assertEqual(kwargs.get("perf_type"), "blitz")
+
+    def test_correspondence_profile_perf_type_passed_to_api(self) -> None:
+        settings = Settings(
+            user="envuser",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "db.duckdb",
+            checkpoint_path=self.tmp_dir / "since.txt",
+            metrics_version_file=self.tmp_dir / "metrics.txt",
+            lichess_token="token",
+            lichess_profile="correspondence",
+            use_fixture_when_no_token=False,
+        )
+
+        games_api = MagicMock()
+        games_api.export_by_player.return_value = []
+        fake_client = MagicMock()
+        fake_client.games = games_api
+
+        with patch("tactix.lichess_client.build_client", return_value=fake_client):
+            from tactix import lichess_client
+
+            lichess_client._fetch_remote_games_once(settings, since_ms=0)
+
+        _, kwargs = games_api.export_by_player.call_args
+        self.assertEqual(kwargs.get("perf_type"), "correspondence")
 
     def test_fetch_remote_games_passes_until(self) -> None:
         settings = Settings(

@@ -1,6 +1,7 @@
 import { SOURCE_OPTIONS } from '../utils/SOURCE_OPTIONS';
 import { LICHESS_PROFILE_LABELS } from '../utils/LICHESS_PROFILE_OPTIONS';
-import { ChessPlatform, LichessProfile } from '../types';
+import { CHESSCOM_PROFILE_LABELS } from '../utils/CHESSCOM_PROFILE_OPTIONS';
+import { ChessPlatform, ChesscomProfile, LichessProfile } from '../types';
 import Text from './Text';
 
 interface HeroProps {
@@ -12,6 +13,7 @@ interface HeroProps {
   version: number;
   source: ChessPlatform;
   profile?: LichessProfile;
+  chesscomProfile?: ChesscomProfile;
   user: string;
   onSourceChange: (next: ChessPlatform) => void;
 }
@@ -40,10 +42,14 @@ export default function Hero({
   version,
   source,
   profile,
+  chesscomProfile,
   user,
   onSourceChange,
 }: HeroProps) {
   const lichessLabel = profile ? LICHESS_PROFILE_LABELS[profile] : 'Rapid';
+  const chesscomLabel = chesscomProfile
+    ? CHESSCOM_PROFILE_LABELS[chesscomProfile]
+    : 'Blitz';
 
   return (
     <div className="card p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -52,7 +58,7 @@ export default function Hero({
         <h1 className="text-3xl md:text-4xl font-display text-sand mt-2">
           {source === 'lichess'
             ? `Lichess ${lichessLabel.toLowerCase()} pipeline`
-            : 'Chess.com blitz pipeline'}
+            : `Chess.com ${chesscomLabel.toLowerCase()} pipeline`}
         </h1>
         <Text
           mode="normal"

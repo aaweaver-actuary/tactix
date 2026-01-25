@@ -15,7 +15,12 @@ import triggerMetricsRefresh from './utils/triggerMetricsRefresh';
 import submitPracticeAttempt from './utils/submitPracticeAttempt';
 import fetchPracticeQueue from './utils/fetchPracticeQueue';
 import buildPracticeFeedback from './utils/buildPracticeFeedback';
-import { ChessPlatform, JobProgressItem, LichessProfile } from './types';
+import {
+  ChessPlatform,
+  ChesscomProfile,
+  JobProgressItem,
+  LichessProfile,
+} from './types';
 import {
   Badge,
   Text,
@@ -33,6 +38,7 @@ import {
 } from './components';
 import { SOURCE_OPTIONS } from './utils/SOURCE_OPTIONS';
 import { LICHESS_PROFILE_OPTIONS } from './utils/LICHESS_PROFILE_OPTIONS';
+import { CHESSCOM_PROFILE_OPTIONS } from './utils/CHESSCOM_PROFILE_OPTIONS';
 import isPiecePlayable from './utils/isPiecePlayable';
 import {
   PracticeSessionStats,
@@ -44,6 +50,8 @@ export default function App() {
   const [data, setData] = useState<DashboardPayload | null>(null);
   const [source, setSource] = useState<ChessPlatform>('lichess');
   const [lichessProfile, setLichessProfile] = useState<LichessProfile>('rapid');
+  const [chesscomProfile, setChesscomProfile] =
+    useState<ChesscomProfile>('blitz');
   const [filters, setFilters] = useState({
     motif: 'all',
     timeControl: 'all',
@@ -177,14 +185,14 @@ export default function App() {
 
   useEffect(() => {
     resetJobState();
-  }, [source, lichessProfile]);
+  }, [source, lichessProfile, chesscomProfile]);
 
   const streamJobEvents = async (
     job: string,
     nextSource: ChessPlatform,
     disconnectMessage: string,
     nextFilters: DashboardFilters = normalizedFilters,
-    profile?: LichessProfile,
+    profile?: LichessProfile | ChesscomProfile,
   ) => {
     streamAbortRef.current?.abort();
     const controller = new AbortController();
@@ -276,7 +284,7 @@ export default function App() {
     try {
       setJobProgress([]);
       setJobStatus('running');
-      const profile = source === 'lichess' ? lichessProfile : undefined;
+      const profile = source === 'lichess' ? lichessProfile : chesscomProfile;
       await streamJobEvents(
         'daily_game_sync',
         source,
@@ -298,7 +306,7 @@ export default function App() {
     try {
       const windowEnd = Date.now();
       const windowStart = windowEnd - 900 * 24 * 60 * 60 * 1000;
-      const profile = source === 'lichess' ? lichessProfile : undefined;
+      const profile = source === 'lichess' ? lichessProfile : chesscomProfile;
       const payload = await triggerBackfill(
         source,
         windowStart,
@@ -579,6 +587,7 @@ export default function App() {
         version={data?.metrics_version ?? 0}
         source={source}
         profile={source === 'lichess' ? lichessProfile : undefined}
+        chesscomProfile={source === 'chesscom' ? chesscomProfile : undefined}
         user={data?.user ?? 'unknown'}
         onSourceChange={setSource}
       />
@@ -677,6 +686,26 @@ export default function App() {
                 data-testid="filter-lichess-profile"
               >
                 {LICHESS_PROFILE_OPTIONS.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {source === 'chesscom' ? (
+            <label className="text-xs text-sand/60 flex flex-col gap-2">
+              Chess.com time class
+              <select
+                className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
+                value={chesscomProfile}
+                onChange={(event) =>
+                  setChesscomProfile(event.target.value as ChesscomProfile)
+                }
+                disabled={loading}
+                data-testid="filter-chesscom-profile"
+              >
+                {CHESSCOM_PROFILE_OPTIONS.map((opt) => (
                   <option key={opt.id} value={opt.id}>
                     {opt.label}
                   </option>

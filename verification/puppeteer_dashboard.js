@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
-const puppeteer = require('puppeteer');
+const puppeteer = require('../client/node_modules/puppeteer');
 
 const CLIENT_DIR = path.resolve(__dirname, '..', 'client');
 const ROOT_DIR = path.resolve(__dirname, '..');

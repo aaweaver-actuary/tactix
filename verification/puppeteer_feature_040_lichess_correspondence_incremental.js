@@ -5,7 +5,7 @@ const puppeteer = require('../client/node_modules/puppeteer');
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const screenshotName =
   process.env.TACTIX_SCREENSHOT_NAME ||
-  'feature-038-lichess-classical-backfill-2026-01-25.png';
+  'feature-040-lichess-correspondence-incremental-2026-01-25.png';
 
 (async () => {
   const browser = await puppeteer.launch({ headless: 'new' });
@@ -23,35 +23,30 @@ const screenshotName =
   });
 
   try {
-    await page.goto(targetUrl, {
-      waitUntil: 'domcontentloaded',
-      timeout: 120000,
-    });
-
+    await page.goto(targetUrl, { waitUntil: 'networkidle0' });
     await page.waitForSelector('[data-testid="filter-source"]', {
       timeout: 60000,
     });
-    await page.select('[data-testid="filter-source"]', 'lichess');
 
+    await page.select('[data-testid="filter-source"]', 'lichess');
     await page.waitForSelector('[data-testid="filter-lichess-profile"]', {
       timeout: 60000,
     });
-    await page.select('[data-testid="filter-lichess-profile"]', 'classical');
-
-    await page.waitForSelector('[data-testid="action-backfill"]', {
-      timeout: 60000,
-    });
-    await page.click('[data-testid="action-backfill"]');
-
-    await page.waitForSelector(
-      '[data-testid="action-backfill"]:not([disabled])',
-      {
-        timeout: 120000,
-      },
+    await page.select(
+      '[data-testid="filter-lichess-profile"]',
+      'correspondence',
     );
-    await page.waitForSelector('[data-testid="motif-breakdown"]', {
+
+    await page.waitForSelector('[data-testid="action-run"]', {
       timeout: 60000,
     });
+    await page.click('[data-testid="action-run"]');
+
+    await page.waitForSelector('[data-testid="motif-breakdown"]', {
+      timeout: 120000,
+    });
+    await page.waitForSelector('table');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     const outDir = path.resolve(__dirname);
     fs.mkdirSync(outDir, { recursive: true });
@@ -75,7 +70,7 @@ const screenshotName =
     if (consoleErrors.length) {
       console.error('Console errors detected:', consoleErrors);
     }
-    console.error('Feature classical backfill verification failed:', err);
+    console.error('Feature 040 verification failed:', err);
     process.exit(1);
   } finally {
     await browser.close();

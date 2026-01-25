@@ -1,0 +1,22 @@
+[Event "Fixture Corr Game 1"]
+[Site "lichess.org/corr1234"]
+[UTCDate "2024.06.03"]
+[UTCTime "08:00:00"]
+[White "lichess"]
+[Black "opponent"]
+[TimeControl "1/259200"]
+[Result "1-0"]
+
+1. d4 d5 2. c4 e6 3. Nc3 Nf6 4. Bg5 Be7 5. e3 O-O 6. Nf3 1-0
+
+
+[Event "Fixture Corr Game 2"]
+[Site "lichess.org/corr5678"]
+[UTCDate "2024.06.05"]
+[UTCTime "18:15:00"]
+[White "opponent"]
+[Black "lichess"]
+[TimeControl "1/259200"]
+[Result "0-1"]
+
+1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6 6. Be3 e5 0-1

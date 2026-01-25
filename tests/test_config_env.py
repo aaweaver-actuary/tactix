@@ -122,6 +122,22 @@ class ConfigEnvTests(unittest.TestCase):
         )
         self.assertEqual(settings.chesscom_time_class, "blitz")
 
+    def test_get_settings_applies_chesscom_rapid_profile_paths(self) -> None:
+        settings = config.get_settings(source="chesscom", profile="rapid")
+
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("chesscom_since_rapid.txt")
+        )
+        self.assertTrue(
+            settings.analysis_checkpoint_path.name.endswith(
+                "analysis_checkpoint_chesscom_rapid.json"
+            )
+        )
+        self.assertTrue(
+            settings.fixture_pgn_path.name.endswith("chesscom_rapid_sample.pgn")
+        )
+        self.assertEqual(settings.chesscom_time_class, "rapid")
+
 
 if __name__ == "__main__":
     unittest.main()

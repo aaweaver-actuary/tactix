@@ -9,6 +9,11 @@ export const LICHESS_PROFILE_OPTIONS: {
   { id: 'blitz', label: 'Blitz', note: 'Perf: blitz' },
   { id: 'bullet', label: 'Bullet', note: 'Perf: bullet' },
   { id: 'classical', label: 'Classical', note: 'Perf: classical' },
+  {
+    id: 'correspondence',
+    label: 'Correspondence',
+    note: 'Perf: correspondence',
+  },
 ];
 
 export const LICHESS_PROFILE_LABELS = LICHESS_PROFILE_OPTIONS.reduce(

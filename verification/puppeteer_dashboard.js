@@ -113,7 +113,7 @@ function startPreview() {
     });
     console.log('Navigating to dashboard...');
     await page.goto('http://localhost:4173/', { waitUntil: 'networkidle0' });
-    await page.waitForSelector('h1');
+    await page.waitForSelector('[data-testid="filter-source"]');
     if (SOURCE === 'chesscom') {
         await page.$$eval(
           'button',

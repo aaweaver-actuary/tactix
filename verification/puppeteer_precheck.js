@@ -23,7 +23,7 @@ const actionLabel = process.env.TACTIX_ACTION_LABEL || 'Run + Refresh';
   });
 
   await page.goto(targetUrl, { waitUntil: 'networkidle0' });
-  await page.waitForSelector('h1');
+  await page.waitForSelector('[data-testid="filter-source"]');
 
   if (source === 'chesscom') {
     await page.$$eval(

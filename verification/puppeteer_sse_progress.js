@@ -22,7 +22,7 @@ const screenshotName =
   });
 
   await page.goto(targetUrl, { waitUntil: 'networkidle0' });
-  await page.waitForSelector('h1');
+  await page.waitForSelector('[data-testid="filter-source"]');
 
   await page.waitForFunction(() => {
     const buttons = Array.from(document.querySelectorAll('button'));

@@ -7,13 +7,13 @@ import {
   PracticeAttemptResponse,
   PracticeQueueItem,
 } from './api';
-import { getAuthHeaders } from './getAuthHeaders';
-import { getJobStreamUrl } from './getJobStreamUrl';
+import { getAuthHeaders } from './utils/getAuthHeaders';
+import getJobStreamUrl from './utils/getJobStreamUrl';
 import fetchDashboard from './utils/fetchDashboard';
-import { triggerBackfill } from './triggerBackfill';
-import { triggerMetricsRefresh } from './triggerMetricsRefresh';
-import { submitPracticeAttempt } from './submitPracticeAttempt';
-import { fetchPracticeQueue } from './fetchPracticeQueue';
+import { triggerBackfill } from './utils/triggerBackfill';
+import triggerMetricsRefresh from './utils/triggerMetricsRefresh';
+import submitPracticeAttempt from './utils/submitPracticeAttempt';
+import fetchPracticeQueue from './utils/fetchPracticeQueue';
 import buildPracticeFeedback from './utils/buildPracticeFeedback';
 import { ChessPlatform, JobProgressItem } from './types';
 import {
@@ -736,8 +736,8 @@ export default function App() {
         />
       </div>
 
-      {data ? <MetricsGrid data={motifBreakdown} /> : null}
-      {data ? <MetricsTrends data={trendRows} /> : null}
+      {data ? <MetricsGrid metricsData={motifBreakdown} /> : null}
+      {data ? <MetricsTrends metricsData={trendRows} /> : null}
       {practiceError ? (
         <div className="card p-3 text-rust">{practiceError}</div>
       ) : null}

@@ -198,6 +198,15 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
 
+Session 2026-01-25 (feature 025a – Chess.com env username)
+- Loaded .env in Chess.com Airflow DAG and applied `CHESSCOM_USERNAME` in settings.
+- Updated settings resolution to refresh `CHESSCOM_USERNAME` and added unit coverage for env loading, API calls, and PGN user presence.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_chesscom_client.py` (7 passed).
+- UI verification: `node verification/puppeteer_feature_025a_chesscom_env.js`.
+- Screenshot: `verification/feature-025a-chesscom-env-2026-01-25.png`.
+- Updated feature_list.json: feature 025a marked passes=true after verification.
+- Current passing count: 22.
+
 Session 2026-01-25 (feature 027 – Time-trouble correlation per time control)
 - Added time-trouble correlation aggregation per time control with TimeControl fallback parsing, and surfaced the metric in the dashboard with explanatory copy.
 - Added unit coverage for per-control time-trouble correlation; added UI component test for correlation rendering; fixed duplicate filter option keys.

@@ -32,7 +32,9 @@ class Settings:
     lichess_oauth_token_url: str = os.getenv(
         "LICHESS_OAUTH_TOKEN_URL", "https://lichess.org/api/token"
     )
-    chesscom_user: str = os.getenv("CHESSCOM_USER", "chesscom")
+    chesscom_user: str = os.getenv(
+        "CHESSCOM_USERNAME", os.getenv("CHESSCOM_USER", "chesscom")
+    )
     chesscom_token: Optional[str] = os.getenv("CHESSCOM_TOKEN")
     chesscom_time_class: str = os.getenv("CHESSCOM_TIME_CLASS", "blitz")
     chesscom_max_retries: int = int(os.getenv("CHESSCOM_MAX_RETRIES", "3"))
@@ -134,6 +136,10 @@ class Settings:
 
 def get_settings(source: str | None = None) -> Settings:
     settings = Settings()
+    load_dotenv()
+    chesscom_username = os.getenv("CHESSCOM_USERNAME")
+    if chesscom_username:
+        settings.chesscom_user = chesscom_username
     if source:
         settings.source = source
     settings.apply_source_defaults()

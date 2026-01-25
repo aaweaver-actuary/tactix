@@ -1,12 +1,15 @@
+import os
 import tempfile
+from io import StringIO
 from pathlib import Path
 import unittest
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
 
 import requests
+import chess.pgn
 
-from tactix.config import Settings
+from tactix.config import Settings, get_settings
 from tactix.chesscom_client import ARCHIVES_URL, fetch_incremental_games
 from tactix.pgn_utils import latest_timestamp, split_pgn_chunks
 
@@ -41,6 +44,93 @@ class ChesscomClientTests(unittest.TestCase):
         newer = fetch_incremental_games(settings, cursor=result.next_cursor)
         self.assertEqual(newer.games, [])
         self.assertEqual(newer.next_cursor, result.next_cursor)
+
+    def test_env_username_applied_and_load_dotenv_called(self) -> None:
+        with (
+            patch("tactix.config.load_dotenv") as load_mock,
+            patch.dict(os.environ, {"CHESSCOM_USERNAME": "envuser"}),
+        ):
+            settings = get_settings(source="chesscom")
+
+        load_mock.assert_called()
+        self.assertEqual(settings.chesscom_user, "envuser")
+        self.assertEqual(settings.user, "envuser")
+
+    def test_env_username_used_in_archive_request(self) -> None:
+        with patch.dict(os.environ, {"CHESSCOM_USERNAME": "envuser"}):
+            settings = get_settings(source="chesscom")
+
+        settings.chesscom_token = "token"
+        settings.chesscom_use_fixture_when_no_token = False
+        settings.chesscom_fixture_pgn_path = self.fixture_path
+        settings.apply_source_defaults()
+
+        pgn_text = split_pgn_chunks(self.fixture_path.read_text())[0]
+        archive_url = ARCHIVES_URL.format(username="envuser")
+
+        class DummyResponse:
+            def __init__(self, status_code, json_data=None, headers=None):
+                self.status_code = status_code
+                self._json = json_data or {}
+                self.headers = headers or {}
+
+            def json(self):
+                return self._json
+
+            def raise_for_status(self):
+                if self.status_code >= 400:
+                    raise requests.HTTPError(f"{self.status_code} Error")
+
+        responses = [
+            DummyResponse(200, json_data={"archives": [archive_url]}),
+            DummyResponse(
+                200,
+                json_data={
+                    "games": [
+                        {
+                            "time_class": settings.chesscom_time_class,
+                            "pgn": pgn_text,
+                            "uuid": "12345",
+                        }
+                    ]
+                },
+            ),
+        ]
+        captured_urls: list[str] = []
+
+        def fake_get(url, *_args, **_kwargs):
+            captured_urls.append(url)
+            return responses.pop(0)
+
+        with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
+            result = fetch_incremental_games(settings, cursor=None)
+
+        self.assertEqual(len(result.games), 1)
+        self.assertIn(archive_url, captured_urls)
+
+    def test_fetched_games_include_user_as_white_or_black(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            duckdb_path=self.tmp_dir / "db.duckdb",
+            chesscom_checkpoint_path=self.tmp_dir / "chesscom_since.txt",
+            metrics_version_file=self.tmp_dir / "metrics.txt",
+            chesscom_fixture_pgn_path=self.fixture_path,
+            chesscom_use_fixture_when_no_token=True,
+        )
+        settings.apply_source_defaults()
+
+        result = fetch_incremental_games(settings, cursor=None)
+        user_lower = settings.user.lower()
+
+        for game in result.games:
+            pgn_text = game.get("pgn", "")
+            parsed = chess.pgn.read_game(StringIO(pgn_text))
+            self.assertIsNotNone(parsed)
+            headers = parsed.headers
+            white = headers.get("White", "").lower()
+            black = headers.get("Black", "").lower()
+            self.assertIn(user_lower, {white, black})
 
     def test_remote_fetch_retries_on_429_with_retry_after(self) -> None:
         settings = Settings(

@@ -1,16 +1,20 @@
 from __future__ import annotations
 
 from datetime import timedelta
+import os
 
 from airflow.decorators import dag, task
 from airflow.operators.python import get_current_context
 from airflow.utils import timezone
+from dotenv import load_dotenv
 
 from tactix.config import get_settings
 from tactix.logging_utils import get_logger
 from tactix.pipeline import get_dashboard_payload, run_daily_game_sync
 
 logger = get_logger(__name__)
+load_dotenv()
+CHESSCOM_USERNAME = os.getenv("CHESSCOM_USERNAME")
 
 
 def default_args():
@@ -35,6 +39,9 @@ def default_args():
 )
 def analyze_tactics_dag():
     settings = get_settings(source="chesscom")
+    if CHESSCOM_USERNAME:
+        settings.chesscom_user = CHESSCOM_USERNAME
+        settings.user = CHESSCOM_USERNAME
 
     @task(task_id="run_pipeline")
     def run_pipeline() -> dict[str, object]:

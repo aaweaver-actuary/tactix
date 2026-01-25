@@ -213,3 +213,10 @@ Session 2026-01-25 (feature 023 – Stockfish checksum pinning)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_stockfish_checksum.py`.
 - Updated feature_list.json: feature 023 marked passes=true after verification.
 - Current passing count: 23.
+
+Session 2026-01-25 (feature 024 – Promotion + en passant extraction)
+- Added promotion/en passant PGN fixture and extractor tests validating SAN/UCI, ply, and move number metadata.
+- Added Puppeteer verification script and captured screenshot: `verification/feature-024-promotion-en-passant-2026-01-25.png`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_position_extractor.py`.
+- Updated feature_list.json: feature 024 marked passes=true after verification.
+- Current passing count: 24.

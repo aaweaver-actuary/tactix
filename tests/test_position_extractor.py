@@ -18,10 +18,22 @@ def _read_chesscom_games() -> list[str]:
     ]
 
 
+def _read_promotion_en_passant_games() -> list[str]:
+    path = (
+        Path(__file__).resolve().parent
+        / "fixtures"
+        / "lichess_promotion_en_passant.pgn"
+    )
+    return [
+        chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
+    ]
+
+
 class PositionExtractorTests(unittest.TestCase):
     def setUp(self) -> None:
         self.games = _read_fixture_games()
         self.chesscom_games = _read_chesscom_games()
+        self.promotion_en_passant_games = _read_promotion_en_passant_games()
 
     def test_extracts_only_user_to_move_positions(self) -> None:
         pgn = self.games[0]
@@ -75,6 +87,34 @@ class PositionExtractorTests(unittest.TestCase):
             pgn, user="someoneelse", source="lichess", game_id="fixture1"
         )
         self.assertEqual(positions, [])
+
+    def test_extracts_en_passant_move(self) -> None:
+        pgn = self.promotion_en_passant_games[0]
+        positions = extract_positions(
+            pgn, user="ep_user", source="lichess", game_id="ep1"
+        )
+        ep_positions = [pos for pos in positions if pos["uci"] == "e5d6"]
+        self.assertEqual(len(ep_positions), 1)
+
+        en_passant = ep_positions[0]
+        self.assertEqual(en_passant["san"], "exd6")
+        self.assertEqual(en_passant["ply"], 4)
+        self.assertEqual(en_passant["move_number"], 3)
+        self.assertEqual(en_passant["side_to_move"], "white")
+
+    def test_extracts_promotion_move(self) -> None:
+        pgn = self.promotion_en_passant_games[1]
+        positions = extract_positions(
+            pgn, user="promo_user", source="lichess", game_id="promo1"
+        )
+        promo_positions = [pos for pos in positions if pos["uci"] == "b7a8q"]
+        self.assertEqual(len(promo_positions), 1)
+
+        promotion = promo_positions[0]
+        self.assertEqual(promotion["san"], "bxa8=Q")
+        self.assertEqual(promotion["ply"], 8)
+        self.assertEqual(promotion["move_number"], 5)
+        self.assertEqual(promotion["side_to_move"], "white")
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
+import hashlib
 from pathlib import Path
 from typing import Optional
 
@@ -13,6 +14,40 @@ from tactix.config import Settings
 from tactix.logging_utils import get_logger
 
 logger = get_logger(__name__)
+
+
+def _normalize_checksum(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return None
+    cleaned = value.strip().lower()
+    return cleaned or None
+
+
+def _compute_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def verify_stockfish_checksum(
+    binary_path: Path,
+    expected_checksum: Optional[str],
+    mode: str = "warn",
+) -> bool:
+    normalized = _normalize_checksum(expected_checksum)
+    if not normalized:
+        return True
+    actual = _compute_sha256(binary_path)
+    if actual == normalized:
+        return True
+    message = "Stockfish checksum mismatch (expected=%s, actual=%s, path=%s)"
+    mode_lower = (mode or "warn").lower()
+    if mode_lower == "enforce":
+        raise RuntimeError(message % (normalized, actual, binary_path))
+    logger.warning(message, normalized, actual, binary_path)
+    return False
 
 
 @dataclass(slots=True)
@@ -151,6 +186,11 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
         command = self._resolve_command()
         if command:
             logger.info("Starting Stockfish via %s", command)
+            verify_stockfish_checksum(
+                Path(command),
+                self.settings.stockfish_checksum,
+                self.settings.stockfish_checksum_mode,
+            )
             self.engine = chess.engine.SimpleEngine.popen_uci(command)
             self._configure_engine()
         else:

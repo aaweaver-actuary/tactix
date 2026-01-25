@@ -55,6 +55,10 @@ class Settings:
         )
     )
     stockfish_path: Path = Path(os.getenv("STOCKFISH_PATH", "stockfish"))
+    stockfish_checksum: Optional[str] = os.getenv("STOCKFISH_SHA256") or os.getenv(
+        "STOCKFISH_CHECKSUM"
+    )
+    stockfish_checksum_mode: str = os.getenv("STOCKFISH_CHECKSUM_MODE", "warn")
     stockfish_threads: int = int(os.getenv("STOCKFISH_THREADS", "1"))
     stockfish_hash_mb: int = int(os.getenv("STOCKFISH_HASH", "256"))
     stockfish_movetime_ms: int = int(os.getenv("STOCKFISH_MOVETIME_MS", "150"))

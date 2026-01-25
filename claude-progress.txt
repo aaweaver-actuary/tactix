@@ -205,3 +205,11 @@ Session 2026-01-25 (feature 022 – Lichess OAuth token refresh)
 - UI verification screenshot: `verification/feature-022-lichess-oauth-refresh.png`.
 - Updated feature_list.json: feature 022 marked passes=true after UI + test verification.
 - Current passing count: 22.
+
+Session 2026-01-25 (feature 023 – Stockfish checksum pinning)
+- Added Stockfish checksum verification with configurable warn/enforce mode and settings (STOCKFISH_SHA256 / STOCKFISH_CHECKSUM + STOCKFISH_CHECKSUM_MODE).
+- Added pytest coverage for checksum match/mismatch behavior.
+- UI verification via Puppeteer on dev server (port 5173) captured screenshot: `verification/feature-023-stockfish-checksum-2026-01-25.png`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_stockfish_checksum.py`.
+- Updated feature_list.json: feature 023 marked passes=true after verification.
+- Current passing count: 23.

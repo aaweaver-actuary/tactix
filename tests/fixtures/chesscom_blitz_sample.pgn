@@ -32,3 +32,17 @@
 [Result "0-1"]
 
 1. f3 { [%clk 0:05:00] } e5 { [%clk 0:05:00] } 2. g4 { [%clk 0:04:58] } Qh4# { [%clk 0:04:59] } 0-1
+
+
+[Event "Chess.com Blitz Fixture 4"]
+[Site "https://www.chess.com/game/live/9876543212"]
+[UTCDate "2024.07.04"]
+[UTCTime "18:00:00"]
+[White "opponent3"]
+[Black "chesscom"]
+[TimeControl "300"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "8/1k6/5r2/2q1P3/4P1P1/8/7K/8 b - - 0 1"]
+
+1... Qf2+ 2. Kh3 Rh6# 0-1

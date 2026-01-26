@@ -61,6 +61,17 @@ def _read_lichess_classical_games() -> list[str]:
     ]
 
 
+def _read_lichess_correspondence_games() -> list[str]:
+    path = (
+        Path(__file__).resolve().parent
+        / "fixtures"
+        / "lichess_correspondence_sample.pgn"
+    )
+    return [
+        chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
+    ]
+
+
 class PositionExtractorTests(unittest.TestCase):
     def setUp(self) -> None:
         self.games = _read_fixture_games()
@@ -70,6 +81,7 @@ class PositionExtractorTests(unittest.TestCase):
         self.lichess_bullet_games = _read_lichess_bullet_games()
         self.lichess_blitz_games = _read_lichess_blitz_games()
         self.lichess_classical_games = _read_lichess_classical_games()
+        self.lichess_correspondence_games = _read_lichess_correspondence_games()
 
     def test_extracts_only_user_to_move_positions(self) -> None:
         pgn = self.games[0]
@@ -184,6 +196,38 @@ class PositionExtractorTests(unittest.TestCase):
             user="lichess",
             source="lichess",
             game_id="classical2",
+            side_to_move_filter="white",
+        )
+        self.assertEqual(positions, [])
+
+    def test_extracts_lichess_correspondence_white_to_move_positions(self) -> None:
+        pgn = self.lichess_correspondence_games[0]
+        positions = extract_positions(
+            pgn,
+            user="lichess",
+            source="lichess",
+            game_id="corr1",
+            side_to_move_filter="white",
+        )
+        self.assertGreater(len(positions), 0)
+        self.assertTrue(all(pos["side_to_move"] == "white" for pos in positions))
+
+        first = positions[0]
+        self.assertEqual(first["ply"], 0)
+        self.assertEqual(first["move_number"], 1)
+        self.assertEqual(first["side_to_move"], "white")
+        self.assertEqual(first["uci"], "d2d4")
+        self.assertEqual(first["san"], "d4")
+        self.assertIsNone(first["clock_seconds"])
+        self.assertTrue(first["is_legal"])
+
+    def test_lichess_correspondence_white_filter_skips_black_user(self) -> None:
+        pgn = self.lichess_correspondence_games[1]
+        positions = extract_positions(
+            pgn,
+            user="lichess",
+            source="lichess",
+            game_id="corr2",
             side_to_move_filter="white",
         )
         self.assertEqual(positions, [])

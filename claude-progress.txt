@@ -502,3 +502,12 @@ Session 2026-01-26 (regression verification + feature 056 completion)
 Session 2026-01-26 (schema migration test fix)
 - Updated schema migration test to expect schema version 5 after migration.
 - Tests: `uv run pytest tests/test_schema_migration.py`.
+
+Session 2026-01-26 (feature 057 – Lichess correspondence white-to-move extraction)
+- Regression UI verification: `node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js` (screenshot `verification/regression-001-lichess-2026-01-25.png`), `node /Users/andy/tactix/verification/puppeteer_feature_044_chesscom_blitz_incremental.js` (screenshot `verification/feature-044-chesscom-blitz-incremental-2026-01-25.png`).
+- Applied Lichess correspondence side-to-move filter in the pipeline and added correspondence extraction tests (white-only + skip black user).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_position_extractor.py`.
+- UI verification: `TACTIX_SCREENSHOT_NAME=feature-057-lichess-correspondence-white-to-move-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_040_lichess_correspondence_incremental.js`.
+- UI verification screenshot: `verification/feature-057-lichess-correspondence-white-to-move-2026-01-26.png`.
+- Updated feature_list.json: feature "Position extraction records white to move for Lichess correspondence" marked passes=true.
+- Current passing count: 57.

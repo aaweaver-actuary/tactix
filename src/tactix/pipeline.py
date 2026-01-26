@@ -108,7 +108,7 @@ def _resolve_side_to_move_filter(settings: Settings) -> str | None:
     if settings.source != "lichess":
         return None
     profile = (settings.lichess_profile or settings.rapid_perf or "").strip().lower()
-    if profile == "classical":
+    if profile in {"classical", "correspondence"}:
         return "white"
     return None
 

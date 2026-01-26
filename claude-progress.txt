@@ -632,3 +632,12 @@ Session 2026-01-26 (feature 068 – Chess.com bullet black-to-move extraction)
 - UI verification screenshot: `verification/feature-068-chesscom-bullet-black-to-move-2026-01-26.png`.
 - Updated feature_list.json: feature "Position extraction records black to move for Chess.com bullet" marked passes=true.
 - Current passing count: 67.
+
+Session 2026-01-26 (feature 069 – Chess.com blitz black-to-move extraction)
+- Updated Chess.com blitz side-to-move filter to capture black-to-move positions.
+- Updated Chess.com blitz extractor tests for black-to-move filtering (ply/move/clocks/legality) and skip-white-user behavior.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_position_extractor.py -q`.
+- UI verification: `TACTIX_SCREENSHOT_NAME=feature-069-chesscom-blitz-black-to-move-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_044_chesscom_blitz_incremental.js`.
+- UI verification screenshot: `verification/feature-069-chesscom-blitz-black-to-move-2026-01-26.png`.
+- Updated feature_list.json: feature "Position extraction records black to move for Chess.com blitz" marked passes=true.
+- Frontend dev server running on port 5173 (terminal ID: 1c03befb-d692-4ede-b2b7-6c55da0b65ce).

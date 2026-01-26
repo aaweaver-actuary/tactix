@@ -167,35 +167,35 @@ class PositionExtractorTests(unittest.TestCase):
         self.assertEqual(first["san"], "d5")
         self.assertEqual(first["clock_seconds"], 300)
 
-    def test_extracts_chesscom_blitz_white_to_move_positions(self) -> None:
-        pgn = self.chesscom_games[0]
-        positions = extract_positions(
-            pgn,
-            user="chesscom",
-            source="chesscom",
-            game_id="blitz1",
-            side_to_move_filter="white",
-        )
-        self.assertGreater(len(positions), 0)
-        self.assertTrue(all(pos["side_to_move"] == "white" for pos in positions))
-
-        first = positions[0]
-        self.assertEqual(first["ply"], 0)
-        self.assertEqual(first["move_number"], 1)
-        self.assertEqual(first["side_to_move"], "white")
-        self.assertEqual(first["uci"], "e2e4")
-        self.assertEqual(first["san"], "e4")
-        self.assertEqual(first["clock_seconds"], 300)
-        self.assertTrue(first["is_legal"])
-
-    def test_chesscom_blitz_white_filter_skips_black_user(self) -> None:
+    def test_extracts_chesscom_blitz_black_to_move_positions(self) -> None:
         pgn = self.chesscom_games[1]
         positions = extract_positions(
             pgn,
             user="chesscom",
             source="chesscom",
+            game_id="blitz1",
+            side_to_move_filter="black",
+        )
+        self.assertGreater(len(positions), 0)
+        self.assertTrue(all(pos["side_to_move"] == "black" for pos in positions))
+
+        first = positions[0]
+        self.assertEqual(first["ply"], 1)
+        self.assertEqual(first["move_number"], 1)
+        self.assertEqual(first["side_to_move"], "black")
+        self.assertEqual(first["uci"], "d7d5")
+        self.assertEqual(first["san"], "d5")
+        self.assertEqual(first["clock_seconds"], 300)
+        self.assertTrue(first["is_legal"])
+
+    def test_chesscom_blitz_black_filter_skips_white_user(self) -> None:
+        pgn = self.chesscom_games[0]
+        positions = extract_positions(
+            pgn,
+            user="chesscom",
+            source="chesscom",
             game_id="blitz2",
-            side_to_move_filter="white",
+            side_to_move_filter="black",
         )
         self.assertEqual(positions, [])
 

@@ -19,7 +19,7 @@ from tactix.tactics_analyzer import analyze_position
 
 class MateInTwoBlitzTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
-    def test_blitz_mate_in_two_is_low_severity(self) -> None:
+    def test_blitz_mate_in_two_is_high_severity(self) -> None:
         fixture_path = (
             Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
         )
@@ -60,7 +60,7 @@ class MateInTwoBlitzTests(unittest.TestCase):
         tactic_row, outcome_row = result
         self.assertEqual(tactic_row["motif"], "mate")
         self.assertEqual(tactic_row["best_uci"], "c5f2")
-        self.assertLessEqual(tactic_row["severity"], 1.0)
+        self.assertGreaterEqual(tactic_row["severity"], 1.5)
         self.assertLessEqual(abs(outcome_row["eval_delta"]), 100)
 
         tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)

@@ -877,3 +877,15 @@ Session 2026-01-26 (feature 088 – Stockfish mate-in-2 high severity for bullet
 - UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_088_mate_in_two_bullet_high_ci.js` (screenshot `verification/feature-088-mate-in-2-bullet-high-severity-ci-2026-01-26.png`).
 - Updated feature_list.json: feature "Stockfish detects mate in 2 with high severity in bullet" marked passes=true.
 - Current passing count: 88.
+
+Session 2026-01-26 (feature 089 – Stockfish mate-in-2 high severity for blitz)
+- Verification tests (randomized 12 passing suites): `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_practice_next.py tests/test_practice_queue.py tests/test_metrics_refresh.py tests/test_stockfish_checksum.py tests/test_tactics_analyzer.py tests/test_mate_in_one_bullet.py tests/test_mate_in_two_bullet.py`.
+- Raised mate-in-two severity clamp for blitz profiles and updated blitz mate-in-two test expectations.
+- Seeded blitz fixtures into data + client DuckDBs using `tmp-logs/feature_089_seed.py` with feature-specific checkpoints.
+- Frontend build: `npm run build` (client) to refresh preview assets.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_two_blitz.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_089_mate_in_two_blitz_high.js` (screenshot `verification/feature-089-mate-in-2-blitz-high-severity-2026-01-26.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_089_mate_in_two_blitz_high_ci.js` (screenshot `verification/feature-089-mate-in-2-blitz-high-severity-ci-2026-01-26.png`).
+- Tests + lint: `make check`.
+- Updated feature_list.json: feature "Stockfish detects mate in 2 with high severity in blitz" marked passes=true.
+- Current passing count: 89.

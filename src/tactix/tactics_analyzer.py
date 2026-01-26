@@ -223,11 +223,10 @@ def analyze_position(
         else:
             severity = min(severity, 1.0)
     if mate_in_two and result == "found":
-        if _is_bullet_profile(settings):
+        if _is_bullet_profile(settings) or _is_blitz_profile(settings):
             severity = max(severity, 1.5)
         elif (
-            _is_blitz_profile(settings)
-            or _is_rapid_profile(settings)
+            _is_rapid_profile(settings)
             or _is_classical_profile(settings)
             or _is_correspondence_profile(settings)
         ):

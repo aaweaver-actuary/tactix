@@ -520,3 +520,12 @@ Session 2026-01-26 (feature 058 – Lichess bullet black-to-move extraction)
 - UI verification screenshot: `verification/feature-058-lichess-bullet-black-to-move-2026-01-26.png`.
 - Updated feature_list.json: feature "Position extraction records black to move for Lichess bullet" marked passes=true.
 - Current passing count: 58.
+
+Session 2026-01-26 (feature 059 – Lichess blitz black-to-move):
+- Updated Lichess blitz side-to-move filter to record black-to-move positions in the pipeline.
+- Added Lichess blitz black-to-move extractor tests (extract + skip) alongside existing blitz coverage.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_position_extractor.py`.
+- Precheck UI verification screenshots: `verification/precheck-001-lichess-2026-01-26.png`, `verification/precheck-002-chesscom-2026-01-26.png`.
+- UI verification screenshot: `verification/feature-059-lichess-blitz-black-to-move-2026-01-26.png`.
+- Updated feature_list.json: feature "Position extraction records black to move for Lichess blitz" marked passes=true.
+- Current passing count: 59.

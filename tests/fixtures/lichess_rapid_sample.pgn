@@ -20,3 +20,15 @@
 [Result "0-1"]
 
 1. e4 { [%clk 0:10:00] } c5 { [%clk 0:10:00] } 2. Nf3 { [%clk 0:09:55] } d6 { [%clk 0:09:56] } 3. d4 { [%clk 0:09:50] } cxd4 { [%clk 0:09:54] } 4. Nxd4 { [%clk 0:09:45] } Nf6 { [%clk 0:09:52] } 5. Nc3 { [%clk 0:09:40] } a6 { [%clk 0:09:50] } 6. Bg5 { [%clk 0:09:35] } e6 { [%clk 0:09:48] } 7. f4 { [%clk 0:09:30] } Qb6 { [%clk 0:09:46] } 8. Qd2 { [%clk 0:09:25] } Qxb2 { [%clk 0:09:44] } 0-1
+
+
+[Event "Fixture Game 3"]
+[Site "lichess.org/ijkl9012"]
+[UTCDate "2024.06.03"]
+[UTCTime "14:15:00"]
+[White "lichess"]
+[Black "opponent2"]
+[TimeControl "600+5"]
+[Result "1-0"]
+
+1. Nf3 { [%clk 0:10:00] } d5 { [%clk 0:10:00] } 2. g3 { [%clk 0:09:55] } c5 { [%clk 0:09:58] } 3. Bg2 { [%clk 0:09:50] } Nc6 { [%clk 0:09:56] } 4. d4 { [%clk 0:09:45] } Nf6 { [%clk 0:09:54] } 5. O-O { [%clk 0:09:40] } e6 { [%clk 0:09:52] } 1-0

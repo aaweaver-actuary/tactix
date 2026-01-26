@@ -469,3 +469,11 @@ Session 2026-01-26 (feature 054 – Lichess blitz white-to-move extraction)
 - UI verification screenshot: `verification/feature-054-lichess-blitz-white-to-move-2026-01-26.png`.
 - Updated feature_list.json: feature "Position extraction records white to move for Lichess blitz" marked passes=true.
 - Current passing count: 54.
+
+Session 2026-01-26 (feature 055 – Lichess rapid white-to-move extraction)
+- Extended Lichess rapid fixtures and added rapid extraction tests for white-to-move filtering, ply/move, clocks, and legality.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_position_extractor.py`.
+- UI verification: `TACTIX_SOURCE=lichess TACTIX_SCREENSHOT_NAME=feature-055-lichess-rapid-white-to-move-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_dashboard.js`.
+- UI verification screenshot: `verification/feature-055-lichess-rapid-white-to-move-2026-01-26.png`.
+- Updated feature_list.json: feature "Position extraction records white to move for Lichess rapid" marked passes=true.
+- Current passing count: 55.

@@ -104,6 +104,15 @@ def _normalize_game_row(row: Mapping[str, object], settings: Settings) -> GameRo
     }
 
 
+def _resolve_side_to_move_filter(settings: Settings) -> str | None:
+    if settings.source != "lichess":
+        return None
+    profile = (settings.lichess_profile or settings.rapid_perf or "").strip().lower()
+    if profile == "classical":
+        return "white"
+    return None
+
+
 def _emit_progress(
     progress: ProgressCallback | None, step: str, **fields: object
 ) -> None:
@@ -463,6 +472,8 @@ def run_daily_game_sync(
             message="Extracting positions",
         )
 
+        side_to_move_filter = _resolve_side_to_move_filter(settings)
+
         for game in games_to_process:
             positions.extend(
                 extract_positions(
@@ -470,6 +481,7 @@ def run_daily_game_sync(
                     settings.user,
                     settings.source,
                     game_id=game["game_id"],
+                    side_to_move_filter=side_to_move_filter,
                 )
             )
 

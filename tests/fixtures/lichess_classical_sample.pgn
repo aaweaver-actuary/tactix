@@ -20,3 +20,15 @@
 [Result "0-1"]
 
 1. e4 { [%clk 0:30:00] } e5 { [%clk 0:30:00] } 2. Nf3 { [%clk 0:29:52] } Nc6 { [%clk 0:29:54] } 3. Bb5 { [%clk 0:29:44] } a6 { [%clk 0:29:48] } 4. Ba4 { [%clk 0:29:35] } Nf6 { [%clk 0:29:42] } 5. O-O { [%clk 0:29:26] } Be7 { [%clk 0:29:36] } 6. Re1 { [%clk 0:29:18] } b5 { [%clk 0:29:30] } 7. Bb3 { [%clk 0:29:10] } d6 { [%clk 0:29:24] } 0-1
+
+
+[Event "Fixture Game 3"]
+[Site "lichess.org/qrst7890"]
+[UTCDate "2024.06.05"]
+[UTCTime "20:30:00"]
+[White "lichess"]
+[Black "opponent2"]
+[TimeControl "1800+0"]
+[Result "1-0"]
+
+1. Nf3 { [%clk 0:30:00] } d5 { [%clk 0:30:00] } 2. g3 { [%clk 0:29:50] } Nf6 { [%clk 0:29:55] } 1-0

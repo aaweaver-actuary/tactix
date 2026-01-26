@@ -853,7 +853,7 @@
       "Step 3: Record ply, move number, and clocks",
       "Step 4: Save user move and legality flag"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

@@ -477,3 +477,24 @@ Session 2026-01-26 (feature 055 – Lichess rapid white-to-move extraction)
 - UI verification screenshot: `verification/feature-055-lichess-rapid-white-to-move-2026-01-26.png`.
 - Updated feature_list.json: feature "Position extraction records white to move for Lichess rapid" marked passes=true.
 - Current passing count: 55.
+
+Session 2026-01-26 (feature 056 – Lichess classical white-to-move extraction)
+- Added Lichess classical side-to-move filtering in the pipeline (white-to-move only for classical profile).
+- Extended Lichess classical fixture and added extraction tests covering white-to-move filtering, ply/move numbers, clocks, and legality.
+- Tests: not run (unittest discovery via runner returned no tests; pytest not executed).
+- UI verification: not run (automation tools unavailable in this session).
+- Screenshots: none.
+- Current passing count: 55.
+- Frontend dev server running on http://localhost:5173 (terminal ID: 9f04578c-9624-4ac5-9a12-3b770a0316b4).
+
+Session 2026-01-26 (regression verification + feature 056 completion)
+- Regression UI verification via Puppeteer:
+	- Feature 001: `node verification/puppeteer_regression_feature_001.js` (screenshot `verification/regression-001-lichess-2026-01-26.png`).
+	- Feature 002: `node verification/puppeteer_feature_044_chesscom_blitz_incremental.js` (screenshot `verification/regression-002-chesscom-2026-01-26.png`).
+	- Feature 003: `node verification/puppeteer_regression_feature_001.js` (screenshot `verification/regression-003-lichess-since-2026-01-26.png`).
+- Feature 056: verified Lichess classical white-to-move extraction via UI.
+	- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_position_extractor.py`.
+	- UI verification: `node verification/puppeteer_feature_037_lichess_classical_incremental.js` with screenshot `verification/feature-056-lichess-classical-white-to-move-2026-01-26.png`.
+	- Updated feature_list.json: feature "Position extraction records white to move for Lichess classical" marked passes=true.
+- Current passing count: 56.
+- Frontend dev server running at http://localhost:5173 (terminal ID: 4d8b6fda-163d-4957-a5c3-2685ea7b7239).

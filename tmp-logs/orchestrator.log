@@ -1,3 +1,5 @@
 2026-01-25T00:00:00Z Orchestrator note: tmp-logs initialized.
 2026-01-25T00:00:00Z Orchestrator note: docker compose up failed - Docker daemon not running (colima socket unavailable).
 2026-01-25T00:00:00Z Orchestrator note: docker compose up succeeded (server, client, airflow) on tactix-net.
+[2026-01-26] Regression verification: ran puppeteer_regression_feature_001.js (feature 001), puppeteer_feature_044_chesscom_blitz_incremental.js (feature 002 proxy), puppeteer_regression_feature_001.js (feature 003) screenshots: verification/regression-001-lichess-2026-01-26.png, verification/regression-002-chesscom-2026-01-26.png, verification/regression-003-lichess-since-2026-01-26.png
+[2026-01-26] Feature 056 UI verification: ran puppeteer_feature_037_lichess_classical_incremental.js with screenshot verification/feature-056-lichess-classical-white-to-move-2026-01-26.png

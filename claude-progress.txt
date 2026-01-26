@@ -811,3 +811,14 @@ Session 2026-01-26 (feature 082 – Stockfish mate-in-1 high severity for corres
 - UI verification screenshot: `verification/feature-082-mate-in-1-correspondence-high-severity-2026-01-26.png`.
 - Updated feature_list.json: feature "Stockfish detects mate in 1 with high severity in correspondence" marked passes=true.
 - Current passing count: 82.
+
+Session 2026-01-26 (feature 083 – Stockfish mate-in-2 low severity for bullet)
+- Added mate-in-two detection via Stockfish mate distance and clamped bullet severity to low; ensured mate-in-two motifs labeled as mate.
+- Added Chess.com bullet fixture (mate-in-two) and new test coverage for low severity, best line/explanation, and position linkage.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_two_bullet.py`.
+- Seeded bullet fixtures into client/data and data DuckDBs with fresh checkpoints for UI verification.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_083_mate_in_two_bullet.js` (screenshot `verification/feature-083-mate-in-2-bullet-low-severity-2026-01-26.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_083_mate_in_two_bullet_low.js` (screenshot `verification/feature-083-mate-in-2-bullet-low-severity-ci-2026-01-26.png`).
+- Tests + lint: `make check`.
+- Updated feature_list.json: feature "Stockfish detects mate in 2 with low severity in bullet" marked passes=true.
+- Current passing count: 83.

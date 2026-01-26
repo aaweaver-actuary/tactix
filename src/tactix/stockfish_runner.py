@@ -55,6 +55,7 @@ class EngineResult:
     best_move: Optional[chess.Move]
     score_cp: int
     depth: int
+    mate_in: Optional[int] = None
 
 
 class StockfishEngine(AbstractContextManager["StockfishEngine"]):
@@ -165,17 +166,19 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
             pv = info_primary.get("pv")
             best_move = pv[0] if isinstance(pv, list) and pv else None
             score_obj = info_primary.get("score")
-            score = (
-                score_obj.pov(board.turn).score(mate_score=100000)
-                if score_obj is not None
-                else 0
-            )
+            mate_in = None
+            score = 0
+            if score_obj is not None:
+                pov_score = score_obj.pov(board.turn)
+                mate_in = pov_score.mate()
+                score = pov_score.score(mate_score=100000)
             depth_value = info_primary.get("depth")
             depth = int(depth_value) if isinstance(depth_value, (int, float)) else 0
             return EngineResult(
                 best_move=best_move,
                 score_cp=int(score or 0),
                 depth=depth,
+                mate_in=mate_in,
             )
 
         # Fallback heuristic based on material balance

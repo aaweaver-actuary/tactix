@@ -110,6 +110,19 @@ def _is_fast_profile(settings: Settings | None) -> bool:
     }
 
 
+def _is_bullet_profile(settings: Settings | None) -> bool:
+    if settings is None:
+        return False
+    source = (settings.source or "").strip().lower()
+    if source == "chesscom":
+        profile = (
+            settings.chesscom_profile or settings.chesscom_time_class or ""
+        ).strip()
+        return profile.lower() == "bullet"
+    profile = (settings.lichess_profile or settings.rapid_perf or "").strip()
+    return profile.lower() == "bullet"
+
+
 def analyze_position(
     position: Dict[str, object],
     engine: StockfishEngine,
@@ -126,10 +139,13 @@ def analyze_position(
     best_move = best_move_obj.uci() if best_move_obj else None
     base_cp = _score_from_pov(engine_result.score_cp, mover_color, board.turn)
     mate_in_one = False
+    mate_in_two = False
     if best_move_obj is not None:
         mate_board = motif_board.copy()
         mate_board.push(best_move_obj)
         mate_in_one = mate_board.is_checkmate()
+    if engine_result.mate_in is not None and engine_result.mate_in == 2:
+        mate_in_two = True
 
     try:
         user_move = chess.Move.from_uci(user_move_uci)
@@ -146,12 +162,16 @@ def analyze_position(
 
     result, delta = _classify_result(best_move, user_move_uci, base_cp, after_cp)
     motif = _infer_motif(motif_board, engine_result.best_move)
+    if mate_in_one or mate_in_two:
+        motif = "mate"
     severity = abs(delta) / 100.0
     if mate_in_one and result == "found":
         if _is_fast_profile(settings):
             severity = max(severity, 1.5)
         else:
             severity = min(severity, 1.0)
+    if mate_in_two and result == "found" and _is_bullet_profile(settings):
+        severity = min(severity, 1.0)
 
     best_san, explanation = format_tactic_explanation(fen, best_move or "", motif)
 

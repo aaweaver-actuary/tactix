@@ -622,3 +622,13 @@ Session 2026-01-26 (feature 067 – Chess.com correspondence white-to-move extra
 - UI verification: `TACTIX_SCREENSHOT_NAME=feature-067-chesscom-correspondence-white-to-move-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_051_chesscom_correspondence_incremental.js`.
 - UI verification screenshots: `verification/feature-067-chesscom-correspondence-white-to-move-2026-01-26.png`.
 - Frontend dev server running on port 5173 (terminal ID: 1c03befb-d692-4ede-b2b7-6c55da0b65ce).
+
+Session 2026-01-26 (feature 068 – Chess.com bullet black-to-move extraction)
+- Regression UI verification: `TACTIX_SCREENSHOT_NAME=regression-001-lichess-2026-01-26g.png node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js`, `TACTIX_SCREENSHOT_NAME=regression-016-auth-2026-01-26b.png node /Users/andy/tactix/verification/puppeteer_regression_feature_016_auth.js`.
+- Updated Chess.com bullet side-to-move filter to record black-to-move positions.
+- Updated Chess.com bullet extractor tests for black-to-move filtering (ply/move/clocks/legality) and skip-white-user behavior.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_position_extractor.py`.
+- UI verification: `TACTIX_SCREENSHOT_NAME=feature-068-chesscom-bullet-black-to-move-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_042_chesscom_bullet_incremental.js`.
+- UI verification screenshot: `verification/feature-068-chesscom-bullet-black-to-move-2026-01-26.png`.
+- Updated feature_list.json: feature "Position extraction records black to move for Chess.com bullet" marked passes=true.
+- Current passing count: 67.

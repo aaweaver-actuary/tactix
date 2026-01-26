@@ -793,3 +793,10 @@ Session 2026-01-26 (feature 081 – Stockfish mate-in-1 high severity for classi
 - UI verification (CI): `TACTIX_SCREENSHOT_NAME=feature-081-mate-in-1-classical-high-severity-ci-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_081_mate_in_one_classical_high.js`.
 - UI verification screenshots: `verification/feature-081-mate-in-1-classical-high-severity-2026-01-26.png`, `verification/feature-081-mate-in-1-classical-high-severity-ci-2026-01-26.png`.
 - Updated feature_list.json: feature "Stockfish detects mate in 1 with high severity in classical" marked passes=true.
+
+Session 2026-01-26 (orchestrator follow-up)
+- Regression UI verification (features 001/016):
+	- `TACTIX_SCREENSHOT_NAME=regression-001-lichess-2026-01-26-ui.png node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-016-auth-2026-01-26-ui.png node /Users/andy/tactix/verification/puppeteer_regression_feature_016_auth.js`
+	- Screenshots: `verification/regression-001-lichess-2026-01-26-ui.png`, `verification/regression-016-auth-2026-01-26-ui.png`.
+- Reverted unintended CORS credentials change in API to keep CORS config unchanged.

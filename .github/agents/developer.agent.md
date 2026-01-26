@@ -258,7 +258,7 @@ leave the code base in a clean state before terminating the session (Step 10).
 
 **Clean up unused resources before ending the session.** This includes closing any terminal tabs and ensuring no background processes are left running.
 
-**You should not be running `npm run dev`. The development server should be started using Docker Compose as described in Step 2.**
+**You should not be running `npm run dev` or similar commands in `uvicorn`. The development server and backend services should be started using Docker Compose as described in Step 2.**
 
 ---
 

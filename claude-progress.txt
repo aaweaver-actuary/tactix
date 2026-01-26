@@ -574,3 +574,12 @@ Session 2026-01-26 (feature 063 – Chess.com bullet white-to-move extraction)
 - UI verification screenshot: `verification/feature-063-chesscom-bullet-white-to-move-2026-01-26.png`.
 - Updated feature_list.json: feature "Position extraction records white to move for Chess.com bullet" marked passes=true after verification.
 - Current passing count: 63.
+
+Session 2026-01-26 (feature 065 – Chess.com rapid white-to-move extraction)
+- Updated pipeline side-to-move filter to treat Chess.com rapid as white-to-move and added rapid extractor tests (white-only + skip black user).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_position_extractor.py`.
+- Precheck UI verification: `TACTIX_SCREENSHOT_NAME=regression-001-lichess-2026-01-26e.png node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js`, `TACTIX_SCREENSHOT_NAME=regression-002-chesscom-2026-01-26e.png node /Users/andy/tactix/verification/puppeteer_feature_044_chesscom_blitz_incremental.js`.
+- UI verification: `TACTIX_SCREENSHOT_NAME=feature-065-chesscom-rapid-white-to-move-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_046_chesscom_rapid_incremental.js`.
+- UI verification screenshots: `verification/regression-001-lichess-2026-01-26e.png`, `verification/regression-002-chesscom-2026-01-26e.png`, `verification/feature-065-chesscom-rapid-white-to-move-2026-01-26.png`.
+- Updated feature_list.json: feature "Position extraction records white to move for Chess.com rapid" marked passes=true after verification.
+- Current passing count: 65.

@@ -257,7 +257,7 @@ leave the code base in a clean state before terminating the session (Step 10).
 
 **Clean up unused resources before ending the session.** This includes closing any terminal tabs and ensuring no background processes are left running.
 
-**You are not allowed to write to system directories.** Only modify files within the project directory. This is to ensure system integrity and security, and includes temporary files.
+**You are not allowed to write to system directories.** Only modify files within the project directory. This is to ensure system integrity and security, and includes temporary files and logs, which should be stored within the project directory structure.
 
 ---
 

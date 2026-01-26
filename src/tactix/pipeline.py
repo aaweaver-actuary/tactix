@@ -309,7 +309,9 @@ def run_daily_game_sync(
                 last_timestamp_value = int(cursor_value.split(":", 1)[0])
             except ValueError:
                 last_timestamp_value = 0
-        chesscom_result = fetch_chesscom_games(settings, cursor_value)
+        chesscom_result = fetch_chesscom_games(
+            settings, cursor_value, full_history=backfill_mode
+        )
         raw_games = [cast(Mapping[str, object], row) for row in chesscom_result.games]
         next_cursor = chesscom_result.next_cursor or cursor_value
         last_timestamp_value = chesscom_result.last_timestamp_ms

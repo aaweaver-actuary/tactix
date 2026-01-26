@@ -190,7 +190,9 @@ def _fetch_archive_pages(settings: Settings, archive_url: str) -> List[dict]:
     return games
 
 
-def _fetch_remote_games(settings: Settings, since_ms: int) -> List[dict]:
+def _fetch_remote_games(
+    settings: Settings, since_ms: int, *, full_history: bool = False
+) -> List[dict]:
     url = ARCHIVES_URL.format(username=settings.user)
     try:
         archives_resp = _get_with_backoff(settings, url, timeout=15)
@@ -204,8 +206,9 @@ def _fetch_remote_games(settings: Settings, since_ms: int) -> List[dict]:
         return []
 
     games: List[dict] = []
+    archives_to_fetch = archives if full_history else archives[-6:]
     # iterate newest to oldest but stop once we cross the checkpoint
-    for archive_url in reversed(archives[-6:]):
+    for archive_url in reversed(archives_to_fetch):
         try:
             archive_games = _fetch_archive_pages(settings, archive_url)
         except Exception as exc:  # noqa: BLE001
@@ -263,12 +266,12 @@ def _filter_by_cursor(rows: List[dict], cursor: str | None) -> List[dict]:
 
 
 def fetch_incremental_games(
-    settings: Settings, cursor: str | None
+    settings: Settings, cursor: str | None, *, full_history: bool = False
 ) -> ChesscomFetchResult:
     if not settings.chesscom_token and settings.chesscom_use_fixture_when_no_token:
         raw_games = _load_fixture_games(settings, since_ms=0)
     else:
-        raw_games = _fetch_remote_games(settings, since_ms=0)
+        raw_games = _fetch_remote_games(settings, since_ms=0, full_history=full_history)
 
     games = _filter_by_cursor(raw_games, cursor)
     for game in games:

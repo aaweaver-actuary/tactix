@@ -1,0 +1,22 @@
+[Event "Chess.com Classical Fixture 1"]
+[Site "https://www.chess.com/game/live/9988776655"]
+[UTCDate "2024.07.05"]
+[UTCTime "18:45:00"]
+[White "chesscom"]
+[Black "classicalbot"]
+[TimeControl "1800"]
+[Result "1-0"]
+
+1. d4 { [%clk 0:30:00] } d5 { [%clk 0:30:00] } 2. Nf3 { [%clk 0:29:50] } Nf6 { [%clk 0:29:50] } 3. c4 { [%clk 0:29:40] } e6 { [%clk 0:29:42] } 4. Nc3 { [%clk 0:29:30] } Bb4 { [%clk 0:29:35] } 5. Bg5 { [%clk 0:29:20] } O-O { [%clk 0:29:25] } 1-0
+
+
+[Event "Chess.com Classical Fixture 2"]
+[Site "https://www.chess.com/game/live/5544332211"]
+[UTCDate "2024.07.06"]
+[UTCTime "20:10:00"]
+[White "opponent"]
+[Black "chesscom"]
+[TimeControl "1800"]
+[Result "0-1"]
+
+1. e4 { [%clk 0:30:00] } e5 { [%clk 0:30:00] } 2. Nf3 { [%clk 0:29:50] } Nc6 { [%clk 0:29:50] } 3. Bb5 { [%clk 0:29:40] } a6 { [%clk 0:29:45] } 4. Ba4 { [%clk 0:29:30] } Nf6 { [%clk 0:29:35] } 5. O-O { [%clk 0:29:20] } Be7 { [%clk 0:29:25] } 0-1

@@ -44,6 +44,11 @@ class PipelineStateTests(unittest.TestCase):
         self.chesscom_rapid_fixture_path = (
             Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
         )
+        self.chesscom_classical_fixture_path = (
+            Path(__file__).resolve().parent
+            / "fixtures"
+            / "chesscom_classical_sample.pgn"
+        )
 
     def test_checkpoint_and_metrics_files_written(self) -> None:
         settings = Settings(
@@ -192,6 +197,42 @@ class PipelineStateTests(unittest.TestCase):
         self.assertIsNotNone(cursor_first)
 
         second = run_daily_game_sync(settings, profile="rapid")
+        cursor_second = read_cursor(settings.checkpoint_path)
+
+        self.assertEqual(second["fetched_games"], 0)
+        self.assertEqual(second["positions"], 0)
+        self.assertEqual(second["tactics"], 0)
+        self.assertEqual(cursor_second, cursor_first)
+
+    def test_chesscom_classical_incremental_sync_uses_profile_checkpoint(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_profile="classical",
+            duckdb_path=self.tmp_dir / "tactix_chesscom_classical.duckdb",
+            checkpoint_path=self.tmp_dir / "chesscom_since.txt",
+            chesscom_checkpoint_path=self.tmp_dir / "chesscom_since.txt",
+            metrics_version_file=self.tmp_dir / "metrics_chesscom.txt",
+            fixture_pgn_path=self.chesscom_classical_fixture_path,
+            chesscom_fixture_pgn_path=self.chesscom_classical_fixture_path,
+            chesscom_use_fixture_when_no_token=True,
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=50,
+            stockfish_depth=8,
+            stockfish_multipv=2,
+        )
+
+        first = run_daily_game_sync(settings, profile="classical")
+        self.assertGreater(first["fetched_games"], 0)
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("chesscom_since_classical.txt")
+        )
+        self.assertEqual(
+            settings.chesscom_fixture_pgn_path.name, "chesscom_classical_sample.pgn"
+        )
+        cursor_first = read_cursor(settings.checkpoint_path)
+        self.assertIsNotNone(cursor_first)
+
+        second = run_daily_game_sync(settings, profile="classical")
         cursor_second = read_cursor(settings.checkpoint_path)
 
         self.assertEqual(second["fetched_games"], 0)

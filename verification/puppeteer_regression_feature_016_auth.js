@@ -22,7 +22,7 @@ const screenshotName =
   });
 
   try {
-    await page.goto(targetUrl, { waitUntil: 'networkidle0' });
+    await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForSelector('[data-testid="filter-source"]', {
       timeout: 60000,
     });

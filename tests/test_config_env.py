@@ -138,6 +138,22 @@ class ConfigEnvTests(unittest.TestCase):
         )
         self.assertEqual(settings.chesscom_time_class, "rapid")
 
+    def test_get_settings_applies_chesscom_classical_profile_paths(self) -> None:
+        settings = config.get_settings(source="chesscom", profile="classical")
+
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("chesscom_since_classical.txt")
+        )
+        self.assertTrue(
+            settings.analysis_checkpoint_path.name.endswith(
+                "analysis_checkpoint_chesscom_classical.json"
+            )
+        )
+        self.assertTrue(
+            settings.fixture_pgn_path.name.endswith("chesscom_classical_sample.pgn")
+        )
+        self.assertEqual(settings.chesscom_time_class, "classical")
+
 
 if __name__ == "__main__":
     unittest.main()

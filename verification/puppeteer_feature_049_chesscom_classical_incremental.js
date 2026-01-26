@@ -4,7 +4,8 @@ const puppeteer = require('../client/node_modules/puppeteer');
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const screenshotName =
-  process.env.TACTIX_SCREENSHOT_NAME || 'regression-001-lichess-2026-01-25.png';
+  process.env.TACTIX_SCREENSHOT_NAME ||
+  'feature-049-chesscom-classical-incremental-2026-01-25.png';
 
 (async () => {
   const browser = await puppeteer.launch({ headless: 'new' });
@@ -26,16 +27,22 @@ const screenshotName =
     await page.waitForSelector('[data-testid="filter-source"]', {
       timeout: 60000,
     });
-    await page.select('[data-testid="filter-source"]', 'lichess');
 
-    const runButtonSelector =
-      'div.card.p-6 > div.flex.gap-3 > button:nth-of-type(1)';
-    await page.waitForSelector(runButtonSelector, { timeout: 60000 });
-    await page.click(runButtonSelector);
+    await page.select('[data-testid="filter-source"]', 'chesscom');
+    await page.waitForSelector('[data-testid="filter-chesscom-profile"]', {
+      timeout: 60000,
+    });
+    await page.select('[data-testid="filter-chesscom-profile"]', 'classical');
+
+    await page.waitForSelector('[data-testid="action-run"]', {
+      timeout: 60000,
+    });
+    await page.click('[data-testid="action-run"]');
 
     await page.waitForSelector('[data-testid="motif-breakdown"]', {
       timeout: 120000,
     });
+    await page.waitForSelector('table');
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     const outDir = path.resolve(__dirname);
@@ -60,7 +67,7 @@ const screenshotName =
     if (consoleErrors.length) {
       console.error('Console errors detected:', consoleErrors);
     }
-    console.error('Feature 001 regression verification failed:', err);
+    console.error('Feature 049 verification failed:', err);
     process.exit(1);
   } finally {
     await browser.close();

@@ -198,6 +198,11 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
 
+Session 2026-01-25 (regression verification – features 001, 016, 028)
+- UI regression checks run via Puppeteer for feature 001 (Lichess pipeline), feature 016 (API auth), and feature 028 (practice next unseen) with no console errors.
+- Screenshots: `verification/regression-001-lichess-2026-01-25.png`, `verification/regression-016-auth-2026-01-25.png`, `verification/feature-028-practice-next-unseen.png`.
+- Frontend dev server running on http://localhost:5173 (terminal ID: d7c1ed2d-af41-4068-ba50-635e6fb08098).
+
 Session 2026-01-25 (coverage ≥80%):
 - Added unit tests for PracticeAttemptRequest field types, DuckDB WAL recovery gating, non-legacy migration upgrade, and clock parsing/pytest fallback in position extractor.
 - Aligned MetricsTrends test labels with UI copy (7g/30g found).
@@ -413,3 +418,15 @@ Session 2026-01-25 (feature 046 – Chess.com rapid incremental sync)
 - UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_046_chesscom_rapid_incremental.js`.
 - UI verification screenshot: `verification/feature-046-chesscom-rapid-incremental-2026-01-25.png`.
 - Updated feature_list.json: feature "Ingestion Chess.com rapid games via incremental sync" marked passes=true.
+
+Session 2026-01-25 (regression verification)
+- Verified features 001, 016, and 028 via Puppeteer UI automation; no regressions observed.
+- UI regression screenshots: `verification/regression-001-lichess-2026-01-25.png`, `verification/regression-016-auth-2026-01-25.png`, `verification/feature-028-practice-next-unseen.png`.
+
+Session 2026-01-25 (feature 049 – Chess.com classical incremental sync)
+- Added Chess.com classical fixture PGNs and profile-specific tests (config paths, client time_class filter, pipeline checkpoint).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_config_env.py tests/test_chesscom_client.py tests/test_pipeline_state.py`.
+- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_049_chesscom_classical_incremental.js`.
+- UI verification screenshot: `verification/feature-049-chesscom-classical-incremental-2026-01-25.png`.
+- Updated feature_list.json: feature "Ingestion Chess.com classical games via incremental sync" marked passes=true.
+- Current passing count: 49.

@@ -800,3 +800,14 @@ Session 2026-01-26 (orchestrator follow-up)
 	- `TACTIX_SCREENSHOT_NAME=regression-016-auth-2026-01-26-ui.png node /Users/andy/tactix/verification/puppeteer_regression_feature_016_auth.js`
 	- Screenshots: `verification/regression-001-lichess-2026-01-26-ui.png`, `verification/regression-016-auth-2026-01-26-ui.png`.
 - Reverted unintended CORS credentials change in API to keep CORS config unchanged.
+
+Session 2026-01-26 (feature 082 – Stockfish mate-in-1 high severity for correspondence)
+- Verification tests (randomized 12 passing suites): `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_config_env.py tests/test_stockfish_checksum.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_mate_in_one_bullet.py tests/test_dashboard_filters.py tests/test_practice_queue.py tests/test_mate_in_one_blitz.py tests/test_practice_next.py tests/test_api_auth.py tests/test_metrics_refresh.py tests/test_lichess_client.py` (all passed).
+- Elevated mate-in-one severity for correspondence profiles and updated correspondence test to assert high severity with settings passed into analysis.
+- Added Puppeteer verification script with JS evaluation for correspondence high severity.
+- Seeded correspondence fixture data into server DuckDB for UI verification.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_one_correspondence.py`, `make check`.
+- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_082_mate_in_one_correspondence_high.js`.
+- UI verification screenshot: `verification/feature-082-mate-in-1-correspondence-high-severity-2026-01-26.png`.
+- Updated feature_list.json: feature "Stockfish detects mate in 1 with high severity in correspondence" marked passes=true.
+- Current passing count: 82.

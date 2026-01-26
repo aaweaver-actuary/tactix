@@ -59,7 +59,7 @@ for the application you're building.
 
 ### STEP 2: START SERVERS (IF NOT RUNNING)
 
-Prefer Docker Compose for a consistent local setup unless explicitly asked to run services directly.
+Use Docker Compose for a consistent local setup.
 
 ```bash
 # Docker (recommended)
@@ -72,26 +72,10 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080
 ```
 
 Notes:
+
 - Airflow may take 1–2 minutes to become available on first boot.
 - Services/ports: API 8000, UI 5173, Airflow 8080 (network: tactix-net).
 - Log notable orchestration events to tmp-logs/.
-
-If `init.sh` exists, run it:
-
-```bash
-chmod +x init.sh
-./init.sh
-```
-
-Otherwise, start servers manually and document the process. Always keep the frontend dev server running for monitoring on port 5173 and report the terminal ID/URL in your notes:
-
-```bash
-# frontend (keep alive for the session)
-cd client && pnpm dev --host --port 5173
-
-# backend (if not started by init.sh)
-cd server && source ../.venv/bin/activate && uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
 
 ### STEP 3: VERIFICATION TEST (CRITICAL!)
 
@@ -100,7 +84,7 @@ cd server && source ../.venv/bin/activate && uvicorn main:app --reload --host 0.
 The previous session may have introduced bugs. Before implementing anything
 new, you MUST run verification tests.
 
-Run 1-2 of the feature tests marked as `"passes": true` that are most core to the app's functionality to verify they still work.
+Randomly select and run 10-15 of the feature tests marked as `"passes": true` that are most core to the app's functionality to verify they still work.
 For example, if this were a chat app, you should perform a test that logs into the app, sends a message, and gets a response.
 
 **If you find ANY issues (functional or visual):**
@@ -154,6 +138,7 @@ Use browser automation tools:
 - Take screenshots to verify visual appearance
 - Check for console errors in browser
 - Verify complete user workflows end-to-end
+- Add a secondary automated integration test using JavaScript evaluation after manual testing to be used in CI/CD
 
 **DON'T:**
 
@@ -161,6 +146,7 @@ Use browser automation tools:
 - Use JavaScript evaluation to bypass UI (no shortcuts)
 - Skip visual verification
 - Mark tests passing without thorough verification
+- Only test backend APIs without UI interaction
 
 ### STEP 7: UPDATE feature_list.json (CAREFULLY!)
 
@@ -267,7 +253,9 @@ You should end up with two sets of tests that check the same thing for each feat
 **You have unlimited time.** Take as long as needed to get it right. The most important thing is that you
 leave the code base in a clean state before terminating the session (Step 10).
 
-**Clean up unused resources before ending the session.** This includes closing any terminal tabs and ensuring no background processes are left running. The one exception is to keep the frontend development server running on port 5173 for easier monitoring of changes in future sessions.
+**You _do not_ have unlimited resources.** It is important to take steps to ensure that the project does not get stuck. Always run network requests using a max-timeout and retry strategy to avoid hanging indefinitely. Do not leave services or terminals running unnecessarily. Always document the current state before stopping.
+
+**Clean up unused resources before ending the session.** This includes closing any terminal tabs and ensuring no background processes are left running.
 
 ---
 

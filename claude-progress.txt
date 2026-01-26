@@ -556,3 +556,13 @@ Session 2026-01-26 (feature 062 – Lichess correspondence black-to-move extract
 - UI verification screenshot: `verification/feature-062-lichess-correspondence-black-to-move-2026-01-26.png`.
 - Updated feature_list.json: feature "Position extraction records black to move for Lichess correspondence" marked passes=true after verification.
 - Current passing count: 62.
+
+Session 2026-01-26 (feature 063 – Chess.com bullet white-to-move extraction)
+- Added Chess.com bullet white-to-move filtering in pipeline and extraction tests for white-only positions plus skip behavior for black user.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_position_extractor.py`.
+- Precheck UI verification: `node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js`, `node /Users/andy/tactix/verification/puppeteer_feature_044_chesscom_blitz_incremental.js`.
+- Precheck UI verification screenshots: `verification/precheck-063-lichess-2026-01-26.png`, `verification/precheck-063-chesscom-2026-01-26b.png`.
+- UI verification: `TACTIX_SOURCE=chesscom TACTIX_CHESSCOM_PROFILE=bullet node /Users/andy/tactix/verification/puppeteer_dashboard.js`.
+- UI verification screenshot: `verification/feature-063-chesscom-bullet-white-to-move-2026-01-26.png`.
+- Updated feature_list.json: feature "Position extraction records white to move for Chess.com bullet" marked passes=true after verification.
+- Current passing count: 63.

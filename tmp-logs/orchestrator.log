@@ -10,3 +10,5 @@
 [2026-01-26] Precheck UI verification: puppeteer_regression_feature_001.js (precheck-001-lichess-2026-01-26.png), puppeteer_feature_044_chesscom_blitz_incremental.js (precheck-002-chesscom-2026-01-26.png).
 [2026-01-26] Feature 061 UI verification: puppeteer_feature_037_lichess_classical_incremental.js screenshot verification/feature-061-lichess-classical-black-to-move-2026-01-26.png
 [2026-01-26] Precheck UI verification (redo): puppeteer_regression_feature_001.js (precheck-001-lichess-2026-01-26a.png), puppeteer_feature_044_chesscom_blitz_incremental.js (precheck-002-chesscom-2026-01-26a.png).
+[2026-01-26] Precheck UI verification: puppeteer_regression_feature_001.js (precheck-063-lichess-2026-01-26.png), puppeteer_feature_044_chesscom_blitz_incremental.js (precheck-063-chesscom-2026-01-26b.png)
+[2026-01-26] Feature 063 UI verification: puppeteer_dashboard.js (Chess.com bullet) screenshot verification/feature-063-chesscom-bullet-white-to-move-2026-01-26.png

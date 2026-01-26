@@ -922,3 +922,13 @@ Session 2026-01-26 (feature 092 – Stockfish mate-in-2 high severity for corres
 - UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_092_mate_in_two_correspondence_high_ci.js` (screenshot `verification/feature-092-mate-in-2-correspondence-high-severity-ci-2026-01-26.png`).
 - Updated feature_list.json: feature "Stockfish detects mate in 2 with high severity in correspondence" marked passes=true.
 - Current passing count: 92.
+
+Session 2026-01-26 (feature 093 – Stockfish fork low severity in bullet)
+- Added fork detection for checking forks and capped bullet fork severity in tactics_analyzer.
+- Added Chess.com bullet fixture 5 (checking knight fork) and extended bullet tests to cover fork severity, best line/explanation persistence, and position linkage.
+- Seeded chesscom bullet fixtures into data/tactix.duckdb with chesscom user to expose fork tactic for UI verification.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_093_fork_bullet.js` (screenshot `verification/feature-093-fork-bullet-low-severity-2026-01-26.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_093_fork_bullet_ci.js` (screenshot `verification/feature-093-fork-bullet-low-severity-ci-2026-01-26.png`).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_one_bullet.py`, `make check`.
+- Updated feature_list.json: feature "Stockfish detects fork with low severity in bullet" marked passes=true.
+- Current passing count: 93.

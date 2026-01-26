@@ -62,14 +62,22 @@ def _infer_motif(board: chess.Board, best_move: chess.Move | None) -> str:
 
     if board_after.is_checkmate():
         return "mate"
-    if board_after.is_check():
-        return "check"
 
     piece = board.piece_at(best_move.from_square)
-    if piece and piece.piece_type == chess.KNIGHT:
+    if piece and piece.piece_type in (
+        chess.QUEEN,
+        chess.ROOK,
+        chess.BISHOP,
+        chess.KNIGHT,
+    ):
         forks = _count_high_value_targets(board_after, best_move.to_square, mover_color)
         if forks >= 2:
             return "fork"
+        if forks >= 1 and board_after.is_check():
+            return "fork"
+
+    if board_after.is_check():
+        return "check"
 
     if board.is_capture(best_move):
         if not board.is_attacked_by(not mover_color, best_move.to_square):
@@ -231,6 +239,8 @@ def analyze_position(
             or _is_correspondence_profile(settings)
         ):
             severity = max(severity, 1.5)
+    if motif == "fork" and _is_bullet_profile(settings):
+        severity = min(severity, 1.0)
 
     best_san, explanation = format_tactic_explanation(fen, best_move or "", motif)
 

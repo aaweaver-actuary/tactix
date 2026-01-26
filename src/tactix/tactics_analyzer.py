@@ -222,18 +222,16 @@ def analyze_position(
             severity = max(severity, 1.5)
         else:
             severity = min(severity, 1.0)
-    if (
-        mate_in_two
-        and result == "found"
-        and (
-            _is_bullet_profile(settings)
-            or _is_blitz_profile(settings)
+    if mate_in_two and result == "found":
+        if _is_bullet_profile(settings):
+            severity = max(severity, 1.5)
+        elif (
+            _is_blitz_profile(settings)
             or _is_rapid_profile(settings)
             or _is_classical_profile(settings)
             or _is_correspondence_profile(settings)
-        )
-    ):
-        severity = min(severity, 1.0)
+        ):
+            severity = min(severity, 1.0)
 
     best_san, explanation = format_tactic_explanation(fen, best_move or "", motif)
 

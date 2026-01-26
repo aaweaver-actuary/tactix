@@ -866,3 +866,14 @@ Session 2026-01-26 (feature 087 – Stockfish mate-in-2 low severity for corresp
 - Tests + lint: `make check`.
 - Updated feature_list.json: feature "Stockfish detects mate in 2 with low severity in correspondence" marked passes=true.
 - Current passing count: 87.
+
+Session 2026-01-26 (feature 088 – Stockfish mate-in-2 high severity for bullet)
+- Verification tests (randomized 12 passing suites): `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_airflow_dag.py tests/test_api_auth.py tests/test_api_profile.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_position_extractor.py tests/test_tactics_analyzer.py tests/test_stockfish_checksum.py tests/test_pipeline_state.py tests/test_metrics_refresh.py tests/test_practice_next.py tests/test_practice_queue.py`.
+- Updated mate-in-two bullet severity clamp to high severity and adjusted bullet test expectations.
+- Added Puppeteer scripts for feature 088 manual + CI verification.
+- Seeded bullet mate-in-two fixture into data DuckDB via `tmp-logs/update_bullet_mate2_high.py` (includes raw PGN metadata for dashboard filtering).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_two_bullet.py`, `make check`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_088_mate_in_two_bullet_high.js` (screenshot `verification/feature-088-mate-in-2-bullet-high-severity-2026-01-26.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_088_mate_in_two_bullet_high_ci.js` (screenshot `verification/feature-088-mate-in-2-bullet-high-severity-ci-2026-01-26.png`).
+- Updated feature_list.json: feature "Stockfish detects mate in 2 with high severity in bullet" marked passes=true.
+- Current passing count: 88.

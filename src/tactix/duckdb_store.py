@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS positions (
     uci TEXT,
     san TEXT,
     clock_seconds DOUBLE,
+    is_legal BOOLEAN,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 """
@@ -125,7 +126,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 );
 """
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 
 def get_connection(db_path: Path) -> duckdb.DuckDBPyConnection:
@@ -250,11 +251,16 @@ def _migration_add_training_attempt_latency(conn: duckdb.DuckDBPyConnection) -> 
     _ensure_column(conn, "training_attempts", "latency_ms", "BIGINT")
 
 
+def _migration_add_position_legality(conn: duckdb.DuckDBPyConnection) -> None:
+    _ensure_column(conn, "positions", "is_legal", "BOOLEAN")
+
+
 _SCHEMA_MIGRATIONS = [
     (1, _migration_base_tables),
     (2, _migration_raw_pgns_versioning),
     (3, _migration_add_columns),
     (4, _migration_add_training_attempt_latency),
+    (5, _migration_add_position_legality),
 ]
 
 
@@ -518,8 +524,8 @@ def insert_positions(
             position_id = start_id + idx
             conn.execute(
                 """
-                INSERT INTO positions (position_id, game_id, user, source, fen, ply, move_number, side_to_move, uci, san, clock_seconds)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO positions (position_id, game_id, user, source, fen, ply, move_number, side_to_move, uci, san, clock_seconds, is_legal)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     position_id,
@@ -533,6 +539,7 @@ def insert_positions(
                     row["uci"],
                     row.get("san", ""),
                     row.get("clock_seconds"),
+                    row.get("is_legal", True),
                 ),
             )
             position_ids.append(position_id)

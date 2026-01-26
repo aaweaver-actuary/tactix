@@ -454,3 +454,10 @@ Session 2026-01-25 (feature 052 – Chess.com correspondence full backfill sync)
 - UI verification screenshot: `verification/feature-052-chesscom-correspondence-backfill-2026-01-25.png`.
 - Updated feature_list.json: feature "Ingestion Chess.com correspondence games via full backfill sync" marked passes=true.
 - Current passing count: 52.
+Session 2026-01-26 (feature 053 – Lichess bullet white-to-move extraction)
+- Added side-to-move filter + legality flag to position extractor (Python + Rust) and persisted `is_legal` in DuckDB schema.
+- Added Lichess bullet fixture coverage for white-to-move extraction and legality flag; black-user bullet game now skipped under white filter.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_position_extractor.py`.
+- Precheck UI regression: `node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js` (passed after starting API/Frontend).
+- Updated feature_list.json: feature "Position extraction records white to move for Lichess bullet" marked passes=true.
+- Current passing count: 53.

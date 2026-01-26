@@ -40,12 +40,20 @@ def _read_castling_games() -> list[str]:
     ]
 
 
+def _read_lichess_bullet_games() -> list[str]:
+    path = Path(__file__).resolve().parent / "fixtures" / "lichess_bullet_sample.pgn"
+    return [
+        chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
+    ]
+
+
 class PositionExtractorTests(unittest.TestCase):
     def setUp(self) -> None:
         self.games = _read_fixture_games()
         self.chesscom_games = _read_chesscom_games()
         self.promotion_en_passant_games = _read_promotion_en_passant_games()
         self.castling_games = _read_castling_games()
+        self.lichess_bullet_games = _read_lichess_bullet_games()
 
     def test_extracts_only_user_to_move_positions(self) -> None:
         pgn = self.games[0]
@@ -92,6 +100,38 @@ class PositionExtractorTests(unittest.TestCase):
         self.assertEqual(first["uci"], "d7d5")
         self.assertEqual(first["san"], "d5")
         self.assertEqual(first["clock_seconds"], 300)
+
+    def test_extracts_lichess_bullet_white_to_move_positions(self) -> None:
+        pgn = self.lichess_bullet_games[0]
+        positions = extract_positions(
+            pgn,
+            user="andy_andy_andy",
+            source="lichess",
+            game_id="bullet1",
+            side_to_move_filter="white",
+        )
+        self.assertGreater(len(positions), 0)
+        self.assertTrue(all(pos["side_to_move"] == "white" for pos in positions))
+
+        first = positions[0]
+        self.assertEqual(first["ply"], 0)
+        self.assertEqual(first["move_number"], 1)
+        self.assertEqual(first["side_to_move"], "white")
+        self.assertEqual(first["uci"], "e2e4")
+        self.assertEqual(first["san"], "e4")
+        self.assertEqual(first["clock_seconds"], 60)
+        self.assertTrue(first["is_legal"])
+
+    def test_lichess_bullet_white_filter_skips_black_user(self) -> None:
+        pgn = self.lichess_bullet_games[1]
+        positions = extract_positions(
+            pgn,
+            user="andy_andy_andy",
+            source="lichess",
+            game_id="bullet2",
+            side_to_move_filter="white",
+        )
+        self.assertEqual(positions, [])
 
     def test_non_user_game_is_skipped(self) -> None:
         pgn = self.games[0]

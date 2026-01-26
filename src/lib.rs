@@ -20,6 +20,7 @@ struct PositionRecord {
     uci: String,
     san: String,
     clock_seconds: Option<f64>,
+    is_legal: bool,
 }
 
 #[derive(Default, Debug)]
@@ -46,14 +47,21 @@ struct ExtractVisitor {
     user: String,
     source: String,
     game_id_override: Option<String>,
+    side_to_move_filter: Option<Color>,
 }
 
 impl ExtractVisitor {
-    fn new(user: &str, source: &str, game_id: Option<&str>) -> Self {
+    fn new(
+        user: &str,
+        source: &str,
+        game_id: Option<&str>,
+        side_to_move_filter: Option<Color>,
+    ) -> Self {
         Self {
             user: user.to_string(),
             source: source.to_string(),
             game_id_override: game_id.map(|value| value.to_string()),
+            side_to_move_filter,
         }
     }
 }
@@ -138,10 +146,12 @@ impl Visitor for ExtractVisitor {
         };
 
         if let Some(color) = movetext.user_color {
-            if movetext.position.turn() == color {
+            let turn = movetext.position.turn();
+            let matches_filter = self.side_to_move_filter.is_none_or(|filter| filter == turn);
+            if turn == color && matches_filter {
                 let ply = movetext.ply;
                 let move_number = ply / 2 + 1;
-                let side_to_move = if movetext.position.turn() == Color::White {
+                let side_to_move = if turn == Color::White {
                     "white"
                 } else {
                     "black"
@@ -160,6 +170,7 @@ impl Visitor for ExtractVisitor {
                     uci,
                     san,
                     clock_seconds: None,
+                    is_legal: true,
                 };
                 movetext.positions.push(record);
                 movetext.last_position_index = Some(movetext.positions.len() - 1);
@@ -231,15 +242,27 @@ fn initial_ply(position: &Chess) -> u32 {
     base + offset
 }
 
+fn normalize_side_filter(value: Option<&str>) -> Option<Color> {
+    let normalized = value?.trim().to_lowercase();
+    match normalized.as_str() {
+        "white" => Some(Color::White),
+        "black" => Some(Color::Black),
+        _ => None,
+    }
+}
+
 #[pyfunction]
+#[pyo3(signature = (pgn, user, source, game_id=None, side_to_move_filter=None))]
 fn extract_positions(
     pgn: &str,
     user: &str,
     source: &str,
     game_id: Option<&str>,
+    side_to_move_filter: Option<&str>,
 ) -> PyResult<Vec<PyObject>> {
+    let side_filter = normalize_side_filter(side_to_move_filter);
     let mut reader = Reader::new(Cursor::new(pgn.as_bytes()));
-    let mut visitor = ExtractVisitor::new(user, source, game_id);
+    let mut visitor = ExtractVisitor::new(user, source, game_id, side_filter);
     let parsed = match reader.read_game(&mut visitor) {
         Ok(output) => output,
         Err(err) => {
@@ -271,6 +294,7 @@ fn extract_positions(
             dict.set_item("uci", record.uci)?;
             dict.set_item("san", record.san)?;
             dict.set_item("clock_seconds", record.clock_seconds)?;
+            dict.set_item("is_legal", record.is_legal)?;
             output.push(dict.into());
         }
         Ok(output)

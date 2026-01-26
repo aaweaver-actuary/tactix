@@ -92,9 +92,9 @@ def _is_fast_profile(settings: Settings | None) -> bool:
         profile = (
             settings.chesscom_profile or settings.chesscom_time_class or ""
         ).strip()
-        return profile.lower() in {"bullet", "blitz", "rapid"}
+        return profile.lower() in {"bullet", "blitz", "rapid", "classical"}
     profile = (settings.lichess_profile or settings.rapid_perf or "").strip()
-    return profile.lower() in {"bullet", "blitz", "rapid"}
+    return profile.lower() in {"bullet", "blitz", "rapid", "classical"}
 
 
 def analyze_position(

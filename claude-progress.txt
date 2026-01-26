@@ -770,3 +770,26 @@ Session 2026-01-26 (feature 079 – Stockfish mate-in-1 high severity for blitz)
 - Updated feature_list.json: feature "Stockfish detects mate in 1 with high severity in blitz" marked passes=true.
 - Current passing count: 79.
 - Next: proceed to feature 080 (high severity mate-in-1 rapid) and ensure schema migration applied to existing DBs.
+
+Session 2026-01-26 (feature 081 – Stockfish mate-in-1 high severity for classical)
+- Regression UI verification (10 passing features) before new work:
+	- `TACTIX_SCREENSHOT_NAME=regression-081-precheck-001-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-081-precheck-016-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_regression_feature_016_auth.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-081-precheck-028-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-081-precheck-031-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-081-precheck-033-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-081-precheck-037-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_037_lichess_classical_incremental.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-081-precheck-040-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_040_lichess_correspondence_incremental.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-081-precheck-044-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_044_chesscom_blitz_incremental.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-081-precheck-046-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_046_chesscom_rapid_incremental.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-081-precheck-049-2026-01-26b.png node /Users/andy/tactix/verification/puppeteer_feature_049_chesscom_classical_incremental.js`
+	- Screenshots: `verification/regression-081-precheck-001-2026-01-26.png`, `verification/regression-081-precheck-016-2026-01-26.png`, `verification/regression-081-precheck-028-2026-01-26.png`, `verification/regression-081-precheck-031-2026-01-26.png`, `verification/regression-081-precheck-033-2026-01-26.png`, `verification/regression-081-precheck-037-2026-01-26.png`, `verification/regression-081-precheck-040-2026-01-26.png`, `verification/regression-081-precheck-044-2026-01-26.png`, `verification/regression-081-precheck-046-2026-01-26.png`, `verification/regression-081-precheck-049-2026-01-26b.png`.
+- Fixed CORS regression surfaced during feature 049 verification by allowing credentials in API CORS middleware.
+- Elevated mate-in-one severity for classical profiles and updated classical test to assert high severity with settings passed into analysis.
+- Added manual Puppeteer verification script for feature 081 and a CI-oriented JS-eval script to assert API severity.
+- Refreshed classical fixture data into server DuckDB using a custom checkpoint to guarantee high-severity mate row.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_one_classical.py -q`, `make check`.
+- UI verification (manual): `TACTIX_SCREENSHOT_NAME=feature-081-mate-in-1-classical-high-severity-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_081_mate_in_one_classical.js`.
+- UI verification (CI): `TACTIX_SCREENSHOT_NAME=feature-081-mate-in-1-classical-high-severity-ci-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_081_mate_in_one_classical_high.js`.
+- UI verification screenshots: `verification/feature-081-mate-in-1-classical-high-severity-2026-01-26.png`, `verification/feature-081-mate-in-1-classical-high-severity-ci-2026-01-26.png`.
+- Updated feature_list.json: feature "Stockfish detects mate in 1 with high severity in classical" marked passes=true.

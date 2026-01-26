@@ -103,7 +103,7 @@ class SchemaMigrationTests(unittest.TestCase):
 
         migrate_schema(conn)
 
-        self.assertEqual(get_schema_version(conn), 4)
+        self.assertEqual(get_schema_version(conn), 5)
         columns = {
             row[1] for row in conn.execute("PRAGMA table_info('raw_pgns')").fetchall()
         }

@@ -83,8 +83,23 @@ def _infer_motif(board: chess.Board, best_move: chess.Move | None) -> str:
     return "initiative"
 
 
+def _is_bullet_profile(settings: Settings | None) -> bool:
+    if settings is None:
+        return False
+    source = (settings.source or "").strip().lower()
+    if source == "chesscom":
+        profile = (
+            settings.chesscom_profile or settings.chesscom_time_class or ""
+        ).strip()
+        return profile.lower() == "bullet"
+    profile = (settings.lichess_profile or settings.rapid_perf or "").strip()
+    return profile.lower() == "bullet"
+
+
 def analyze_position(
-    position: Dict[str, object], engine: StockfishEngine
+    position: Dict[str, object],
+    engine: StockfishEngine,
+    settings: Settings | None = None,
 ) -> tuple[Dict[str, object], Dict[str, object]] | None:
     fen = str(position["fen"])
     user_move_uci = str(position["uci"])
@@ -119,7 +134,10 @@ def analyze_position(
     motif = _infer_motif(motif_board, engine_result.best_move)
     severity = abs(delta) / 100.0
     if mate_in_one and result == "found":
-        severity = min(severity, 1.0)
+        if _is_bullet_profile(settings):
+            severity = max(severity, 1.5)
+        else:
+            severity = min(severity, 1.0)
 
     tactic_row = {
         "game_id": position["game_id"],
@@ -147,7 +165,7 @@ def analyze_positions(
 
     with StockfishEngine(settings) as engine:
         for pos in positions:
-            result = analyze_position(pos, engine)
+            result = analyze_position(pos, engine, settings=settings)
             if result is None:
                 continue
             tactic_row, outcome_row = result

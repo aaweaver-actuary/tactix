@@ -748,3 +748,14 @@ Session 2026-01-26 (feature 077 – Stockfish mate-in-1 low severity for corresp
 - Updated feature_list.json: feature "Stockfish detects mate in 1 with low severity in correspondence" marked passes=true.
 - Current passing count: 77.
 - Next: proceed to feature 078 and keep correspondence UI dataset up to date.
+
+Session 2026-01-26 (feature 078 – Stockfish mate-in-1 high severity for bullet)
+- Threaded settings into tactics analysis and raised mate-in-one severity for bullet profiles.
+- Updated bullet mate-in-one test to assert high severity and pass settings into analysis.
+- Added Puppeteer verification script with API severity check for bullet mate-in-one tactics.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_one_bullet.py -q`, `make check`.
+- UI verification: `TACTIX_DUCKDB_PATH=/Users/andy/tactix/data/tactix.duckdb node /Users/andy/tactix/verification/puppeteer_feature_078_mate_in_one_bullet_high.js`.
+- UI verification screenshot: `verification/feature-078-mate-in-1-bullet-high-severity-2026-01-26.png`.
+- Updated feature_list.json: feature "Stockfish detects mate in 1 with high severity in bullet" marked passes=true.
+- Current passing count: 78.
+- Next: proceed to feature 079 (high severity mate-in-1 blitz).

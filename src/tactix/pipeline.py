@@ -268,7 +268,7 @@ def _analyse_with_retries(
     attempt = 0
     while True:
         try:
-            return analyze_position(position, engine)
+            return analyze_position(position, engine, settings=settings)
         except (
             chess.engine.EngineTerminatedError,
             chess.engine.EngineError,

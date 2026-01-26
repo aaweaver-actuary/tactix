@@ -111,7 +111,7 @@ def _resolve_side_to_move_filter(settings: Settings) -> str | None:
     if profile in {"bullet", "blitz", "rapid", "classical"}:
         return "black"
     if profile in {"correspondence"}:
-        return "white"
+        return "black"
     return None
 
 

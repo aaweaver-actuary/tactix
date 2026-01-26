@@ -546,3 +546,13 @@ Session 2026-01-26 (feature 061 – Lichess classical black-to-move extraction)
 - UI verification screenshots: `verification/precheck-001-lichess-2026-01-26a.png`, `verification/precheck-002-chesscom-2026-01-26a.png`, `verification/feature-061-lichess-classical-black-to-move-2026-01-26.png`.
 - Updated feature_list.json: feature "Position extraction records black to move for Lichess classical" marked passes=true after verification.
 - Current passing count: 61.
+
+Session 2026-01-26 (feature 062 – Lichess correspondence black-to-move extraction)
+- Updated pipeline side-to-move filter to record black-to-move positions for correspondence and refreshed correspondence extraction tests for black-to-move filtering and skip behavior.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_position_extractor.py`.
+- Precheck UI verification: `node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js`, `node /Users/andy/tactix/verification/puppeteer_feature_044_chesscom_blitz_incremental.js`.
+- Precheck UI verification screenshots: `verification/regression-precheck-001-2026-01-26c.png`, `verification/regression-precheck-002-2026-01-26h.png`.
+- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_040_lichess_correspondence_incremental.js`.
+- UI verification screenshot: `verification/feature-062-lichess-correspondence-black-to-move-2026-01-26.png`.
+- Updated feature_list.json: feature "Position extraction records black to move for Lichess correspondence" marked passes=true after verification.
+- Current passing count: 62.

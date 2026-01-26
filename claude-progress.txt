@@ -641,3 +641,13 @@ Session 2026-01-26 (feature 069 – Chess.com blitz black-to-move extraction)
 - UI verification screenshot: `verification/feature-069-chesscom-blitz-black-to-move-2026-01-26.png`.
 - Updated feature_list.json: feature "Position extraction records black to move for Chess.com blitz" marked passes=true.
 - Frontend dev server running on port 5173 (terminal ID: 1c03befb-d692-4ede-b2b7-6c55da0b65ce).
+
+Session 2026-01-26 (feature 070 – Chess.com rapid black-to-move extraction)
+- Regression UI verification: `TACTIX_SCREENSHOT_NAME=regression-001-lichess-2026-01-26h.png node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js`, `TACTIX_SCREENSHOT_NAME=regression-016-auth-2026-01-26c.png node /Users/andy/tactix/verification/puppeteer_regression_feature_016_auth.js`.
+- Updated Chess.com rapid side-to-move filter to capture black-to-move positions.
+- Updated Chess.com rapid extractor tests for black-to-move filtering (ply/move/clocks/legality) and skip-white-user behavior.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_position_extractor.py`.
+- UI verification: `TACTIX_SCREENSHOT_NAME=feature-070-chesscom-rapid-black-to-move-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_046_chesscom_rapid_incremental.js`.
+- UI verification screenshots: `verification/regression-001-lichess-2026-01-26h.png`, `verification/regression-016-auth-2026-01-26c.png`, `verification/feature-070-chesscom-rapid-black-to-move-2026-01-26.png`.
+- Updated feature_list.json: feature "Position extraction records black to move for Chess.com rapid" marked passes=true.
+- Current passing count: 70.

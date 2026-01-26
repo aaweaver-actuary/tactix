@@ -198,6 +198,16 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
 
+Session 2026-01-26 (regression verification: features 001, 016, 028)
+- Verified regression UI flows for features 001 (Lichess), 016 (API auth), and 028 (practice next unseen).
+- Commands:
+	- `TACTIX_SCREENSHOT_NAME=regression-001-lichess-2026-01-26f.png node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-016-auth-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_regression_feature_016_auth.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-028-practice-next-unseen-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+- Screenshots: `verification/regression-001-lichess-2026-01-26f.png`, `verification/regression-016-auth-2026-01-26.png`, `verification/regression-028-practice-next-unseen-2026-01-26.png`.
+- Outcome: no regressions.
+- Frontend dev server: terminal ad4b61de-5b24-487b-88fc-7f1e68a9c6b8 at http://localhost:5173/.
+
 Session 2026-01-26 (feature 064 – Chess.com blitz white-to-move positions)
 - Updated pipeline side-to-move filter to treat Chess.com blitz as white-to-move and added Chess.com blitz white-filter extractor tests.
 - Regression UI verification (pre-work): `verification/regression-001-lichess-2026-01-26d.png`, `verification/regression-002-chesscom-blitz-2026-01-26d.png`.
@@ -592,3 +602,23 @@ Session 2026-01-26 (feature 066 – Chess.com classical white-to-move extraction
 - UI verification screenshots: `verification/precheck-feature-001-2026-01-26.png`, `verification/precheck-feature-028-2026-01-26b.png`, `verification/feature-066-chesscom-classical-white-to-move-2026-01-26.png`.
 - Updated feature_list.json: feature "Position extraction records white to move for Chess.com classical" marked passes=true after verification.
 - Current passing count: 66.
+
+Session 2026-01-26 (regression verification)
+- Docker compose failed (daemon unavailable); ran `/Users/andy/tactix/init.sh` to sync deps and bootstrap Airflow state.
+- FastAPI backend already active on port 8000 (uvicorn start attempt returned address-in-use).
+- Restarted Vite dev server on port 5173 after an initial hang; final command: `cd /Users/andy/tactix/client && npm run dev -- --host 0.0.0.0 --port 5173 --strictPort` (terminal ID: 4014bfd0-a426-4b2e-a1dc-30f84dca2716).
+- Regression UI automation (Puppeteer):
+	- Feature 001: `TACTIX_SCREENSHOT_NAME=regression-001-lichess-2026-01-26f.png node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js`.
+	- Feature 016: `TACTIX_SCREENSHOT_NAME=regression-016-auth-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_regression_feature_016_auth.js`.
+	- Feature 028: `TACTIX_SCREENSHOT_NAME=regression-028-practice-next-unseen-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`.
+- Screenshots: `verification/regression-001-lichess-2026-01-26f.png`, `verification/regression-016-auth-2026-01-26.png`, `verification/regression-028-practice-next-unseen-2026-01-26.png`.
+- Outcome: no regressions observed; feature_list.json unchanged.
+- Current passing count: 66.
+
+Session 2026-01-26 (feature 067 – Chess.com correspondence white-to-move extraction)
+- Updated Chess.com side-to-move filter to treat correspondence/daily as white-to-move.
+- Added Chess.com correspondence fixture coverage in position extractor tests (white-only capture + skip black user; ply/move/clocks/legality assertions).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_position_extractor.py -q`.
+- UI verification: `TACTIX_SCREENSHOT_NAME=feature-067-chesscom-correspondence-white-to-move-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_051_chesscom_correspondence_incremental.js`.
+- UI verification screenshots: `verification/feature-067-chesscom-correspondence-white-to-move-2026-01-26.png`.
+- Frontend dev server running on port 5173 (terminal ID: 1c03befb-d692-4ede-b2b7-6c55da0b65ce).

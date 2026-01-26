@@ -198,6 +198,14 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
 
+Session 2026-01-26 (feature 064 – Chess.com blitz white-to-move positions)
+- Updated pipeline side-to-move filter to treat Chess.com blitz as white-to-move and added Chess.com blitz white-filter extractor tests.
+- Regression UI verification (pre-work): `verification/regression-001-lichess-2026-01-26d.png`, `verification/regression-002-chesscom-blitz-2026-01-26d.png`.
+- Feature 064 UI verification screenshot: `verification/feature-064-chesscom-blitz-white-to-move-2026-01-26.png`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_position_extractor.py`.
+- Updated feature_list.json: feature 064 marked passes=true after verification.
+- Current passing count: 64.
+
 Session 2026-01-25 (feature 050 – Chess.com classical full backfill)
 - Added unit coverage for Chess.com classical backfill idempotency and profile-specific fixture handling.
 - Added Puppeteer verification script for classical backfill; captured UI screenshot.

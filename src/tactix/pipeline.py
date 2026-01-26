@@ -107,17 +107,19 @@ def _normalize_game_row(row: Mapping[str, object], settings: Settings) -> GameRo
 def _resolve_side_to_move_filter(settings: Settings) -> str | None:
     source = (settings.source or "").strip().lower()
     if source == "lichess":
-        profile = (settings.lichess_profile or settings.rapid_perf or "").strip().lower()
+        profile = (
+            (settings.lichess_profile or settings.rapid_perf or "").strip().lower()
+        )
         if profile in {"bullet", "blitz", "rapid", "classical", "correspondence"}:
             return "black"
         return None
     if source == "chesscom":
         profile = (
-            settings.chesscom_profile
-            or settings.chesscom_time_class
-            or ""
-        ).strip().lower()
-        if profile in {"bullet"}:
+            (settings.chesscom_profile or settings.chesscom_time_class or "")
+            .strip()
+            .lower()
+        )
+        if profile in {"bullet", "blitz"}:
             return "white"
     return None
 

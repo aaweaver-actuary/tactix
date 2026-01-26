@@ -22,3 +22,5 @@ airflow/logs/
 client/package-lock.json
 client/coverage/
 client/node_modules/
+tmp-logs/vite.log
+tmp-logs/uvicorn.log

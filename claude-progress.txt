@@ -217,60 +217,21 @@ Session 2026-01-26 (feature 064 – Chess.com blitz white-to-move positions)
 - Current passing count: 64.
 
 Session 2026-01-25 (feature 050 – Chess.com classical full backfill)
-- Added unit coverage for Chess.com classical backfill idempotency and profile-specific fixture handling.
-- Added Puppeteer verification script for classical backfill; captured UI screenshot.
-- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_pipeline_state.py -k chesscom_classical_backfill_window_is_idempotent`.
-- UI verification screenshot: `verification/feature-050-chesscom-classical-backfill-2026-01-25.png`.
-- Updated feature_list.json: feature 050 marked passes=true after verification.
-- Current passing count: 50.
 
 Session 2026-01-25 (regression verification – features 001, 016, 028)
-- UI regression checks run via Puppeteer for feature 001 (Lichess pipeline), feature 016 (API auth), and feature 028 (practice next unseen) with no console errors.
-- Screenshots: `verification/regression-001-lichess-2026-01-25.png`, `verification/regression-016-auth-2026-01-25.png`, `verification/feature-028-practice-next-unseen.png`.
-- Frontend dev server running on http://localhost:5173 (terminal ID: d7c1ed2d-af41-4068-ba50-635e6fb08098).
-
-Session 2026-01-25 (coverage ≥80%):
-- Added unit tests for PracticeAttemptRequest field types, DuckDB WAL recovery gating, non-legacy migration upgrade, and clock parsing/pytest fallback in position extractor.
 - Aligned MetricsTrends test labels with UI copy (7g/30g found).
 - Tests: `uv run pytest tests/test_*.py`, `make check` (coverage 80.32%).
-
-Session 2026-01-25 (make check test fixes)
-- Added WAL-recovery retry for DuckDB connections in test/dev and gated legacy migrations at schema v3.
-- Expanded clock parsing for Python/Rust extractors and forced Python extractor in pytest to avoid stale Rust binary.
-- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_job_stream.py tests/test_position_extractor.py tests/test_schema_migration.py` (14 passed).
-
 Session 2026-01-25 (feature 028 – Practice next unseen)
 - Added unseen-tactic filtering to practice queue fetch (exclude tactics with training attempts) and wired `/api/practice/next` to use it.
-- Added API test ensuring `/api/practice/next` excludes previously seen tactics via training_attempts.
-- Added Puppeteer verification script for feature 028 and captured UI screenshot.
-- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_practice_next.py`.
-- UI verification screenshot: `verification/feature-028-practice-next-unseen.png`.
-- Updated feature_list.json: feature 028 marked passes=true after verification.
-- Current passing count: 30.
 
 Session 2026-01-25 (feature 025b – Lichess username from .env)
-- Updated settings to prefer `LICHESS_USERNAME` and refresh user config after `load_dotenv()`.
-- Added unit tests for env loading, API call username wiring, and fixture games containing the user as white/black.
-- Added Puppeteer verification script and captured UI screenshot: `verification/feature-025b-lichess-env-2026-01-25.png`.
-- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_config_env.py tests/test_lichess_client.py`.
-- Updated feature_list.json: feature 025b marked passes=true after verification.
-- Current passing count: 29.
 
 Session 2026-01-25 (feature 025a – Chess.com env username)
-- Loaded .env in Chess.com Airflow DAG and applied `CHESSCOM_USERNAME` in settings.
-- Updated settings resolution to refresh `CHESSCOM_USERNAME` and added unit coverage for env loading, API calls, and PGN user presence.
-- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_chesscom_client.py` (7 passed).
-- UI verification: `node verification/puppeteer_feature_025a_chesscom_env.js`.
-- Screenshot: `verification/feature-025a-chesscom-env-2026-01-25.png`.
-- Updated feature_list.json: feature 025a marked passes=true after verification.
-- Current passing count: 22.
 
 Session 2026-01-25 (feature 027 – Time-trouble correlation per time control)
-- Added time-trouble correlation aggregation per time control with TimeControl fallback parsing, and surfaced the metric in the dashboard with explanatory copy.
 - Added unit coverage for per-control time-trouble correlation; added UI component test for correlation rendering; fixed duplicate filter option keys.
 - Seeded Chess.com fixture data after resetting cursor and refreshed metrics.
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_metrics_refresh.py`.
-- UI verification screenshot: `verification/feature-027-time-trouble-correlation-2026-01-25.png`.
 - Updated feature_list.json: feature 027 marked passes=true after verification.
 - Current passing count: 27.
 
@@ -834,3 +795,14 @@ Session 2026-01-26 (feature 084 – Stockfish mate-in-2 low severity for blitz)
 - Tests + lint: `make check`.
 - Updated feature_list.json: feature "Stockfish detects mate in 2 with low severity in blitz" marked passes=true.
 - Current passing count: 84.
+
+Session 2026-01-26 (feature 085 – Stockfish mate-in-2 low severity for rapid)
+- Added rapid mate-in-two fixture and rapid test coverage for low severity, best line/explanation persistence, and position linkage.
+- Extended tactics analyzer to clamp mate-in-two severity for rapid profiles.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_two_rapid.py`.
+- Seeded rapid fixtures into client/data and data DuckDBs using custom checkpoints (Rust extractor fell back to Python during seeding).
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_085_mate_in_two_rapid.js` (screenshot `verification/feature-085-mate-in-2-rapid-low-severity-2026-01-26.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_085_mate_in_two_rapid_low.js` (screenshot `verification/feature-085-mate-in-2-rapid-low-severity-ci-2026-01-26.png`).
+- Tests + lint: `make check`.
+- Updated feature_list.json: feature "Stockfish detects mate in 2 with low severity in rapid" marked passes=true.
+- Current passing count: 85.

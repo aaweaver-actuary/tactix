@@ -136,6 +136,19 @@ def _is_blitz_profile(settings: Settings | None) -> bool:
     return profile.lower() == "blitz"
 
 
+def _is_rapid_profile(settings: Settings | None) -> bool:
+    if settings is None:
+        return False
+    source = (settings.source or "").strip().lower()
+    if source == "chesscom":
+        profile = (
+            settings.chesscom_profile or settings.chesscom_time_class or ""
+        ).strip()
+        return profile.lower() == "rapid"
+    profile = (settings.lichess_profile or settings.rapid_perf or "").strip()
+    return profile.lower() == "rapid"
+
+
 def analyze_position(
     position: Dict[str, object],
     engine: StockfishEngine,
@@ -186,7 +199,11 @@ def analyze_position(
     if (
         mate_in_two
         and result == "found"
-        and (_is_bullet_profile(settings) or _is_blitz_profile(settings))
+        and (
+            _is_bullet_profile(settings)
+            or _is_blitz_profile(settings)
+            or _is_rapid_profile(settings)
+        )
     ):
         severity = min(severity, 1.0)
 

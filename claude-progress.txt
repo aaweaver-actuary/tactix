@@ -845,3 +845,13 @@ Session 2026-01-26 (feature 085 – Stockfish mate-in-2 low severity for rapid)
 - Tests + lint: `make check`.
 - Updated feature_list.json: feature "Stockfish detects mate in 2 with low severity in rapid" marked passes=true.
 - Current passing count: 85.
+
+Session 2026-01-26 (feature 086 – Stockfish mate-in-2 low severity for classical)
+- Added classical mate-in-two fixture and clamped mate-in-two severity for classical profiles.
+- Extended mate-in-two tests with classical low-severity coverage (added to `tests/test_mate_in_two_rapid.py`).
+- Seeded classical fixtures into client/data and data DuckDBs using feature-specific checkpoints (`tmp-logs/feature_086_seed.py`).
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_086_mate_in_two_classical.js` (screenshot `verification/feature-086-mate-in-2-classical-low-severity-2026-01-26.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_086_mate_in_two_classical_low.js` (screenshot `verification/feature-086-mate-in-2-classical-low-severity-ci-2026-01-26.png`).
+- Tests + lint: `make check`.
+- Updated feature_list.json: feature "Stockfish detects mate in 2 with low severity in classical" marked passes=true.
+- Current passing count: 86.

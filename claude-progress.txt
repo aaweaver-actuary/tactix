@@ -911,3 +911,14 @@ Session 2026-01-26 (feature 091 – Stockfish mate-in-2 high severity for classi
 - Tests + lint: `make check`.
 - Updated feature_list.json: feature "Stockfish detects mate in 2 with high severity in classical" marked passes=true.
 - Current passing count: 91.
+
+Session 2026-01-26 (feature 092 – Stockfish mate-in-2 high severity for correspondence)
+- Regression UI verification (features 001, 016, 028, 031, 033, 037, 040, 044, 046, 049).
+- Regression screenshots: `verification/regression-092-precheck-001-2026-01-26.png`, `verification/regression-092-precheck-016-2026-01-26.png`, `verification/regression-092-precheck-028-2026-01-26.png`, `verification/regression-092-precheck-031-2026-01-26.png`, `verification/regression-092-precheck-033-2026-01-26.png`, `verification/regression-092-precheck-037-2026-01-26.png`, `verification/regression-092-precheck-040-2026-01-26.png`, `verification/regression-092-precheck-044-2026-01-26.png`, `verification/regression-092-precheck-046-2026-01-26.png`, `verification/regression-092-precheck-049-2026-01-26.png`.
+- Raised mate-in-two severity clamp for correspondence profiles and updated correspondence test expectations.
+- Seeded correspondence fixtures into data + client DuckDBs using feature-specific checkpoints (Rust extractor fallback warnings observed during seeding).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_two_correspondence.py`, `make check`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_092_mate_in_two_correspondence_high.js` (screenshot `verification/feature-092-mate-in-2-correspondence-high-severity-2026-01-26.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_092_mate_in_two_correspondence_high_ci.js` (screenshot `verification/feature-092-mate-in-2-correspondence-high-severity-ci-2026-01-26.png`).
+- Updated feature_list.json: feature "Stockfish detects mate in 2 with high severity in correspondence" marked passes=true.
+- Current passing count: 92.

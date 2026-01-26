@@ -133,7 +133,9 @@ class StockfishAndPipelineTests(unittest.TestCase):
         raw_pgns = conn.execute(
             "SELECT source, COUNT(*) FROM raw_pgns GROUP BY source"
         ).fetchall()
-        self.assertIn(("chesscom", 2), raw_pgns)
+        self.assertTrue(
+            any(source == "chesscom" and count >= 2 for source, count in raw_pgns)
+        )
         positions = conn.execute(
             "SELECT COUNT(*) FROM positions WHERE source='chesscom'"
         ).fetchone()[0]

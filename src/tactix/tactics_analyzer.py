@@ -93,8 +93,14 @@ def analyze_position(
     mover_color = board.turn
 
     engine_result: EngineResult = engine.analyse(board)
-    best_move = engine_result.best_move.uci() if engine_result.best_move else None
+    best_move_obj = engine_result.best_move
+    best_move = best_move_obj.uci() if best_move_obj else None
     base_cp = _score_from_pov(engine_result.score_cp, mover_color, board.turn)
+    mate_in_one = False
+    if best_move_obj is not None:
+        mate_board = motif_board.copy()
+        mate_board.push(best_move_obj)
+        mate_in_one = mate_board.is_checkmate()
 
     try:
         user_move = chess.Move.from_uci(user_move_uci)
@@ -112,6 +118,8 @@ def analyze_position(
     result, delta = _classify_result(best_move, user_move_uci, base_cp, after_cp)
     motif = _infer_motif(motif_board, engine_result.best_move)
     severity = abs(delta) / 100.0
+    if mate_in_one and result == "found":
+        severity = min(severity, 1.0)
 
     tactic_row = {
         "game_id": position["game_id"],

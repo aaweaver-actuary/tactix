@@ -20,3 +20,15 @@
 [Result "0-1"]
 
 1. d4 { [%clk 0:05:00] } d5 { [%clk 0:05:00] } 2. c4 { [%clk 0:04:55] } e6 { [%clk 0:04:58] } 3. Nc3 { [%clk 0:04:50] } Nf6 { [%clk 0:04:56] } 4. Bg5 { [%clk 0:04:45] } Bb4 { [%clk 0:04:54] } 5. e3 { [%clk 0:04:40] } h6 { [%clk 0:04:52] } 6. Bh4 { [%clk 0:04:36] } c5 { [%clk 0:04:50] } 0-1
+
+
+[Event "Chess.com Blitz Fixture 3"]
+[Site "https://www.chess.com/game/live/9876543211"]
+[UTCDate "2024.07.03"]
+[UTCTime "17:30:00"]
+[White "opponent2"]
+[Black "chesscom"]
+[TimeControl "300"]
+[Result "0-1"]
+
+1. f3 { [%clk 0:05:00] } e5 { [%clk 0:05:00] } 2. g4 { [%clk 0:04:58] } Qh4# { [%clk 0:04:59] } 0-1

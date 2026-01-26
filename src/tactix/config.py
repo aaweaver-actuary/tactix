@@ -22,6 +22,7 @@ DEFAULT_CHESSCOM_ANALYSIS_CHECKPOINT = (
 )
 DEFAULT_CHESSCOM_FIXTURE = Path("tests/fixtures/chesscom_blitz_sample.pgn")
 DEFAULT_BULLET_STOCKFISH_DEPTH = 8
+DEFAULT_BLITZ_STOCKFISH_DEPTH = 10
 
 
 @dataclass(slots=True)
@@ -124,8 +125,11 @@ class Settings:
         profile_value = (profile or "").strip().lower()
         if not profile_value:
             return
-        if self.stockfish_depth is None and profile_value == "bullet":
-            self.stockfish_depth = DEFAULT_BULLET_STOCKFISH_DEPTH
+        if self.stockfish_depth is None:
+            if profile_value == "bullet":
+                self.stockfish_depth = DEFAULT_BULLET_STOCKFISH_DEPTH
+            elif profile_value == "blitz":
+                self.stockfish_depth = DEFAULT_BLITZ_STOCKFISH_DEPTH
 
     @property
     def data_dir(self) -> Path:

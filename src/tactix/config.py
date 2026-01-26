@@ -21,6 +21,7 @@ DEFAULT_CHESSCOM_ANALYSIS_CHECKPOINT = (
     DEFAULT_DATA_DIR / "analysis_checkpoint_chesscom.json"
 )
 DEFAULT_CHESSCOM_FIXTURE = Path("tests/fixtures/chesscom_blitz_sample.pgn")
+DEFAULT_BULLET_STOCKFISH_DEPTH = 8
 
 
 @dataclass(slots=True)
@@ -119,6 +120,13 @@ class Settings:
         os.getenv("LICHESS_TOKEN_CACHE_PATH", DEFAULT_DATA_DIR / "lichess_token.json")
     )
 
+    def apply_stockfish_profile(self, profile: str | None = None) -> None:
+        profile_value = (profile or "").strip().lower()
+        if not profile_value:
+            return
+        if self.stockfish_depth is None and profile_value == "bullet":
+            self.stockfish_depth = DEFAULT_BULLET_STOCKFISH_DEPTH
+
     @property
     def data_dir(self) -> Path:
         return self.duckdb_path.parent
@@ -158,6 +166,7 @@ class Settings:
         self.chesscom_profile = profile_value
         time_class = "daily" if profile_value == "correspondence" else profile_value
         self.chesscom_time_class = time_class
+        self.apply_stockfish_profile(profile_value)
         default_checkpoint = self.data_dir / "chesscom_since.txt"
         profile_checkpoint = self.data_dir / f"chesscom_since_{profile_value}.txt"
         if (
@@ -205,6 +214,7 @@ class Settings:
             return
         self.lichess_profile = profile_value
         self.rapid_perf = profile_value
+        self.apply_stockfish_profile(profile_value)
         if self.source != "lichess":
             return
         default_checkpoint = self.data_dir / "lichess_since.txt"

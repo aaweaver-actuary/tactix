@@ -671,3 +671,23 @@ Session 2026-01-26 (feature 072 – Chess.com correspondence black-to-move extra
 - UI verification screenshot: `verification/feature-072-chesscom-correspondence-black-to-move-2026-01-26.png`.
 - Updated feature_list.json: feature "Position extraction records black to move for Chess.com correspondence" marked passes=true.
 - Current passing count: 72.
+
+Session 2026-01-26 (feature 073 – Stockfish mate-in-1 low severity for bullet)
+- Added bullet default Stockfish depth for pinned analysis and new mate-in-1 fixture game.
+- Added test coverage to assert mate-in-1 detection, low eval delta severity, best-line persistence, and position linkage.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_one_bullet.py -q`.
+- Populated UI DuckDB: `/Users/andy/tactix/.venv/bin/python - <<'PY'
+from pathlib import Path
+import shutil
+from tactix.config import Settings
+from tactix.pipeline import run_daily_game_sync
+settings = Settings(source="chesscom", chesscom_user="chesscom", chesscom_profile="bullet", duckdb_path=Path("client/data/tactix.duckdb"), metrics_version_file=Path("client/data/metrics_version.txt"), chesscom_fixture_pgn_path=Path("tests/fixtures/chesscom_bullet_sample.pgn"), chesscom_use_fixture_when_no_token=True, use_fixture_when_no_token=True, stockfish_path=Path(shutil.which("stockfish") or "stockfish"), stockfish_movetime_ms=60, stockfish_multipv=1)
+settings.apply_source_defaults()
+settings.apply_chesscom_profile("bullet")
+settings.ensure_dirs()
+print(run_daily_game_sync(settings, source="chesscom", profile="bullet"))
+PY`.
+- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_073_mate_in_one_bullet.js`.
+- UI verification screenshot: `verification/feature-073-mate-in-1-low-severity-2026-01-26.png`.
+- Updated feature_list.json: feature "Stockfish detects mate in 1 with low severity in bullet" marked passes=true.
+- Current passing count: 73.

@@ -20,3 +20,15 @@
 [Result "0-1"]
 
 1. d4 { [%clk 0:01:00] } Nf6 { [%clk 0:01:00] } 2. c4 { [%clk 0:00:58] } g6 { [%clk 0:00:59] } 3. Nc3 { [%clk 0:00:55] } Bg7 { [%clk 0:00:57] } 4. e4 { [%clk 0:00:52] } d6 { [%clk 0:00:56] } 5. Nf3 { [%clk 0:00:49] } O-O { [%clk 0:00:54] } 0-1
+
+
+[Event "Chess.com Bullet Fixture 3"]
+[Site "https://www.chess.com/game/live/2234567892"]
+[UTCDate "2024.07.05"]
+[UTCTime "20:00:00"]
+[White "opponent2"]
+[Black "chesscom"]
+[TimeControl "60"]
+[Result "0-1"]
+
+1. f3 { [%clk 0:01:00] } e5 { [%clk 0:01:00] } 2. g4 { [%clk 0:00:58] } Qh4# { [%clk 0:00:59] } 0-1

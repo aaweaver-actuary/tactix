@@ -438,3 +438,12 @@ Session 2026-01-25 (feature 049 – Chess.com classical incremental sync)
 - UI verification screenshot: `verification/feature-049-chesscom-classical-incremental-2026-01-25.png`.
 - Updated feature_list.json: feature "Ingestion Chess.com classical games via incremental sync" marked passes=true.
 - Current passing count: 49.
+
+Session 2026-01-25 (feature 051 – Chess.com correspondence incremental sync)
+- Added Chess.com correspondence fixture PGNs and profile-specific tests (config paths, client time_class=daily filter, pipeline checkpoint).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_config_env.py tests/test_chesscom_client.py tests/test_pipeline_state.py`.
+- UI regression verification: `node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js`.
+- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_051_chesscom_correspondence_incremental.js`.
+- UI verification screenshot: `verification/feature-051-chesscom-correspondence-incremental-2026-01-25.png`.
+- Updated feature_list.json: feature "Ingestion Chess.com correspondence games via incremental sync" marked passes=true.
+- Current passing count: 51.

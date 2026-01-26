@@ -1,0 +1,22 @@
+[Event "Chess.com Correspondence Fixture 1"]
+[Site "https://www.chess.com/game/daily/1122334455"]
+[UTCDate "2024.07.05"]
+[UTCTime "09:00:00"]
+[White "chesscom"]
+[Black "dailybot"]
+[TimeControl "86400"]
+[Result "1-0"]
+
+1. d4 { [%clk 1:00:00] } d5 { [%clk 1:00:00] } 2. c4 { [%clk 0:59:59] } e6 { [%clk 0:59:58] } 3. Nc3 { [%clk 0:59:57] } Nf6 { [%clk 0:59:56] } 4. Bg5 { [%clk 0:59:55] } Be7 { [%clk 0:59:54] } 5. e3 { [%clk 0:59:53] } O-O { [%clk 0:59:52] } 1-0
+
+
+[Event "Chess.com Correspondence Fixture 2"]
+[Site "https://www.chess.com/game/daily/6677008899"]
+[UTCDate "2024.07.06"]
+[UTCTime "10:30:00"]
+[White "opponent"]
+[Black "chesscom"]
+[TimeControl "86400"]
+[Result "0-1"]
+
+1. e4 { [%clk 1:00:00] } c5 { [%clk 1:00:00] } 2. Nf3 { [%clk 0:59:59] } d6 { [%clk 0:59:58] } 3. d4 { [%clk 0:59:57] } cxd4 { [%clk 0:59:56] } 4. Nxd4 { [%clk 0:59:55] } Nf6 { [%clk 0:59:54] } 5. Nc3 { [%clk 0:59:53] } a6 { [%clk 0:59:52] } 0-1

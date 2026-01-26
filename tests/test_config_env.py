@@ -154,6 +154,24 @@ class ConfigEnvTests(unittest.TestCase):
         )
         self.assertEqual(settings.chesscom_time_class, "classical")
 
+    def test_get_settings_applies_chesscom_correspondence_profile_paths(self) -> None:
+        settings = config.get_settings(source="chesscom", profile="correspondence")
+
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("chesscom_since_correspondence.txt")
+        )
+        self.assertTrue(
+            settings.analysis_checkpoint_path.name.endswith(
+                "analysis_checkpoint_chesscom_correspondence.json"
+            )
+        )
+        self.assertTrue(
+            settings.fixture_pgn_path.name.endswith(
+                "chesscom_correspondence_sample.pgn"
+            )
+        )
+        self.assertEqual(settings.chesscom_time_class, "daily")
+
 
 if __name__ == "__main__":
     unittest.main()

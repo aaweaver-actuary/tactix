@@ -447,3 +447,10 @@ Session 2026-01-25 (feature 051 – Chess.com correspondence incremental sync)
 - UI verification screenshot: `verification/feature-051-chesscom-correspondence-incremental-2026-01-25.png`.
 - Updated feature_list.json: feature "Ingestion Chess.com correspondence games via incremental sync" marked passes=true.
 - Current passing count: 51.
+Session 2026-01-25 (feature 052 – Chess.com correspondence full backfill sync)
+- Added Chess.com correspondence backfill idempotency coverage with profile-specific checkpoint/fixture assertions.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_pipeline_state.py -k chesscom_correspondence_backfill_window_is_idempotent`.
+- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_052_chesscom_correspondence_backfill.js`.
+- UI verification screenshot: `verification/feature-052-chesscom-correspondence-backfill-2026-01-25.png`.
+- Updated feature_list.json: feature "Ingestion Chess.com correspondence games via full backfill sync" marked passes=true.
+- Current passing count: 52.

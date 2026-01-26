@@ -20,3 +20,15 @@
 [Result "0-1"]
 
 1. d4 { [%clk 0:01:00] } d5 { [%clk 0:01:00] } 2. c4 { [%clk 0:00:55] } e6 { [%clk 0:00:55] } 3. Nc3 { [%clk 0:00:50] } Nf6 { [%clk 0:00:50] } 4. Bg5 { [%clk 0:00:45] } Be7 { [%clk 0:00:45] } 5. e3 { [%clk 0:00:40] } O-O { [%clk 0:00:40] } 0-1
+
+
+[Event "Bullet Fixture Game 3"]
+[Site "lichess.org/bulb9999"]
+[UTCDate "2024.06.05"]
+[UTCTime "17:30:00"]
+[White "opponent2"]
+[Black "andy_andy_andy"]
+[TimeControl "60+0"]
+[Result "0-1"]
+
+1. c4 { [%clk 0:01:00] } e5 { [%clk 0:01:00] } 2. Nc3 { [%clk 0:00:55] } Nf6 { [%clk 0:00:55] } 3. Nf3 { [%clk 0:00:50] } Nc6 { [%clk 0:00:50] } 4. g3 { [%clk 0:00:45] } d5 { [%clk 0:00:45] } 0-1

@@ -511,3 +511,12 @@ Session 2026-01-26 (feature 057 – Lichess correspondence white-to-move extract
 - UI verification screenshot: `verification/feature-057-lichess-correspondence-white-to-move-2026-01-26.png`.
 - Updated feature_list.json: feature "Position extraction records white to move for Lichess correspondence" marked passes=true.
 - Current passing count: 57.
+
+Session 2026-01-26 (feature 058 – Lichess bullet black-to-move extraction)
+- Regression UI verification: `TACTIX_SCREENSHOT_NAME=regression-precheck-001-2026-01-26c.png node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js`.
+- Updated Lichess bullet side-to-move filtering to black and added a new bullet fixture game; refreshed bullet extraction tests for black-to-move filtering.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_position_extractor.py`.
+- UI verification: `TACTIX_SOURCE=lichess TACTIX_SCREENSHOT_NAME=feature-058-lichess-bullet-black-to-move-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_dashboard.js`.
+- UI verification screenshot: `verification/feature-058-lichess-bullet-black-to-move-2026-01-26.png`.
+- Updated feature_list.json: feature "Position extraction records black to move for Lichess bullet" marked passes=true.
+- Current passing count: 58.

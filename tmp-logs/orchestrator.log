@@ -5,3 +5,4 @@
 [2026-01-26] Feature 056 UI verification: ran puppeteer_feature_037_lichess_classical_incremental.js with screenshot verification/feature-056-lichess-classical-white-to-move-2026-01-26.png
 [2026-01-26] Fix: schema migration test now expects schema version 5; ran uv run pytest tests/test_schema_migration.py
 [2026-01-26] Feature 057 UI verification: ran puppeteer_feature_040_lichess_correspondence_incremental.js with screenshot verification/feature-057-lichess-correspondence-white-to-move-2026-01-26.png
+[2026-01-26] Feature 058 UI verification: ran puppeteer_dashboard.js (Lichess bullet black-to-move) screenshot: verification/feature-058-lichess-bullet-black-to-move-2026-01-26.png; Regression precheck: puppeteer_regression_feature_001.js screenshot: verification/regression-precheck-001-2026-01-26c.png

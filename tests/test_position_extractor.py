@@ -129,35 +129,35 @@ class PositionExtractorTests(unittest.TestCase):
         self.assertEqual(first["san"], "d5")
         self.assertEqual(first["clock_seconds"], 300)
 
-    def test_extracts_lichess_bullet_white_to_move_positions(self) -> None:
-        pgn = self.lichess_bullet_games[0]
-        positions = extract_positions(
-            pgn,
-            user="andy_andy_andy",
-            source="lichess",
-            game_id="bullet1",
-            side_to_move_filter="white",
-        )
-        self.assertGreater(len(positions), 0)
-        self.assertTrue(all(pos["side_to_move"] == "white" for pos in positions))
-
-        first = positions[0]
-        self.assertEqual(first["ply"], 0)
-        self.assertEqual(first["move_number"], 1)
-        self.assertEqual(first["side_to_move"], "white")
-        self.assertEqual(first["uci"], "e2e4")
-        self.assertEqual(first["san"], "e4")
-        self.assertEqual(first["clock_seconds"], 60)
-        self.assertTrue(first["is_legal"])
-
-    def test_lichess_bullet_white_filter_skips_black_user(self) -> None:
+    def test_extracts_lichess_bullet_black_to_move_positions(self) -> None:
         pgn = self.lichess_bullet_games[1]
         positions = extract_positions(
             pgn,
             user="andy_andy_andy",
             source="lichess",
+            game_id="bullet1",
+            side_to_move_filter="black",
+        )
+        self.assertGreater(len(positions), 0)
+        self.assertTrue(all(pos["side_to_move"] == "black" for pos in positions))
+
+        first = positions[0]
+        self.assertEqual(first["ply"], 1)
+        self.assertEqual(first["move_number"], 1)
+        self.assertEqual(first["side_to_move"], "black")
+        self.assertEqual(first["uci"], "d7d5")
+        self.assertEqual(first["san"], "d5")
+        self.assertEqual(first["clock_seconds"], 60)
+        self.assertTrue(first["is_legal"])
+
+    def test_lichess_bullet_black_filter_skips_white_user(self) -> None:
+        pgn = self.lichess_bullet_games[0]
+        positions = extract_positions(
+            pgn,
+            user="andy_andy_andy",
+            source="lichess",
             game_id="bullet2",
-            side_to_move_filter="white",
+            side_to_move_filter="black",
         )
         self.assertEqual(positions, [])
 

@@ -379,6 +379,77 @@ class PipelineStateTests(unittest.TestCase):
         self.assertEqual(tactics_after, tactics_before)
         self.assertEqual(outcomes_after, outcomes_before)
 
+    def test_chesscom_classical_backfill_window_is_idempotent(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_profile="classical",
+            duckdb_path=self.tmp_dir / "tactix_chesscom_classical_backfill.duckdb",
+            checkpoint_path=self.tmp_dir / "chesscom_since.txt",
+            chesscom_checkpoint_path=self.tmp_dir / "chesscom_since.txt",
+            metrics_version_file=self.tmp_dir / "metrics_chesscom_classical.txt",
+            fixture_pgn_path=self.chesscom_classical_fixture_path,
+            chesscom_fixture_pgn_path=self.chesscom_classical_fixture_path,
+            chesscom_use_fixture_when_no_token=True,
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=50,
+            stockfish_depth=8,
+            stockfish_multipv=2,
+        )
+
+        pgn_text = self.chesscom_classical_fixture_path.read_text()
+        timestamps = [
+            extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)
+        ]
+        window_start = min(timestamps) - 1000
+        window_end = max(timestamps) + 1000
+
+        first = run_daily_game_sync(
+            settings,
+            window_start_ms=window_start,
+            window_end_ms=window_end,
+            profile="classical",
+        )
+        self.assertGreater(first["fetched_games"], 0)
+        self.assertTrue(
+            settings.checkpoint_path.name.endswith("chesscom_since_classical.txt")
+        )
+        self.assertEqual(
+            settings.chesscom_fixture_pgn_path.name, "chesscom_classical_sample.pgn"
+        )
+        self.assertEqual(settings.fixture_pgn_path.name, "chesscom_classical_sample.pgn")
+        cursor_after_first = read_cursor(settings.checkpoint_path)
+        self.assertIsNone(cursor_after_first)
+
+        conn = get_connection(settings.duckdb_path)
+        raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
+        positions_before = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+        tactics_before = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        outcomes_before = conn.execute(
+            "SELECT COUNT(*) FROM tactic_outcomes"
+        ).fetchone()[0]
+        conn.close()
+
+        run_daily_game_sync(
+            settings,
+            window_start_ms=window_start,
+            window_end_ms=window_end,
+            profile="classical",
+        )
+
+        conn = get_connection(settings.duckdb_path)
+        raw_after = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
+        positions_after = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+        tactics_after = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        outcomes_after = conn.execute(
+            "SELECT COUNT(*) FROM tactic_outcomes"
+        ).fetchone()[0]
+        conn.close()
+
+        self.assertEqual(raw_after, raw_before)
+        self.assertEqual(positions_after, positions_before)
+        self.assertEqual(tactics_after, tactics_before)
+        self.assertEqual(outcomes_after, outcomes_before)
+
     def test_incremental_run_skips_existing_games(self) -> None:
         settings = Settings(
             user="andy_andy_andy",

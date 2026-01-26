@@ -198,6 +198,14 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
 
+Session 2026-01-25 (feature 050 – Chess.com classical full backfill)
+- Added unit coverage for Chess.com classical backfill idempotency and profile-specific fixture handling.
+- Added Puppeteer verification script for classical backfill; captured UI screenshot.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_pipeline_state.py -k chesscom_classical_backfill_window_is_idempotent`.
+- UI verification screenshot: `verification/feature-050-chesscom-classical-backfill-2026-01-25.png`.
+- Updated feature_list.json: feature 050 marked passes=true after verification.
+- Current passing count: 50.
+
 Session 2026-01-25 (regression verification – features 001, 016, 028)
 - UI regression checks run via Puppeteer for feature 001 (Lichess pipeline), feature 016 (API auth), and feature 028 (practice next unseen) with no console errors.
 - Screenshots: `verification/regression-001-lichess-2026-01-25.png`, `verification/regression-016-auth-2026-01-25.png`, `verification/feature-028-practice-next-unseen.png`.

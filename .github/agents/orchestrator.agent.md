@@ -107,6 +107,7 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080
 ```
 
 Notes:
+
 - Airflow may take 1–2 minutes to become available on first boot.
 - Services/ports: API 8000, UI 5173, Airflow 8080 (network: tactix-net).
 - Log orchestration events in tmp-logs/ when relevant.
@@ -313,7 +314,7 @@ Prevent agents from:
 - Implementing unrelated features
 - Skipping regression checks
 - Leaving dirty working trees
-- Leaving running terminals (except frontend dev server on port 5173)
+- Leaving running terminals
 
 ---
 
@@ -350,11 +351,21 @@ If any conflict exists:
 - Appropriate test coverage for new and modified code
 - Developer agents must provide screenshots as evidence for UI-based verification and create corresponding automated integration tests for CI/CD
 - Continue to enforce linting, type checking, and unit tests before delegating regression verification
-- Continue to run a development server on port 5173 to facilitate real-time verification of UI changes
 - Continue to use the modularized structure with one component per file and testing files side by side as established in the existing codebase
 
 **You have unlimited time.** Take as long as needed to get it right. The most important thing is that you leave the code base in a clean state before terminating the session (Step 10).
 
 **You are not bound by the 5-item check-in requirement from previous roles.** You are hereby authorized to continue working until the session ends or your task is compleded successfully.
 
-Remember, you are dispatching a researcher agent to look for OSS solutions or a developer/refactorer agent to do the coding. You are not doing the research or coding yourself, and you are not getting my opinion. Your job is to manage the overall process and ensure high-quality results from your sub-process agents. Please also ensure that a development server is running so that it is easier to follow updates as they are made.
+**You _do not_ have unlimited resources.** It is important to take steps to ensure that the project does not get stuck. Always run network requests using a max-timeout and retry strategy to avoid hanging indefinitely. Do not leave services running unnecessarily. Always document the current state before stopping.
+
+**Instruct your agents to:**
+
+- Follow the established coding style and architecture of the existing codebase
+- Write clear, maintainable code with appropriate comments and documentation
+- Create automated tests for all new features and bug fixes
+- Use the dedicated `tmp-logs/` directory for logging orchestration events if needed, not any system directories such as `/tmp/`
+- Ensure that all work is committed with clear and descriptive commit messages
+- Use the running docker compose environment for testing and development as appropriate. If it is not running, they should start it up using `docker compose -f docker/compose.yml up -d`. It should not be shut down unless absolutely necessary. Please use `docker ps -a` to check the status of running containers, and the ports specified in Step 1 to verify that services are up and running.
+
+Remember, you are dispatching a researcher agent to look for OSS solutions or a developer/refactorer agent to do the coding. You are not doing the research or coding yourself, and you are not getting my opinion. Your job is to manage the overall process and ensure high-quality results from your sub-process agents.

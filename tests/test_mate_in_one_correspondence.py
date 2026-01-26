@@ -26,7 +26,9 @@ class MateInOneCorrespondenceTests(unittest.TestCase):
             / "chesscom_correspondence_sample.pgn"
         )
         chunks = split_pgn_chunks(fixture_path.read_text())
-        mate_pgn = next(chunk for chunk in chunks if "Correspondence Fixture 3" in chunk)
+        mate_pgn = next(
+            chunk for chunk in chunks if "Correspondence Fixture 3" in chunk
+        )
 
         settings = Settings(
             source="chesscom",

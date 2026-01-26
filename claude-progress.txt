@@ -759,3 +759,14 @@ Session 2026-01-26 (feature 078 – Stockfish mate-in-1 high severity for bullet
 - Updated feature_list.json: feature "Stockfish detects mate in 1 with high severity in bullet" marked passes=true.
 - Current passing count: 78.
 - Next: proceed to feature 079 (high severity mate-in-1 blitz).
+
+Session 2026-01-26 (feature 079 – Stockfish mate-in-1 high severity for blitz)
+- Raised mate-in-one severity for blitz profiles and persisted best line/explanation in tactics rows.
+- Added shared explanation formatter and extended tactics schema (best_san, explanation) with migration v6.
+- Updated blitz mate-in-one test to assert high severity, link position, and verify persisted explanation.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_one_blitz.py tests/test_mate_in_one_bullet.py tests/test_practice_attempt_grading.py`.
+- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_079_mate_in_one_blitz_high.js`.
+- UI verification screenshot: `verification/feature-079-mate-in-1-blitz-high-severity-2026-01-26.png`.
+- Updated feature_list.json: feature "Stockfish detects mate in 1 with high severity in blitz" marked passes=true.
+- Current passing count: 79.
+- Next: proceed to feature 080 (high severity mate-in-1 rapid) and ensure schema migration applied to existing DBs.

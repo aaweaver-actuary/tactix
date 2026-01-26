@@ -6,10 +6,10 @@ import hashlib
 from pathlib import Path
 from typing import Iterable, List, Mapping
 
-import chess
 import duckdb
 from tactix.logging_utils import get_logger
 from tactix.pgn_utils import extract_pgn_metadata
+from tactix.tactics_explanation import format_tactic_explanation
 
 logger = get_logger(__name__)
 
@@ -58,6 +58,8 @@ CREATE TABLE IF NOT EXISTS tactics (
     motif TEXT,
     severity DOUBLE,
     best_uci TEXT,
+    best_san TEXT,
+    explanation TEXT,
     eval_cp INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -126,7 +128,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 );
 """
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 
 def get_connection(db_path: Path) -> duckdb.DuckDBPyConnection:
@@ -255,12 +257,18 @@ def _migration_add_position_legality(conn: duckdb.DuckDBPyConnection) -> None:
     _ensure_column(conn, "positions", "is_legal", "BOOLEAN")
 
 
+def _migration_add_tactic_explanations(conn: duckdb.DuckDBPyConnection) -> None:
+    _ensure_column(conn, "tactics", "best_san", "TEXT")
+    _ensure_column(conn, "tactics", "explanation", "TEXT")
+
+
 _SCHEMA_MIGRATIONS = [
     (1, _migration_base_tables),
     (2, _migration_raw_pgns_versioning),
     (3, _migration_add_columns),
     (4, _migration_add_training_attempt_latency),
     (5, _migration_add_position_legality),
+    (6, _migration_add_tactic_explanations),
 ]
 
 
@@ -581,8 +589,18 @@ def insert_tactics(
             tactic_id = start_id + idx
             conn.execute(
                 """
-                INSERT INTO tactics (tactic_id, game_id, position_id, motif, severity, best_uci, eval_cp)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO tactics (
+                    tactic_id,
+                    game_id,
+                    position_id,
+                    motif,
+                    severity,
+                    best_uci,
+                    best_san,
+                    explanation,
+                    eval_cp
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     tactic_id,
@@ -591,6 +609,8 @@ def insert_tactics(
                     row.get("motif", "unknown"),
                     row.get("severity", 0.0),
                     row.get("best_uci", ""),
+                    row.get("best_san"),
+                    row.get("explanation"),
                     row.get("eval_cp", 0),
                 ),
             )
@@ -709,8 +729,18 @@ def upsert_tactic_with_outcome(
         tactic_id = (int(tactic_row_id[0]) if tactic_row_id else 0) + 1
         conn.execute(
             """
-            INSERT INTO tactics (tactic_id, game_id, position_id, motif, severity, best_uci, eval_cp)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO tactics (
+                tactic_id,
+                game_id,
+                position_id,
+                motif,
+                severity,
+                best_uci,
+                best_san,
+                explanation,
+                eval_cp
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 tactic_id,
@@ -719,6 +749,8 @@ def upsert_tactic_with_outcome(
                 tactic_row.get("motif", "unknown"),
                 tactic_row.get("severity", 0.0),
                 tactic_row.get("best_uci", ""),
+                tactic_row.get("best_san"),
+                tactic_row.get("explanation"),
                 tactic_row.get("eval_cp", 0),
             ),
         )
@@ -1312,6 +1344,8 @@ def fetch_practice_tactic(
             t.motif,
             t.severity,
             t.best_uci,
+            t.best_san,
+            t.explanation,
             t.eval_cp,
             o.result,
             o.user_uci,
@@ -1335,26 +1369,6 @@ def fetch_practice_tactic(
     return rows[0] if rows else None
 
 
-def _format_practice_explanation(
-    fen: str | None, best_uci: str, motif: str | None
-) -> tuple[str | None, str | None]:
-    if not best_uci:
-        return None, None
-    best_san = None
-    if fen:
-        try:
-            board = chess.Board(str(fen))
-            move = chess.Move.from_uci(best_uci)
-            if move in board.legal_moves:
-                best_san = board.san(move)
-        except Exception:  # noqa: BLE001
-            best_san = None
-    line = best_san or best_uci
-    motif_label = motif or "tactic"
-    explanation = f"{motif_label} tactic. Best line: {line}."
-    return best_san, explanation
-
-
 def grade_practice_attempt(
     conn: duckdb.DuckDBPyConnection,
     tactic_id: int,
@@ -1375,7 +1389,15 @@ def grade_practice_attempt(
     fen = str(fen_value) if fen_value is not None else None
     motif_value = tactic.get("motif")
     motif = str(motif_value) if motif_value is not None else None
-    best_san, explanation = _format_practice_explanation(fen, best_uci, motif)
+    best_san = tactic.get("best_san")
+    explanation = tactic.get("explanation")
+    generated_san, generated_explanation = format_tactic_explanation(
+        fen, best_uci, motif
+    )
+    if not best_san:
+        best_san = generated_san
+    if not explanation:
+        explanation = generated_explanation
     attempt_id = record_training_attempt(
         conn,
         {

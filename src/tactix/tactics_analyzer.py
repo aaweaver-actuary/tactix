@@ -7,6 +7,7 @@ import chess
 from tactix.config import Settings
 from tactix.logging_utils import get_logger
 from tactix.stockfish_runner import EngineResult, StockfishEngine
+from tactix.tactics_explanation import format_tactic_explanation
 
 logger = get_logger(__name__)
 
@@ -83,7 +84,7 @@ def _infer_motif(board: chess.Board, best_move: chess.Move | None) -> str:
     return "initiative"
 
 
-def _is_bullet_profile(settings: Settings | None) -> bool:
+def _is_fast_profile(settings: Settings | None) -> bool:
     if settings is None:
         return False
     source = (settings.source or "").strip().lower()
@@ -91,9 +92,9 @@ def _is_bullet_profile(settings: Settings | None) -> bool:
         profile = (
             settings.chesscom_profile or settings.chesscom_time_class or ""
         ).strip()
-        return profile.lower() == "bullet"
+        return profile.lower() in {"bullet", "blitz"}
     profile = (settings.lichess_profile or settings.rapid_perf or "").strip()
-    return profile.lower() == "bullet"
+    return profile.lower() in {"bullet", "blitz"}
 
 
 def analyze_position(
@@ -134,10 +135,12 @@ def analyze_position(
     motif = _infer_motif(motif_board, engine_result.best_move)
     severity = abs(delta) / 100.0
     if mate_in_one and result == "found":
-        if _is_bullet_profile(settings):
+        if _is_fast_profile(settings):
             severity = max(severity, 1.5)
         else:
             severity = min(severity, 1.0)
+
+    best_san, explanation = format_tactic_explanation(fen, best_move or "", motif)
 
     tactic_row = {
         "game_id": position["game_id"],
@@ -146,6 +149,8 @@ def analyze_position(
         "severity": severity,
         "best_uci": best_move or "",
         "eval_cp": base_cp,
+        "best_san": best_san,
+        "explanation": explanation,
     }
     outcome_row = {
         "tactic_id": None,  # filled by caller

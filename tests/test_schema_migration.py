@@ -103,13 +103,18 @@ class SchemaMigrationTests(unittest.TestCase):
 
         migrate_schema(conn)
 
-        self.assertEqual(get_schema_version(conn), 5)
+        self.assertEqual(get_schema_version(conn), 6)
         columns = {
             row[1] for row in conn.execute("PRAGMA table_info('raw_pgns')").fetchall()
         }
         self.assertIn("raw_pgn_id", columns)
         self.assertIn("pgn_hash", columns)
         self.assertIn("pgn_version", columns)
+        tactics_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info('tactics')").fetchall()
+        }
+        self.assertIn("best_san", tactics_columns)
+        self.assertIn("explanation", tactics_columns)
 
     def test_should_attempt_wal_recovery_gate(self) -> None:
         exc = Exception("WAL replay failed")

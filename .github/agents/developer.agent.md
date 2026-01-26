@@ -249,16 +249,13 @@ You should end up with two sets of tests that check the same thing for each feat
 - Polished UI matching the design specified in app_spec.txt
 - All features work end-to-end through the UI
 - Fast, responsive, professional
-- Use the dedicated `tmp-logs/` directory for logging if needed, not any system directories such as `/tmp/`
 
 **You have unlimited time.** Take as long as needed to get it right. The most important thing is that you
 leave the code base in a clean state before terminating the session (Step 10).
 
-**You _do not_ have unlimited resources.** It is important to take steps to ensure that the project does not get stuck. Always run network requests (ie with curl) using a max-timeout and retry strategy to avoid hanging indefinitely. Do not leave services or terminals running unnecessarily. Always document the current state before stopping.
+**You _do not_ have unlimited resources.** It is important to take steps to ensure that the project does not get stuck. Always run network requests using a max-timeout and retry strategy to avoid hanging indefinitely. Do not leave services or terminals running unnecessarily. Always document the current state before stopping.
 
 **Clean up unused resources before ending the session.** This includes closing any terminal tabs and ensuring no background processes are left running.
-
-**You should not be running `npm run dev`. The development server should be started using Docker Compose as described in Step 2.**
 
 ---
 

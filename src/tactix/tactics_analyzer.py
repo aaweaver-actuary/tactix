@@ -162,6 +162,19 @@ def _is_classical_profile(settings: Settings | None) -> bool:
     return profile.lower() == "classical"
 
 
+def _is_correspondence_profile(settings: Settings | None) -> bool:
+    if settings is None:
+        return False
+    source = (settings.source or "").strip().lower()
+    if source == "chesscom":
+        profile = (
+            settings.chesscom_profile or settings.chesscom_time_class or ""
+        ).strip()
+        return profile.lower() in {"correspondence", "daily"}
+    profile = (settings.lichess_profile or settings.rapid_perf or "").strip()
+    return profile.lower() == "correspondence"
+
+
 def analyze_position(
     position: Dict[str, object],
     engine: StockfishEngine,
@@ -217,6 +230,7 @@ def analyze_position(
             or _is_blitz_profile(settings)
             or _is_rapid_profile(settings)
             or _is_classical_profile(settings)
+            or _is_correspondence_profile(settings)
         )
     ):
         severity = min(severity, 1.0)

@@ -855,3 +855,14 @@ Session 2026-01-26 (feature 086 – Stockfish mate-in-2 low severity for classic
 - Tests + lint: `make check`.
 - Updated feature_list.json: feature "Stockfish detects mate in 2 with low severity in classical" marked passes=true.
 - Current passing count: 86.
+
+Session 2026-01-26 (feature 087 – Stockfish mate-in-2 low severity for correspondence)
+- Verification tests (randomized 12 passing suites): `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_mate_in_one_bullet.py tests/test_mate_in_one_blitz.py tests/test_mate_in_one_rapid.py tests/test_mate_in_one_classical.py tests/test_mate_in_one_correspondence.py tests/test_mate_in_two_bullet.py tests/test_mate_in_two_blitz.py tests/test_practice_next.py`.
+- Added correspondence mate-in-two fixture, test coverage for low severity, best line/explanation persistence, and position linkage.
+- Clamped mate-in-two severity for correspondence profiles in tactics analyzer.
+- Seeded correspondence fixtures into client/data and data DuckDBs using `tmp-logs/feature_087_seed.py` (Rust extractor fallback warnings observed).
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_087_mate_in_two_correspondence.js` (screenshot `verification/feature-087-mate-in-2-correspondence-low-severity-2026-01-26.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_087_mate_in_two_correspondence_low.js` (screenshot `verification/feature-087-mate-in-2-correspondence-low-severity-ci-2026-01-26.png`).
+- Tests + lint: `make check`.
+- Updated feature_list.json: feature "Stockfish detects mate in 2 with low severity in correspondence" marked passes=true.
+- Current passing count: 87.

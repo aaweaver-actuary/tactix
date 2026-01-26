@@ -661,3 +661,13 @@ Session 2026-01-26 (feature 071 – Chess.com classical black-to-move extraction
 - UI verification screenshot: `verification/feature-071-chesscom-classical-black-to-move-2026-01-26.png`.
 - Updated feature_list.json: feature "Position extraction records black to move for Chess.com classical" marked passes=true.
 - Current passing count: 71.
+
+Session 2026-01-26 (feature 072 – Chess.com correspondence black-to-move extraction)
+- Regression UI verification: `TACTIX_SCREENSHOT_NAME=regression-001-lichess-2026-01-26j.png node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js`, `TACTIX_SCREENSHOT_NAME=regression-016-auth-2026-01-26e.png node /Users/andy/tactix/verification/puppeteer_regression_feature_016_auth.js`.
+- Updated Chess.com correspondence side-to-move filter to capture black-to-move positions.
+- Added Chess.com correspondence extractor tests for black-to-move filtering (ply/move/clocks/legality) and skip-white-user behavior.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_position_extractor.py`.
+- UI verification: `TACTIX_SCREENSHOT_NAME=feature-072-chesscom-correspondence-black-to-move-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_051_chesscom_correspondence_incremental.js`.
+- UI verification screenshot: `verification/feature-072-chesscom-correspondence-black-to-move-2026-01-26.png`.
+- Updated feature_list.json: feature "Position extraction records black to move for Chess.com correspondence" marked passes=true.
+- Current passing count: 72.

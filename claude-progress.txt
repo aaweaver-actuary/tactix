@@ -712,3 +712,14 @@ PY`.
 - UI verification screenshot: `verification/feature-074-mate-in-1-blitz-low-severity-2026-01-26.png`.
 - Updated feature_list.json: feature "Stockfish detects mate in 1 with low severity in blitz" marked passes=true.
 - Current passing count: 74.
+
+Session 2026-01-26 (feature 075 – Stockfish mate-in-1 low severity for rapid)
+- Added rapid default Stockfish depth for pinned analysis.
+- Extended rapid fixture with mate-in-one game and added rapid mate-in-one test coverage (severity clamp, best-line persistence, position linkage).
+- Added Puppeteer verification script for rapid mate-in-one filter.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_one_rapid.py -q`.
+- Frontend dev server (nohup): `cd /Users/andy/tactix/client && nohup npm run dev -- --host 0.0.0.0 --port 5173 --strictPort < /dev/null > /Users/andy/tactix/tmp-logs/vite-frontend.log 2>&1 &`.
+- UI verification: `TACTIX_SCREENSHOT_NAME=feature-075-mate-in-1-rapid-low-severity-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_075_mate_in_one_rapid.js`.
+- UI verification screenshot: `verification/feature-075-mate-in-1-rapid-low-severity-2026-01-26.png`.
+- Updated feature_list.json: feature "Stockfish detects mate in 1 with low severity in rapid" marked passes=true.
+- Current passing count: 75.

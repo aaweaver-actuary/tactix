@@ -34,6 +34,15 @@ def _read_chesscom_rapid_games() -> list[str]:
     ]
 
 
+def _read_chesscom_classical_games() -> list[str]:
+    path = (
+        Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
+    )
+    return [
+        chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
+    ]
+
+
 def _read_promotion_en_passant_games() -> list[str]:
     path = (
         Path(__file__).resolve().parent
@@ -92,6 +101,7 @@ class PositionExtractorTests(unittest.TestCase):
         self.chesscom_games = _read_chesscom_games()
         self.chesscom_bullet_games = _read_chesscom_bullet_games()
         self.chesscom_rapid_games = _read_chesscom_rapid_games()
+        self.chesscom_classical_games = _read_chesscom_classical_games()
         self.promotion_en_passant_games = _read_promotion_en_passant_games()
         self.castling_games = _read_castling_games()
         self.lichess_bullet_games = _read_lichess_bullet_games()
@@ -237,6 +247,38 @@ class PositionExtractorTests(unittest.TestCase):
             user="chesscom",
             source="chesscom",
             game_id="rapid2",
+            side_to_move_filter="white",
+        )
+        self.assertEqual(positions, [])
+
+    def test_extracts_chesscom_classical_white_to_move_positions(self) -> None:
+        pgn = self.chesscom_classical_games[0]
+        positions = extract_positions(
+            pgn,
+            user="chesscom",
+            source="chesscom",
+            game_id="classical1",
+            side_to_move_filter="white",
+        )
+        self.assertGreater(len(positions), 0)
+        self.assertTrue(all(pos["side_to_move"] == "white" for pos in positions))
+
+        first = positions[0]
+        self.assertEqual(first["ply"], 0)
+        self.assertEqual(first["move_number"], 1)
+        self.assertEqual(first["side_to_move"], "white")
+        self.assertEqual(first["uci"], "d2d4")
+        self.assertEqual(first["san"], "d4")
+        self.assertEqual(first["clock_seconds"], 1800)
+        self.assertTrue(first["is_legal"])
+
+    def test_chesscom_classical_white_filter_skips_black_user(self) -> None:
+        pgn = self.chesscom_classical_games[1]
+        positions = extract_positions(
+            pgn,
+            user="chesscom",
+            source="chesscom",
+            game_id="classical2",
             side_to_move_filter="white",
         )
         self.assertEqual(positions, [])

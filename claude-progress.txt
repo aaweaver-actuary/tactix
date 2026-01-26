@@ -900,3 +900,14 @@ Session 2026-01-26 (feature 090 – Stockfish mate-in-2 high severity for rapid)
 - Tests + lint: `make check`.
 - Updated feature_list.json: feature "Stockfish detects mate in 2 with high severity in rapid" marked passes=true.
 - Current passing count: 90.
+
+Session 2026-01-26 (feature 091 – Stockfish mate-in-2 high severity for classical)
+- Verification tests (randomized 12 passing suites): `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_practice_next.py tests/test_practice_queue.py tests/test_metrics_refresh.py tests/test_stockfish_checksum.py tests/test_tactics_analyzer.py tests/test_chesscom_client.py tests/test_lichess_client.py`.
+- Raised mate-in-two severity clamp for classical profiles and updated classical mate-in-two test expectations.
+- Seeded classical fixtures into client DuckDB with explicit classical checkpoints for UI verification (Rust extractor fallback warnings observed during seeding).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_two_rapid.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_091_mate_in_two_classical_high.js` (screenshot `verification/feature-091-mate-in-2-classical-high-severity-2026-01-26.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_091_mate_in_two_classical_high_ci.js` (screenshot `verification/feature-091-mate-in-2-classical-high-severity-ci-2026-01-26.png`).
+- Tests + lint: `make check`.
+- Updated feature_list.json: feature "Stockfish detects mate in 2 with high severity in classical" marked passes=true.
+- Current passing count: 91.

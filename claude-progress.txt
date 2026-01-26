@@ -529,3 +529,12 @@ Session 2026-01-26 (feature 059 – Lichess blitz black-to-move):
 - UI verification screenshot: `verification/feature-059-lichess-blitz-black-to-move-2026-01-26.png`.
 - Updated feature_list.json: feature "Position extraction records black to move for Lichess blitz" marked passes=true.
 - Current passing count: 59.
+
+Session 2026-01-26 (feature 060 – Lichess rapid black-to-move extraction)
+- Updated Lichess rapid side-to-move filter in the pipeline to record black-to-move positions.
+- Added rapid black-to-move extractor tests (extract + skip) for Lichess rapid fixtures.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_position_extractor.py`.
+- Precheck UI verification screenshots: `verification/precheck-060-lichess-2026-01-26.png`, `verification/precheck-060-chesscom-2026-01-26.png`.
+- UI verification screenshot: `verification/feature-060-lichess-rapid-black-to-move-2026-01-26.png`.
+- Updated feature_list.json: feature "Position extraction records black to move for Lichess rapid" marked passes=true.
+- Current passing count: 60.

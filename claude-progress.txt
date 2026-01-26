@@ -889,3 +889,14 @@ Session 2026-01-26 (feature 089 – Stockfish mate-in-2 high severity for blitz)
 - Tests + lint: `make check`.
 - Updated feature_list.json: feature "Stockfish detects mate in 2 with high severity in blitz" marked passes=true.
 - Current passing count: 89.
+
+Session 2026-01-26 (feature 090 – Stockfish mate-in-2 high severity for rapid)
+- Verification tests (randomized 12 passing suites): `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_stockfish_checksum.py tests/test_practice_next.py tests/test_practice_queue.py tests/test_metrics_refresh.py tests/test_tactics_analyzer.py`.
+- Raised mate-in-two severity clamp for rapid profiles and updated rapid mate-in-two test expectations.
+- Seeded rapid fixtures into data + client DuckDBs with feature-specific checkpoints (Rust extractor fallback warnings observed during seeding).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_two_rapid.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_090_mate_in_two_rapid_high.js` (screenshot `verification/feature-090-mate-in-2-rapid-high-severity-2026-01-26.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_090_mate_in_two_rapid_high_ci.js` (screenshot `verification/feature-090-mate-in-2-rapid-high-severity-ci-2026-01-26.png`).
+- Tests + lint: `make check`.
+- Updated feature_list.json: feature "Stockfish detects mate in 2 with high severity in rapid" marked passes=true.
+- Current passing count: 90.

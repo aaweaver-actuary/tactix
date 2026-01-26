@@ -733,3 +733,18 @@ Session 2026-01-26 (feature 076 – Stockfish mate-in-1 low severity for classic
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_mate_in_one_classical.py -q`, `make check`.
 - Updated feature_list.json: feature "Stockfish detects mate in 1 with low severity in classical" marked passes=true.
 - Current passing count: 76.
+
+Session 2026-01-26 (pre-work verification)
+- Ran Puppeteer regression checks for 10 passing features: 001, 016, 028, 031, 033, 037, 040, 044, 046, 049.
+- Screenshots: `verification/regression-precheck-001-2026-01-26k.png`, `verification/regression-precheck-016-2026-01-26g.png`, `verification/regression-precheck-028-2026-01-26c.png`, `verification/regression-precheck-031-2026-01-26.png`, `verification/regression-precheck-033-2026-01-26.png`, `verification/regression-precheck-037-2026-01-26.png`, `verification/regression-precheck-040-2026-01-26.png`, `verification/regression-precheck-044-2026-01-26.png`, `verification/regression-precheck-046-2026-01-26.png`, `verification/regression-precheck-049-2026-01-26.png`.
+
+Session 2026-01-26 (feature 077 – Stockfish mate-in-1 low severity for correspondence)
+- Added correspondence Stockfish depth defaults and added correspondence mate-in-one fixture game.
+- Added mate-in-one correspondence test coverage for low severity, best-line persistence, and position linkage.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_mate_in_one_correspondence.py -vv`.
+- Populated UI DuckDB with correspondence fixtures (positions=7, tactics=7).
+- UI verification: `TACTIX_SCREENSHOT_NAME=feature-077-mate-in-1-correspondence-low-severity-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_077_mate_in_one_correspondence.js`.
+- UI verification screenshot: `verification/feature-077-mate-in-1-correspondence-low-severity-2026-01-26.png`.
+- Updated feature_list.json: feature "Stockfish detects mate in 1 with low severity in correspondence" marked passes=true.
+- Current passing count: 77.
+- Next: proceed to feature 078 and keep correspondence UI dataset up to date.

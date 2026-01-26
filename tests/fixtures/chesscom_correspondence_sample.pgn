@@ -20,3 +20,15 @@
 [Result "0-1"]
 
 1. e4 { [%clk 1:00:00] } c5 { [%clk 1:00:00] } 2. Nf3 { [%clk 0:59:59] } d6 { [%clk 0:59:58] } 3. d4 { [%clk 0:59:57] } cxd4 { [%clk 0:59:56] } 4. Nxd4 { [%clk 0:59:55] } Nf6 { [%clk 0:59:54] } 5. Nc3 { [%clk 0:59:53] } a6 { [%clk 0:59:52] } 0-1
+
+
+[Event "Chess.com Correspondence Fixture 3"]
+[Site "https://www.chess.com/game/daily/6677008898"]
+[UTCDate "2024.07.07"]
+[UTCTime "11:15:00"]
+[White "opponent2"]
+[Black "chesscom"]
+[TimeControl "86400"]
+[Result "0-1"]
+
+1. f3 { [%clk 1:00:00] } e5 { [%clk 1:00:00] } 2. g4 { [%clk 0:59:58] } Qh4# { [%clk 0:59:59] } 0-1

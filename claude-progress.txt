@@ -723,3 +723,13 @@ Session 2026-01-26 (feature 075 – Stockfish mate-in-1 low severity for rapid)
 - UI verification screenshot: `verification/feature-075-mate-in-1-rapid-low-severity-2026-01-26.png`.
 - Updated feature_list.json: feature "Stockfish detects mate in 1 with low severity in rapid" marked passes=true.
 - Current passing count: 75.
+
+Session 2026-01-26 (feature 076 – Stockfish mate-in-1 low severity for classical)
+- Added default classical Stockfish depth and extended Chess.com classical fixture with mate-in-one game.
+- Added mate-in-one classical test coverage for severity clamp, best-line persistence, and position linkage.
+- Populated UI DuckDB with classical fixtures using a fresh cursor path (positions=7, tactics=7).
+- UI verification: `TACTIX_SCREENSHOT_NAME=feature-076-mate-in-1-classical-low-severity-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_076_mate_in_one_classical.js`.
+- UI verification screenshot: `verification/feature-076-mate-in-1-classical-low-severity-2026-01-26.png`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_mate_in_one_classical.py -q`, `make check`.
+- Updated feature_list.json: feature "Stockfish detects mate in 1 with low severity in classical" marked passes=true.
+- Current passing count: 76.

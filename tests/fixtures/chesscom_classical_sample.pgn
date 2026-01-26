@@ -20,3 +20,15 @@
 [Result "0-1"]
 
 1. e4 { [%clk 0:30:00] } e5 { [%clk 0:30:00] } 2. Nf3 { [%clk 0:29:50] } Nc6 { [%clk 0:29:50] } 3. Bb5 { [%clk 0:29:40] } a6 { [%clk 0:29:45] } 4. Ba4 { [%clk 0:29:30] } Nf6 { [%clk 0:29:35] } 5. O-O { [%clk 0:29:20] } Be7 { [%clk 0:29:25] } 0-1
+
+
+[Event "Chess.com Classical Fixture 3"]
+[Site "https://www.chess.com/game/live/5544332212"]
+[UTCDate "2024.07.07"]
+[UTCTime "20:30:00"]
+[White "opponent2"]
+[Black "chesscom"]
+[TimeControl "1800"]
+[Result "0-1"]
+
+1. f3 { [%clk 0:30:00] } e5 { [%clk 0:30:00] } 2. g4 { [%clk 0:29:58] } Qh4# { [%clk 0:29:59] } 0-1

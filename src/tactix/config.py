@@ -24,6 +24,7 @@ DEFAULT_CHESSCOM_FIXTURE = Path("tests/fixtures/chesscom_blitz_sample.pgn")
 DEFAULT_BULLET_STOCKFISH_DEPTH = 8
 DEFAULT_BLITZ_STOCKFISH_DEPTH = 10
 DEFAULT_RAPID_STOCKFISH_DEPTH = 12
+DEFAULT_CLASSICAL_STOCKFISH_DEPTH = 14
 
 
 @dataclass(slots=True)
@@ -133,6 +134,8 @@ class Settings:
                 self.stockfish_depth = DEFAULT_BLITZ_STOCKFISH_DEPTH
             elif profile_value == "rapid":
                 self.stockfish_depth = DEFAULT_RAPID_STOCKFISH_DEPTH
+            elif profile_value == "classical":
+                self.stockfish_depth = DEFAULT_CLASSICAL_STOCKFISH_DEPTH
 
     @property
     def data_dir(self) -> Path:

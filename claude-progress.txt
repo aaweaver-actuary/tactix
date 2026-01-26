@@ -461,3 +461,11 @@ Session 2026-01-26 (feature 053 – Lichess bullet white-to-move extraction)
 - Precheck UI regression: `node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js` (passed after starting API/Frontend).
 - Updated feature_list.json: feature "Position extraction records white to move for Lichess bullet" marked passes=true.
 - Current passing count: 53.
+
+Session 2026-01-26 (feature 054 – Lichess blitz white-to-move extraction)
+- Added Lichess blitz extraction tests covering white-to-move filtering, ply/move, clocks, and legality flag.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_position_extractor.py`.
+- UI verification: `TACTIX_ENV=dev TACTIX_SOURCE=lichess TACTIX_SCREENSHOT_NAME=feature-054-lichess-blitz-white-to-move-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_dashboard.js`.
+- UI verification screenshot: `verification/feature-054-lichess-blitz-white-to-move-2026-01-26.png`.
+- Updated feature_list.json: feature "Position extraction records white to move for Lichess blitz" marked passes=true.
+- Current passing count: 54.

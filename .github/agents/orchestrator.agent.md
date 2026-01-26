@@ -204,7 +204,7 @@ Exactly one must be chosen:
 
 ### 5.1 Researcher Agent Dispatch
 
-If research is warranted, create a **Researcher Delegation Packet**:
+Create a **Researcher Delegation Packet**:
 
 - Feature ID + description
 - Test steps (verbatim)
@@ -213,7 +213,7 @@ If research is warranted, create a **Researcher Delegation Packet**:
 
 Dispatch using the Researcher Handoff Micro-Prompt.
 
-Wait for results before proceeding.
+Wait for results before proceeding. It is highly preferred to get OSS solutions when possible.
 
 ---
 
@@ -235,23 +235,6 @@ Create a **Developer Delegation Packet** that includes:
   - Progress notes required
 
 Dispatch using the Developer Handoff Micro-Prompt.
-
----
-
-### 5.3 Refactorer Agent Dispatch
-
-If significant refactoring is needed to support the new feature, create a **Refactorer Delegation Packet** that includes:
-
-- Selected feature(s)
-- Verbatim test steps
-- Refactoring guidelines based on `docs/design-principles.md`
-- Constraints:
-  - Follow `developer.agent.md` principles
-  - Follow `refactorer.agent.md` guidelines
-  - Commit required
-  - Progress notes required
-
-Dispatch using the Refactorer Handoff Micro-Prompt.
 
 ---
 
@@ -288,6 +271,22 @@ Maintain a **Known Issues** section for:
 - Deferred risks
 
 Blocking issues become the next unit of work.
+
+---
+
+### Step 7.1 — Dispatch refactorer IF NEEDED
+
+If technical debt or architecture issues are blocking progress, dispatch a refactorer agent before proceeding to new features.
+
+If you dispatch a refactorer, ensure the delegation packet includes:
+
+- Known issues summary
+- Refactoring goals
+- Constraints from Step 5.3
+
+Ensure `make check` runs before and after refactoring to maintain code quality. If it fails, we are not ready for refactoring.
+
+Look for opportunities to improve code structure, modularity, and maintainability as part of the refactoring process. Review recent changes for similar functions or components that can be abstracted or generalized. If there are patterns emerging, consider creating utility functions or shared components to reduce duplication and improve consistency across the codebase.
 
 ---
 

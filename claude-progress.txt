@@ -1,3 +1,13 @@
+
+Session 2026-01-26 (feature 098 – Stockfish fork high severity in bullet)
+- Pre-work verification: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_stockfish_checksum.py tests/test_metrics_refresh.py tests/test_practice_queue.py tests/test_practice_next.py tests/test_mate_in_one_bullet.py tests/test_mate_in_two_bullet.py tests/test_tactics_analyzer.py`.
+- Raised bullet fork severity clamp to high in tactics analyzer and updated bullet fork test expectations.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_one_bullet.py -q`.
+- UI verification (manual): `TACTIX_SCREENSHOT_NAME=feature-098-fork-bullet-high-severity-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_093_fork_bullet.js` (screenshot `verification/feature-098-fork-bullet-high-severity-2026-01-26.png`).
+- UI verification (CI JS eval): `node -e 'const url="http://localhost:8000/api/dashboard?source=chesscom&motif=fork&time_control=60";fetch(url,{headers:{Authorization:"Bearer local-dev-token"}}).then(res=>{if(!res.ok) throw new Error("Dashboard fetch failed: "+res.status);return res.json();}).then(data=>{const ok=Array.isArray(data.tactics)&&data.tactics.some(r=>r.best_uci==="f4e2"&&r.severity>=1.5);if(!ok) throw new Error("Expected fork tactic with high severity (>= 1.5)");console.log("CI check ok");}).catch(err=>{console.error(err);process.exit(1);});'` (console: `CI check ok`).
+- UI verification (CI screenshot): `verification/feature-098-fork-bullet-high-severity-ci-2026-01-26.png`.
+- Updated feature_list.json: feature "Stockfish detects fork with high severity in bullet" marked passes=true.
+- Current passing count: 98.
 Session 2026-01-24:
 - Added initial backend skeleton (config, DuckDB schema helpers, Lichess fetcher, PGN position extractor, Stockfish wrapper, tactics analyzer, pipeline runner, FastAPI API, Airflow DAG stub).
 - Scaffolded React/Vite/Tailwind dashboard with live refresh + pipeline trigger and cache-bust indicator.

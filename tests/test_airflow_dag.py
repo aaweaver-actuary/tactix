@@ -35,6 +35,9 @@ class AirflowDagTests(unittest.TestCase):
             },
         )
         self.assertEqual(str(dag.schedule_interval), "@hourly")
+        self.assertFalse(dag.catchup)
+        self.assertIn("lichess", dag.tags)
+        self.assertIn("chesscom", dag.tags)
         self.assertEqual(dag.default_args.get("retries"), 2)
         self.assertEqual(dag.default_args.get("retry_delay"), timedelta(minutes=5))
         self.assertTrue(dag.default_args.get("retry_exponential_backoff"))

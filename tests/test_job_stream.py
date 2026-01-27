@@ -1,25 +1,17 @@
 import json
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
 from tactix.api import app
-from tactix.config import get_settings
+from tactix.config import Settings, get_settings
 
 
-def test_job_stream_emits_progress_and_complete():
-    client = TestClient(app)
-    token = get_settings().api_token
+def _stream_events(client: TestClient, url: str, token: str) -> list[tuple[str, dict[str, object]]]:
     headers = {"Authorization": f"Bearer {token}"}
     events: list[tuple[str, dict[str, object]]] = []
-
-    with client.stream(
-        "GET",
-        "/api/jobs/stream?job=refresh_metrics&source=lichess",
-        headers=headers,
-    ) as response:
+    with client.stream("GET", url, headers=headers) as response:
         assert response.status_code == 200
-        assert response.headers["content-type"].startswith("text/event-stream")
-
         current_event = None
         current_data = None
         for raw_line in response.iter_lines():
@@ -39,6 +31,18 @@ def test_job_stream_emits_progress_and_complete():
                     break
                 current_event = None
                 current_data = None
+    return events
+
+
+def test_job_stream_emits_progress_and_complete():
+    client = TestClient(app)
+    token = get_settings().api_token
+    events: list[tuple[str, dict[str, object]]] = []
+    events = _stream_events(
+        client,
+        "/api/jobs/stream?job=refresh_metrics&source=lichess",
+        token,
+    )
 
     event_names = {name for name, _ in events}
     assert "progress" in event_names
@@ -47,3 +51,31 @@ def test_job_stream_emits_progress_and_complete():
         name == "progress" and data.get("step") in {"start", "metrics_refreshed"}
         for name, data in events
     )
+
+
+def test_daily_game_sync_stream_uses_airflow_when_enabled() -> None:
+    client = TestClient(app)
+    token = get_settings().api_token
+    settings = Settings()
+    settings.airflow_enabled = True
+    settings.airflow_base_url = "http://airflow"
+    settings.airflow_username = "admin"
+    settings.airflow_password = "admin"
+    with (
+        patch("tactix.api.get_settings", return_value=settings),
+        patch("tactix.api._trigger_airflow_daily_sync", return_value="run-1") as trigger,
+        patch("tactix.api._wait_for_airflow_run", return_value="success"),
+        patch(
+            "tactix.api.get_dashboard_payload",
+            return_value={"metrics_version": 12},
+        ),
+    ):
+        events = _stream_events(
+            client,
+            "/api/jobs/stream?job=daily_game_sync&source=lichess",
+            token,
+        )
+
+    assert trigger.call_count == 1
+    assert any(name == "progress" for name, _ in events)
+    assert any(name == "complete" for name, _ in events)

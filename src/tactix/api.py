@@ -15,6 +15,8 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from tactix.config import get_settings
+from tactix.logging_utils import get_logger
+from tactix.airflow_client import fetch_dag_run, trigger_dag_run
 from tactix.pipeline import (
     get_dashboard_payload,
     run_daily_game_sync,
@@ -28,6 +30,8 @@ from tactix.duckdb_store import (
     grade_practice_attempt,
     init_schema,
 )
+
+logger = get_logger(__name__)
 
 
 def _extract_api_token(request: Request) -> str | None:
@@ -213,6 +217,86 @@ def _format_sse(event: str, payload: dict[str, object]) -> bytes:
     return f"event: {event}\ndata: {json.dumps(payload)}\n\n".encode("utf-8")
 
 
+def _airflow_enabled(settings) -> bool:
+    return settings.airflow_enabled and bool(settings.airflow_base_url)
+
+
+def _airflow_conf(source: str | None, profile: str | None) -> dict[str, object]:
+    conf: dict[str, object] = {}
+    if source:
+        conf["source"] = source
+    if profile:
+        key = "chesscom_profile" if source == "chesscom" else "lichess_profile"
+        conf[key] = profile
+    return conf
+
+
+def _airflow_run_id(payload: dict[str, object]) -> str:
+    run_id = payload.get("dag_run_id") or payload.get("run_id")
+    if not run_id:
+        raise ValueError("Airflow response missing dag_run_id")
+    return str(run_id)
+
+
+def _trigger_airflow_daily_sync(
+    settings, source: str | None, profile: str | None
+) -> str:
+    payload = trigger_dag_run(
+        settings, "daily_game_sync", _airflow_conf(source, profile)
+    )
+    return _airflow_run_id(payload)
+
+
+def _airflow_state(settings, run_id: str) -> str:
+    payload = fetch_dag_run(settings, "daily_game_sync", run_id)
+    return str(payload.get("state") or "unknown")
+
+
+def _queue_progress(
+    queue: Queue[object],
+    job: str,
+    step: str,
+    message: str | None = None,
+    extra: dict[str, object] | None = None,
+) -> None:
+    payload: dict[str, object] = {
+        "job": job,
+        "step": step,
+        "timestamp": int(time_module.time()),
+    }
+    if message:
+        payload["message"] = message
+    if extra:
+        payload.update(extra)
+    queue.put(("progress", payload))
+
+
+def _wait_for_airflow_run(
+    settings,
+    queue: Queue[object],
+    job: str,
+    run_id: str,
+) -> str:
+    start = time_module.time()
+    last_state: str | None = None
+    while True:
+        state = _airflow_state(settings, run_id)
+        if state != last_state:
+            _queue_progress(
+                queue,
+                job,
+                "airflow_state",
+                message=state,
+                extra={"state": state, "run_id": run_id},
+            )
+            last_state = state
+        if state in {"success", "failed"}:
+            return state
+        if time_module.time() - start > settings.airflow_poll_timeout_s:
+            raise TimeoutError("Airflow run timed out")
+        time_module.sleep(settings.airflow_poll_interval_s)
+
+
 def _coerce_date_to_datetime(
     value: date | None, *, end_of_day: bool = False
 ) -> datetime | None:
@@ -239,7 +323,32 @@ def stream_jobs(
 
     def worker() -> None:
         try:
-            if job == "daily_game_sync":
+            if job == "daily_game_sync" and _airflow_enabled(settings):
+                run_id = _trigger_airflow_daily_sync(settings, source, profile)
+                _queue_progress(
+                    queue,
+                    job,
+                    "airflow_triggered",
+                    message="Airflow DAG triggered",
+                    extra={"run_id": run_id},
+                )
+                state = _wait_for_airflow_run(settings, queue, job, run_id)
+                if state != "success":
+                    raise RuntimeError(f"Airflow run failed with state={state}")
+                payload = get_dashboard_payload(
+                    get_settings(source=source),
+                    source=source,
+                )
+                logger.info(
+                    "Airflow daily_game_sync completed; metrics_version=%s",
+                    payload.get("metrics_version"),
+                )
+                result = {
+                    "airflow_run_id": run_id,
+                    "state": state,
+                    "metrics_version": payload.get("metrics_version"),
+                }
+            elif job == "daily_game_sync":
                 result = run_daily_game_sync(
                     settings, source=source, progress=progress, profile=profile
                 )

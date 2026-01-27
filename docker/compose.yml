@@ -7,6 +7,10 @@ services:
       dockerfile: docker/server.Dockerfile
     environment:
       TACTIX_API_TOKEN: local-dev-token
+      TACTIX_AIRFLOW_ENABLED: '1'
+      TACTIX_AIRFLOW_URL: http://airflow-webserver:8080
+      TACTIX_AIRFLOW_USERNAME: admin
+      TACTIX_AIRFLOW_PASSWORD: admin
       TACTIX_DATA_DIR: /app/data
       STOCKFISH_PATH: /usr/games/stockfish
     volumes:
@@ -43,6 +47,7 @@ services:
       AIRFLOW__CORE__EXECUTOR: SequentialExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
       _AIRFLOW_WWW_USER_USERNAME: admin
       _AIRFLOW_WWW_USER_PASSWORD: admin
       _AIRFLOW_WWW_USER_EMAIL: admin@example.com
@@ -75,6 +80,7 @@ services:
       AIRFLOW__CORE__EXECUTOR: SequentialExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
       TACTIX_DATA_DIR: /opt/airflow/data
       STOCKFISH_PATH: /usr/games/stockfish
     volumes:
@@ -98,6 +104,7 @@ services:
       AIRFLOW__CORE__EXECUTOR: SequentialExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
       TACTIX_DATA_DIR: /opt/airflow/data
       STOCKFISH_PATH: /usr/games/stockfish
     volumes:

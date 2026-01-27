@@ -123,6 +123,13 @@ class Settings:
     lichess_token_cache_path: Path = Path(
         os.getenv("LICHESS_TOKEN_CACHE_PATH", DEFAULT_DATA_DIR / "lichess_token.json")
     )
+    airflow_base_url: str = os.getenv("TACTIX_AIRFLOW_URL", "").strip()
+    airflow_username: str = os.getenv("TACTIX_AIRFLOW_USERNAME", "admin").strip()
+    airflow_password: str = os.getenv("TACTIX_AIRFLOW_PASSWORD", "admin").strip()
+    airflow_enabled: bool = os.getenv("TACTIX_AIRFLOW_ENABLED", "0") == "1"
+    airflow_api_timeout_s: int = int(os.getenv("TACTIX_AIRFLOW_TIMEOUT_S", "15"))
+    airflow_poll_interval_s: int = int(os.getenv("TACTIX_AIRFLOW_POLL_INTERVAL_S", "5"))
+    airflow_poll_timeout_s: int = int(os.getenv("TACTIX_AIRFLOW_POLL_TIMEOUT_S", "600"))
 
     def apply_stockfish_profile(self, profile: str | None = None) -> None:
         profile_value = (profile or "").strip().lower()

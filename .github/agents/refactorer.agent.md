@@ -70,6 +70,7 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:5173
 ```
 
 Notes:
+
 - Airflow may take 1–2 minutes to become available on first boot.
 - Services/ports: API 8000, UI 5173, Airflow 8080 (network: tactix-net).
 
@@ -149,6 +150,9 @@ For each refactor:
 5. Add/adjust unit tests to maintain 100% coverage.
 6. Run typecheck/lint/tests from repo root (or documented convention).
 7. Commit with a refactor-scoped message.
+  - Commit your work frequently with clear messages, prefixed by `[refactor]`
+  - Example: `[refactor]Extract UserProfileCard from DashboardPage - stable test IDs`
+  - Example (python backend): `[refactor]Abstract tactics classifier logic into abstract base class 'TacticsClassifier'`
 
 ---
 

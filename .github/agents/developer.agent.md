@@ -66,9 +66,14 @@ Use Docker Compose for a consistent local setup.
 docker compose -f docker/compose.yml up --build -d
 
 # Health checks
-curl -s http://localhost:8000/api/health
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost:5173
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080
+# API health endpoint:
+curl --max-time 10 -s http://localhost:8000/api/health
+
+# UI root endpoint:
+curl --max-time 10 -s -o /dev/null -w "%{http_code}\n" http://localhost:5173
+
+# Airflow webserver endpoint:
+curl --max-time 10 -s -o /dev/null -w "%{http_code}\n" http://localhost:8080
 ```
 
 Notes:
@@ -180,7 +185,7 @@ Make a descriptive git commit:
 
 ```bash
 git add .
-git commit -m "Implement [feature name] - verified end-to-end
+git commit -m "[dev]Implement [feature name] - verified end-to-end
 
 - Added [specific changes]
 - Tested with browser automation
@@ -197,7 +202,7 @@ Update `claude-progress.txt` with:
 - Which test(s) you completed
 - Any issues discovered or fixed
 - What should be worked on next
-- Current completion status (e.g., "45/200 tests passing")
+- Current completion status (e.g., "45/400 tests passing")
 
 ### STEP 10: END SESSION CLEANLY
 
@@ -237,7 +242,7 @@ You should end up with two sets of tests that check the same thing for each feat
 
 ## IMPORTANT REMINDERS
 
-**Your Goal:** Production-quality application with all 200+ tests passing
+**Your Goal:** Production-quality application with all 400+ tests passing
 
 **This Session's Goal:** Complete at least one feature perfectly
 
@@ -249,6 +254,7 @@ You should end up with two sets of tests that check the same thing for each feat
 - Polished UI matching the design specified in app_spec.txt
 - All features work end-to-end through the UI
 - Fast, responsive, professional
+- Commit your work frequently with clear messages, prefixed by `[dev]`
 
 **You have unlimited time.** Take as long as needed to get it right. The most important thing is that you
 leave the code base in a clean state before terminating the session (Step 10).

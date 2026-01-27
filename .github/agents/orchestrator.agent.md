@@ -99,11 +99,17 @@ If the repo is not under git, stop and initialize git before continuing.
 
 Docker status check (run after re-orient when Docker is expected):
 
+```bash
+docker ps -a
+curl --max-time 10 -s http://localhost:8000/api/health
+curl --max-time 10 -s -o /dev/null -w "%{http_code}\n" http://localhost:5173
+curl --max-time 10 -s -o /dev/null -w "%{http_code}\n" http://localhost:8080
 ```
-docker compose -f docker/compose.yml ps
-curl -s http://localhost:8000/api/health
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost:5173
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080
+
+If Docker services are expected but not running, start them using the standard project init script:
+
+```bash
+source ./init.sh
 ```
 
 Notes:
@@ -183,6 +189,7 @@ Before delegating implementation, decide whether **research is required**.
   - protocol-heavy
   - likely to be reused
 - There is a high risk of reinventing something poorly
+- There are two or more similar implementations currently in the codebase
 
 ### 4.2 Skip Research IF ALL are true
 
@@ -365,6 +372,7 @@ If any conflict exists:
 - Create automated tests for all new features and bug fixes
 - Use the dedicated `tmp-logs/` directory for logging orchestration events if needed, not any system directories such as `/tmp/`
 - Ensure that all work is committed with clear and descriptive commit messages
-- Use the running docker compose environment for testing and development as appropriate. If it is not running, they should start it up using `docker compose -f docker/compose.yml up -d`. It should not be shut down unless absolutely necessary. Please use `docker ps -a` to check the status of running containers, and the ports specified in Step 1 to verify that services are up and running.
+- Use the running docker compose environment for testing and development as appropriate. If it is not running, they should start it up using `source ./init.sh` from the root directory. It should not be shut down unless absolutely necessary. Please use `docker ps -a` to check the status of running containers, and the ports specified in Step 1 to verify that services are up and running.
+- Prefix their commits with [dev]/[refactor] as appropriate to indicate the type of work being done. This gives you clarity when reviewing the git log.
 
 Remember, you are dispatching a researcher agent to look for OSS solutions or a developer/refactorer agent to do the coding. You are not doing the research or coding yourself, and you are not getting my opinion. Your job is to manage the overall process and ensure high-quality results from your sub-process agents.

@@ -6,6 +6,7 @@ cd "$ROOT_DIR"
 
 info() { printf "[init] %s\n" "$*"; }
 warn() { printf "[init][warn] %s\n" "$*"; }
+error() { printf "[init][error] %s\n" "$*"; }
 
 info "Using uv virtual environment (expected at .venv)."
 info "1) Installing Python dependencies via uv sync"
@@ -23,27 +24,43 @@ else
   warn "client/package.json not found; skipping frontend install"
 fi
 
-info "3) Bootstrapping Airflow state (local metadata DB)"
-export AIRFLOW_HOME="${ROOT_DIR}/airflow"
-if command -v uv >/dev/null 2>&1; then
-  if [ ! -f "${AIRFLOW_HOME}/airflow.db" ]; then
-    info "Initializing Airflow database"
-    uv run airflow db init || warn "Airflow not yet installed or failed to init; add it with 'uv add apache-airflow' if needed"
+info "3) Docker compose (recommended runtime)"
+if [ "${START_DOCKER:-1}" -eq 1 ]; then
+  if command -v docker >/dev/null 2>&1; then
+    info "Starting Docker Compose stack (docker/compose.yml)"
+    docker compose -f docker/compose.yml up -d || warn "Docker compose failed; check Docker Desktop/daemon"
   else
-    info "Airflow metadata DB already present"
+    warn "docker not found; install Docker Desktop or set START_DOCKER=0"
   fi
 else
-  warn "uv unavailable; cannot run Airflow init"
+  info "Skipping Docker Compose. Set START_DOCKER=1 to auto-start services."
 fi
 
-info "4) Optional: build Rust extractor (if crate present under src/)"
+info "4) Airflow bootstrap (optional; set AIRFLOW_INIT=1)"
+export AIRFLOW_HOME="${ROOT_DIR}/airflow"
+if [ "${AIRFLOW_INIT:-0}" -eq 1 ]; then
+  if command -v uv >/dev/null 2>&1; then
+    if [ ! -f "${AIRFLOW_HOME}/airflow.db" ]; then
+      info "Initializing Airflow database"
+      uv run airflow db init || warn "Airflow not yet installed or failed to init; add it with 'uv add apache-airflow' if needed"
+    else
+      info "Airflow metadata DB already present"
+    fi
+  else
+    warn "uv unavailable; cannot run Airflow init"
+  fi
+else
+  info "Skipping Airflow bootstrap. Set AIRFLOW_INIT=1 to initialize metadata DB."
+fi
+
+info "5) Optional: build Rust extractor (if crate present under src/)"
 if [ -f src/Cargo.toml ]; then
   (cd src && cargo build --release)
 else
   warn "src/Cargo.toml not found; skipping Rust build"
 fi
 
-info "5) Starting dev servers (set START_SERVERS=1 to auto-start)"
+info "6) Starting dev servers (set START_SERVERS=1 to auto-start)"
 if [ "${START_SERVERS:-0}" -eq 1 ]; then
   info "Starting FastAPI (uvicorn) on http://localhost:8000"
   if uv run python - <<'PY'
@@ -84,7 +101,36 @@ else
   info "Skipping server startup. Set START_SERVERS=1 to auto-start backend/frontend/Airflow."
 fi
 
+info "\n\nPinging services to verify startup..."
+sleep 1
+IS_VERIFIED=1
+info "FastAPI health check:"
+if !curl --max-time 10 -s http://localhost:8000/api/health 
+then
+  warn "FastAPI health check failed"
+  IS_VERIFIED=0
+fi
+info "Vite root endpoint check:"
+HTTP_CODE=$(curl --max-time 10 -s -o /dev/null -w "%{http_code}\n" http://localhost:5173) || warn "Vite root endpoint check failed"
+if [ "$HTTP_CODE" -ne 200 ]; then
+  warn "Vite root endpoint returned HTTP $HTTP_CODE"
+  IS_VERIFIED=0
+fi
+info "Airflow webserver endpoint check:"
+HTTP_CODE=$(curl --max-time 10 -s -o /dev/null -w "%{http_code}\n" http://localhost:8080) || warn "Airflow webserver endpoint check failed"
+if [ "$HTTP_CODE" -ne 200 ]; then
+  warn "Airflow webserver endpoint returned HTTP $HTTP_CODE"
+  IS_VERIFIED=0
+fi
+
+if [ "$IS_VERIFIED" -eq 1 ]; then
+  info "All services responded successfully."
+else
+  error "One or more services did not respond successfully."
+fi
+
 cat <<'EOF'
+
 
 Ready! Quick access summary:
 - FastAPI (SSE, analytics API): http://localhost:8000 (uvicorn tactics_training.api:app)
@@ -93,4 +139,3 @@ Ready! Quick access summary:
 - Practice + analytics endpoints: /api/stats/*, /api/tactics/search, /api/practice/next
 
 If backend or frontend did not start, implement the app modules and re-run with START_SERVERS=1.
-EOF

@@ -1,6 +1,6 @@
 # researcher.agent.md
 
-description: 'This custom agent researches mature open-source libraries/components (GitHub, npm, PyPI, etc.) for a specific task, and returns a short list of vetted options + an integration plan.'
+description: 'This custom agent researches mature open-source libraries/components (GitHub, npm, PyPI, crates.io, etc.) for a specific task, and returns a short list of vetted options + an integration plan.'
 tools:
 [
 'vscode',
@@ -32,7 +32,7 @@ This is a FRESH context window - you have no memory of previous sessions.
 
 Given a specific feature/task from the orchestrator, you will:
 
-1. Search GitHub / npm / PyPI (and other relevant ecosystems) for mature OSS options.
+1. Search GitHub / npm / PyPI / crates.io (and other relevant ecosystems) for mature OSS options.
 2. Vet them for:
    - adoption & maturity
    - maintenance health
@@ -60,6 +60,7 @@ git log --oneline -20 || true
 ```
 
 Environment notes (for compatibility checks):
+
 - Docker Compose stack in docker/compose.yml
 - Services/ports: API 8000, UI 5173, Airflow 8080 (network: tactix-net)
 - Prefer OSS options that are container-friendly and can run under these services.
@@ -127,7 +128,26 @@ Query patterns:
 - "<task> site:pypi.org"
 - "<task> python library"
 
-### 3.4 Additional sources (when relevant)
+### 3.4 Rust Crates.io
+
+Our python backend is build with maturin and can use Rust extensions where available and appropriate.
+
+Look for:
+
+- mature crates with recent releases
+- good documentation and examples
+
+Query patterns:
+
+- "<task> site:crates.io"
+- "<task> rust crate"
+
+### 3.5 Web Search
+
+- Use web search to find blog posts, comparison articles, and community recommendations.
+- Validate candidates found in other searches.
+
+### 3.6 Additional sources (when relevant)
 
 - Official docs pages
 - Security advisories (npm audit, GitHub Security tab, OSV)
@@ -142,7 +162,10 @@ For each candidate, evaluate:
 ### 4.1 Maturity / Adoption
 
 - GitHub stars & forks (only a proxy)
-- npm weekly downloads / PyPI downloads (if available)
+- npm weekly downloads / PyPI downloads / Crates.io downloads
+- Age of project (prefer 1+ year)
+- Release frequency (prefer regular releases)
+- Quality of documentation
 - Presence in real apps / community references
 
 ### 4.2 Maintenance Health
@@ -150,6 +173,7 @@ For each candidate, evaluate:
 - Recent commits/releases (prefer recent)
 - Issue tracker responsiveness
 - Bus factor signals (multiple maintainers, org ownership)
+- Active community (discussions, PRs)
 
 ### 4.3 License
 

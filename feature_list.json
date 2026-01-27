@@ -1414,6 +1414,172 @@
   },
   {
     "category": "functional",
+    "description": "Tactix converts collected games into fen positions for tactic analysis",
+    "steps": [
+      "Step 1: Retrieve collected games from database",
+      "Step 2: Parse PGNs to extract move-by-move positions",
+      "Step 3: Generate FEN strings for each position",
+      "Step 4: Store FEN positions with metadata for tactic detection"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Airflow pipeline hashes and stores raw PGNs from Lichess and Chess.com",
+    "steps": [
+      "Step 1: Retrieve raw PGNs from data ingestion tasks",
+      "Step 2: Compute hash for each game inside each PGN",
+      "Step 3: Store hashed PGNs in persistent storage with site metadata",
+      "Step 4: Mark run status success in Airflow and log metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Airflow pipeline correctly hashes and stores each game from Lichess and Chess.com separately",
+    "steps": [
+      "Step 1: Retrieve raw PGNs from data ingestion tasks",
+      "Step 2: Compute hash for each game inside each PGN",
+      "Step 3: Store hashed PGNs in persistent storage with site metadata",
+      "Step 4: Ensure that the number of stored games matches the number of hashes computed",
+      "Step 5: Mark run status success in Airflow and log metrics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Airflow pipeline runs every hour to get new games from Lichess and Chess.com",
+    "steps": [
+      "Step 1: Schedule DAG to run hourly",
+      "Step 2: Execute data ingestion tasks for Lichess and Chess.com",
+      "Step 3: Monitor for successful completion and log metrics",
+      "Step 4: Handle any errors or retries as needed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Airflow pipeline runs on trigger from dashboard to get new games from Lichess and Chess.com",
+    "steps": [
+      "Step 1: Set up DAG to be triggerable from dashboard",
+      "Step 2: Execute data ingestion tasks for Lichess and Chess.com upon trigger",
+      "Step 3: Monitor for successful completion and log metrics",
+      "Step 4: Handle any errors or retries as needed"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Airflow pipeline runs on trigger from dashboard to backfill historical games from Lichess and Chess.com",
+    "steps": [
+      "Step 1: Set up DAG to be triggerable from dashboard",
+      "Step 2: Execute data ingestion tasks for Lichess and Chess.com backfill upon trigger",
+      "Step 3: Monitor for successful completion and log metrics",
+      "Step 4: Check that all incoming games are dated prior to the trigger time",
+      "Step 5: Handle any errors or retries as needed",
+      "Step 6: Ensure no duplication of existing game IDs"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Airflow pipeline is monitoring incoming games and triggers tactic analysis for new positions",
+    "steps": [
+      "Step 1: Continuously monitor database for newly ingested games",
+      "Step 2: Extract positions from new games",
+      "Step 3: Trigger tactic analysis engine for each new position",
+      "Step 4: Log metrics on number of positions analyzed and tactics detected"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Airflow webserver is deployed and operational",
+    "steps": [
+      "Step 1: Deploy Airflow webserver using Docker Compose (if not already deployed)",
+      "Step 2: Access Airflow webserver at http://localhost:8080",
+      "Step 3: Verify that the webserver is running and responsive",
+      "Step 4: Check that DAGs are listed and can be triggered manually"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Airflow scheduler is deployed and operational",
+    "steps": [
+      "Step 1: Deploy Airflow scheduler using Docker Compose (if not already deployed)",
+      "Step 2: Verify that the scheduler is running and processing DAGs",
+      "Step 3: Check logs for any errors or issues",
+      "Step 4: Ensure that scheduled DAGs are executing as expected"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Postgres DB is deployed and operational",
+    "steps": [
+      "Step 1: Deploy Postgres DB using Docker Compose (if not already deployed)",
+      "Step 2: Connect to Postgres DB using a client",
+      "Step 3: Verify that the DB is running and accessible",
+      "Step 4: Check that required tables and schemas are present",
+      "Step 5: Check that Airflow can read/write to the DB",
+      "Step 6: Check that tactic analysis engine can read/write to the DB",
+      "Step 7: Check that data ingestion tasks can read/write to the DB",
+      "Step 8: Trigger a sample DAG run and verify DB interactions"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Airflow uses postgres as its metadata database",
+    "steps": [
+      "Step 1: Deploy Airflow and Postgres using Docker Compose (if not already deployed)",
+      "Step 2: Verify Airflow configuration points to Postgres DB",
+      "Step 3: Check Airflow logs for successful connection to Postgres",
+      "Step 4: Ensure Airflow can read/write metadata to Postgres DB"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Analysis engine uses postgres to efficiently store and retrieve tactic analysis results",
+    "steps": [
+      "Step 1: Deploy analysis engine and Postgres using Docker Compose (if not already deployed)",
+      "Step 2: Verify analysis engine configuration points to Postgres DB",
+      "Step 3: Check analysis engine logs for successful connection to Postgres",
+      "Step 4: Ensure analysis engine can read/write tactic analysis results to Postgres DB"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Postgres DB efficiently stores raw string data of PGNs ingested from Lichess and Chess.com",
+    "steps": [
+      "Step 1: Deploy data ingestion tasks and Postgres using Docker Compose (if not already deployed)",
+      "Step 2: Verify data ingestion configuration points to Postgres DB",
+      "Step 3: Check data ingestion logs for successful connection to Postgres",
+      "Step 4: Ensure data ingestion tasks can read/write raw PGN strings to Postgres DB",
+      "Step 5: Ensure individual games within PGNs are stored separately with unique IDs",
+      "Step 6: Ensure individual games have metadata such as player info, timestamps, and game results",
+      "Step 7: Ensure individual games are normalized for consistent formatting before storage",
+      "Step 8: Ensure no duplication of existing game IDs",
+      "Step 9: Ensure efficient indexing for fast retrieval of games based on various criteria"
+    ],
+    "passes": false
+  },
+  {
+    "category": "infrastructure",
+    "description": "Rust, python, and TS interfaces efficiently with Postgres using appropriate libraries",
+    "steps": [
+      "Step 1: Verify Rust code uses `tokio-postgres` or `diesel` for DB interactions",
+      "Step 2: Verify Python code uses `psycopg2` or `SQLAlchemy` for DB interactions",
+      "Step 3: Verify TypeScript code uses `pg` or `TypeORM` for DB interactions",
+      "Step 4: Test CRUD operations from each language to ensure proper connectivity and performance"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
     "description": "Stockfish detects fork with high severity in rapid",
     "steps": [
       "Step 1: Run engine with pinned depth on rapid sample",

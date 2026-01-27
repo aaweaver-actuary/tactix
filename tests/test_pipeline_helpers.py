@@ -59,6 +59,12 @@ class PipelineHelperTests(unittest.TestCase):
                 "pgn": "p1",
             },
             {
+                "game_id": "g1",
+                "source": "lichess",
+                "last_timestamp_ms": 11,
+                "pgn": "p1b",
+            },
+            {
                 "game_id": "g2",
                 "source": "lichess",
                 "last_timestamp_ms": 20,
@@ -73,11 +79,12 @@ class PipelineHelperTests(unittest.TestCase):
         ]
 
         deduped = pipeline._dedupe_games(rows)
-        self.assertEqual(len(deduped), 3)
+        self.assertEqual(len(deduped), 4)
 
         filtered = pipeline._filter_games_by_window(deduped, start_ms=15, end_ms=25)
         self.assertEqual(len(filtered), 1)
         self.assertEqual(filtered[0]["game_id"], "g2")
+        self.assertTrue(all(row["last_timestamp_ms"] < 25 for row in filtered))
 
     def test_resolve_side_to_move_filter(self) -> None:
         self.settings.source = "lichess"

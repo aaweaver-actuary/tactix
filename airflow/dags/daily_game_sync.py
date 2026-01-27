@@ -43,6 +43,27 @@ def _resolve_profile(dag_run, source: str) -> str | None:
     return conf.get("profile") or conf.get("lichess_profile")
 
 
+def _resolve_backfill_window(
+    dag_run,
+    run_type: str,
+    data_interval_start: datetime | None,
+    data_interval_end: datetime | None,
+) -> tuple[int | None, int | None, int | None, bool]:
+    conf = getattr(dag_run, "conf", None) if dag_run else None
+    conf_dict = conf if isinstance(conf, dict) else {}
+    start_ms = conf_dict.get("backfill_start_ms")
+    end_ms = conf_dict.get("backfill_end_ms")
+    triggered_at_ms = conf_dict.get("triggered_at_ms")
+    if triggered_at_ms is not None and (end_ms is None or end_ms > triggered_at_ms):
+        end_ms = triggered_at_ms
+    is_backfill = start_ms is not None or end_ms is not None
+    if not is_backfill and run_type == "backfill":
+        start_ms = _to_epoch_ms(data_interval_start)
+        end_ms = _to_epoch_ms(data_interval_end)
+        is_backfill = start_ms is not None or end_ms is not None
+    return start_ms, end_ms, triggered_at_ms, is_backfill
+
+
 @dag(
     dag_id="daily_game_sync",
     schedule="@hourly",
@@ -66,24 +87,37 @@ def daily_game_sync_dag():
         logical_date = context.get("logical_date") if context else None
         dag_run = context.get("dag_run") if context else None
         run_type = str(getattr(dag_run, "run_type", "")) if dag_run else ""
-        is_backfill = run_type == "backfill"
         data_interval_start = context.get("data_interval_start") if context else None
         data_interval_end = context.get("data_interval_end") if context else None
+        (
+            backfill_start_ms,
+            backfill_end_ms,
+            triggered_at_ms,
+            is_backfill,
+        ) = _resolve_backfill_window(
+            dag_run, run_type, data_interval_start, data_interval_end
+        )
         profile = _resolve_profile(dag_run, "lichess")
         settings = get_settings(source="lichess", profile=profile)
         logger.info(
-            "Starting end-to-end pipeline run for source=lichess logical_date=%s backfill=%s",
+            "Starting end-to-end pipeline run for source=lichess logical_date=%s backfill=%s backfill_start_ms=%s backfill_end_ms=%s triggered_at_ms=%s",
             logical_date,
             is_backfill,
+            backfill_start_ms,
+            backfill_end_ms,
+            triggered_at_ms,
         )
         result = run_daily_game_sync(
             settings,
             source="lichess",
-            window_start_ms=_to_epoch_ms(data_interval_start) if is_backfill else None,
-            window_end_ms=_to_epoch_ms(data_interval_end) if is_backfill else None,
+            window_start_ms=backfill_start_ms if is_backfill else None,
+            window_end_ms=backfill_end_ms if is_backfill else None,
             profile=profile,
         )
         result["execution_date"] = logical_date.isoformat() if logical_date else None
+        result["backfill_start_ms"] = backfill_start_ms if is_backfill else None
+        result["backfill_end_ms"] = backfill_end_ms if is_backfill else None
+        result["triggered_at_ms"] = triggered_at_ms if is_backfill else None
         logger.info(
             "Pipeline run succeeded: source=%s fetched_games=%s raw_pgns_inserted=%s raw_pgns_hashed=%s raw_pgns_matched=%s positions=%s tactics=%s metrics_version=%s",
             result.get("source"),
@@ -103,24 +137,37 @@ def daily_game_sync_dag():
         logical_date = context.get("logical_date") if context else None
         dag_run = context.get("dag_run") if context else None
         run_type = str(getattr(dag_run, "run_type", "")) if dag_run else ""
-        is_backfill = run_type == "backfill"
         data_interval_start = context.get("data_interval_start") if context else None
         data_interval_end = context.get("data_interval_end") if context else None
+        (
+            backfill_start_ms,
+            backfill_end_ms,
+            triggered_at_ms,
+            is_backfill,
+        ) = _resolve_backfill_window(
+            dag_run, run_type, data_interval_start, data_interval_end
+        )
         profile = _resolve_profile(dag_run, "chesscom")
         settings = get_settings(source="chesscom", profile=profile)
         logger.info(
-            "Starting end-to-end pipeline run for source=chesscom logical_date=%s backfill=%s",
+            "Starting end-to-end pipeline run for source=chesscom logical_date=%s backfill=%s backfill_start_ms=%s backfill_end_ms=%s triggered_at_ms=%s",
             logical_date,
             is_backfill,
+            backfill_start_ms,
+            backfill_end_ms,
+            triggered_at_ms,
         )
         result = run_daily_game_sync(
             settings,
             source="chesscom",
-            window_start_ms=_to_epoch_ms(data_interval_start) if is_backfill else None,
-            window_end_ms=_to_epoch_ms(data_interval_end) if is_backfill else None,
+            window_start_ms=backfill_start_ms if is_backfill else None,
+            window_end_ms=backfill_end_ms if is_backfill else None,
             profile=profile,
         )
         result["execution_date"] = logical_date.isoformat() if logical_date else None
+        result["backfill_start_ms"] = backfill_start_ms if is_backfill else None
+        result["backfill_end_ms"] = backfill_end_ms if is_backfill else None
+        result["triggered_at_ms"] = triggered_at_ms if is_backfill else None
         logger.info(
             "Pipeline run succeeded: source=%s fetched_games=%s raw_pgns_inserted=%s raw_pgns_hashed=%s raw_pgns_matched=%s positions=%s tactics=%s metrics_version=%s",
             result.get("source"),

@@ -1,5 +1,5 @@
 import json
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 from fastapi.testclient import TestClient
 
@@ -7,7 +7,9 @@ from tactix.api import app
 from tactix.config import Settings, get_settings
 
 
-def _stream_events(client: TestClient, url: str, token: str) -> list[tuple[str, dict[str, object]]]:
+def _stream_events(
+    client: TestClient, url: str, token: str
+) -> list[tuple[str, dict[str, object]]]:
     headers = {"Authorization": f"Bearer {token}"}
     events: list[tuple[str, dict[str, object]]] = []
     with client.stream("GET", url, headers=headers) as response:
@@ -63,7 +65,9 @@ def test_daily_game_sync_stream_uses_airflow_when_enabled() -> None:
     settings.airflow_password = "admin"
     with (
         patch("tactix.api.get_settings", return_value=settings),
-        patch("tactix.api._trigger_airflow_daily_sync", return_value="run-1") as trigger,
+        patch(
+            "tactix.api._trigger_airflow_daily_sync", return_value="run-1"
+        ) as trigger,
         patch("tactix.api._wait_for_airflow_run", return_value="success"),
         patch(
             "tactix.api.get_dashboard_payload",
@@ -72,10 +76,17 @@ def test_daily_game_sync_stream_uses_airflow_when_enabled() -> None:
     ):
         events = _stream_events(
             client,
-            "/api/jobs/stream?job=daily_game_sync&source=lichess",
+            "/api/jobs/stream?job=daily_game_sync&source=lichess&backfill_start_ms=100&backfill_end_ms=200",
             token,
         )
 
-    assert trigger.call_count == 1
+    trigger.assert_called_once_with(
+        settings,
+        "lichess",
+        None,
+        backfill_start_ms=100,
+        backfill_end_ms=200,
+        triggered_at_ms=ANY,
+    )
     assert any(name == "progress" for name, _ in events)
     assert any(name == "complete" for name, _ in events)

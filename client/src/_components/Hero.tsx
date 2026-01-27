@@ -16,6 +16,10 @@ interface HeroProps {
   chesscomProfile?: ChesscomProfile;
   user: string;
   onSourceChange: (next: ChessPlatform) => void;
+  backfillStartDate: string;
+  backfillEndDate: string;
+  onBackfillStartChange: (value: string) => void;
+  onBackfillEndChange: (value: string) => void;
 }
 
 /**
@@ -45,6 +49,10 @@ export default function Hero({
   chesscomProfile,
   user,
   onSourceChange,
+  backfillStartDate,
+  backfillEndDate,
+  onBackfillStartChange,
+  onBackfillEndChange,
 }: HeroProps) {
   const lichessLabel = profile ? LICHESS_PROFILE_LABELS[profile] : 'Rapid';
   const chesscomLabel = chesscomProfile
@@ -83,39 +91,67 @@ export default function Hero({
           ))}
         </div>
       </div>
-      <div className="flex gap-3">
-        <button
-          className="button bg-teal text-night px-4 py-3 rounded-lg font-display"
-          onClick={onRun}
-          disabled={loading}
-          data-testid="action-run"
-        >
-          {loading ? 'Running…' : 'Run + Refresh'}
-        </button>
-        <button
-          className="button border border-teal/50 text-teal px-4 py-3 rounded-lg"
-          onClick={onBackfill}
-          disabled={loading}
-          data-testid="action-backfill"
-        >
-          Backfill history
-        </button>
-        <button
-          className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
-          onClick={onMigrate}
-          disabled={loading}
-          data-testid="action-migrate"
-        >
-          Run migrations
-        </button>
-        <button
-          className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
-          onClick={onRefresh}
-          disabled={loading}
-          data-testid="action-refresh"
-        >
-          Refresh metrics
-        </button>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap gap-3">
+          <button
+            className="button bg-teal text-night px-4 py-3 rounded-lg font-display"
+            onClick={onRun}
+            disabled={loading}
+            data-testid="action-run"
+          >
+            {loading ? 'Running…' : 'Run + Refresh'}
+          </button>
+          <button
+            className="button border border-teal/50 text-teal px-4 py-3 rounded-lg"
+            onClick={onBackfill}
+            disabled={loading}
+            data-testid="action-backfill"
+          >
+            Backfill history
+          </button>
+          <button
+            className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
+            onClick={onMigrate}
+            disabled={loading}
+            data-testid="action-migrate"
+          >
+            Run migrations
+          </button>
+          <button
+            className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
+            onClick={onRefresh}
+            disabled={loading}
+            data-testid="action-refresh"
+          >
+            Refresh metrics
+          </button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-sand/70">
+          <span className="uppercase tracking-wide">Backfill range</span>
+          <label className="flex items-center gap-2">
+            <span className="sr-only">Backfill start date</span>
+            <input
+              type="date"
+              value={backfillStartDate}
+              onChange={(event) => onBackfillStartChange(event.target.value)}
+              className="rounded border border-sand/20 bg-night px-2 py-1 text-sand"
+              data-testid="backfill-start"
+              disabled={loading}
+            />
+          </label>
+          <span>to</span>
+          <label className="flex items-center gap-2">
+            <span className="sr-only">Backfill end date</span>
+            <input
+              type="date"
+              value={backfillEndDate}
+              onChange={(event) => onBackfillEndChange(event.target.value)}
+              className="rounded border border-sand/20 bg-night px-2 py-1 text-sand"
+              data-testid="backfill-end"
+              disabled={loading}
+            />
+          </label>
+        </div>
       </div>
     </div>
   );

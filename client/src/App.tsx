@@ -10,7 +10,6 @@ import {
 import { getAuthHeaders } from './utils/getAuthHeaders';
 import getJobStreamUrl from './utils/getJobStreamUrl';
 import fetchDashboard from './utils/fetchDashboard';
-import { triggerBackfill } from './utils/triggerBackfill';
 import triggerMetricsRefresh from './utils/triggerMetricsRefresh';
 import submitPracticeAttempt from './utils/submitPracticeAttempt';
 import fetchPracticeQueue from './utils/fetchPracticeQueue';
@@ -58,6 +57,13 @@ export default function App() {
     ratingBucket: 'all',
     startDate: '',
     endDate: '',
+  });
+  const [backfillStartDate, setBackfillStartDate] = useState(() => {
+    const date = new Date(Date.now() - 900 * 24 * 60 * 60 * 1000);
+    return date.toISOString().slice(0, 10);
+  });
+  const [backfillEndDate, setBackfillEndDate] = useState(() => {
+    return new Date().toISOString().slice(0, 10);
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -193,12 +199,20 @@ export default function App() {
     disconnectMessage: string,
     nextFilters: DashboardFilters = normalizedFilters,
     profile?: LichessProfile | ChesscomProfile,
+    backfillStartMs?: number,
+    backfillEndMs?: number,
   ) => {
     streamAbortRef.current?.abort();
     const controller = new AbortController();
     streamAbortRef.current = controller;
 
-    const streamUrl = getJobStreamUrl(job, nextSource, profile);
+    const streamUrl = getJobStreamUrl(
+      job,
+      nextSource,
+      profile,
+      backfillStartMs,
+      backfillEndMs,
+    );
     const response = await fetch(streamUrl, {
       headers: getAuthHeaders(),
       signal: controller.signal,
@@ -304,20 +318,40 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const windowEnd = Date.now();
-      const windowStart = windowEnd - 900 * 24 * 60 * 60 * 1000;
+      setJobProgress([]);
+      setJobStatus('running');
+      const nowMs = Date.now();
+      const startDate = backfillStartDate
+        ? new Date(`${backfillStartDate}T00:00:00`)
+        : new Date(nowMs - 900 * 24 * 60 * 60 * 1000);
+      const endDate = backfillEndDate
+        ? new Date(`${backfillEndDate}T00:00:00`)
+        : new Date(nowMs);
+      const windowStart = startDate.getTime();
+      let windowEnd = endDate.getTime() + 24 * 60 * 60 * 1000;
+      if (Number.isNaN(windowStart) || Number.isNaN(windowEnd)) {
+        throw new Error('Invalid backfill date range');
+      }
+      if (windowEnd > nowMs) {
+        windowEnd = nowMs;
+      }
+      if (windowStart >= windowEnd) {
+        throw new Error('Backfill range must end after the start date');
+      }
       const profile = source === 'lichess' ? lichessProfile : chesscomProfile;
-      const payload = await triggerBackfill(
+      await streamJobEvents(
+        'daily_game_sync',
         source,
+        'Backfill stream disconnected',
+        normalizedFilters,
+        profile,
         windowStart,
         windowEnd,
-        profile,
       );
-      setData(payload);
-      await loadPracticeQueue(source, includeFailedAttempt);
     } catch (err) {
       console.error(err);
       setError('Backfill run failed');
+      setJobStatus('error');
     } finally {
       setLoading(false);
     }
@@ -590,6 +624,10 @@ export default function App() {
         chesscomProfile={source === 'chesscom' ? chesscomProfile : undefined}
         user={data?.user ?? 'unknown'}
         onSourceChange={setSource}
+        backfillStartDate={backfillStartDate}
+        backfillEndDate={backfillEndDate}
+        onBackfillStartChange={setBackfillStartDate}
+        onBackfillEndChange={setBackfillEndDate}
       />
 
       {error ? <div className="card p-3 text-rust">{error}</div> : null}

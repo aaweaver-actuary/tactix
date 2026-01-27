@@ -475,7 +475,23 @@ def run_daily_game_sync(
     games = _expand_pgn_rows(games, settings)
 
     games = _dedupe_games(games)
+    pre_window_count = len(games)
     games = _filter_games_by_window(games, window_start_ms, window_end_ms)
+    window_filtered = pre_window_count - len(games)
+    if backfill_mode and window_filtered:
+        logger.info(
+            "Filtered %s games outside backfill window for source=%s",
+            window_filtered,
+            settings.source,
+        )
+        _emit_progress(
+            progress,
+            "backfill_window_filtered",
+            source=settings.source,
+            filtered=window_filtered,
+            backfill_start_ms=window_start_ms,
+            backfill_end_ms=window_end_ms,
+        )
     if games:
         last_timestamp_value = latest_timestamp(games) or last_timestamp_value
 
@@ -523,6 +539,7 @@ def run_daily_game_sync(
             "cursor": cursor_before if backfill_mode else (next_cursor or cursor_value),
             "last_timestamp_ms": last_timestamp_value or since_ms,
             "since_ms": since_ms,
+            "window_filtered": window_filtered,
         }
 
     games_to_process = games
@@ -568,6 +585,7 @@ def run_daily_game_sync(
             "cursor": cursor_before if backfill_mode else (next_cursor or cursor_value),
             "last_timestamp_ms": last_timestamp_value,
             "since_ms": since_ms,
+            "window_filtered": window_filtered,
         }
 
     game_ids = [game["game_id"] for game in games_to_process]

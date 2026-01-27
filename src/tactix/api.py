@@ -221,13 +221,25 @@ def _airflow_enabled(settings) -> bool:
     return settings.airflow_enabled and bool(settings.airflow_base_url)
 
 
-def _airflow_conf(source: str | None, profile: str | None) -> dict[str, object]:
+def _airflow_conf(
+    source: str | None,
+    profile: str | None,
+    backfill_start_ms: int | None = None,
+    backfill_end_ms: int | None = None,
+    triggered_at_ms: int | None = None,
+) -> dict[str, object]:
     conf: dict[str, object] = {}
     if source:
         conf["source"] = source
     if profile:
         key = "chesscom_profile" if source == "chesscom" else "lichess_profile"
         conf[key] = profile
+    if backfill_start_ms is not None:
+        conf["backfill_start_ms"] = backfill_start_ms
+    if backfill_end_ms is not None:
+        conf["backfill_end_ms"] = backfill_end_ms
+    if triggered_at_ms is not None:
+        conf["triggered_at_ms"] = triggered_at_ms
     return conf
 
 
@@ -239,10 +251,23 @@ def _airflow_run_id(payload: dict[str, object]) -> str:
 
 
 def _trigger_airflow_daily_sync(
-    settings, source: str | None, profile: str | None
+    settings,
+    source: str | None,
+    profile: str | None,
+    backfill_start_ms: int | None = None,
+    backfill_end_ms: int | None = None,
+    triggered_at_ms: int | None = None,
 ) -> str:
     payload = trigger_dag_run(
-        settings, "daily_game_sync", _airflow_conf(source, profile)
+        settings,
+        "daily_game_sync",
+        _airflow_conf(
+            source,
+            profile,
+            backfill_start_ms=backfill_start_ms,
+            backfill_end_ms=backfill_end_ms,
+            triggered_at_ms=triggered_at_ms,
+        ),
     )
     return _airflow_run_id(payload)
 
@@ -312,10 +337,26 @@ def stream_jobs(
     job: str = Query("daily_game_sync"),
     source: str | None = Query(None),
     profile: str | None = Query(None),
+    backfill_start_ms: int | None = Query(None, ge=0),
+    backfill_end_ms: int | None = Query(None, ge=0),
 ) -> StreamingResponse:
     settings = get_settings(source=source, profile=profile)
     queue: Queue[object] = Queue()
     sentinel = object()
+    triggered_at_ms = int(time_module.time() * 1000)
+    effective_end_ms = backfill_end_ms
+    if backfill_start_ms is not None or backfill_end_ms is not None:
+        if effective_end_ms is None or effective_end_ms > triggered_at_ms:
+            effective_end_ms = triggered_at_ms
+        if (
+            backfill_start_ms is not None
+            and effective_end_ms is not None
+            and backfill_start_ms >= effective_end_ms
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="Backfill window must end after start",
+            )
 
     def progress(payload: dict[str, object]) -> None:
         payload["job"] = job
@@ -324,7 +365,26 @@ def stream_jobs(
     def worker() -> None:
         try:
             if job == "daily_game_sync" and _airflow_enabled(settings):
-                run_id = _trigger_airflow_daily_sync(settings, source, profile)
+                if backfill_start_ms is not None or effective_end_ms is not None:
+                    _queue_progress(
+                        queue,
+                        job,
+                        "backfill_window",
+                        message="Backfill window resolved",
+                        extra={
+                            "backfill_start_ms": backfill_start_ms,
+                            "backfill_end_ms": effective_end_ms,
+                            "triggered_at_ms": triggered_at_ms,
+                        },
+                    )
+                run_id = _trigger_airflow_daily_sync(
+                    settings,
+                    source,
+                    profile,
+                    backfill_start_ms=backfill_start_ms,
+                    backfill_end_ms=effective_end_ms,
+                    triggered_at_ms=triggered_at_ms,
+                )
                 _queue_progress(
                     queue,
                     job,
@@ -350,7 +410,12 @@ def stream_jobs(
                 }
             elif job == "daily_game_sync":
                 result = run_daily_game_sync(
-                    settings, source=source, progress=progress, profile=profile
+                    settings,
+                    source=source,
+                    progress=progress,
+                    profile=profile,
+                    window_start_ms=backfill_start_ms,
+                    window_end_ms=effective_end_ms,
                 )
             elif job == "refresh_metrics":
                 result = run_refresh_metrics(settings, source=source, progress=progress)

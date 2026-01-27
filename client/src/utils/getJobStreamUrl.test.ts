@@ -41,6 +41,13 @@ describe('getJobStreamUrl', () => {
     );
   });
 
+  it('adds backfill window params when provided', async () => {
+    const getJobStreamUrl = await loadWithApiBase('https://example.com');
+    expect(getJobStreamUrl('daily_game_sync', 'lichess', 'rapid', 10, 20)).toBe(
+      'https://example.com/api/jobs/stream?job=daily_game_sync&source=lichess&profile=rapid&backfill_start_ms=10&backfill_end_ms=20',
+    );
+  });
+
   it('encodes query params', async () => {
     const getJobStreamUrl = await loadWithApiBase('https://example.com');
     expect(getJobStreamUrl('a b', 'x/y')).toBe(

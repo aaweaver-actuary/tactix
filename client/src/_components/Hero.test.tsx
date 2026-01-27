@@ -15,6 +15,10 @@ describe('Hero', () => {
     profile: 'rapid' as const,
     user: 'andy',
     onSourceChange: jest.fn(),
+    backfillStartDate: '2024-01-01',
+    backfillEndDate: '2024-02-01',
+    onBackfillStartChange: jest.fn(),
+    onBackfillEndChange: jest.fn(),
   };
 
   it('renders title and metadata', () => {
@@ -62,6 +66,20 @@ describe('Hero', () => {
     expect(baseProps.onRefresh).toHaveBeenCalled();
   });
 
+  it('renders backfill range inputs and updates values', () => {
+    render(<Hero {...baseProps} />);
+    const startInput = screen.getByTestId('backfill-start');
+    const endInput = screen.getByTestId('backfill-end');
+    expect(startInput).toHaveValue('2024-01-01');
+    expect(endInput).toHaveValue('2024-02-01');
+
+    fireEvent.change(startInput, { target: { value: '2023-12-01' } });
+    fireEvent.change(endInput, { target: { value: '2023-12-31' } });
+
+    expect(baseProps.onBackfillStartChange).toHaveBeenCalledWith('2023-12-01');
+    expect(baseProps.onBackfillEndChange).toHaveBeenCalledWith('2023-12-31');
+  });
+
   it('shows loading state and disables buttons', () => {
     render(<Hero {...baseProps} loading={true} />);
     expect(screen.getByRole('button', { name: 'Running…' })).toBeDisabled();
@@ -74,6 +92,8 @@ describe('Hero', () => {
     expect(
       screen.getByRole('button', { name: 'Refresh metrics' }),
     ).toBeDisabled();
+    expect(screen.getByTestId('backfill-start')).toBeDisabled();
+    expect(screen.getByTestId('backfill-end')).toBeDisabled();
 
     SOURCE_OPTIONS.forEach((opt) => {
       expect(screen.getByRole('button', { name: opt.label })).toBeDisabled();

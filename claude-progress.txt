@@ -1098,3 +1098,15 @@ Session 2026-01-27 (feature 111 – dashboard-triggered Airflow pipeline)
 - CI integration check: `node /Users/andy/tactix/verification/integration_feature_111_airflow_trigger.js`.
 - Updated feature_list.json: feature “Airflow pipeline runs on trigger from dashboard to get new games from Lichess and Chess.com” marked passes=true.
 - Current passing count: 111/423.
+
+Session 2026-01-27 (feature 112 – dashboard-triggered Airflow backfill)
+- Added dashboard backfill range inputs and routed backfill runs through Airflow-triggered streaming with clamped historical cutoff + window logging.
+- Updated Airflow DAG to accept backfill window conf and propagate backfill metadata into pipeline runs.
+- Added helper tests for dedupe/window filtering and stream tests for backfill trigger parameters.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pipeline_helpers.py tests/test_job_stream.py`.
+- Tests: `make check`.
+- UI verification (manual): `TACTIX_SCREENSHOT_NAME=feature-112-airflow-backfill-2026-01-27.png node /Users/andy/tactix/verification/puppeteer_feature_112_backfill_trigger.js`.
+- UI verification screenshot: `verification/feature-112-airflow-backfill-2026-01-27.png`.
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_112_backfill_trigger.js`.
+- Updated feature_list.json: feature “Airflow pipeline runs on trigger from dashboard to backfill historical games from Lichess and Chess.com” marked passes=true.
+- Current passing count: 112/423.

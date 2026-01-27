@@ -1012,3 +1012,11 @@ Session 2026-01-27 (feature 099 – Stockfish fork high severity in blitz)
 - Tests: `make check`.
 - Updated feature_list.json: feature "Stockfish detects fork with high severity in blitz" marked passes=true.
 - Current passing count: 99.
+
+Session 2026-01-27 (regression verification – features 001/002/003)
+- Fixed Airflow local stack so webserver starts with SQLite: switched to SequentialExecutor, moved DB to shared /opt/airflow/data/airflow.db, and added TACTIX_SOURCE env to airflow services for source toggling.
+- Verification (feature 001 – Lichess rapid pipeline): triggered `daily_game_sync` in Airflow UI and captured dashboard refresh screenshot.
+- Verification (feature 002 – Chess.com blitz pipeline): restarted Airflow with `TACTIX_SOURCE=chesscom`, triggered `daily_game_sync`, and captured dashboard screenshot.
+- Verification (feature 003 – Lichess incremental since): triggered `daily_game_sync` again and captured Airflow log view screenshot.
+- Screenshots: `verification/feature-001-airflow-lichess-rapid-2026-01-27.png`, `verification/feature-001-dashboard-lichess-rapid-2026-01-27.png`, `verification/feature-002-airflow-chesscom-blitz-2026-01-27.png`, `verification/feature-002-dashboard-chesscom-blitz-2026-01-27.png`, `verification/feature-003-lichess-incremental-log-2026-01-27.png`.
+- Console errors: none observed in Airflow/UI during verification runs.

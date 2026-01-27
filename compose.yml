@@ -42,9 +42,10 @@ services:
       context: .
       dockerfile: docker/airflow.Dockerfile
     environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/data/airflow.db
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+      TACTIX_SOURCE: ${TACTIX_SOURCE:-lichess}
       _AIRFLOW_WWW_USER_USERNAME: admin
       _AIRFLOW_WWW_USER_PASSWORD: admin
       _AIRFLOW_WWW_USER_EMAIL: admin@example.com
@@ -74,9 +75,10 @@ services:
       context: .
       dockerfile: docker/airflow.Dockerfile
     environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/data/airflow.db
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+      TACTIX_SOURCE: ${TACTIX_SOURCE:-lichess}
       TACTIX_DATA_DIR: /opt/airflow/data
       STOCKFISH_PATH: /usr/games/stockfish
     volumes:
@@ -97,9 +99,10 @@ services:
       context: .
       dockerfile: docker/airflow.Dockerfile
     environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/data/airflow.db
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+      TACTIX_SOURCE: ${TACTIX_SOURCE:-lichess}
       TACTIX_DATA_DIR: /opt/airflow/data
       STOCKFISH_PATH: /usr/games/stockfish
     volumes:

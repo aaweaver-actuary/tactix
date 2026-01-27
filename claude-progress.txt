@@ -972,3 +972,13 @@ Session 2026-01-26 (feature 096 – Stockfish fork low severity in classical)
 - UI verification (CI): `TACTIX_SCREENSHOT_NAME=feature-096-fork-classical-low-severity-ci-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_096_fork_classical_ci.js` (screenshot `verification/feature-096-fork-classical-low-severity-ci-2026-01-26.png`).
 - Updated feature_list.json: feature "Stockfish detects fork with low severity in classical" marked passes=true.
 - Current passing count: 96.
+
+Session 2026-01-26 (feature 097 – Stockfish fork low severity in correspondence)
+- Regression UI verification (features 001, 016, 028, 031, 033, 037, 040, 044, 046, 049).
+- Regression screenshots: `verification/regression-097-precheck-001-2026-01-26.png`, `verification/regression-097-precheck-016-2026-01-26.png`, `verification/regression-097-precheck-028-2026-01-26.png`, `verification/regression-097-precheck-031-2026-01-26.png`, `verification/regression-097-precheck-033-2026-01-26.png`, `verification/regression-097-precheck-037-2026-01-26.png`, `verification/regression-097-precheck-040-2026-01-26.png`, `verification/regression-097-precheck-044-2026-01-26.png`, `verification/regression-097-precheck-046-2026-01-26.png`, `verification/regression-097-precheck-049-2026-01-26.png`.
+- Seeded correspondence fork fixture into data/tactix.duckdb using `tmp-logs/feature_097_seed.py` (cleared checkpoint to rerun).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_fork_correspondence.py -q`, `make check`.
+- UI verification (manual): `TACTIX_SCREENSHOT_NAME=feature-097-fork-correspondence-low-severity-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_097_fork_correspondence.js` (screenshot `verification/feature-097-fork-correspondence-low-severity-2026-01-26.png`).
+- UI verification (CI): `TACTIX_SCREENSHOT_NAME=feature-097-fork-correspondence-low-severity-ci-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_097_fork_correspondence_ci.js` (screenshot `verification/feature-097-fork-correspondence-low-severity-ci-2026-01-26.png`).
+- Updated feature_list.json: feature "Stockfish detects fork with low severity in correspondence" marked passes=true.
+- Current passing count: 97.

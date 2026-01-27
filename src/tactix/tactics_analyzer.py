@@ -244,6 +244,7 @@ def analyze_position(
         or _is_blitz_profile(settings)
         or _is_rapid_profile(settings)
         or _is_classical_profile(settings)
+        or _is_correspondence_profile(settings)
     ):
         severity = min(severity, 1.0)
 

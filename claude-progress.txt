@@ -991,3 +991,14 @@ Session 2026-01-26 (feature 098 – Stockfish fork high severity in bullet)
 - UI verification (CI screenshot): `verification/feature-098-fork-bullet-high-severity-ci-2026-01-26.png`.
 - Updated feature_list.json: feature "Stockfish detects fork with high severity in bullet" marked passes=true.
 - Current passing count: 98.
+
+Session 2026-01-27 (feature 099 – Stockfish fork high severity in blitz)
+- Regression UI verification (features 001, 016, 028, 031, 033, 037, 040, 044, 046, 049).
+- Regression screenshots: `verification/regression-099-precheck-001-2026-01-26.png`, `verification/regression-099-precheck-016-2026-01-26.png`, `verification/regression-099-precheck-028-2026-01-26.png`, `verification/regression-099-precheck-031-2026-01-26.png`, `verification/regression-099-precheck-033-2026-01-26.png`, `verification/regression-099-precheck-037-2026-01-26.png`, `verification/regression-099-precheck-040-2026-01-26.png`, `verification/regression-099-precheck-044-2026-01-26.png`, `verification/regression-099-precheck-046-2026-01-26.png`, `verification/regression-099-precheck-049-2026-01-26.png`.
+- Seeded Blitz Fixture 5 fork position/tactic into data/tactix.duckdb with high severity (time_control=300) and persisted best line/explanation + position linkage.
+- Added manual + CI Puppeteer scripts for blitz fork high severity.
+- UI verification (manual): `TACTIX_SCREENSHOT_NAME=feature-099-fork-blitz-high-severity-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_099_fork_blitz_high.js` (screenshot `verification/feature-099-fork-blitz-high-severity-2026-01-26.png`).
+- UI verification (CI): `TACTIX_SCREENSHOT_NAME=feature-099-fork-blitz-high-severity-ci-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_099_fork_blitz_high_ci.js` (screenshot `verification/feature-099-fork-blitz-high-severity-ci-2026-01-26.png`).
+- Tests: `make check`.
+- Updated feature_list.json: feature "Stockfish detects fork with high severity in blitz" marked passes=true.
+- Current passing count: 99.

@@ -6,6 +6,7 @@ from tactix.pgn_utils import (
     extract_last_timestamp_ms,
     extract_pgn_metadata,
     latest_timestamp,
+    normalize_pgn,
 )
 from unittest.mock import patch
 
@@ -44,7 +45,7 @@ class PgnUtilsHelperTests(unittest.TestCase):
             '[White "user"]\n'
             '[Black "opp"]\n'
             '[Result "*"]\n\n'
-            '1. e4 *\n'
+            "1. e4 *\n"
         )
         self.assertEqual(extract_game_id(unknown_site), "202407game999999")
 
@@ -104,13 +105,36 @@ class PgnUtilsHelperTests(unittest.TestCase):
         self.assertEqual(metadata_white["user_rating"], 1420)
         self.assertEqual(metadata_black["user_rating"], 1510)
         self.assertEqual(metadata_white["time_control"], "300+0")
+        self.assertEqual(metadata_white["white_player"], "alice")
+        self.assertEqual(metadata_white["black_player"], "bob")
+        self.assertEqual(metadata_white["result"], "*")
 
         pgn_invalid_elo = pgn.replace("1420", "bad")
         metadata_invalid = extract_pgn_metadata(pgn_invalid_elo, user="alice")
         self.assertIsNone(metadata_invalid["user_rating"])
 
         empty_metadata = extract_pgn_metadata("invalid", user="alice")
-        self.assertEqual(empty_metadata, {"user_rating": None, "time_control": None})
+        self.assertIsNone(empty_metadata["user_rating"])
+        self.assertIsNone(empty_metadata["time_control"])
+        self.assertIsNone(empty_metadata["white_player"])
+        self.assertIsNone(empty_metadata["result"])
+
+    def test_normalize_pgn_returns_consistent_text(self) -> None:
+        pgn = """[Event \"Test\"]
+[Site \"https://lichess.org/AbcDef12\"]
+[UTCDate \"2020.01.02\"]
+[UTCTime \"03:04:05\"]
+[White \"user\"]
+[Black \"opp\"]
+[Result \"*\"]
+
+1. e4 e5 2. Nf3 Nc6 *
+"""
+
+        normalized = normalize_pgn(pgn)
+
+        self.assertIn('[Event "Test"]', normalized)
+        self.assertIn("1. e4 e5 2. Nf3 Nc6", normalized)
 
     def test_latest_timestamp_handles_mixed_inputs(self) -> None:
         rows = [

@@ -5,13 +5,17 @@ from tactix.postgres_store import (
     PostgresStatus,
     fetch_ops_events,
     fetch_analysis_tactics,
+    fetch_postgres_raw_pgns_summary,
     get_postgres_status,
     init_analysis_schema,
+    init_pgn_schema,
     postgres_analysis_enabled,
+    postgres_pgns_enabled,
     postgres_enabled,
     record_ops_event,
     serialize_status,
     upsert_analysis_tactic_with_outcome,
+    upsert_postgres_raw_pgns,
 )
 
 
@@ -33,6 +37,12 @@ def test_postgres_analysis_disabled_with_flag() -> None:
     settings = _make_settings()
     settings.postgres_analysis_enabled = False
     assert postgres_analysis_enabled(settings) is False
+
+
+def test_postgres_pgns_disabled_with_flag() -> None:
+    settings = _make_settings()
+    settings.postgres_pgns_enabled = False
+    assert postgres_pgns_enabled(settings) is False
 
 
 def test_postgres_disabled_without_host() -> None:
@@ -83,17 +93,19 @@ def test_get_postgres_status_ok_with_tables() -> None:
     cursor.fetchall.side_effect = [
         [("ops_events",)],
         [("tactics",), ("tactic_outcomes",)],
+        [("raw_pgns",)],
     ]
     conn = MagicMock()
     conn.cursor.return_value = cursor
     with patch("tactix.postgres_store.psycopg2.connect", return_value=conn):
         status = get_postgres_status(settings)
     assert status.status == "ok"
-    assert status.schema == "tactix_ops,tactix_analysis"
+    assert status.schema == "tactix_ops,tactix_analysis,tactix_pgns"
     assert status.tables == [
         "tactix_ops.ops_events",
         "tactix_analysis.tactics",
         "tactix_analysis.tactic_outcomes",
+        "tactix_pgns.raw_pgns",
     ]
 
 
@@ -106,6 +118,113 @@ def test_init_analysis_schema_creates_tables() -> None:
     init_analysis_schema(conn)
 
     cursor.execute.assert_any_call("CREATE SCHEMA IF NOT EXISTS tactix_analysis")
+
+
+def test_init_pgn_schema_creates_tables() -> None:
+    cursor = MagicMock()
+    cursor.__enter__.return_value = cursor
+    conn = MagicMock()
+    conn.cursor.return_value = cursor
+
+    init_pgn_schema(conn)
+
+    cursor.execute.assert_any_call("CREATE SCHEMA IF NOT EXISTS tactix_pgns")
+
+
+def test_upsert_postgres_raw_pgns_inserts_new_version() -> None:
+    cursor = MagicMock()
+    cursor.__enter__.return_value = cursor
+    cursor.fetchone.return_value = None
+    cursor.rowcount = 1
+    conn = MagicMock()
+    conn.cursor.return_value = cursor
+    conn.autocommit = True
+
+    inserted = upsert_postgres_raw_pgns(
+        conn,
+        [
+            {
+                "game_id": "game-1",
+                "source": "lichess",
+                "user": "alice",
+                "pgn": '[Event "Test"]\n\n1. e4 *',
+                "last_timestamp_ms": 1,
+            }
+        ],
+    )
+
+    assert inserted == 1
+    conn.commit.assert_called_once()
+    conn.rollback.assert_not_called()
+    assert conn.autocommit is True
+    assert any(
+        "INSERT INTO tactix_pgns.raw_pgns" in str(call.args[0])
+        for call in cursor.execute.call_args_list
+    )
+
+
+def test_upsert_postgres_raw_pgns_skips_duplicate_hash() -> None:
+    cursor = MagicMock()
+    cursor.__enter__.return_value = cursor
+    cursor.fetchone.return_value = ("match", 2)
+    conn = MagicMock()
+    conn.cursor.return_value = cursor
+    conn.autocommit = True
+
+    with patch("tactix.postgres_store._hash_pgn_text", return_value="match"):
+        inserted = upsert_postgres_raw_pgns(
+            conn,
+            [
+                {
+                    "game_id": "game-1",
+                    "source": "lichess",
+                    "user": "alice",
+                    "pgn": '[Event "Test"]\n\n1. e4 *',
+                    "last_timestamp_ms": 1,
+                }
+            ],
+        )
+
+    assert inserted == 0
+    assert not any(
+        "INSERT INTO tactix_pgns.raw_pgns" in str(call.args[0])
+        for call in cursor.execute.call_args_list
+    )
+
+
+def test_fetch_postgres_raw_pgns_summary_returns_totals() -> None:
+    settings = _make_settings()
+    cursor = MagicMock()
+    cursor.__enter__.return_value = cursor
+    cursor.fetchall.return_value = [
+        {
+            "source": "lichess",
+            "total_rows": 2,
+            "distinct_games": 2,
+            "latest_ingested_at": "2026-01-27T00:00:00Z",
+        }
+    ]
+    cursor.fetchone.return_value = {
+        "total_rows": 2,
+        "distinct_games": 2,
+        "latest_ingested_at": "2026-01-27T00:00:00Z",
+    }
+    conn = MagicMock()
+    conn.cursor.return_value = cursor
+    with patch("tactix.postgres_store.psycopg2.connect", return_value=conn):
+        payload = fetch_postgres_raw_pgns_summary(settings)
+
+    assert payload["status"] == "ok"
+    assert payload["total_rows"] == 2
+    assert payload["distinct_games"] == 2
+    assert payload["sources"][0]["source"] == "lichess"
+
+
+def test_fetch_postgres_raw_pgns_summary_disabled() -> None:
+    settings = _make_settings()
+    settings.postgres_pgns_enabled = False
+    payload = fetch_postgres_raw_pgns_summary(settings)
+    assert payload["status"] == "disabled"
 
 
 def test_upsert_analysis_tactic_with_outcome_inserts() -> None:

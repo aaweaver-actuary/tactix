@@ -154,6 +154,21 @@ export type PostgresAnalysisResponse = {
   tactics: PostgresAnalysisRow[];
 };
 
+export type PostgresRawPgnSourceSummary = {
+  source: string;
+  total_rows: number;
+  distinct_games: number;
+  latest_ingested_at: string | null;
+};
+
+export type PostgresRawPgnsSummary = {
+  status: string;
+  total_rows: number;
+  distinct_games: number;
+  latest_ingested_at: string | null;
+  sources: PostgresRawPgnSourceSummary[];
+};
+
 export const API_BASE = (import.meta.env.VITE_API_BASE || '').trim();
 const API_TOKEN = (
   import.meta.env.VITE_TACTIX_API_TOKEN || 'local-dev-token'

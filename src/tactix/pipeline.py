@@ -52,10 +52,13 @@ from tactix.pgn_utils import (
 from tactix.position_extractor import extract_positions
 from tactix.postgres_store import (
     init_analysis_schema,
+    init_pgn_schema,
     postgres_analysis_enabled,
+    postgres_pgns_enabled,
     postgres_connection,
     record_ops_event,
     upsert_analysis_tactic_with_outcome,
+    upsert_postgres_raw_pgns,
 )
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
@@ -792,6 +795,7 @@ def run_daily_game_sync(
             "raw_pgns_inserted": 0,
             "raw_pgns_hashed": 0,
             "raw_pgns_matched": 0,
+            "postgres_raw_pgns_inserted": 0,
             "positions": 0,
             "tactics": 0,
             "metrics_version": metrics_version,
@@ -834,6 +838,8 @@ def run_daily_game_sync(
     raw_pgns_inserted = 0
     raw_pgns_hashed = 0
     raw_pgns_matched = 0
+    postgres_raw_pgns_inserted = 0
+    postgres_pgns_active = postgres_pgns_enabled(settings)
     if not positions:
         _emit_progress(
             progress,
@@ -873,6 +879,39 @@ def run_daily_game_sync(
                 "total": len(games_to_process),
             },
         )
+        if postgres_pgns_active:
+            with postgres_connection(settings) as pg_conn:
+                if pg_conn is None:
+                    logger.warning(
+                        "Postgres raw PGN mirror enabled but connection unavailable"
+                    )
+                else:
+                    init_pgn_schema(pg_conn)
+                    try:
+                        postgres_raw_pgns_inserted = upsert_postgres_raw_pgns(
+                            pg_conn,
+                            cast(list[Mapping[str, object]], games_to_process),
+                        )
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning("Postgres raw PGN upsert failed: %s", exc)
+            _emit_progress(
+                progress,
+                "postgres_raw_pgns_persisted",
+                source=settings.source,
+                inserted=postgres_raw_pgns_inserted,
+                total=len(games_to_process),
+            )
+            record_ops_event(
+                settings,
+                component="ingestion",
+                event_type="postgres_raw_pgns_persisted",
+                source=settings.source,
+                profile=profile,
+                metadata={
+                    "inserted": postgres_raw_pgns_inserted,
+                    "total": len(games_to_process),
+                },
+            )
 
         _emit_progress(
             progress,
@@ -933,6 +972,39 @@ def run_daily_game_sync(
                 "total": len(games_to_process),
             },
         )
+        if postgres_pgns_active:
+            with postgres_connection(settings) as pg_conn:
+                if pg_conn is None:
+                    logger.warning(
+                        "Postgres raw PGN mirror enabled but connection unavailable"
+                    )
+                else:
+                    init_pgn_schema(pg_conn)
+                    try:
+                        postgres_raw_pgns_inserted = upsert_postgres_raw_pgns(
+                            pg_conn,
+                            cast(list[Mapping[str, object]], games_to_process),
+                        )
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning("Postgres raw PGN upsert failed: %s", exc)
+            _emit_progress(
+                progress,
+                "postgres_raw_pgns_persisted",
+                source=settings.source,
+                inserted=postgres_raw_pgns_inserted,
+                total=len(games_to_process),
+            )
+            record_ops_event(
+                settings,
+                component="ingestion",
+                event_type="postgres_raw_pgns_persisted",
+                source=settings.source,
+                profile=profile,
+                metadata={
+                    "inserted": postgres_raw_pgns_inserted,
+                    "total": len(games_to_process),
+                },
+            )
 
     logger.info(
         "Raw PGNs persisted: raw_pgns_inserted=%s raw_pgns_hashed=%s raw_pgns_matched=%s source=%s total=%s",
@@ -1050,6 +1122,7 @@ def run_daily_game_sync(
         metadata={
             "fetched_games": len(games),
             "raw_pgns_inserted": raw_pgns_inserted,
+            "postgres_raw_pgns_inserted": postgres_raw_pgns_inserted,
             "positions": len(positions),
             "tactics": tactics_count,
             "postgres_tactics_written": postgres_written,
@@ -1066,6 +1139,7 @@ def run_daily_game_sync(
         "raw_pgns_inserted": raw_pgns_inserted,
         "raw_pgns_hashed": raw_pgns_hashed,
         "raw_pgns_matched": raw_pgns_matched,
+        "postgres_raw_pgns_inserted": postgres_raw_pgns_inserted,
         "positions": len(positions),
         "tactics": tactics_count,
         "metrics_version": metrics_version,

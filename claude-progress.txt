@@ -1174,3 +1174,12 @@ Session 2026-01-27 (feature 118 – Analysis engine uses Postgres for analysis r
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pipeline_helpers.py tests/test_postgres_store.py tests/test_postgres_status.py`, `make check`.
 - Updated feature_list.json: feature “Analysis engine uses postgres to efficiently store and retrieve tactic analysis results” marked passes=true.
 - Current passing count: 118/423.
+
+Session 2026-01-27 (feature 119 – Postgres raw PGN mirror)
+- Pre-work regression UI checks (features 001/016/028/031/033/037/040/044/046/049): `verification/regression-119-precheck-001-2026-01-27.png`, `verification/regression-119-precheck-016-2026-01-27.png`, `verification/regression-119-precheck-028-2026-01-27.png`, `verification/regression-119-precheck-031-2026-01-27.png`, `verification/regression-119-precheck-033-2026-01-27.png`, `verification/regression-119-precheck-037-2026-01-27.png`, `verification/regression-119-precheck-040-2026-01-27.png`, `verification/regression-119-precheck-044-2026-01-27.png`, `verification/regression-119-precheck-046-2026-01-27.png`, `verification/regression-119-precheck-049-2026-01-27.png`.
+- Added Postgres raw PGN schema with metadata, normalization, dedupe, and indexing; pipeline mirrors raw PGNs to Postgres with ops events; new API endpoint `/api/postgres/raw_pgns`; dashboard card + fetcher for raw PGN summary.
+- Added tests: `tests/test_airflow_client.py`, `tests/test_api_practice.py`, expanded `tests/test_postgres_store.py`, `tests/test_postgres_status.py`, `tests/test_pgn_utils_helpers.py`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_postgres_store.py tests/test_pgn_utils_helpers.py -q`, `make check` (coverage 90.10%).
+- UI verification (manual) blocked: `node /Users/andy/tactix/verification/puppeteer_feature_119_postgres_raw_pgns.js` timed out waiting for `[data-testid="postgres-raw-pgns"]` after Docker daemon failed to restart (Docker Desktop unavailable, rebuild failed with I/O error). Screenshot not captured.
+- CI integration check pending: `node /Users/andy/tactix/verification/integration_feature_119_postgres_raw_pgns.js` not run because API/UI unavailable.
+- Current passing count: 118/423 (feature 119 not yet marked passing).

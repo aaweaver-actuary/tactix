@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, Iterator, Mapping
 
+import hashlib
 import time
 
 import psycopg2
@@ -12,10 +14,12 @@ from psycopg2.extras import Json, RealDictCursor
 
 from tactix.config import Settings
 from tactix.logging_utils import get_logger
+from tactix.pgn_utils import extract_pgn_metadata, normalize_pgn
 
 logger = get_logger(__name__)
 
 ANALYSIS_SCHEMA = "tactix_analysis"
+PGN_SCHEMA = "tactix_pgns"
 
 
 @dataclass(slots=True)
@@ -94,6 +98,10 @@ def postgres_analysis_enabled(settings: Settings) -> bool:
     return settings.postgres_analysis_enabled and postgres_enabled(settings)
 
 
+def postgres_pgns_enabled(settings: Settings) -> bool:
+    return settings.postgres_pgns_enabled and postgres_enabled(settings)
+
+
 def init_analysis_schema(conn: PgConnection) -> None:
     with conn.cursor() as cur:
         cur.execute(f"CREATE SCHEMA IF NOT EXISTS {ANALYSIS_SCHEMA}")
@@ -140,6 +148,252 @@ def init_analysis_schema(conn: PgConnection) -> None:
         cur.execute(
             f"CREATE INDEX IF NOT EXISTS tactic_outcomes_created_at_idx ON {ANALYSIS_SCHEMA}.tactic_outcomes (created_at DESC)"
         )
+
+
+def init_pgn_schema(conn: PgConnection) -> None:
+    with conn.cursor() as cur:
+        cur.execute(f"CREATE SCHEMA IF NOT EXISTS {PGN_SCHEMA}")
+        cur.execute(
+            f"CREATE SEQUENCE IF NOT EXISTS {PGN_SCHEMA}.raw_pgns_raw_pgn_id_seq"
+        )
+        cur.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {PGN_SCHEMA}.raw_pgns (
+                raw_pgn_id BIGINT PRIMARY KEY DEFAULT nextval('{PGN_SCHEMA}.raw_pgns_raw_pgn_id_seq'),
+                game_id TEXT NOT NULL,
+                source TEXT NOT NULL,
+                player_username TEXT,
+                fetched_at TIMESTAMPTZ,
+                pgn_raw TEXT,
+                pgn_normalized TEXT,
+                pgn_hash TEXT,
+                pgn_version INTEGER,
+                user_rating INTEGER,
+                time_control TEXT,
+                ingested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                last_timestamp_ms BIGINT,
+                cursor TEXT,
+                white_player TEXT,
+                black_player TEXT,
+                white_elo INTEGER,
+                black_elo INTEGER,
+                result TEXT,
+                event TEXT,
+                site TEXT,
+                utc_date TEXT,
+                utc_time TEXT,
+                termination TEXT,
+                start_timestamp_ms BIGINT
+            )
+            """
+        )
+        cur.execute(
+            f"""
+            CREATE UNIQUE INDEX IF NOT EXISTS raw_pgns_game_version_uniq
+            ON {PGN_SCHEMA}.raw_pgns (game_id, source, pgn_version)
+            """
+        )
+        cur.execute(
+            f"""
+            CREATE UNIQUE INDEX IF NOT EXISTS raw_pgns_game_hash_uniq
+            ON {PGN_SCHEMA}.raw_pgns (game_id, source, pgn_hash)
+            """
+        )
+        cur.execute(
+            f"""
+            CREATE INDEX IF NOT EXISTS raw_pgns_source_ts_idx
+            ON {PGN_SCHEMA}.raw_pgns (source, last_timestamp_ms DESC)
+            """
+        )
+        cur.execute(
+            f"""
+            CREATE INDEX IF NOT EXISTS raw_pgns_source_result_idx
+            ON {PGN_SCHEMA}.raw_pgns (source, result)
+            """
+        )
+        cur.execute(
+            f"""
+            CREATE INDEX IF NOT EXISTS raw_pgns_source_time_control_idx
+            ON {PGN_SCHEMA}.raw_pgns (source, time_control)
+            """
+        )
+        cur.execute(
+            f"""
+            CREATE INDEX IF NOT EXISTS raw_pgns_player_idx
+            ON {PGN_SCHEMA}.raw_pgns (player_username)
+            """
+        )
+
+
+def _hash_pgn_text(pgn: str) -> str:
+    return hashlib.sha256(pgn.encode("utf-8")).hexdigest()
+
+
+def upsert_postgres_raw_pgns(
+    conn: PgConnection,
+    rows: list[Mapping[str, object]],
+) -> int:
+    if not rows:
+        return 0
+    autocommit_state = conn.autocommit
+    conn.autocommit = False
+    inserted = 0
+    try:
+        with conn.cursor() as cur:
+            latest_cache: dict[tuple[str, str], tuple[str | None, int]] = {}
+            for row in rows:
+                game_id = str(row.get("game_id") or "")
+                source = str(row.get("source") or "")
+                if not game_id or not source:
+                    continue
+                pgn_text = str(row.get("pgn") or "")
+                normalized = normalize_pgn(pgn_text)
+                pgn_hash = _hash_pgn_text(normalized or pgn_text)
+                key = (game_id, source)
+                if key in latest_cache:
+                    latest_hash, latest_version = latest_cache[key]
+                else:
+                    cur.execute(
+                        f"""
+                        SELECT pgn_hash, pgn_version
+                        FROM {PGN_SCHEMA}.raw_pgns
+                        WHERE game_id = %s AND source = %s
+                        ORDER BY pgn_version DESC
+                        LIMIT 1
+                        """,
+                        (game_id, source),
+                    )
+                    existing = cur.fetchone()
+                    if existing:
+                        latest_hash, latest_version = existing[0], int(existing[1] or 0)
+                    else:
+                        latest_hash, latest_version = None, 0
+                if latest_hash == pgn_hash:
+                    latest_cache[key] = (latest_hash, latest_version)
+                    continue
+                metadata = extract_pgn_metadata(pgn_text, str(row.get("user") or ""))
+                new_version = latest_version + 1
+                cur.execute(
+                    f"""
+                    INSERT INTO {PGN_SCHEMA}.raw_pgns (
+                        game_id,
+                        source,
+                        player_username,
+                        fetched_at,
+                        pgn_raw,
+                        pgn_normalized,
+                        pgn_hash,
+                        pgn_version,
+                        user_rating,
+                        time_control,
+                        ingested_at,
+                        last_timestamp_ms,
+                        cursor,
+                        white_player,
+                        black_player,
+                        white_elo,
+                        black_elo,
+                        result,
+                        event,
+                        site,
+                        utc_date,
+                        utc_time,
+                        termination,
+                        start_timestamp_ms
+                    )
+                    VALUES (
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    )
+                    ON CONFLICT DO NOTHING
+                    """,
+                    (
+                        game_id,
+                        source,
+                        row.get("user"),
+                        row.get("fetched_at", datetime.now(timezone.utc)),
+                        pgn_text,
+                        normalized,
+                        pgn_hash,
+                        new_version,
+                        metadata.get("user_rating"),
+                        metadata.get("time_control"),
+                        datetime.now(timezone.utc),
+                        row.get("last_timestamp_ms", 0),
+                        row.get("cursor"),
+                        metadata.get("white_player"),
+                        metadata.get("black_player"),
+                        metadata.get("white_elo"),
+                        metadata.get("black_elo"),
+                        metadata.get("result"),
+                        metadata.get("event"),
+                        metadata.get("site"),
+                        metadata.get("utc_date"),
+                        metadata.get("utc_time"),
+                        metadata.get("termination"),
+                        metadata.get("start_timestamp_ms"),
+                    ),
+                )
+                if cur.rowcount:
+                    inserted += 1
+                    latest_cache[key] = (pgn_hash, new_version)
+        conn.commit()
+        return inserted
+    except Exception:  # noqa: BLE001
+        conn.rollback()
+        raise
+    finally:
+        conn.autocommit = autocommit_state
+
+
+def fetch_postgres_raw_pgns_summary(settings: Settings) -> dict[str, Any]:
+    with postgres_connection(settings) as conn:
+        if conn is None or not postgres_pgns_enabled(settings):
+            return {
+                "status": "disabled",
+                "total_rows": 0,
+                "distinct_games": 0,
+                "latest_ingested_at": None,
+                "sources": [],
+            }
+        init_pgn_schema(conn)
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                f"""
+                SELECT
+                    source,
+                    COUNT(*) AS total_rows,
+                    COUNT(DISTINCT game_id) AS distinct_games,
+                    MAX(ingested_at) AS latest_ingested_at
+                FROM {PGN_SCHEMA}.raw_pgns
+                GROUP BY source
+                ORDER BY source
+                """
+            )
+            sources = cur.fetchall()
+            cur.execute(
+                f"""
+                SELECT
+                    COUNT(*) AS total_rows,
+                    COUNT(DISTINCT game_id) AS distinct_games,
+                    MAX(ingested_at) AS latest_ingested_at
+                FROM {PGN_SCHEMA}.raw_pgns
+                """
+            )
+            totals = cur.fetchone() or {}
+        return {
+            "status": "ok",
+            "total_rows": totals.get("total_rows", 0)
+            if isinstance(totals, Mapping)
+            else 0,
+            "distinct_games": totals.get("distinct_games", 0)
+            if isinstance(totals, Mapping)
+            else 0,
+            "latest_ingested_at": totals.get("latest_ingested_at")
+            if isinstance(totals, Mapping)
+            else None,
+            "sources": [dict(row) for row in sources],
+        }
 
 
 def upsert_analysis_tactic_with_outcome(
@@ -350,9 +604,16 @@ def get_postgres_status(settings: Settings) -> PostgresStatus:
                     for name in _list_tables(conn, ANALYSIS_SCHEMA)
                 ]
             )
+        if settings.postgres_pgns_enabled:
+            init_pgn_schema(conn)
+            tables.extend(
+                [f"{PGN_SCHEMA}.{name}" for name in _list_tables(conn, PGN_SCHEMA)]
+            )
         schema_label = "tactix_ops"
         if settings.postgres_analysis_enabled:
-            schema_label = f"tactix_ops,{ANALYSIS_SCHEMA}"
+            schema_label = f"{schema_label},{ANALYSIS_SCHEMA}"
+        if settings.postgres_pgns_enabled:
+            schema_label = f"{schema_label},{PGN_SCHEMA}"
         return PostgresStatus(
             enabled=True,
             status="ok",

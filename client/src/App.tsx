@@ -5,6 +5,7 @@ import {
   DashboardPayload,
   DashboardFilters,
   PostgresAnalysisRow,
+  PostgresRawPgnsSummary,
   PostgresStatus,
   PracticeAttemptResponse,
   PracticeQueueItem,
@@ -13,6 +14,7 @@ import { getAuthHeaders } from './utils/getAuthHeaders';
 import getJobStreamUrl from './utils/getJobStreamUrl';
 import fetchDashboard from './utils/fetchDashboard';
 import fetchPostgresAnalysis from './utils/fetchPostgresAnalysis';
+import fetchPostgresRawPgns from './utils/fetchPostgresRawPgns';
 import fetchPostgresStatus from './utils/fetchPostgresStatus';
 import triggerMetricsRefresh from './utils/triggerMetricsRefresh';
 import submitPracticeAttempt from './utils/submitPracticeAttempt';
@@ -110,6 +112,12 @@ export default function App() {
     string | null
   >(null);
   const [postgresAnalysisLoading, setPostgresAnalysisLoading] = useState(false);
+  const [postgresRawPgns, setPostgresRawPgns] =
+    useState<PostgresRawPgnsSummary | null>(null);
+  const [postgresRawPgnsError, setPostgresRawPgnsError] = useState<
+    string | null
+  >(null);
+  const [postgresRawPgnsLoading, setPostgresRawPgnsLoading] = useState(false);
 
   const normalizedFilters = useMemo<DashboardFilters>(
     () => ({
@@ -199,6 +207,20 @@ export default function App() {
     }
   }
 
+  async function loadPostgresRawPgns(): Promise<void> {
+    setPostgresRawPgnsLoading(true);
+    setPostgresRawPgnsError(null);
+    try {
+      const payload = await fetchPostgresRawPgns();
+      setPostgresRawPgns(payload);
+    } catch (err) {
+      console.error(err);
+      setPostgresRawPgnsError('Failed to load Postgres raw PGN summary');
+    } finally {
+      setPostgresRawPgnsLoading(false);
+    }
+  }
+
   useEffect(() => {
     load(source, normalizedFilters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -207,6 +229,7 @@ export default function App() {
   useEffect(() => {
     loadPostgres();
     loadPostgresAnalysis();
+    loadPostgresRawPgns();
   }, []);
 
   useEffect(() => {
@@ -693,6 +716,10 @@ export default function App() {
         <div className="card p-3 text-rust">{postgresAnalysisError}</div>
       ) : null}
 
+      {postgresRawPgnsError ? (
+        <div className="card p-3 text-rust">{postgresRawPgnsError}</div>
+      ) : null}
+
       {postgresStatus ? (
         <div className="card p-4" data-testid="postgres-status">
           <div className="flex items-center justify-between mb-3">
@@ -772,6 +799,91 @@ export default function App() {
         </div>
       ) : postgresLoading ? (
         <div className="card p-4 text-sand/70">Loading Postgres status...</div>
+      ) : null}
+
+      {postgresRawPgns || postgresRawPgnsLoading ? (
+        <div className="card p-4" data-testid="postgres-raw-pgns">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-display text-sand">
+              Postgres raw PGNs
+            </h3>
+            <Badge label={postgresRawPgns?.status ?? 'loading'} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="flex flex-col gap-1">
+              <Text mode="uppercase" value="Total rows" />
+              <Text
+                size="sm"
+                mode="normal"
+                value={
+                  postgresRawPgns
+                    ? postgresRawPgns.total_rows.toLocaleString()
+                    : '...'
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Text mode="uppercase" value="Distinct games" />
+              <Text
+                size="sm"
+                mode="normal"
+                value={
+                  postgresRawPgns
+                    ? postgresRawPgns.distinct_games.toLocaleString()
+                    : '...'
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Text mode="uppercase" value="Latest ingest" />
+              <Text
+                size="sm"
+                mode="normal"
+                value={
+                  postgresRawPgns?.latest_ingested_at
+                    ? new Date(
+                        postgresRawPgns.latest_ingested_at,
+                      ).toLocaleString()
+                    : 'n/a'
+                }
+              />
+            </div>
+          </div>
+          <div className="mt-4">
+            <Text mode="uppercase" value="By source" />
+            {postgresRawPgns?.sources?.length ? (
+              <ul className="mt-2 space-y-2 text-xs text-sand/70">
+                {postgresRawPgns.sources.map((row) => (
+                  <li key={row.source} className="flex flex-wrap gap-2">
+                    <Badge label={row.source} />
+                    <span className="text-sand">
+                      {row.total_rows.toLocaleString()} rows
+                    </span>
+                    <span className="text-sand/60">
+                      {row.distinct_games.toLocaleString()} games
+                    </span>
+                    {row.latest_ingested_at ? (
+                      <span className="text-sand/50">
+                        {new Date(row.latest_ingested_at).toLocaleString()}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Text
+                size="xs"
+                mode="normal"
+                value={
+                  postgresRawPgnsLoading
+                    ? 'Loading raw PGNs...'
+                    : 'No raw PGN rows yet'
+                }
+                mt="2"
+              />
+            )}
+          </div>
+        </div>
       ) : null}
 
       {postgresAnalysis.length || postgresAnalysisLoading ? (

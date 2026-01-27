@@ -33,6 +33,7 @@ from tactix.duckdb_store import (
 from tactix.postgres_store import (
     fetch_analysis_tactics,
     fetch_ops_events,
+    fetch_postgres_raw_pgns_summary,
     get_postgres_status,
     serialize_status,
 )
@@ -104,6 +105,12 @@ def postgres_analysis(limit: int = Query(10, ge=1, le=200)) -> dict[str, object]
     settings = get_settings()
     tactics = fetch_analysis_tactics(settings, limit=limit)
     return {"status": "ok", "tactics": tactics}
+
+
+@app.get("/api/postgres/raw_pgns")
+def postgres_raw_pgns() -> dict[str, object]:
+    settings = get_settings()
+    return fetch_postgres_raw_pgns_summary(settings)
 
 
 @app.post("/api/jobs/daily_game_sync")

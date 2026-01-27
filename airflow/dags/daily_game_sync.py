@@ -76,10 +76,12 @@ def daily_game_sync_dag():
         )
         result["execution_date"] = logical_date.isoformat() if logical_date else None
         logger.info(
-            "Pipeline run succeeded: source=%s fetched_games=%s raw_pgns_inserted=%s positions=%s tactics=%s metrics_version=%s",
+            "Pipeline run succeeded: source=%s fetched_games=%s raw_pgns_inserted=%s raw_pgns_hashed=%s raw_pgns_matched=%s positions=%s tactics=%s metrics_version=%s",
             result.get("source"),
             result.get("fetched_games"),
             result.get("raw_pgns_inserted"),
+            result.get("raw_pgns_hashed"),
+            result.get("raw_pgns_matched"),
             result.get("positions"),
             result.get("tactics"),
             result.get("metrics_version"),

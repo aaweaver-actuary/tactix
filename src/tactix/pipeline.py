@@ -221,6 +221,43 @@ def _filter_backfill_games(
     return to_process, skipped
 
 
+def _compute_pgn_hashes(rows: list[GameRow], source: str) -> dict[str, str]:
+    hashes: dict[str, str] = {}
+    for row in rows:
+        game_id = row["game_id"]
+        if game_id in hashes:
+            raise ValueError(
+                f"Duplicate game_id in raw PGN batch for source={source}: {game_id}"
+            )
+        hashes[game_id] = hash_pgn(row["pgn"])
+    return hashes
+
+
+def _validate_raw_pgn_hashes(
+    conn,
+    rows: list[GameRow],
+    source: str,
+) -> dict[str, int]:
+    if not rows:
+        return {"computed": 0, "matched": 0}
+    computed = _compute_pgn_hashes(rows, source)
+    stored = fetch_latest_pgn_hashes(conn, list(computed.keys()), source)
+    matched = sum(
+        1 for game_id, pgn_hash in computed.items() if stored.get(game_id) == pgn_hash
+    )
+    if matched != len(computed):
+        missing = [
+            game_id
+            for game_id, pgn_hash in computed.items()
+            if stored.get(game_id) != pgn_hash
+        ]
+        raise ValueError(
+            "Raw PGN hash mismatch for source=%s expected=%s matched=%s missing=%s"
+            % (source, len(computed), matched, ", ".join(sorted(missing)))
+        )
+    return {"computed": len(computed), "matched": matched}
+
+
 def run_migrations(
     settings: Settings | None = None,
     source: str | None = None,
@@ -475,6 +512,8 @@ def run_daily_game_sync(
             "user": settings.user,
             "fetched_games": 0,
             "raw_pgns_inserted": 0,
+            "raw_pgns_hashed": 0,
+            "raw_pgns_matched": 0,
             "positions": 0,
             "tactics": 0,
             "metrics_version": metrics_version,
@@ -518,6 +557,8 @@ def run_daily_game_sync(
             "user": settings.user,
             "fetched_games": len(games),
             "raw_pgns_inserted": 0,
+            "raw_pgns_hashed": 0,
+            "raw_pgns_matched": 0,
             "positions": 0,
             "tactics": 0,
             "metrics_version": metrics_version,
@@ -557,6 +598,8 @@ def run_daily_game_sync(
             _clear_analysis_checkpoint(analysis_checkpoint_path)
 
     raw_pgns_inserted = 0
+    raw_pgns_hashed = 0
+    raw_pgns_matched = 0
     if not positions:
         _emit_progress(
             progress,
@@ -566,12 +609,22 @@ def run_daily_game_sync(
         )
         delete_game_rows(conn, game_ids)
         raw_pgns_inserted = upsert_raw_pgns(conn, games_to_process)
+        hash_metrics = _validate_raw_pgn_hashes(conn, games_to_process, settings.source)
+        raw_pgns_hashed = hash_metrics["computed"]
+        raw_pgns_matched = hash_metrics["matched"]
         _emit_progress(
             progress,
             "raw_pgns_persisted",
             source=settings.source,
             inserted=raw_pgns_inserted,
             total=len(games_to_process),
+        )
+        _emit_progress(
+            progress,
+            "raw_pgns_hashed",
+            source=settings.source,
+            computed=raw_pgns_hashed,
+            matched=raw_pgns_matched,
         )
 
         _emit_progress(
@@ -603,6 +656,9 @@ def run_daily_game_sync(
         )
     else:
         raw_pgns_inserted = upsert_raw_pgns(conn, games_to_process)
+        hash_metrics = _validate_raw_pgn_hashes(conn, games_to_process, settings.source)
+        raw_pgns_hashed = hash_metrics["computed"]
+        raw_pgns_matched = hash_metrics["matched"]
         _emit_progress(
             progress,
             "raw_pgns_persisted",
@@ -610,10 +666,19 @@ def run_daily_game_sync(
             inserted=raw_pgns_inserted,
             total=len(games_to_process),
         )
+        _emit_progress(
+            progress,
+            "raw_pgns_hashed",
+            source=settings.source,
+            computed=raw_pgns_hashed,
+            matched=raw_pgns_matched,
+        )
 
     logger.info(
-        "Raw PGNs persisted: raw_pgns_inserted=%s source=%s total=%s",
+        "Raw PGNs persisted: raw_pgns_inserted=%s raw_pgns_hashed=%s raw_pgns_matched=%s source=%s total=%s",
         raw_pgns_inserted,
+        raw_pgns_hashed,
+        raw_pgns_matched,
         settings.source,
         len(games_to_process),
     )
@@ -688,6 +753,8 @@ def run_daily_game_sync(
         "user": settings.user,
         "fetched_games": len(games),
         "raw_pgns_inserted": raw_pgns_inserted,
+        "raw_pgns_hashed": raw_pgns_hashed,
+        "raw_pgns_matched": raw_pgns_matched,
         "positions": len(positions),
         "tactics": tactics_count,
         "metrics_version": metrics_version,

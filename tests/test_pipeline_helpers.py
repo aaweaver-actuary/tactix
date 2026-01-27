@@ -209,6 +209,42 @@ class PipelineHelperTests(unittest.TestCase):
         self.assertEqual(empty_process, [])
         self.assertEqual(empty_skipped, [])
 
+    def test_validate_raw_pgn_hashes_counts_by_source(self) -> None:
+        lichess_rows = [
+            {"game_id": "l1", "pgn": "pgn-1"},
+            {"game_id": "l2", "pgn": "pgn-2"},
+        ]
+        chesscom_rows = [
+            {"game_id": "c1", "pgn": "pgn-3"},
+        ]
+
+        with patch("tactix.pipeline.fetch_latest_pgn_hashes") as fetch_mock:
+            fetch_mock.side_effect = [
+                {
+                    "l1": pipeline.hash_pgn("pgn-1"),
+                    "l2": pipeline.hash_pgn("pgn-2"),
+                },
+                {"c1": pipeline.hash_pgn("pgn-3")},
+            ]
+            lichess_result = pipeline._validate_raw_pgn_hashes(
+                MagicMock(), lichess_rows, "lichess"
+            )
+            chesscom_result = pipeline._validate_raw_pgn_hashes(
+                MagicMock(), chesscom_rows, "chesscom"
+            )
+
+        self.assertEqual(lichess_result, {"computed": 2, "matched": 2})
+        self.assertEqual(chesscom_result, {"computed": 1, "matched": 1})
+
+        with patch(
+            "tactix.pipeline.fetch_latest_pgn_hashes",
+            return_value={"l1": "bad-hash"},
+        ):
+            with self.assertRaises(ValueError):
+                pipeline._validate_raw_pgn_hashes(
+                    MagicMock(), [{"game_id": "l1", "pgn": "pgn-1"}], "lichess"
+                )
+
     def test_run_migrations_emits_progress(self) -> None:
         progress_events: list[str] = []
 

@@ -1444,7 +1444,7 @@
       "Step 4: Ensure that the number of stored games matches the number of hashes computed",
       "Step 5: Mark run status success in Airflow and log metrics"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

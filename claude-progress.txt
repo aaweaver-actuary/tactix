@@ -1056,3 +1056,22 @@ Session 2026-01-27 (feature 108 – Airflow pipeline hashes and stores raw PGNs)
 - CI verification: `node /Users/andy/tactix/verification/puppeteer_feature_108_raw_pgn_hashes_ci.js`.
 - Updated feature_list.json: feature “Airflow pipeline hashes and stores raw PGNs from Lichess and Chess.com” marked passes=true.
 - Current passing count: 108.
+
+Session 2026-01-27 (feature 109 – per-game hash count validation)
+- Added per-game PGN hash validation with count matching in pipeline; surfaced raw_pgns_hashed/raw_pgns_matched in Airflow logs and progress events.
+- Added unit coverage for hash count validation across Lichess and Chess.com sources.
+- Fixed Airflow Docker Compose setup to use SequentialExecutor with SQLite and share airflow.db across services for UI availability.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pipeline_helpers.py`, `make check`.
+- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_109_raw_pgn_hashes.js`.
+- UI verification screenshots: `verification/feature-109-raw-pgn-summary-2026-01-27-lichess.png`, `verification/feature-109-raw-pgn-summary-2026-01-27-chesscom.png`.
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_109_raw_pgn_hashes.js`.
+- Updated feature_list.json: feature “Airflow pipeline correctly hashes and stores each game from Lichess and Chess.com separately” marked passes=true.
+- Current passing count: 109.
+
+Session 2026-01-27 (feature 109 – verification refresh)
+- Pre-work regression suite: `tests/test_api_auth.py`, `tests/test_api_profile.py`, `tests/test_dashboard_filters.py`, `tests/test_pipeline_state.py`, `tests/test_position_extractor.py`, `tests/test_metrics_refresh.py`, `tests/test_chesscom_client.py`, `tests/test_lichess_client.py`, `tests/test_duckdb_store_helpers.py`, `tests/test_pipeline_helpers.py`, `tests/test_pgn_utils_helpers.py`, `tests/test_job_stream.py`.
+- UI verification (manual): `TACTIX_SCREENSHOT_PREFIX=feature-109-raw-pgn-summary-2026-01-27 node /Users/andy/tactix/verification/puppeteer_feature_109_raw_pgn_hashes.js`.
+- UI verification screenshots: `verification/feature-109-raw-pgn-summary-2026-01-27-lichess.png`, `verification/feature-109-raw-pgn-summary-2026-01-27-chesscom.png`.
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_109_raw_pgn_hashes.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pipeline_helpers.py -q`, `make check`.
+- Current passing count: 109/423.

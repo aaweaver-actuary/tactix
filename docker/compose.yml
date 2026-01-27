@@ -40,7 +40,7 @@ services:
       context: ..
       dockerfile: docker/airflow.Dockerfile
     environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
       _AIRFLOW_WWW_USER_USERNAME: admin
@@ -52,6 +52,7 @@ services:
       STOCKFISH_PATH: /usr/games/stockfish
     volumes:
       - ../airflow/dags:/opt/airflow/dags
+      - ../airflow/airflow.db:/opt/airflow/airflow.db
       - ../data:/opt/airflow/data
       - ../tmp-logs:/opt/airflow/tmp-logs
     command: >
@@ -71,13 +72,14 @@ services:
       context: ..
       dockerfile: docker/airflow.Dockerfile
     environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
       TACTIX_DATA_DIR: /opt/airflow/data
       STOCKFISH_PATH: /usr/games/stockfish
     volumes:
       - ../airflow/dags:/opt/airflow/dags
+      - ../airflow/airflow.db:/opt/airflow/airflow.db
       - ../data:/opt/airflow/data
       - ../tmp-logs:/opt/airflow/tmp-logs
     ports:
@@ -93,13 +95,14 @@ services:
       context: ..
       dockerfile: docker/airflow.Dockerfile
     environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
       TACTIX_DATA_DIR: /opt/airflow/data
       STOCKFISH_PATH: /usr/games/stockfish
     volumes:
       - ../airflow/dags:/opt/airflow/dags
+      - ../airflow/airflow.db:/opt/airflow/airflow.db
       - ../data:/opt/airflow/data
       - ../tmp-logs:/opt/airflow/tmp-logs
     depends_on:

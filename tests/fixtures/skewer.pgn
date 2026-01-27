@@ -1,0 +1,16 @@
+[Event "Puzzle #owNZa from game RoKb6XHS"]
+[Site "https://lichess.org/training/owNZa"]
+[FEN "8/6k1/4p3/2r1P1PP/3K4/1p6/8/3R4 b - - 2 48"]
+[SetUp "1"]
+[Themes "endgame, short, crushing, rookEndgame, skewer"]
+
+48... Rd5+ 49. Kc3 Rxd1 *
+
+[Event "Puzzle #pIIij from game heesDV4B"]
+[Site "https://lichess.org/training/pIIij"]
+[FEN "8/2B5/8/3p4/1P5P/2k1K3/2P5/q7 w - - 0 49"]
+[SetUp "1"]
+[Themes "endgame, crushing, skewer, long"]
+
+49. Be5+ d4+ 50. Bxd4+ Kxb4 51. Bxa1 *
+

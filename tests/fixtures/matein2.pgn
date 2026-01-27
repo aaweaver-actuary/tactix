@@ -22,3 +22,10 @@
 
 14. Nxe6+ Kg8 15. Qxg7# *
 
+[Event "Puzzle #3HttD from game yt9dWVYP"]
+[Site "https://lichess.org/training/3HttD"]
+[FEN "2r2rk1/p4ppp/3p4/8/4Nb2/5q2/P4PRP/1Q5K w - - 4 26"]
+[SetUp "1"]
+[Themes "mateIn2, middlegame, short, discoveredAttack, pin"]
+
+26. Nf6+ Kh8 27. Qxh7# *

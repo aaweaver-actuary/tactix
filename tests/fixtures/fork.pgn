@@ -30,3 +30,12 @@
 
 32... Bd4+ 33. Qxd4 Qxd4+ *
 
+[Event "Puzzle #kwWFm from game IOMzgGw4"]
+[Site "https://lichess.org/training/kwWFm"]
+[FEN "6k1/p5pp/1p6/6r1/2pB4/P1P2R1b/7P/3R3K b - - 0 27"]
+[SetUp "1"]
+[Themes "fork, bishop"]
+
+27... Bg2+ 28. Kg1 Bxf3+ *
+
+

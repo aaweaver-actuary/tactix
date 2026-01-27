@@ -1,0 +1,24 @@
+[Event "Puzzle #ExpLn from game Udjn4elF"]
+[Site "https://lichess.org/training/ExpLn"]
+[FEN "r1q1rbk1/1bp2p1p/ppn2Pp1/4p3/4P2B/2N1QN2/PPP3PP/3R1RK1 b - - 5 20"]
+[SetUp "1"]
+[Themes "middlegame, short, pin, crushing"]
+
+20... Bc5 21. Qxc5 bxc5 *
+
+[Event "Puzzle #oPZgR from game wAZgWND7"]
+[Site "https://lichess.org/training/oPZgR"]
+[FEN "r3k2r/ppp2ppp/2q1p1b1/4P3/2B1nBP1/PQP1P2P/5P2/R3K2R w KQkq - 1 15"]
+[SetUp "1"]
+[Themes "advantage, short, pin, middlegame"]
+
+15. Bb5 Qxb5 16. Qxb5+ *
+
+[Event "Puzzle #kzF1g from game 0Ry7CyPZ"]
+[Site "https://lichess.org/training/kzF1g"]
+[FEN "r1b3k1/p4p2/1bp2q1p/3p2p1/8/3B2B1/PP3PPP/2R1Q1K1 w - - 2 20"]
+[SetUp "1"]
+[Themes "short, masterVsMaster, crushing, pin, master, middlegame"]
+
+20. Qe8+ Kg7 21. Be5 *
+

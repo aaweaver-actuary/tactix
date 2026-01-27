@@ -22,3 +22,19 @@
 
 21... Rxf1# *
 
+[Event "Puzzle #HAGVE from game uW65v3Qm"]
+[Site "https://lichess.org/training/HAGVE"]
+[FEN "Q2r2k1/p2P1p1p/6p1/8/qp6/7P/5PP1/3RR1K1 b - - 0 26"]
+[SetUp "1"]
+[Themes "advantage, hangingPiece, endgame"]
+
+26... Rxa8 *
+
+[Event "Puzzle #hrFo0 from game gg4xsJEm"]
+[Site "https://lichess.org/training/hrFo0"]
+[FEN "8/2p5/6P1/2k2K2/2p5/1p6/Q7/8 b - - 0 56"]
+[SetUp "1"]
+[Themes "endgame, advancedPawn, short, crushing, promotion, hangingPiece"]
+
+56... bxa2 *
+

@@ -1,0 +1,32 @@
+[Event "Puzzle #jUU6s from game 9ty5JBtt"]
+[Site "https://lichess.org/training/jUU6s"]
+[FEN "r6r/1b3pk1/p2p2p1/1p1Pp2p/4PP1q/2Pn2NP/BP3QPN/5RK1 w - - 3 35"]
+[SetUp "1"]
+[Themes "middlegame, short, crushing, discoveredAttack"]
+
+35. Nf5+ gxf5 36. Qxh4 *
+
+[Event "Puzzle #V7rOf from game FrjUMP7w"]
+[Site "https://lichess.org/training/V7rOf"]
+[FEN "r1b4Q/ppk5/2p4p/q1b1p3/2P1P3/8/1PN1B1KP/4NR2 b - - 0 29"]
+[SetUp "1"]
+[Themes "middlegame, short, crushing, discoveredAttack"]
+
+29... Bh3+ 30. Kxh3 Rxh8 *
+
+[Event "Puzzle #F4FHV from game l4JHp0lL"]
+[Site "https://lichess.org/training/F4FHV"]
+[FEN "r2qk2r/ppp1nppp/3b4/8/2PQ4/5B1P/P4PP1/RNB2RK1 b kq - 0 12"]
+[SetUp "1"]
+[Themes "short, advantage, opening, discoveredAttack"]
+
+12... Bh2+ 13. Kxh2 Qxd4 *
+
+[Event "Puzzle #E5FKu from game mlqAqhhf"]
+[Site "https://lichess.org/training/E5FKu"]
+[FEN "r4r2/1k1nq1pp/p7/PpPb4/1Q6/4B3/1P3PPP/R5K1 w - - 0 24"]
+[SetUp "1"]
+[Themes "middlegame, short, crushing, discoveredAttack"]
+
+24. c6+ Bxc6 25. Qxe7 *
+

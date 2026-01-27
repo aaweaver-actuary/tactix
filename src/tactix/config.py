@@ -130,6 +130,17 @@ class Settings:
     airflow_api_timeout_s: int = int(os.getenv("TACTIX_AIRFLOW_TIMEOUT_S", "15"))
     airflow_poll_interval_s: int = int(os.getenv("TACTIX_AIRFLOW_POLL_INTERVAL_S", "5"))
     airflow_poll_timeout_s: int = int(os.getenv("TACTIX_AIRFLOW_POLL_TIMEOUT_S", "600"))
+    postgres_dsn: str | None = os.getenv("TACTIX_POSTGRES_DSN")
+    postgres_host: str | None = os.getenv("TACTIX_POSTGRES_HOST")
+    postgres_port: int = int(os.getenv("TACTIX_POSTGRES_PORT", "5432"))
+    postgres_db: str | None = os.getenv("TACTIX_POSTGRES_DB")
+    postgres_user: str | None = os.getenv("TACTIX_POSTGRES_USER")
+    postgres_password: str | None = os.getenv("TACTIX_POSTGRES_PASSWORD")
+    postgres_sslmode: str = os.getenv("TACTIX_POSTGRES_SSLMODE", "disable")
+    postgres_connect_timeout_s: int = int(
+        os.getenv("TACTIX_POSTGRES_CONNECT_TIMEOUT", "5")
+    )
+    run_context: str = os.getenv("TACTIX_RUN_CONTEXT", "app")
 
     def apply_stockfish_profile(self, profile: str | None = None) -> None:
         profile_value = (profile or "").strip().lower()

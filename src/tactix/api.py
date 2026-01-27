@@ -30,6 +30,11 @@ from tactix.duckdb_store import (
     grade_practice_attempt,
     init_schema,
 )
+from tactix.postgres_store import (
+    fetch_ops_events,
+    get_postgres_status,
+    serialize_status,
+)
 
 logger = get_logger(__name__)
 
@@ -82,6 +87,15 @@ class PracticeAttemptRequest(BaseModel):
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/postgres/status")
+def postgres_status(limit: int = Query(10, ge=1, le=50)) -> dict[str, object]:
+    settings = get_settings()
+    status = get_postgres_status(settings)
+    payload = serialize_status(status)
+    payload["events"] = fetch_ops_events(settings, limit=limit)
+    return payload
 
 
 @app.post("/api/jobs/daily_game_sync")

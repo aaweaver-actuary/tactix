@@ -1139,3 +1139,15 @@ Session 2026-01-27 (feature 115 – Airflow scheduler deployed and operational)
 - Tests/lint: `make check`.
 - Updated feature_list.json: feature “Airflow scheduler is deployed and operational” marked passes=true.
 - Current passing count: 115/423.
+
+Session 2026-01-27 (feature 116 – Postgres DB deployed and operational)
+- Added Postgres Docker Compose service, ops logging helpers, and API/React status surface while keeping DuckDB as system-of-record.
+- Postgres verification: `curl -H "Authorization: Bearer local-dev-token" http://localhost:8000/api/postgres/status`, `docker compose -f docker/compose.yml exec -T postgres psql -U tactix -d tactix -c "\\dn"`, `docker compose -f docker/compose.yml exec -T postgres psql -U tactix -d tactix -c "\\dt tactix_ops.*"`.
+- Airflow DAG run (UI): `TACTIX_SCREENSHOT_NAME=feature-116-airflow-dag-2026-01-27.png node /Users/andy/tactix/verification/puppeteer_airflow_daily_game_sync.js`.
+- Ingestion/analysis ops events: `curl -X POST "http://localhost:8000/api/jobs/daily_game_sync?source=lichess&backfill_start_ms=0&backfill_end_ms=32503680000000" -H "Authorization: Bearer local-dev-token"` and Postgres query `SELECT component, event_type, source, created_at FROM tactix_ops.ops_events ...`.
+- UI verification (manual): `TACTIX_SCREENSHOT_NAME=feature-116-postgres-status-2026-01-27b.png node /Users/andy/tactix/verification/puppeteer_feature_116_postgres_status.js`.
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_116_postgres.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_postgres_status.py`, `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_postgres_store.py`, `make check`.
+- Screenshots: `verification/feature-116-airflow-dag-2026-01-27.png`, `verification/feature-116-postgres-status-2026-01-27b.png`.
+- Updated feature_list.json: feature “Postgres DB is deployed and operational” marked passes=true.
+- Current passing count: 116/423.

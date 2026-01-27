@@ -1527,7 +1527,7 @@
       "Step 7: Check that data ingestion tasks can read/write to the DB",
       "Step 8: Trigger a sample DAG run and verify DB interactions"
     ],
-    "passes": false
+      "passes": true
   },
   {
     "category": "infrastructure",

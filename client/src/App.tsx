@@ -4,12 +4,14 @@ import { Chessboard } from 'react-chessboard';
 import {
   DashboardPayload,
   DashboardFilters,
+  PostgresStatus,
   PracticeAttemptResponse,
   PracticeQueueItem,
 } from './api';
 import { getAuthHeaders } from './utils/getAuthHeaders';
 import getJobStreamUrl from './utils/getJobStreamUrl';
 import fetchDashboard from './utils/fetchDashboard';
+import fetchPostgresStatus from './utils/fetchPostgresStatus';
 import triggerMetricsRefresh from './utils/triggerMetricsRefresh';
 import submitPracticeAttempt from './utils/submitPracticeAttempt';
 import fetchPracticeQueue from './utils/fetchPracticeQueue';
@@ -94,6 +96,11 @@ export default function App() {
     'idle' | 'running' | 'error' | 'complete'
   >('idle');
   const streamAbortRef = useRef<AbortController | null>(null);
+  const [postgresStatus, setPostgresStatus] = useState<PostgresStatus | null>(
+    null,
+  );
+  const [postgresError, setPostgresError] = useState<string | null>(null);
+  const [postgresLoading, setPostgresLoading] = useState(false);
 
   const normalizedFilters = useMemo<DashboardFilters>(
     () => ({
@@ -155,10 +162,28 @@ export default function App() {
     }
   }
 
+  async function loadPostgres(): Promise<void> {
+    setPostgresLoading(true);
+    setPostgresError(null);
+    try {
+      const payload = await fetchPostgresStatus();
+      setPostgresStatus(payload);
+    } catch (err) {
+      console.error(err);
+      setPostgresError('Failed to load Postgres status');
+    } finally {
+      setPostgresLoading(false);
+    }
+  }
+
   useEffect(() => {
     load(source, normalizedFilters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source, normalizedFilters]);
+
+  useEffect(() => {
+    loadPostgres();
+  }, []);
 
   useEffect(() => {
     loadPracticeQueue(source, includeFailedAttempt, true);
@@ -254,6 +279,7 @@ export default function App() {
         setLoading(false);
         controller.abort();
         streamAbortRef.current = null;
+        await loadPostgres();
       }
 
       if (eventName === 'error') {
@@ -262,6 +288,7 @@ export default function App() {
         setError(disconnectMessage);
         controller.abort();
         streamAbortRef.current = null;
+        await loadPostgres();
       }
     }
 
@@ -631,6 +658,91 @@ export default function App() {
       />
 
       {error ? <div className="card p-3 text-rust">{error}</div> : null}
+
+      {postgresError ? (
+        <div className="card p-3 text-rust">{postgresError}</div>
+      ) : null}
+
+      {postgresStatus ? (
+        <div className="card p-4" data-testid="postgres-status">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-display text-sand">Postgres status</h3>
+            <Badge
+              label={
+                postgresStatus.status === 'ok'
+                  ? 'Connected'
+                  : postgresStatus.status === 'disabled'
+                    ? 'Disabled'
+                    : 'Unreachable'
+              }
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="flex flex-col gap-1">
+              <Text mode="uppercase" value="Latency" />
+              <Text
+                size="sm"
+                mode="normal"
+                value={
+                  postgresStatus.latency_ms !== undefined
+                    ? `${postgresStatus.latency_ms.toFixed(2)} ms`
+                    : 'n/a'
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Text mode="uppercase" value="Schema" />
+              <Text
+                size="sm"
+                mode="normal"
+                value={postgresStatus.schema ?? 'n/a'}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Text mode="uppercase" value="Tables" />
+              <Text
+                size="sm"
+                mode="normal"
+                value={
+                  postgresStatus.tables && postgresStatus.tables.length
+                    ? postgresStatus.tables.join(', ')
+                    : 'n/a'
+                }
+              />
+            </div>
+          </div>
+          {postgresStatus.error ? (
+            <Text mode="error" value={postgresStatus.error} mt="2" />
+          ) : null}
+          <div className="mt-4">
+            <Text mode="uppercase" value="Recent ops events" />
+            {postgresStatus.events && postgresStatus.events.length ? (
+              <ul className="mt-2 space-y-2 text-xs text-sand/70">
+                {postgresStatus.events.slice(0, 5).map((event) => (
+                  <li key={event.id} className="flex flex-wrap gap-2">
+                    <span className="font-mono text-sand/50">
+                      {new Date(event.created_at).toLocaleTimeString()}
+                    </span>
+                    <span className="text-sand">
+                      {event.component}:{event.event_type}
+                    </span>
+                    {event.source ? <Badge label={event.source} /> : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Text
+                size="xs"
+                mode="normal"
+                value={postgresLoading ? 'Loading events...' : 'No events yet'}
+                mt="2"
+              />
+            )}
+          </div>
+        </div>
+      ) : postgresLoading ? (
+        <div className="card p-4 text-sand/70">Loading Postgres status...</div>
+      ) : null}
 
       {jobProgress.length ? (
         <div className="card p-4">

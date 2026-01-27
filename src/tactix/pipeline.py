@@ -50,6 +50,7 @@ from tactix.pgn_utils import (
     split_pgn_chunks,
 )
 from tactix.position_extractor import extract_positions
+from tactix.postgres_store import record_ops_event
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 
@@ -397,6 +398,17 @@ def _analyze_positions(
             tactic_row, outcome_row = result
             upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
             tactics_detected += 1
+    record_ops_event(
+        settings,
+        component="analysis",
+        event_type="analysis_complete",
+        source=settings.source,
+        profile=settings.lichess_profile or settings.chesscom_profile,
+        metadata={
+            "positions_analyzed": positions_analyzed,
+            "tactics_detected": tactics_detected,
+        },
+    )
     return positions_analyzed, tactics_detected
 
 
@@ -448,6 +460,21 @@ def run_monitor_new_positions(
         positions_analyzed,
         tactics_detected,
         metrics_version,
+    )
+
+    record_ops_event(
+        settings,
+        component=settings.run_context,
+        event_type="monitor_new_positions_complete",
+        source=settings.source,
+        profile=profile,
+        metadata={
+            "new_games": len(new_game_ids),
+            "positions_extracted": positions_extracted,
+            "positions_analyzed": positions_analyzed,
+            "tactics_detected": tactics_detected,
+            "metrics_version": metrics_version,
+        },
     )
 
     return {
@@ -546,6 +573,18 @@ def run_daily_game_sync(
         "start",
         source=settings.source,
         message="Starting pipeline run",
+    )
+    record_ops_event(
+        settings,
+        component=settings.run_context,
+        event_type="daily_game_sync_start",
+        source=settings.source,
+        profile=profile,
+        metadata={
+            "backfill": backfill_mode,
+            "window_start_ms": window_start_ms,
+            "window_end_ms": window_end_ms,
+        },
     )
 
     since_ms = 0
@@ -756,6 +795,19 @@ def run_daily_game_sync(
             computed=raw_pgns_hashed,
             matched=raw_pgns_matched,
         )
+        record_ops_event(
+            settings,
+            component="ingestion",
+            event_type="raw_pgns_persisted",
+            source=settings.source,
+            profile=profile,
+            metadata={
+                "inserted": raw_pgns_inserted,
+                "computed": raw_pgns_hashed,
+                "matched": raw_pgns_matched,
+                "total": len(games_to_process),
+            },
+        )
 
         _emit_progress(
             progress,
@@ -802,6 +854,19 @@ def run_daily_game_sync(
             source=settings.source,
             computed=raw_pgns_hashed,
             matched=raw_pgns_matched,
+        )
+        record_ops_event(
+            settings,
+            component="ingestion",
+            event_type="raw_pgns_persisted",
+            source=settings.source,
+            profile=profile,
+            metadata={
+                "inserted": raw_pgns_inserted,
+                "computed": raw_pgns_hashed,
+                "matched": raw_pgns_matched,
+                "total": len(games_to_process),
+            },
         )
 
     logger.info(
@@ -853,6 +918,18 @@ def run_daily_game_sync(
     analysis_complete = True
     if analysis_complete:
         _clear_analysis_checkpoint(analysis_checkpoint_path)
+    record_ops_event(
+        settings,
+        component="analysis",
+        event_type="analysis_complete",
+        source=settings.source,
+        profile=profile,
+        metadata={
+            "positions_analyzed": total_positions,
+            "tactics_detected": tactics_count,
+            "resume_index": resume_index,
+        },
+    )
     update_metrics_summary(conn)
     metrics_version = write_metrics_version(conn)
     settings.metrics_version_file.write_text(str(metrics_version))
@@ -877,6 +954,22 @@ def run_daily_game_sync(
             checkpoint_value = max(since_ms, latest_timestamp(games))
             write_checkpoint(settings.checkpoint_path, checkpoint_value)
             last_timestamp_value = checkpoint_value
+
+    record_ops_event(
+        settings,
+        component=settings.run_context,
+        event_type="daily_game_sync_complete",
+        source=settings.source,
+        profile=profile,
+        metadata={
+            "fetched_games": len(games),
+            "raw_pgns_inserted": raw_pgns_inserted,
+            "positions": len(positions),
+            "tactics": tactics_count,
+            "metrics_version": metrics_version,
+            "backfill": backfill_mode,
+        },
+    )
 
     return {
         "source": settings.source,

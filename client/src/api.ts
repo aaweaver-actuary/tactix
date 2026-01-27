@@ -112,6 +112,26 @@ export type PracticeAttemptResponse = {
   latency_ms?: number | null;
 };
 
+export type PostgresOpsEvent = {
+  id: number;
+  component: string;
+  event_type: string;
+  source: string | null;
+  profile: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export type PostgresStatus = {
+  enabled: boolean;
+  status: 'ok' | 'disabled' | 'unreachable';
+  latency_ms?: number;
+  error?: string;
+  schema?: string;
+  tables?: string[];
+  events?: PostgresOpsEvent[];
+};
+
 export const API_BASE = (import.meta.env.VITE_API_BASE || '').trim();
 const API_TOKEN = (
   import.meta.env.VITE_TACTIX_API_TOKEN || 'local-dev-token'

@@ -30,6 +30,7 @@ RUN pip install --no-cache-dir \
 	"orjson>=3.10.7" \
 	"pandas>=2.2.3" \
 	"pydantic>=2.9.0" \
+	"psycopg2-binary>=2.9.9" \
 	"python-chess>=1.999" \
 	"python-dotenv>=1.2.1" \
 	"requests>=2.32.3" \

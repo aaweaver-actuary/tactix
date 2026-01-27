@@ -1,0 +1,32 @@
+[Event "Puzzle #vcBO9 from game uJVYGnFL"]
+[Site "https://lichess.org/training/vcBO9"]
+[FEN "8/pp1R1pkp/3N1rp1/8/8/2P1K2P/P7/7n w - - 6 35"]
+[SetUp "1"]
+[Themes "fork, knight"]
+
+35. Ne8+ Kf8 36. Nxf6 *
+
+[Event "Puzzle #7yJYn from game ONvp8A7T"]
+[Site "https://lichess.org/training/7yJYn"]
+[FEN "7k/ppp4p/3q4/5P2/3PQ3/2P2nPK/8/7R b - - 0 42"]
+[SetUp "1"]
+[Themes "fork, knight"]
+
+42... Ng5+ 43. Kg2 Nxe4 *
+
+[Event "Puzzle #stncQ from game ZQMi8SdJ"]
+[Site "https://lichess.org/training/stncQ"]
+[FEN "8/p1Q5/Pp2b3/1k2P3/1np5/2K5/8/8 b - - 7 52"]
+[SetUp "1"]
+[Themes "fork, knight"]
+
+52... Nd5+ 53. Kb2 Nxc7 *
+
+[Event "Puzzle #8mDCu from game dV2ivRL3"]
+[Site "https://lichess.org/training/8mDCu"]
+[FEN "8/5pbk/1Q2p1p1/1B5p/P3q1P1/7P/8/5RK1 b - - 0 32"]
+[SetUp "1"]
+[Themes "fork, bishop"]
+
+32... Bd4+ 33. Qxd4 Qxd4+ *
+

@@ -1,0 +1,24 @@
+[Event "Puzzle #NohB8 from game afo8rcJL"]
+[Site "https://lichess.org/training/NohB8"]
+[FEN "5r1k/ppp3pp/6r1/8/P3p2P/2Q1BqP1/1PP2P2/5RKR b - - 4 29"]
+[SetUp "1"]
+[Themes "mateIn2, middlegame, short, sacrifice, kingsideAttack"]
+
+29... Rxg3+ 30. fxg3 Qxg3# *
+
+[Event "Puzzle #u1Kku from game erSOZeNo"]
+[Site "https://lichess.org/training/u1Kku"]
+[FEN "3k4/5Q1p/3pR1r1/1p4q1/2p5/2P4B/7K/5R2 b - - 0 39"]
+[SetUp "1"]
+[Themes "deflection, short, endgame, mateIn2"]
+
+39... Qg3+ 40. Kh1 Qxh3# *
+
+[Event "Puzzle #j040W from game FoMW66Iu"]
+[Site "https://lichess.org/training/j040W"]
+[FEN "r1b1qk1r/pp1np1b1/4pnQ1/2p3N1/2P5/2N5/PP3PPP/R1B1K2R w KQ - 3 14"]
+[SetUp "1"]
+[Themes "mateIn2, short, opening"]
+
+14. Nxe6+ Kg8 15. Qxg7# *
+

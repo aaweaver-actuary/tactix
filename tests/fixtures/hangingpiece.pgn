@@ -1,0 +1,24 @@
+[Event "Puzzle #KX51t from game dtn8gofW"]
+[Site "https://lichess.org/training/KX51t"]
+[FEN "1k5r/pp1q1p2/4bQrp/2ppP3/5B2/1B3P1P/PP4P1/R4nK1 w - - 3 22"]
+[SetUp "1"]
+[Themes "middlegame, short, queensideAttack, advantage, hangingPiece"]
+
+22. Qxh8+ Qc8 23. Qxc8+ *
+
+[Event "Puzzle #ofh9K from game EQnwN4dd"]
+[Site "https://lichess.org/training/ofh9K"]
+[FEN "r3r1k1/1Qp5/p3R1p1/2P2p2/1P6/P2q4/6PP/5R1K b - - 0 28"]
+[SetUp "1"]
+[Themes "endgame, oneMove, mateIn1, hangingPiece"]
+
+28... Qxf1# *
+
+[Event "Puzzle #WTvnX from game O0Fl7ghH"]
+[Site "https://lichess.org/training/WTvnX"]
+[FEN "r2q2k1/1p3pp1/p1pb1r1p/3n4/3N3Q/P7/1PB3PP/R1B2R1K b - - 1 21"]
+[SetUp "1"]
+[Themes "middlegame, oneMove, hangingPiece, mateIn1, kingsideAttack"]
+
+21... Rxf1# *
+

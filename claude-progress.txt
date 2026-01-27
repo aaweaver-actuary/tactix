@@ -1020,3 +1020,11 @@ Session 2026-01-27 (regression verification – features 001/002/003)
 - Verification (feature 003 – Lichess incremental since): triggered `daily_game_sync` again and captured Airflow log view screenshot.
 - Screenshots: `verification/feature-001-airflow-lichess-rapid-2026-01-27.png`, `verification/feature-001-dashboard-lichess-rapid-2026-01-27.png`, `verification/feature-002-airflow-chesscom-blitz-2026-01-27.png`, `verification/feature-002-dashboard-chesscom-blitz-2026-01-27.png`, `verification/feature-003-lichess-incremental-log-2026-01-27.png`.
 - Console errors: none observed in Airflow/UI during verification runs.
+
+Session 2026-01-27 (regression verification – features 001/002/003)
+- Airflow restarts: `AIRFLOW_INIT=1 docker compose -f compose.yml up -d airflow-init airflow-webserver airflow-scheduler`, `TACTIX_SOURCE=chesscom AIRFLOW_INIT=1 docker compose -f compose.yml up -d airflow-init airflow-webserver airflow-scheduler`.
+- Feature 001 (Lichess rapid): `node /Users/andy/tactix/verification/puppeteer_airflow_daily_game_sync.js`, `node /Users/andy/tactix/verification/puppeteer_feature_035_lichess_rapid_incremental.js`.
+- Feature 002 (Chess.com blitz): `node /Users/andy/tactix/verification/puppeteer_airflow_daily_game_sync.js`, `node /Users/andy/tactix/verification/puppeteer_feature_044_chesscom_blitz_incremental.js`.
+- Feature 003 (Lichess incremental since): `node /Users/andy/tactix/verification/puppeteer_airflow_lichess_incremental_log.js`, `node /Users/andy/tactix/verification/puppeteer_feature_035_lichess_rapid_incremental.js`.
+- Screenshots: `verification/feature-001-airflow-lichess-rapid-2026-01-27a.png`, `verification/feature-001-dashboard-lichess-rapid-2026-01-27a.png`, `verification/feature-002-airflow-chesscom-blitz-2026-01-27a.png`, `verification/feature-002-dashboard-chesscom-blitz-2026-01-27a.png`, `verification/feature-003-airflow-lichess-incremental-log-2026-01-27a.png`, `verification/feature-003-dashboard-lichess-incremental-2026-01-27a.png`.
+- Console errors: none observed in Airflow/UI during verification runs.

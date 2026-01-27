@@ -952,3 +952,23 @@ Session 2026-01-26 (feature 095 – Stockfish fork low severity in rapid)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_one_rapid.py`.
 - Updated feature_list.json: feature "Stockfish detects fork with low severity in rapid" marked passes=true.
 - Current passing count: 95.
+
+Session 2026-01-26 (feature 096 – Stockfish fork low severity in classical)
+- Regression UI verification (10 passing features) via Puppeteer:
+	- `TACTIX_SCREENSHOT_NAME=regression-096-precheck-001-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-096-precheck-016-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_regression_feature_016_auth.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-096-precheck-028-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-096-precheck-031-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-096-precheck-033-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-096-precheck-037-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_037_lichess_classical_incremental.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-096-precheck-040-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_040_lichess_correspondence_incremental.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-096-precheck-044-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_044_chesscom_blitz_incremental.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-096-precheck-046-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_046_chesscom_rapid_incremental.js`
+	- `TACTIX_SCREENSHOT_NAME=regression-096-precheck-049-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_049_chesscom_classical_incremental.js`
+- Cleaned corrupted classical fork test and Puppeteer scripts; removed duplicate trailing content.
+- Seeded classical fixture data into data/tactix.duckdb using tmp-logs/feature_096_seed.py with fresh checkpoints.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_fork_classical.py -q`, `make check`.
+- UI verification (manual): `TACTIX_SCREENSHOT_NAME=feature-096-fork-classical-low-severity-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_096_fork_classical.js` (screenshot `verification/feature-096-fork-classical-low-severity-2026-01-26.png`).
+- UI verification (CI): `TACTIX_SCREENSHOT_NAME=feature-096-fork-classical-low-severity-ci-2026-01-26.png node /Users/andy/tactix/verification/puppeteer_feature_096_fork_classical_ci.js` (screenshot `verification/feature-096-fork-classical-low-severity-ci-2026-01-26.png`).
+- Updated feature_list.json: feature "Stockfish detects fork with low severity in classical" marked passes=true.
+- Current passing count: 96.

@@ -1150,4 +1150,16 @@ Session 2026-01-27 (feature 116 – Postgres DB deployed and operational)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_postgres_status.py`, `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_postgres_store.py`, `make check`.
 - Screenshots: `verification/feature-116-airflow-dag-2026-01-27.png`, `verification/feature-116-postgres-status-2026-01-27b.png`.
 - Updated feature_list.json: feature “Postgres DB is deployed and operational” marked passes=true.
-- Current passing count: 116/423.
+ - Current passing count: 116/423.
+
+Session 2026-01-27 (feature 117 – Airflow uses Postgres metadata DB)
+- Switched Airflow metadata DB to Postgres in compose configs and updated local airflow.cfg.
+- Airflow init logs show Postgres metadata migration; verified config via `airflow config get-value database sql_alchemy_conn`.
+- Verified Airflow metadata tables created in Postgres (`\dt` shows dag_run, task_instance, etc.).
+- Added pytest coverage for Postgres metadata config in compose files.
+- UI verification (manual): `TACTIX_SCREENSHOT_NAME=feature-117-airflow-postgres-2026-01-27.png node /Users/andy/tactix/verification/puppeteer_feature_117_airflow_postgres.js`.
+- UI verification screenshot: `verification/feature-117-airflow-postgres-2026-01-27.png`.
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_117_airflow_postgres.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_airflow_metadata_postgres.py`, `make check`.
+- Updated feature_list.json: feature “Airflow uses postgres as its metadata database” marked passes=true.
+- Current passing count: 117/423.

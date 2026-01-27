@@ -54,7 +54,7 @@ services:
       dockerfile: docker/airflow.Dockerfile
     environment:
       AIRFLOW__CORE__EXECUTOR: SequentialExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://tactix:tactix@postgres:5432/tactix
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
       AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
       _AIRFLOW_WWW_USER_USERNAME: admin
@@ -73,7 +73,6 @@ services:
       STOCKFISH_PATH: /usr/games/stockfish
     volumes:
       - ../airflow/dags:/opt/airflow/dags
-      - ../airflow/airflow.db:/opt/airflow/airflow.db
       - ../data:/opt/airflow/data
       - ../tmp-logs:/opt/airflow/tmp-logs
     command: >
@@ -96,7 +95,7 @@ services:
       dockerfile: docker/airflow.Dockerfile
     environment:
       AIRFLOW__CORE__EXECUTOR: SequentialExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://tactix:tactix@postgres:5432/tactix
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
       AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
       TACTIX_DATA_DIR: /opt/airflow/data
@@ -110,7 +109,6 @@ services:
       STOCKFISH_PATH: /usr/games/stockfish
     volumes:
       - ../airflow/dags:/opt/airflow/dags
-      - ../airflow/airflow.db:/opt/airflow/airflow.db
       - ../data:/opt/airflow/data
       - ../tmp-logs:/opt/airflow/tmp-logs
     ports:
@@ -128,7 +126,7 @@ services:
       dockerfile: docker/airflow.Dockerfile
     environment:
       AIRFLOW__CORE__EXECUTOR: SequentialExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://tactix:tactix@postgres:5432/tactix
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
       AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
       TACTIX_DATA_DIR: /opt/airflow/data
@@ -142,7 +140,6 @@ services:
       STOCKFISH_PATH: /usr/games/stockfish
     volumes:
       - ../airflow/dags:/opt/airflow/dags
-      - ../airflow/airflow.db:/opt/airflow/airflow.db
       - ../data:/opt/airflow/data
       - ../tmp-logs:/opt/airflow/tmp-logs
     depends_on:

@@ -198,6 +198,12 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
 
+Session 2026-01-27 (features 100–106 fixture motifs)
+- Added fixture-driven motif regression tests covering mate-in-1/2, hanging piece, fork, pin, skewer, and discovered attack.
+- Expanded tactics motif detection (pin/skewer/discovered attack, refined hanging-piece captures) and aligned motif inference with user moves for fixture consistency; added mate-in metadata on tactics rows.
+- Tests (make check): ruff/ty/eslint/prettier, cargo test/debug + release, pytest suite. pytest was interrupted twice by KeyboardInterrupt during the full `make check` run (once at tests/test_pipeline_state), but the fixture-motif tests passed in those runs.
+- Updated feature_list.json: entries for fixture motif features (#100–#106) marked passes=true after fixture test verification.
+
 Session 2026-01-26 (regression verification: features 001, 016, 028)
 - Verified regression UI flows for features 001 (Lichess), 016 (API auth), and 028 (practice next unseen).
 - Commands:

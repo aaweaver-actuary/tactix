@@ -1338,7 +1338,7 @@
       "Step 4: Verify that each position is only classified as mate in 1",
       "Step 5: Test each position in the fixture every time `make check` is run"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1350,7 +1350,7 @@
       "Step 4: Verify that each position is only classified as mate in 2",
       "Step 5: Test each position in the fixture every time `make check` is run"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1362,7 +1362,7 @@
       "Step 4: Verify that each position is only classified as hanging piece",
       "Step 5: Test each position in the fixture every time `make check` is run"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1374,7 +1374,7 @@
       "Step 4: Verify that each position is only classified as fork",
       "Step 5: Test each position in the fixture every time `make check` is run"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1386,7 +1386,7 @@
       "Step 4: Verify that each position is only classified as pin",
       "Step 5: Test each position in the fixture every time `make check` is run"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1398,7 +1398,7 @@
       "Step 4: Verify that each position is only classified as skewer",
       "Step 5: Test each position in the fixture every time `make check` is run"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1410,7 +1410,7 @@
       "Step 4: Verify that each position is only classified as discovered attack",
       "Step 5: Test each position in the fixture every time `make check` is run"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

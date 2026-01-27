@@ -24,3 +24,4 @@ client/coverage/
 client/node_modules/
 tmp-logs/vite.log
 tmp-logs/uvicorn.log
+.serena/

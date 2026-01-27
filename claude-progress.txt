@@ -198,6 +198,10 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
 
+Session 2026-01-27 (refactor – tactics analyzer profile helpers)
+- Refactor: repeated profile parsing in `_is_*_profile` helpers → shared `_normalized_profile` used by each check.
+- Tests: `make check` (before/after), all passing; same warnings as prior runs.
+
 Session 2026-01-27 (features 100–106 fixture motifs)
 - Added fixture-driven motif regression tests covering mate-in-1/2, hanging piece, fork, pin, skewer, and discovered attack.
 - Expanded tactics motif detection (pin/skewer/discovered attack, refined hanging-piece captures) and aligned motif inference with user moves for fixture consistency; added mate-in metadata on tactics rows.

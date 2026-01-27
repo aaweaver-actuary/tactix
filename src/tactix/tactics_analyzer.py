@@ -289,15 +289,29 @@ def _infer_motif(board: chess.Board, best_move: chess.Move | None) -> str:
     return "initiative"
 
 
-def _is_fast_profile(settings: Settings | None) -> bool:
+def _normalized_profile(settings: Settings | None) -> tuple[str, str]:
     if settings is None:
-        return False
+        return "", ""
     source = (settings.source or "").strip().lower()
     if source == "chesscom":
         profile = (
-            settings.chesscom_profile or settings.chesscom_time_class or ""
-        ).strip()
-        return profile.lower() in {
+            (settings.chesscom_profile or settings.chesscom_time_class or "")
+            .strip()
+            .lower()
+        )
+    else:
+        profile = (
+            (settings.lichess_profile or settings.rapid_perf or "").strip().lower()
+        )
+    return source, profile
+
+
+def _is_fast_profile(settings: Settings | None) -> bool:
+    source, profile = _normalized_profile(settings)
+    if not profile:
+        return False
+    if source == "chesscom":
+        return profile in {
             "bullet",
             "blitz",
             "rapid",
@@ -305,8 +319,7 @@ def _is_fast_profile(settings: Settings | None) -> bool:
             "correspondence",
             "daily",
         }
-    profile = (settings.lichess_profile or settings.rapid_perf or "").strip()
-    return profile.lower() in {
+    return profile in {
         "bullet",
         "blitz",
         "rapid",
@@ -316,68 +329,32 @@ def _is_fast_profile(settings: Settings | None) -> bool:
 
 
 def _is_bullet_profile(settings: Settings | None) -> bool:
-    if settings is None:
-        return False
-    source = (settings.source or "").strip().lower()
-    if source == "chesscom":
-        profile = (
-            settings.chesscom_profile or settings.chesscom_time_class or ""
-        ).strip()
-        return profile.lower() == "bullet"
-    profile = (settings.lichess_profile or settings.rapid_perf or "").strip()
-    return profile.lower() == "bullet"
+    _, profile = _normalized_profile(settings)
+    return profile == "bullet"
 
 
 def _is_blitz_profile(settings: Settings | None) -> bool:
-    if settings is None:
-        return False
-    source = (settings.source or "").strip().lower()
-    if source == "chesscom":
-        profile = (
-            settings.chesscom_profile or settings.chesscom_time_class or ""
-        ).strip()
-        return profile.lower() == "blitz"
-    profile = (settings.lichess_profile or settings.rapid_perf or "").strip()
-    return profile.lower() == "blitz"
+    _, profile = _normalized_profile(settings)
+    return profile == "blitz"
 
 
 def _is_rapid_profile(settings: Settings | None) -> bool:
-    if settings is None:
-        return False
-    source = (settings.source or "").strip().lower()
-    if source == "chesscom":
-        profile = (
-            settings.chesscom_profile or settings.chesscom_time_class or ""
-        ).strip()
-        return profile.lower() == "rapid"
-    profile = (settings.lichess_profile or settings.rapid_perf or "").strip()
-    return profile.lower() == "rapid"
+    _, profile = _normalized_profile(settings)
+    return profile == "rapid"
 
 
 def _is_classical_profile(settings: Settings | None) -> bool:
-    if settings is None:
-        return False
-    source = (settings.source or "").strip().lower()
-    if source == "chesscom":
-        profile = (
-            settings.chesscom_profile or settings.chesscom_time_class or ""
-        ).strip()
-        return profile.lower() == "classical"
-    profile = (settings.lichess_profile or settings.rapid_perf or "").strip()
-    return profile.lower() == "classical"
+    _, profile = _normalized_profile(settings)
+    return profile == "classical"
 
 
 def _is_correspondence_profile(settings: Settings | None) -> bool:
-    if settings is None:
+    source, profile = _normalized_profile(settings)
+    if not profile:
         return False
-    source = (settings.source or "").strip().lower()
     if source == "chesscom":
-        profile = (
-            settings.chesscom_profile or settings.chesscom_time_class or ""
-        ).strip()
-        return profile.lower() in {"correspondence", "daily"}
-    profile = (settings.lichess_profile or settings.rapid_perf or "").strip()
-    return profile.lower() == "correspondence"
+        return profile in {"correspondence", "daily"}
+    return profile == "correspondence"
 
 
 def analyze_position(

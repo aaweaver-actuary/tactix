@@ -357,9 +357,7 @@ class PipelineHelperTests(unittest.TestCase):
 
         lichess_unanalyzed = fetch_unanalyzed_positions(conn, source="lichess")
         chesscom_unanalyzed = fetch_unanalyzed_positions(conn, source="chesscom")
-        filtered = fetch_unanalyzed_positions(
-            conn, game_ids=["g2"], source="chesscom"
-        )
+        filtered = fetch_unanalyzed_positions(conn, game_ids=["g2"], source="chesscom")
 
         self.assertEqual(lichess_unanalyzed, [])
         self.assertEqual(len(chesscom_unanalyzed), 1)

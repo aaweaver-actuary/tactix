@@ -1501,7 +1501,7 @@
       "Step 3: Verify that the webserver is running and responsive",
       "Step 4: Check that DAGs are listed and can be triggered manually"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

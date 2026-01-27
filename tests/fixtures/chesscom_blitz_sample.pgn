@@ -46,3 +46,17 @@
 [FEN "8/1k6/5r2/2q1P3/4P1P1/8/7K/8 b - - 0 1"]
 
 1... Qf2+ 2. Kh3 Rh6# 0-1
+
+
+[Event "Chess.com Blitz Fixture 5"]
+[Site "https://www.chess.com/game/live/9876543213"]
+[UTCDate "2024.07.05"]
+[UTCTime "18:30:00"]
+[White "opponent4"]
+[Black "chesscom"]
+[TimeControl "300"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "6k1/8/8/8/5n2/8/8/R1Q3K1 b - - 0 1"]
+
+1... Ne2+ { [%clk 0:05:00] } 0-1

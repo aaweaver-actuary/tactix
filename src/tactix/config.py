@@ -181,25 +181,30 @@ class Settings:
         self.chesscom_time_class = time_class
         self.apply_stockfish_profile(profile_value)
         default_checkpoint = self.data_dir / "chesscom_since.txt"
+        default_checkpoint_name = "chesscom_since.txt"
         profile_checkpoint = self.data_dir / f"chesscom_since_{profile_value}.txt"
         if (
             self.checkpoint_path == default_checkpoint
+            or self.checkpoint_path.name == default_checkpoint_name
             or self.checkpoint_path.name.startswith("chesscom_since_")
         ):
             self.checkpoint_path = profile_checkpoint
         if (
             self.chesscom_checkpoint_path == DEFAULT_CHESSCOM_CHECKPOINT
             or self.chesscom_checkpoint_path == default_checkpoint
+            or self.chesscom_checkpoint_path.name == default_checkpoint_name
             or self.chesscom_checkpoint_path.name.startswith("chesscom_since_")
         ):
             self.chesscom_checkpoint_path = self.checkpoint_path
         default_analysis = self.data_dir / "analysis_checkpoint_chesscom.json"
+        default_analysis_name = "analysis_checkpoint_chesscom.json"
         profile_analysis = (
             self.data_dir / f"analysis_checkpoint_chesscom_{profile_value}.json"
         )
         if (
             self.analysis_checkpoint_path == DEFAULT_CHESSCOM_ANALYSIS_CHECKPOINT
             or self.analysis_checkpoint_path == default_analysis
+            or self.analysis_checkpoint_path.name == default_analysis_name
             or self.analysis_checkpoint_path.name.startswith(
                 "analysis_checkpoint_chesscom_"
             )

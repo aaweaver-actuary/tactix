@@ -475,6 +475,43 @@ def fetch_latest_pgn_hashes(
     return {str(row[0]): str(row[1]) for row in rows if row[0] is not None}
 
 
+def fetch_latest_raw_pgns(
+    conn: duckdb.DuckDBPyConnection,
+    source: str | None = None,
+    limit: int | None = None,
+) -> list[dict[str, object]]:
+    params: list[object] = []
+    filters = []
+    if source:
+        filters.append("source = ?")
+        params.append(source)
+    where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+    limit_clause = ""
+    if limit is not None:
+        limit_clause = "LIMIT ?"
+        params.append(int(limit))
+    result = conn.execute(
+        f"""
+        SELECT * EXCLUDE (rn)
+        FROM (
+            SELECT
+                *,
+                ROW_NUMBER() OVER (
+                    PARTITION BY game_id, source
+                    ORDER BY pgn_version DESC
+                ) AS rn
+            FROM raw_pgns
+            {where_clause}
+        )
+        WHERE rn = 1
+        ORDER BY last_timestamp_ms DESC, game_id
+        {limit_clause}
+        """,
+        params,
+    )
+    return _rows_to_dicts(result)
+
+
 def fetch_position_counts(
     conn: duckdb.DuckDBPyConnection,
     game_ids: list[str],

@@ -1421,7 +1421,7 @@
       "Step 3: Generate FEN strings for each position",
       "Step 4: Store FEN positions with metadata for tactic detection"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

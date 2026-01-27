@@ -17,6 +17,7 @@ from tactix.chesscom_client import (
 from tactix.config import Settings, get_settings
 from tactix.duckdb_store import (
     fetch_latest_pgn_hashes,
+    fetch_latest_raw_pgns,
     fetch_metrics,
     fetch_positions_for_games,
     fetch_position_counts,
@@ -225,6 +226,63 @@ def run_migrations(
     return {
         "source": settings.source,
         "schema_version": schema_version,
+    }
+
+
+def convert_raw_pgns_to_positions(
+    settings: Settings | None = None,
+    source: str | None = None,
+    profile: str | None = None,
+    limit: int | None = None,
+) -> dict[str, object]:
+    settings = settings or get_settings(source=source, profile=profile)
+    if source:
+        settings.source = source
+    settings.apply_source_defaults()
+    settings.apply_lichess_profile(profile)
+    settings.apply_chesscom_profile(profile)
+    settings.ensure_dirs()
+
+    conn = get_connection(settings.duckdb_path)
+    init_schema(conn)
+
+    raw_pgns = fetch_latest_raw_pgns(conn, settings.source, limit)
+    if not raw_pgns:
+        return {
+            "source": settings.source,
+            "games": 0,
+            "inserted_games": 0,
+            "positions": 0,
+        }
+
+    game_ids = [str(row.get("game_id", "")) for row in raw_pgns if row.get("game_id")]
+    position_counts = fetch_position_counts(conn, game_ids, settings.source)
+    to_process = [
+        row for row in raw_pgns if position_counts.get(str(row.get("game_id")), 0) == 0
+    ]
+
+    positions: list[dict[str, object]] = []
+    side_to_move_filter = _resolve_side_to_move_filter(settings)
+    for row in to_process:
+        positions.extend(
+            extract_positions(
+                str(row.get("pgn", "")),
+                str(row.get("user") or settings.user),
+                str(row.get("source") or settings.source),
+                game_id=str(row.get("game_id", "")),
+                side_to_move_filter=side_to_move_filter,
+            )
+        )
+
+    position_ids = insert_positions(conn, positions)
+    for pos, pos_id in zip(positions, position_ids, strict=False):
+        pos["position_id"] = pos_id
+
+    return {
+        "source": settings.source,
+        "games": len(raw_pgns),
+        "inserted_games": len(to_process),
+        "positions": len(positions),
     }
 
 

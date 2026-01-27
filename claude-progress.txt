@@ -1028,3 +1028,16 @@ Session 2026-01-27 (regression verification – features 001/002/003)
 - Feature 003 (Lichess incremental since): `node /Users/andy/tactix/verification/puppeteer_airflow_lichess_incremental_log.js`, `node /Users/andy/tactix/verification/puppeteer_feature_035_lichess_rapid_incremental.js`.
 - Screenshots: `verification/feature-001-airflow-lichess-rapid-2026-01-27a.png`, `verification/feature-001-dashboard-lichess-rapid-2026-01-27a.png`, `verification/feature-002-airflow-chesscom-blitz-2026-01-27a.png`, `verification/feature-002-dashboard-chesscom-blitz-2026-01-27a.png`, `verification/feature-003-airflow-lichess-incremental-log-2026-01-27a.png`, `verification/feature-003-dashboard-lichess-incremental-2026-01-27a.png`.
 - Console errors: none observed in Airflow/UI during verification runs.
+
+Session 2026-01-27 (feature 107 – collected games → FEN positions)
+- Fixed Chess.com profile checkpoint defaults to update chesscom_since.txt + analysis_checkpoint paths when data dir differs.
+- Added DuckDB helper to fetch latest raw PGNs and a pipeline helper to convert stored PGNs into FEN positions with metadata.
+- Added `tests/test_positions_from_db.py` coverage for DB retrieval, FEN extraction, and position persistence.
+- Seeded positions from stored raw PGNs into `data/tactix.duckdb` with `convert_raw_pgns_to_positions`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_107_positions.js`.
+- UI verification screenshot: `verification/feature-107-fen-positions-2026-01-27.png`.
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_107_positions_ci.js`.
+- UI verification screenshot (CI): `verification/feature-107-fen-positions-ci-2026-01-27.png`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_config_env.py`, `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_positions_from_db.py`, `make check` (coverage failure 82.59% < 90; existing gap).
+- Updated feature_list.json: feature “Tactix converts collected games into fen positions for tactic analysis” marked passes=true.
+- Current passing count: 107.

@@ -942,3 +942,13 @@ Session 2026-01-26 (feature 094 – Stockfish fork low severity in blitz)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_one_blitz.py`, `make check`.
 - Updated feature_list.json: feature "Stockfish detects fork with low severity in blitz" marked passes=true.
 - Current passing count: 94.
+
+Session 2026-01-26 (feature 095 – Stockfish fork low severity in rapid)
+- Extended fork severity clamp to rapid profiles in tactics analyzer.
+- Added Chess.com rapid fixture 5 (checking knight fork) and rapid fork tests covering low severity, best line/explanation persistence, and position linkage.
+- Seeded chesscom rapid fixtures into data/tactix.duckdb using a new analysis checkpoint to refresh fork tactics.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_095_fork_rapid.js` (screenshot `verification/feature-095-fork-rapid-low-severity-2026-01-26.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_095_fork_rapid_ci.js` (screenshot `verification/feature-095-fork-rapid-low-severity-ci-2026-01-26.png`).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_one_rapid.py`.
+- Updated feature_list.json: feature "Stockfish detects fork with low severity in rapid" marked passes=true.
+- Current passing count: 95.

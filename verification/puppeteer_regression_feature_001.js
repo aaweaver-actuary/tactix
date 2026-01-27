@@ -28,8 +28,7 @@ const screenshotName =
     });
     await page.select('[data-testid="filter-source"]', 'lichess');
 
-    const runButtonSelector =
-      'div.card.p-6 > div.flex.gap-3 > button:nth-of-type(1)';
+    const runButtonSelector = '[data-testid="action-run"]';
     await page.waitForSelector(runButtonSelector, { timeout: 60000 });
     await page.click(runButtonSelector);
 

@@ -1549,7 +1549,7 @@
       "Step 3: Check analysis engine logs for successful connection to Postgres",
       "Step 4: Ensure analysis engine can read/write tactic analysis results to Postgres DB"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

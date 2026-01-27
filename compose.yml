@@ -18,6 +18,7 @@ services:
       TACTIX_POSTGRES_USER: tactix
       TACTIX_POSTGRES_PASSWORD: tactix
       TACTIX_POSTGRES_SSLMODE: disable
+      TACTIX_POSTGRES_ANALYSIS_ENABLED: '1'
       TACTIX_RUN_CONTEXT: api
       STOCKFISH_PATH: /usr/games/stockfish
     volumes:
@@ -66,6 +67,7 @@ services:
       TACTIX_POSTGRES_USER: tactix
       TACTIX_POSTGRES_PASSWORD: tactix
       TACTIX_POSTGRES_SSLMODE: disable
+      TACTIX_POSTGRES_ANALYSIS_ENABLED: '1'
       TACTIX_RUN_CONTEXT: airflow
       _AIRFLOW_WWW_USER_USERNAME: admin
       _AIRFLOW_WWW_USER_PASSWORD: admin
@@ -110,6 +112,7 @@ services:
       TACTIX_POSTGRES_USER: tactix
       TACTIX_POSTGRES_PASSWORD: tactix
       TACTIX_POSTGRES_SSLMODE: disable
+      TACTIX_POSTGRES_ANALYSIS_ENABLED: '1'
       TACTIX_RUN_CONTEXT: airflow
       STOCKFISH_PATH: /usr/games/stockfish
     volumes:
@@ -143,6 +146,7 @@ services:
       TACTIX_POSTGRES_USER: tactix
       TACTIX_POSTGRES_PASSWORD: tactix
       TACTIX_POSTGRES_SSLMODE: disable
+      TACTIX_POSTGRES_ANALYSIS_ENABLED: '1'
       TACTIX_RUN_CONTEXT: airflow
       STOCKFISH_PATH: /usr/games/stockfish
     volumes:

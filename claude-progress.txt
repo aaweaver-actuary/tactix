@@ -1163,3 +1163,14 @@ Session 2026-01-27 (feature 117 – Airflow uses Postgres metadata DB)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_airflow_metadata_postgres.py`, `make check`.
 - Updated feature_list.json: feature “Airflow uses postgres as its metadata database” marked passes=true.
 - Current passing count: 117/423.
+
+Session 2026-01-27 (feature 118 – Analysis engine uses Postgres for analysis results)
+- Pre-work regression UI checks (10 passing features): `verification/regression-118-precheck-001-2026-01-27c.png`, `verification/regression-118-precheck-016-2026-01-27c.png`, `verification/regression-118-precheck-028-2026-01-27c.png`, `verification/regression-118-precheck-031-2026-01-27c.png`, `verification/regression-118-precheck-033-2026-01-27c.png`, `verification/regression-118-precheck-037-2026-01-27c.png`, `verification/regression-118-precheck-040-2026-01-27c.png`, `verification/regression-118-precheck-044-2026-01-27c.png`, `verification/regression-118-precheck-046-2026-01-27c.png`, `verification/regression-118-precheck-049-2026-01-27c.png` (updated regression selectors for Run/Refresh buttons).
+- Added Postgres analysis schema + adapter, pipeline sync fallback, API endpoint `/api/postgres/analysis`, and dashboard card for analysis rows while keeping DuckDB as system-of-record.
+- Populated Postgres analysis rows via `POST /api/jobs/daily_game_sync` and verified table count `SELECT COUNT(*) FROM tactix_analysis.tactics`.
+- UI verification (manual): `TACTIX_SCREENSHOT_NAME=feature-118-postgres-analysis-2026-01-27c.png node /Users/andy/tactix/verification/puppeteer_feature_118_postgres_analysis.js`.
+- UI verification screenshot: `verification/feature-118-postgres-analysis-2026-01-27c.png`.
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_118_postgres_analysis.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pipeline_helpers.py tests/test_postgres_store.py tests/test_postgres_status.py`, `make check`.
+- Updated feature_list.json: feature “Analysis engine uses postgres to efficiently store and retrieve tactic analysis results” marked passes=true.
+- Current passing count: 118/423.

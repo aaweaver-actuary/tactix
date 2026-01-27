@@ -27,8 +27,7 @@ const screenshotName =
       timeout: 60000,
     });
 
-    const refreshButtonSelector =
-      'div.card.p-6 > div.flex.gap-3 > button:nth-of-type(4)';
+    const refreshButtonSelector = '[data-testid="action-refresh"]';
     await page.waitForSelector(refreshButtonSelector, { timeout: 60000 });
     await page.click(refreshButtonSelector);
 

@@ -260,6 +260,55 @@ class PipelineHelperTests(unittest.TestCase):
                     MagicMock(), [{"game_id": "l1", "pgn": "pgn-1"}], "lichess"
                 )
 
+    def test_sync_postgres_analysis_results_no_connection(self) -> None:
+        synced = pipeline._sync_postgres_analysis_results(
+            MagicMock(), None, self.settings
+        )
+        self.assertEqual(synced, 0)
+
+    def test_sync_postgres_analysis_results_writes_recent_tactics(self) -> None:
+        conn = get_connection(self.settings.duckdb_path)
+        init_schema(conn)
+        positions = [
+            {
+                "game_id": "game-1",
+                "user": "alice",
+                "source": "lichess",
+                "fen": "8/8/8/8/8/8/8/8 w - - 0 1",
+                "ply": 1,
+                "move_number": 1,
+                "side_to_move": "white",
+                "uci": "",
+                "san": "",
+                "clock_seconds": 60.0,
+                "is_legal": True,
+            }
+        ]
+        position_ids = insert_positions(conn, positions)
+        upsert_tactic_with_outcome(
+            conn,
+            {
+                "game_id": "game-1",
+                "position_id": position_ids[0],
+                "motif": "fork",
+                "severity": 1.0,
+                "best_uci": "e2e4",
+                "best_san": "e4",
+                "explanation": "Forks a piece",
+                "eval_cp": 120,
+            },
+            {"result": "found", "user_uci": "e2e4", "eval_delta": 80},
+        )
+
+        pg_conn = MagicMock()
+        with patch("tactix.pipeline.upsert_analysis_tactic_with_outcome") as upsert:
+            synced = pipeline._sync_postgres_analysis_results(
+                conn, pg_conn, self.settings, limit=5
+            )
+
+        self.assertEqual(synced, 1)
+        upsert.assert_called_once()
+
     def test_run_migrations_emits_progress(self) -> None:
         progress_events: list[str] = []
 

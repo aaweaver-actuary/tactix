@@ -140,6 +140,9 @@ class Settings:
     postgres_connect_timeout_s: int = int(
         os.getenv("TACTIX_POSTGRES_CONNECT_TIMEOUT", "5")
     )
+    postgres_analysis_enabled: bool = (
+        os.getenv("TACTIX_POSTGRES_ANALYSIS_ENABLED", "1") == "1"
+    )
     run_context: str = os.getenv("TACTIX_RUN_CONTEXT", "app")
 
     def apply_stockfish_profile(self, profile: str | None = None) -> None:

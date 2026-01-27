@@ -4,6 +4,7 @@ import { Chessboard } from 'react-chessboard';
 import {
   DashboardPayload,
   DashboardFilters,
+  PostgresAnalysisRow,
   PostgresStatus,
   PracticeAttemptResponse,
   PracticeQueueItem,
@@ -11,6 +12,7 @@ import {
 import { getAuthHeaders } from './utils/getAuthHeaders';
 import getJobStreamUrl from './utils/getJobStreamUrl';
 import fetchDashboard from './utils/fetchDashboard';
+import fetchPostgresAnalysis from './utils/fetchPostgresAnalysis';
 import fetchPostgresStatus from './utils/fetchPostgresStatus';
 import triggerMetricsRefresh from './utils/triggerMetricsRefresh';
 import submitPracticeAttempt from './utils/submitPracticeAttempt';
@@ -101,6 +103,13 @@ export default function App() {
   );
   const [postgresError, setPostgresError] = useState<string | null>(null);
   const [postgresLoading, setPostgresLoading] = useState(false);
+  const [postgresAnalysis, setPostgresAnalysis] = useState<
+    PostgresAnalysisRow[]
+  >([]);
+  const [postgresAnalysisError, setPostgresAnalysisError] = useState<
+    string | null
+  >(null);
+  const [postgresAnalysisLoading, setPostgresAnalysisLoading] = useState(false);
 
   const normalizedFilters = useMemo<DashboardFilters>(
     () => ({
@@ -176,6 +185,20 @@ export default function App() {
     }
   }
 
+  async function loadPostgresAnalysis(): Promise<void> {
+    setPostgresAnalysisLoading(true);
+    setPostgresAnalysisError(null);
+    try {
+      const payload = await fetchPostgresAnalysis();
+      setPostgresAnalysis(payload.tactics || []);
+    } catch (err) {
+      console.error(err);
+      setPostgresAnalysisError('Failed to load Postgres analysis results');
+    } finally {
+      setPostgresAnalysisLoading(false);
+    }
+  }
+
   useEffect(() => {
     load(source, normalizedFilters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -183,6 +206,7 @@ export default function App() {
 
   useEffect(() => {
     loadPostgres();
+    loadPostgresAnalysis();
   }, []);
 
   useEffect(() => {
@@ -280,6 +304,7 @@ export default function App() {
         controller.abort();
         streamAbortRef.current = null;
         await loadPostgres();
+        await loadPostgresAnalysis();
       }
 
       if (eventName === 'error') {
@@ -289,6 +314,7 @@ export default function App() {
         controller.abort();
         streamAbortRef.current = null;
         await loadPostgres();
+        await loadPostgresAnalysis();
       }
     }
 
@@ -663,6 +689,10 @@ export default function App() {
         <div className="card p-3 text-rust">{postgresError}</div>
       ) : null}
 
+      {postgresAnalysisError ? (
+        <div className="card p-3 text-rust">{postgresAnalysisError}</div>
+      ) : null}
+
       {postgresStatus ? (
         <div className="card p-4" data-testid="postgres-status">
           <div className="flex items-center justify-between mb-3">
@@ -742,6 +772,46 @@ export default function App() {
         </div>
       ) : postgresLoading ? (
         <div className="card p-4 text-sand/70">Loading Postgres status...</div>
+      ) : null}
+
+      {postgresAnalysis.length || postgresAnalysisLoading ? (
+        <div className="card p-4" data-testid="postgres-analysis">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-display text-sand">
+              Postgres analysis results
+            </h3>
+            <Badge label={`${postgresAnalysis.length} rows`} />
+          </div>
+          {postgresAnalysis.length ? (
+            <ul className="space-y-2 text-xs text-sand/70">
+              {postgresAnalysis.slice(0, 5).map((row) => (
+                <li key={row.tactic_id} className="flex flex-wrap gap-2">
+                  <span className="font-mono text-sand/50">
+                    #{row.tactic_id}
+                  </span>
+                  <span className="text-sand">
+                    {row.motif ?? 'unknown'} · {row.result ?? 'n/a'}
+                  </span>
+                  {row.best_uci ? <Badge label={row.best_uci} /> : null}
+                  {row.severity !== null && row.severity !== undefined ? (
+                    <Badge label={`sev ${row.severity.toFixed(2)}`} />
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <Text
+              size="xs"
+              mode="normal"
+              value={
+                postgresAnalysisLoading
+                  ? 'Loading analysis rows...'
+                  : 'No analysis rows yet'
+              }
+              mt="2"
+            />
+          )}
+        </div>
       ) : null}
 
       {jobProgress.length ? (

@@ -132,6 +132,28 @@ export type PostgresStatus = {
   events?: PostgresOpsEvent[];
 };
 
+export type PostgresAnalysisRow = {
+  tactic_id: number;
+  game_id: string | null;
+  position_id: number;
+  motif: string | null;
+  severity: number | null;
+  best_uci: string | null;
+  best_san: string | null;
+  explanation: string | null;
+  eval_cp: number | null;
+  created_at: string;
+  result: string | null;
+  user_uci: string | null;
+  eval_delta: number | null;
+  outcome_created_at: string | null;
+};
+
+export type PostgresAnalysisResponse = {
+  status: string;
+  tactics: PostgresAnalysisRow[];
+};
+
 export const API_BASE = (import.meta.env.VITE_API_BASE || '').trim();
 const API_TOKEN = (
   import.meta.env.VITE_TACTIX_API_TOKEN || 'local-dev-token'

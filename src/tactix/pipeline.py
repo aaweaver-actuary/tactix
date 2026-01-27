@@ -50,7 +50,13 @@ from tactix.pgn_utils import (
     split_pgn_chunks,
 )
 from tactix.position_extractor import extract_positions
-from tactix.postgres_store import record_ops_event
+from tactix.postgres_store import (
+    init_analysis_schema,
+    postgres_analysis_enabled,
+    postgres_connection,
+    record_ops_event,
+    upsert_analysis_tactic_with_outcome,
+)
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 
@@ -389,15 +395,34 @@ def _analyze_positions(
         return 0, 0
     positions_analyzed = 0
     tactics_detected = 0
-    with StockfishEngine(settings) as engine:
-        for pos in positions:
-            positions_analyzed += 1
-            result = _analyse_with_retries(engine, pos, settings)
-            if result is None:
-                continue
-            tactic_row, outcome_row = result
-            upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
-            tactics_detected += 1
+    postgres_written = 0
+    postgres_synced = 0
+    analysis_pg_enabled = postgres_analysis_enabled(settings)
+    with postgres_connection(settings) as pg_conn:
+        if pg_conn is not None and analysis_pg_enabled:
+            init_analysis_schema(pg_conn)
+        with StockfishEngine(settings) as engine:
+            for pos in positions:
+                positions_analyzed += 1
+                result = _analyse_with_retries(engine, pos, settings)
+                if result is None:
+                    continue
+                tactic_row, outcome_row = result
+                upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
+                if pg_conn is not None and analysis_pg_enabled:
+                    try:
+                        upsert_analysis_tactic_with_outcome(
+                            pg_conn,
+                            tactic_row,
+                            outcome_row,
+                        )
+                        postgres_written += 1
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning("Postgres analysis upsert failed: %s", exc)
+                tactics_detected += 1
+        if pg_conn is not None and analysis_pg_enabled and postgres_written == 0:
+            postgres_synced = _sync_postgres_analysis_results(conn, pg_conn, settings)
+            postgres_written += postgres_synced
     record_ops_event(
         settings,
         component="analysis",
@@ -407,9 +432,49 @@ def _analyze_positions(
         metadata={
             "positions_analyzed": positions_analyzed,
             "tactics_detected": tactics_detected,
+            "postgres_tactics_written": postgres_written,
+            "postgres_tactics_synced": postgres_synced,
         },
     )
     return positions_analyzed, tactics_detected
+
+
+def _sync_postgres_analysis_results(
+    conn,
+    pg_conn,
+    settings: Settings,
+    limit: int = 50,
+) -> int:
+    if pg_conn is None:
+        return 0
+    synced = 0
+    recent = fetch_recent_tactics(conn, limit=limit, source=settings.source)
+    for row in recent:
+        tactic_row = {
+            "game_id": row.get("game_id"),
+            "position_id": row.get("position_id"),
+            "motif": row.get("motif", "unknown"),
+            "severity": row.get("severity", 0.0),
+            "best_uci": row.get("best_uci", ""),
+            "best_san": row.get("best_san"),
+            "explanation": row.get("explanation"),
+            "eval_cp": row.get("eval_cp", 0),
+        }
+        outcome_row = {
+            "result": row.get("result", "unclear"),
+            "user_uci": row.get("user_uci", ""),
+            "eval_delta": row.get("eval_delta", 0),
+        }
+        try:
+            upsert_analysis_tactic_with_outcome(
+                pg_conn,
+                tactic_row,
+                outcome_row,
+            )
+            synced += 1
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Postgres analysis sync failed: %s", exc)
+    return synced
 
 
 def run_monitor_new_positions(
@@ -886,35 +951,54 @@ def run_daily_game_sync(
     )
 
     tactics_count = 0
+    postgres_written = 0
+    postgres_synced = 0
     analysis_complete = False
     total_positions = len(positions)
     progress_every = max(1, total_positions // 20) if total_positions else 1
-    with StockfishEngine(settings) as engine:
-        for idx, pos in enumerate(positions):
-            if idx <= resume_index:
-                continue
-            result = _analyse_with_retries(engine, pos, settings)
-            if result is None:
+    analysis_pg_enabled = postgres_analysis_enabled(settings)
+    with postgres_connection(settings) as pg_conn:
+        if pg_conn is not None and analysis_pg_enabled:
+            init_analysis_schema(pg_conn)
+        with StockfishEngine(settings) as engine:
+            for idx, pos in enumerate(positions):
+                if idx <= resume_index:
+                    continue
+                result = _analyse_with_retries(engine, pos, settings)
+                if result is None:
+                    _write_analysis_checkpoint(
+                        analysis_checkpoint_path, analysis_signature, idx
+                    )
+                    continue
+                tactic_row, outcome_row = result
+                upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
+                if pg_conn is not None and analysis_pg_enabled:
+                    try:
+                        upsert_analysis_tactic_with_outcome(
+                            pg_conn,
+                            tactic_row,
+                            outcome_row,
+                        )
+                        postgres_written += 1
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning("Postgres analysis upsert failed: %s", exc)
+                tactics_count += 1
                 _write_analysis_checkpoint(
                     analysis_checkpoint_path, analysis_signature, idx
                 )
-                continue
-            tactic_row, outcome_row = result
-            upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
-            tactics_count += 1
-            _write_analysis_checkpoint(
-                analysis_checkpoint_path, analysis_signature, idx
-            )
-            if progress and (
-                idx == total_positions - 1 or (idx + 1) % progress_every == 0
-            ):
-                _emit_progress(
-                    progress,
-                    "analyze_positions",
-                    source=settings.source,
-                    analyzed=idx + 1,
-                    total=total_positions,
-                )
+                if progress and (
+                    idx == total_positions - 1 or (idx + 1) % progress_every == 0
+                ):
+                    _emit_progress(
+                        progress,
+                        "analyze_positions",
+                        source=settings.source,
+                        analyzed=idx + 1,
+                        total=total_positions,
+                    )
+        if pg_conn is not None and analysis_pg_enabled and postgres_written == 0:
+            postgres_synced = _sync_postgres_analysis_results(conn, pg_conn, settings)
+            postgres_written += postgres_synced
     analysis_complete = True
     if analysis_complete:
         _clear_analysis_checkpoint(analysis_checkpoint_path)
@@ -928,6 +1012,8 @@ def run_daily_game_sync(
             "positions_analyzed": total_positions,
             "tactics_detected": tactics_count,
             "resume_index": resume_index,
+            "postgres_tactics_written": postgres_written,
+            "postgres_tactics_synced": postgres_synced,
         },
     )
     update_metrics_summary(conn)
@@ -966,6 +1052,8 @@ def run_daily_game_sync(
             "raw_pgns_inserted": raw_pgns_inserted,
             "positions": len(positions),
             "tactics": tactics_count,
+            "postgres_tactics_written": postgres_written,
+            "postgres_tactics_synced": postgres_synced,
             "metrics_version": metrics_version,
             "backfill": backfill_mode,
         },

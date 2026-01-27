@@ -1,5 +1,7 @@
 import os
 import tempfile
+from datetime import datetime, timedelta, timezone
+from email.utils import format_datetime
 from io import StringIO
 from pathlib import Path
 import unittest
@@ -10,7 +12,23 @@ import requests
 import chess.pgn
 
 from tactix.config import Settings, get_settings
-from tactix.chesscom_client import ARCHIVES_URL, fetch_incremental_games
+from tactix.chesscom_client import (
+    ARCHIVES_URL,
+    _auth_headers,
+    _build_cursor,
+    _coerce_int,
+    _fetch_archive_pages,
+    _fetch_remote_games,
+    _filter_by_cursor,
+    _get_with_backoff,
+    _load_fixture_games,
+    _next_page_url,
+    _parse_cursor,
+    _parse_retry_after,
+    fetch_incremental_games,
+    read_cursor,
+    write_cursor,
+)
 from tactix.pgn_utils import latest_timestamp, split_pgn_chunks
 
 
@@ -306,6 +324,163 @@ class ChesscomClientTests(unittest.TestCase):
 
         self.assertEqual(len(result.games), 1)
         self.assertEqual(result.games[0]["game_id"], "game-rapid")
+
+    def test_retry_after_parsing(self) -> None:
+        self.assertEqual(_parse_retry_after("2.5"), 2.5)
+        self.assertEqual(_parse_retry_after("0"), 0.0)
+        self.assertIsNone(_parse_retry_after("invalid"))
+
+        future = datetime.now(tz=timezone.utc) + timedelta(seconds=60)
+        header = format_datetime(future)
+        self.assertIsNotNone(_parse_retry_after(header))
+
+    def test_get_with_backoff_retries_429(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            chesscom_token="token",
+            chesscom_use_fixture_when_no_token=False,
+            chesscom_max_retries=1,
+            chesscom_retry_backoff_ms=0,
+            duckdb_path=self.tmp_dir / "db_backoff.duckdb",
+            chesscom_checkpoint_path=self.tmp_dir / "since_backoff.txt",
+            metrics_version_file=self.tmp_dir / "metrics_backoff.txt",
+            chesscom_fixture_pgn_path=self.fixture_path,
+        )
+
+        class DummyResponse:
+            def __init__(self, status_code, headers=None):
+                self.status_code = status_code
+                self.headers = headers or {}
+
+            def raise_for_status(self):
+                if self.status_code >= 400:
+                    raise requests.HTTPError(f"{self.status_code} Error")
+
+        responses = [
+            DummyResponse(429, headers={"Retry-After": "0"}),
+            DummyResponse(200),
+        ]
+
+        def fake_get(*_args, **_kwargs):
+            return responses.pop(0)
+
+        with (
+            patch("tactix.chesscom_client.requests.get", side_effect=fake_get),
+            patch("tactix.chesscom_client.time.sleep", return_value=None),
+        ):
+            response = _get_with_backoff(settings, "https://example.com", timeout=5)
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_write_cursor_none_roundtrip(self) -> None:
+        path = self.tmp_dir / "cursor.txt"
+        write_cursor(path, None)
+        self.assertIsNone(read_cursor(path))
+
+    def test_load_fixture_missing_path(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            duckdb_path=self.tmp_dir / "db_missing.duckdb",
+            chesscom_checkpoint_path=self.tmp_dir / "since_missing.txt",
+            metrics_version_file=self.tmp_dir / "metrics_missing.txt",
+            chesscom_fixture_pgn_path=self.tmp_dir / "missing.pgn",
+            chesscom_use_fixture_when_no_token=True,
+        )
+        settings.apply_source_defaults()
+
+        games = _load_fixture_games(settings, since_ms=0)
+        self.assertEqual(games, [])
+
+    def test_next_page_url_dict_and_coerce_int(self) -> None:
+        current = "https://api.chess.com/pub/player/user/games/2024/07"
+        data = {"next": {"href": "https://example.com/next"}}
+        self.assertEqual(_next_page_url(data, current), "https://example.com/next")
+        self.assertIsNone(_coerce_int("bad"))
+
+    def test_fetch_archive_pages_detects_loop(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            duckdb_path=self.tmp_dir / "db_pages.duckdb",
+            chesscom_checkpoint_path=self.tmp_dir / "since_pages.txt",
+            metrics_version_file=self.tmp_dir / "metrics_pages.txt",
+            chesscom_fixture_pgn_path=self.fixture_path,
+        )
+
+        class DummyResponse:
+            def __init__(self, data):
+                self._data = data
+
+            def json(self):
+                return self._data
+
+        def fake_get(*_args, **_kwargs):
+            return DummyResponse({"games": [], "next_page": "https://example.com/loop"})
+
+        with patch("tactix.chesscom_client._get_with_backoff", side_effect=fake_get) as backoff:
+            games = _fetch_archive_pages(settings, "https://example.com/loop")
+
+        self.assertEqual(games, [])
+        self.assertEqual(backoff.call_count, 1)
+
+    def test_fetch_remote_games_fallback_and_no_archives(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            duckdb_path=self.tmp_dir / "db_remote.duckdb",
+            chesscom_checkpoint_path=self.tmp_dir / "since_remote.txt",
+            metrics_version_file=self.tmp_dir / "metrics_remote.txt",
+            chesscom_fixture_pgn_path=self.fixture_path,
+            chesscom_use_fixture_when_no_token=True,
+        )
+        settings.apply_source_defaults()
+
+        with patch("tactix.chesscom_client._get_with_backoff", side_effect=RuntimeError("boom")):
+            fallback_games = _fetch_remote_games(settings, since_ms=0)
+        self.assertGreaterEqual(len(fallback_games), 1)
+
+        class DummyResponse:
+            def __init__(self, data):
+                self._data = data
+
+            def json(self):
+                return self._data
+
+        with patch("tactix.chesscom_client._get_with_backoff", return_value=DummyResponse({"archives": []})):
+            empty = _fetch_remote_games(settings, since_ms=0)
+        self.assertEqual(empty, [])
+
+    def test_cursor_helpers(self) -> None:
+        self.assertEqual(_parse_cursor("123:abc"), (123, "abc"))
+        self.assertEqual(_parse_cursor("456"), (456, ""))
+        self.assertEqual(_parse_cursor("bad:cursor"), (0, "bad:cursor"))
+        self.assertEqual(_build_cursor(77, "game"), "77:game")
+
+    def test_next_page_url_resolution(self) -> None:
+        current = "https://api.chess.com/pub/player/user/games/2024/07?page=1"
+        data = {"page": 1, "total_pages": 3}
+        next_url = _next_page_url(data, current)
+        parsed = urlparse(next_url)
+        query = parse_qs(parsed.query)
+        self.assertEqual(query.get("page"), ["2"])
+
+        direct = _next_page_url({"next": "https://example.com/next"}, current)
+        self.assertEqual(direct, "https://example.com/next")
+
+    def test_filter_by_cursor(self) -> None:
+        rows = [
+            {"game_id": "a", "last_timestamp_ms": 100},
+            {"game_id": "b", "last_timestamp_ms": 100},
+            {"game_id": "c", "last_timestamp_ms": 200},
+        ]
+        filtered = _filter_by_cursor(rows, "100:b")
+        self.assertEqual([row["game_id"] for row in filtered], ["c"])
+
+    def test_auth_headers(self) -> None:
+        self.assertEqual(_auth_headers(None), {})
+        self.assertEqual(_auth_headers("token"), {"Authorization": "Bearer token"})
 
     def test_remote_fetch_filters_by_classical_profile(self) -> None:
         settings = Settings(

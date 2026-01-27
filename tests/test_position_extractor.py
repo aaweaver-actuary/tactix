@@ -2,6 +2,8 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
+import chess
+
 import tactix.position_extractor as position_extractor
 from tactix.position_extractor import extract_positions
 
@@ -136,6 +138,70 @@ class PositionExtractorTests(unittest.TestCase):
         self.assertEqual(first["san"], "d4")
         self.assertEqual(first["clock_seconds"], 600)
         self.assertTrue(first["fen"].startswith("rnbqkbnr/pppppppp/8/8/"))
+
+    def test_clock_from_comment_parsing(self) -> None:
+        self.assertEqual(position_extractor._clock_from_comment("%clk 0:01:02"), 62)
+        self.assertEqual(position_extractor._clock_from_comment("%clk 1:02:03"), 3723)
+        self.assertIsNone(position_extractor._clock_from_comment("no clock"))
+        self.assertIsNone(position_extractor._clock_from_comment("%clk bad:time"))
+
+    def test_normalize_side_filter_invalid(self) -> None:
+        self.assertIsNone(position_extractor._normalize_side_filter("green"))
+
+    def test_extract_positions_invalid_pgn_returns_empty(self) -> None:
+        positions = extract_positions("not-a-pgn", user="lichess", source="lichess")
+        self.assertEqual(positions, [])
+
+    def test_extract_positions_user_missing(self) -> None:
+        pgn = self.games[0]
+        positions = extract_positions(pgn, user="missing", source="lichess")
+        self.assertEqual(positions, [])
+
+    def test_illegal_move_skipped(self) -> None:
+        class DummyBoard:
+            def __init__(self) -> None:
+                self.turn = chess.WHITE
+
+            @property
+            def legal_moves(self):
+                return []
+
+            def push(self, _move):
+                return None
+
+            def fen(self) -> str:
+                return "fake-fen"
+
+            def ply(self) -> int:
+                return 0
+
+            @property
+            def fullmove_number(self) -> int:
+                return 1
+
+            def san(self, _move) -> str:
+                return "e4"
+
+        class DummyNode:
+            def __init__(self) -> None:
+                self.move = chess.Move.from_uci("e2e4")
+                self.comment = "%clk 0:10"
+
+        class DummyGame:
+            headers = {"White": "alice", "Black": "bob"}
+
+            def board(self):
+                return DummyBoard()
+
+            def mainline(self):
+                return [DummyNode()]
+
+        with patch("tactix.position_extractor.chess.pgn.read_game", return_value=DummyGame()):
+            positions = position_extractor._extract_positions_python(
+                "pgn", user="alice", source="lichess"
+            )
+
+        self.assertEqual(positions, [])
 
     def test_extracts_chesscom_white_positions_with_clocks(self) -> None:
         pgn = self.chesscom_games[0]

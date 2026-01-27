@@ -10,7 +10,11 @@ from tactix.duckdb_store import (
     init_schema,
     upsert_raw_pgns,
 )
-from tactix.pgn_utils import extract_game_id, extract_last_timestamp_ms, split_pgn_chunks
+from tactix.pgn_utils import (
+    extract_game_id,
+    extract_last_timestamp_ms,
+    split_pgn_chunks,
+)
 from tactix.pipeline import convert_raw_pgns_to_positions
 
 

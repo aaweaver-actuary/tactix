@@ -8,6 +8,15 @@ import chess.pgn
 
 from tactix.config import Settings
 from tactix.lichess_client import (
+    _coerce_perf_type,
+    _extract_status_code,
+    _fetch_remote_games,
+    _fetch_remote_games_once,
+    _is_auth_error,
+    _read_cached_token,
+    _refresh_lichess_token,
+    _resolve_access_token,
+    _write_cached_token,
     fetch_incremental_games,
     latest_timestamp,
     read_checkpoint,
@@ -34,6 +43,11 @@ class LichessClientTests(unittest.TestCase):
         write_checkpoint(ckpt_path, 1234)
         self.assertEqual(read_checkpoint(ckpt_path), 1234)
 
+    def test_checkpoint_invalid_value_resets(self) -> None:
+        ckpt_path = self.tmp_dir / "since_invalid.txt"
+        ckpt_path.write_text("bad")
+        self.assertEqual(read_checkpoint(ckpt_path), 0)
+
     def test_fixture_fetch_respects_since(self) -> None:
         settings = Settings(
             user="lichess",
@@ -53,6 +67,20 @@ class LichessClientTests(unittest.TestCase):
 
         newer = fetch_incremental_games(settings, since_ms=last_ts)
         self.assertEqual(newer, [])
+
+    def test_fixture_missing_path_returns_empty(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "db_missing.duckdb",
+            checkpoint_path=self.tmp_dir / "since_missing.txt",
+            metrics_version_file=self.tmp_dir / "metrics_missing.txt",
+            fixture_pgn_path=self.tmp_dir / "missing.pgn",
+            use_fixture_when_no_token=True,
+        )
+
+        games = fetch_incremental_games(settings, since_ms=0)
+        self.assertEqual(games, [])
 
     def test_fixture_fetch_respects_until(self) -> None:
         settings = Settings(
@@ -282,6 +310,157 @@ class LichessClientTests(unittest.TestCase):
         games_api.export_by_player.assert_called_once()
         called_user = games_api.export_by_player.call_args[0][0]
         self.assertEqual(called_user, "envuser")
+
+    def test_fetch_remote_games_handles_bytes_and_none(self) -> None:
+        settings = Settings(
+            user="envuser",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "db_bytes.duckdb",
+            checkpoint_path=self.tmp_dir / "since_bytes.txt",
+            metrics_version_file=self.tmp_dir / "metrics_bytes.txt",
+            lichess_token="token",
+            use_fixture_when_no_token=False,
+        )
+        pgn_bytes = (
+            b"[Event \"Fixture\"]\n"
+            b"[Site \"https://lichess.org/abcd1234\"]\n"
+            b"[UTCDate \"2024.06.01\"]\n"
+            b"[UTCTime \"12:00:00\"]\n"
+            b"[White \"envuser\"]\n"
+            b"[Black \"opponent\"]\n"
+            b"[Result \"1-0\"]\n\n"
+            b"1. e4 e5 1-0\n"
+        )
+        games_api = MagicMock()
+        games_api.export_by_player.return_value = [None, pgn_bytes]
+        fake_client = MagicMock()
+        fake_client.games = games_api
+
+        with patch("tactix.lichess_client.build_client", return_value=fake_client):
+            result = _fetch_remote_games_once(settings, since_ms=0)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["user"], "envuser")
+
+    def test_fetch_remote_games_propagates_errors(self) -> None:
+        settings = Settings(
+            user="envuser",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "db_err.duckdb",
+            checkpoint_path=self.tmp_dir / "since_err.txt",
+            metrics_version_file=self.tmp_dir / "metrics_err.txt",
+            lichess_token="token",
+            use_fixture_when_no_token=False,
+        )
+
+        with patch(
+            "tactix.lichess_client._fetch_remote_games_once",
+            side_effect=RuntimeError("boom"),
+        ):
+            with self.assertRaises(RuntimeError):
+                _fetch_remote_games(settings, since_ms=0)
+
+    def test_perf_type_coercion(self) -> None:
+        self.assertEqual(_coerce_perf_type("bullet"), "bullet")
+        self.assertIsNone(_coerce_perf_type(None))
+        self.assertIsNone(_coerce_perf_type("unknown"))
+
+    def test_cached_token_read_write(self) -> None:
+        cache_path = self.tmp_dir / "token.json"
+        self.assertIsNone(_read_cached_token(cache_path))
+
+        _write_cached_token(cache_path, "abc123")
+        self.assertEqual(_read_cached_token(cache_path), "abc123")
+
+        cache_path.write_text("raw-token")
+        self.assertEqual(_read_cached_token(cache_path), "raw-token")
+
+        cache_path.write_text("  ")
+        self.assertIsNone(_read_cached_token(cache_path))
+
+    def test_write_cached_token_handles_chmod_error(self) -> None:
+        cache_path = self.tmp_dir / "token_perm.json"
+        with patch("tactix.lichess_client.os.chmod", side_effect=OSError("nope")):
+            _write_cached_token(cache_path, "abc")
+        self.assertTrue(cache_path.exists())
+
+    def test_access_token_resolution_prefers_settings(self) -> None:
+        cache_path = self.tmp_dir / "token.json"
+        _write_cached_token(cache_path, "cached")
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "db.duckdb",
+            checkpoint_path=self.tmp_dir / "since.txt",
+            metrics_version_file=self.tmp_dir / "metrics.txt",
+            lichess_token_cache_path=cache_path,
+            lichess_token="direct",
+        )
+
+        self.assertEqual(_resolve_access_token(settings), "direct")
+
+        settings.lichess_token = ""
+        self.assertEqual(_resolve_access_token(settings), "cached")
+
+    def test_status_code_helpers(self) -> None:
+        class DummyExc(Exception):
+            def __init__(self, status_code: int) -> None:
+                super().__init__("err")
+                self.status_code = status_code
+
+        exc = DummyExc(401)
+        self.assertEqual(_extract_status_code(exc), 401)
+        self.assertTrue(_is_auth_error(exc))
+
+        class DummyResp:
+            status_code = 403
+
+        class DummyExcResp(Exception):
+            def __init__(self) -> None:
+                super().__init__("err")
+                self.response = DummyResp()
+
+        resp_exc = DummyExcResp()
+        self.assertEqual(_extract_status_code(resp_exc), 403)
+        self.assertTrue(_is_auth_error(resp_exc))
+
+    def test_refresh_token_success(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "db_refresh.duckdb",
+            checkpoint_path=self.tmp_dir / "since_refresh.txt",
+            metrics_version_file=self.tmp_dir / "metrics_refresh.txt",
+            lichess_oauth_refresh_token="refresh",
+            lichess_oauth_client_id="client",
+            lichess_oauth_client_secret="secret",
+            lichess_oauth_token_url="https://lichess.org/api/token",
+        )
+
+        class DummyResponse:
+            def raise_for_status(self) -> None:
+                return None
+
+            def json(self) -> dict:
+                return {"access_token": "new-token"}
+
+        with patch("tactix.lichess_client.requests.post", return_value=DummyResponse()):
+            token = _refresh_lichess_token(settings)
+
+        self.assertEqual(token, "new-token")
+        self.assertEqual(settings.lichess_token, "new-token")
+
+    def test_refresh_token_requires_config(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "db_refresh2.duckdb",
+            checkpoint_path=self.tmp_dir / "since_refresh2.txt",
+            metrics_version_file=self.tmp_dir / "metrics_refresh2.txt",
+        )
+
+        with self.assertRaises(ValueError):
+            _refresh_lichess_token(settings)
 
     def test_profile_perf_type_passed_to_api(self) -> None:
         settings = Settings(

@@ -12,7 +12,7 @@ lint: pylint jslint
 pytest:
 	uv run cargo test
 	uv run cargo test --release
-	uv run pytest tests/ --cov=src/ --cov-config=./.coveragerc --cov-report=term-missing --cov-fail-under=80
+	uv run pytest tests/ --cov=src/ --cov-config=./.coveragerc --cov-report=term-missing --cov-fail-under=90
 
 jstest:
 	cd client && npx vitest run --coverage

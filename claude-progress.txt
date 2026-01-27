@@ -1075,3 +1075,15 @@ Session 2026-01-27 (feature 109 – verification refresh)
 - CI integration check: `node /Users/andy/tactix/verification/integration_feature_109_raw_pgn_hashes.js`.
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pipeline_helpers.py -q`, `make check`.
 - Current passing count: 109/423.
+
+Session 2026-01-27 (feature 110 – Airflow hourly pipeline)
+- Updated Airflow `daily_game_sync` DAG to run hourly and execute both Lichess + Chess.com ingestion tasks with explicit retry settings and hourly metrics logging.
+- Updated DAG unit tests to assert hourly schedule, task set, and retry defaults.
+- Manual UI verification: `TACTIX_SCREENSHOT_NAME=feature-110-airflow-hourly-2026-01-27.png node /Users/andy/tactix/verification/puppeteer_feature_110_airflow_hourly.js`, `TACTIX_SCREENSHOT_NAME=feature-110-dashboard-lichess-2026-01-27.png node /Users/andy/tactix/verification/puppeteer_feature_110_dashboard.js`, `TACTIX_SOURCE=chesscom TACTIX_SCREENSHOT_NAME=feature-110-dashboard-chesscom-2026-01-27.png node /Users/andy/tactix/verification/puppeteer_feature_110_dashboard.js`.
+- UI verification screenshots: `verification/feature-110-airflow-hourly-2026-01-27.png`, `verification/feature-110-dashboard-lichess-2026-01-27.png`, `verification/feature-110-dashboard-chesscom-2026-01-27.png`.
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_110_airflow_hourly.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_airflow_dag.py`.
+- Pre-work verification: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_metrics_refresh.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_duckdb_store_helpers.py tests/test_pipeline_helpers.py tests/test_pgn_utils_helpers.py tests/test_job_stream.py`.
+- Tests: `make check`.
+- Updated feature_list.json: feature “Airflow pipeline runs every hour to get new games from Lichess and Chess.com” marked passes=true.
+- Current passing count: 110/423.

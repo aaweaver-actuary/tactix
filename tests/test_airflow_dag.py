@@ -26,9 +26,26 @@ class AirflowDagTests(unittest.TestCase):
         self.assertIsNotNone(dag)
         self.assertEqual(dag.dag_id, "daily_game_sync")
         self.assertEqual(
-            {task.task_id for task in dag.tasks}, {"run_pipeline", "notify_dashboard"}
+            {task.task_id for task in dag.tasks},
+            {
+                "run_lichess_pipeline",
+                "run_chesscom_pipeline",
+                "log_hourly_metrics",
+                "notify_dashboard",
+            },
         )
-        self.assertEqual(str(dag.schedule_interval), "@daily")
+        self.assertEqual(str(dag.schedule_interval), "@hourly")
+        self.assertEqual(dag.default_args.get("retries"), 2)
+        self.assertEqual(dag.default_args.get("retry_delay"), timedelta(minutes=5))
+        self.assertTrue(dag.default_args.get("retry_exponential_backoff"))
+        self.assertEqual(dag.default_args.get("max_retry_delay"), timedelta(minutes=20))
+        for task_id in {
+            "run_lichess_pipeline",
+            "run_chesscom_pipeline",
+            "notify_dashboard",
+        }:
+            task = dag.get_task(task_id)
+            self.assertEqual(task.retries, 2)
 
     def test_analyze_tactics_dag_loads(self) -> None:
         dag_folder = Path(__file__).resolve().parents[1] / "airflow" / "dags"
@@ -45,7 +62,7 @@ class AirflowDagTests(unittest.TestCase):
         )
         self.assertEqual(str(dag.schedule_interval), "@daily")
 
-    def test_daily_schedule_uses_expected_execution_date(self) -> None:
+    def test_hourly_schedule_uses_expected_execution_date(self) -> None:
         dag_folder = Path(__file__).resolve().parents[1] / "airflow" / "dags"
         dagbag = DagBag(
             dag_folder=str(dag_folder), include_examples=False, read_dags_from_db=False
@@ -60,12 +77,14 @@ class AirflowDagTests(unittest.TestCase):
         )
 
         self.assertIsNotNone(next_info)
-        today = timezone.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        now_floor = timezone.utcnow().replace(minute=0, second=0, microsecond=0)
         self.assertGreaterEqual(next_info.logical_date, start)
-        self.assertEqual(next_info.logical_date, today - timedelta(days=1))
+        self.assertLessEqual(next_info.logical_date, now_floor)
+        self.assertEqual(next_info.logical_date.minute, 0)
+        self.assertEqual(next_info.logical_date.second, 0)
         self.assertEqual(
             next_info.data_interval.end - next_info.data_interval.start,
-            timedelta(days=1),
+            timedelta(hours=1),
         )
 
 

@@ -65,6 +65,28 @@ class AirflowDagTests(unittest.TestCase):
         )
         self.assertEqual(str(dag.schedule_interval), "@daily")
 
+    def test_monitor_new_positions_dag_loads(self) -> None:
+        dag_folder = Path(__file__).resolve().parents[1] / "airflow" / "dags"
+        dagbag = DagBag(
+            dag_folder=str(dag_folder), include_examples=False, read_dags_from_db=False
+        )
+
+        self.assertFalse(dagbag.import_errors)
+        dag = dagbag.dags.get("monitor_new_positions")
+        self.assertIsNotNone(dag)
+        self.assertEqual(dag.dag_id, "monitor_new_positions")
+        self.assertEqual(
+            {task.task_id for task in dag.tasks},
+            {
+                "monitor_lichess_positions",
+                "monitor_chesscom_positions",
+                "log_monitor_metrics",
+                "notify_dashboard",
+            },
+        )
+        self.assertEqual(str(dag.schedule_interval), "*/10 * * * *")
+        self.assertFalse(dag.catchup)
+
     def test_hourly_schedule_uses_expected_execution_date(self) -> None:
         dag_folder = Path(__file__).resolve().parents[1] / "airflow" / "dags"
         dagbag = DagBag(

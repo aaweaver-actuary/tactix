@@ -5,6 +5,14 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from tactix.config import Settings
+from tactix.duckdb_store import (
+    fetch_unanalyzed_positions,
+    get_connection,
+    init_schema,
+    insert_positions,
+    upsert_raw_pgns,
+    upsert_tactic_with_outcome,
+)
 import tactix.pipeline as pipeline
 
 
@@ -303,6 +311,140 @@ class PipelineHelperTests(unittest.TestCase):
         self.assertEqual(result, result_value)
         self.assertEqual(engine.restarts, 1)
         sleep_mock.assert_called()
+
+    def test_fetch_unanalyzed_positions_filters(self) -> None:
+        conn = get_connection(self.settings.duckdb_path)
+        init_schema(conn)
+        positions = [
+            {
+                "game_id": "g1",
+                "user": "alice",
+                "source": "lichess",
+                "fen": "8/8/8/8/8/8/8/8 w - - 0 1",
+                "ply": 1,
+                "move_number": 1,
+                "side_to_move": "white",
+                "uci": "e2e4",
+                "san": "e4",
+            },
+            {
+                "game_id": "g2",
+                "user": "alice",
+                "source": "chesscom",
+                "fen": "8/8/8/8/8/8/8/8 w - - 0 1",
+                "ply": 1,
+                "move_number": 1,
+                "side_to_move": "white",
+                "uci": "d2d4",
+                "san": "d4",
+            },
+        ]
+        position_ids = insert_positions(conn, positions)
+        upsert_tactic_with_outcome(
+            conn,
+            {
+                "game_id": "g1",
+                "position_id": position_ids[0],
+                "motif": "fork",
+                "severity": 1.0,
+                "best_uci": "e2e4",
+                "best_san": "e4",
+                "explanation": "",
+                "eval_cp": 0,
+            },
+            {"result": "found", "user_uci": "e2e4", "eval_delta": 0},
+        )
+
+        lichess_unanalyzed = fetch_unanalyzed_positions(conn, source="lichess")
+        chesscom_unanalyzed = fetch_unanalyzed_positions(conn, source="chesscom")
+        filtered = fetch_unanalyzed_positions(
+            conn, game_ids=["g2"], source="chesscom"
+        )
+
+        self.assertEqual(lichess_unanalyzed, [])
+        self.assertEqual(len(chesscom_unanalyzed), 1)
+        self.assertEqual(len(filtered), 1)
+
+    def test_run_monitor_new_positions_analyzes_new_positions(self) -> None:
+        pgn_text = """[Event \"Test\"]
+[Site \"https://lichess.org/Mon123\"]
+[UTCDate \"2020.01.01\"]
+[UTCTime \"00:00:00\"]
+[White \"alice\"]
+[Black \"bob\"]
+[WhiteElo \"1200\"]
+[BlackElo \"1200\"]
+[TimeControl \"300+0\"]
+[Result \"*\"]
+
+1. e4 e5 2. Nf3 Nc6 *
+"""
+        settings = Settings(
+            user="alice",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "monitor.duckdb",
+            checkpoint_path=self.tmp_dir / "since.txt",
+            metrics_version_file=self.tmp_dir / "metrics.txt",
+            fixture_pgn_path=self.tmp_dir / "fixtures.pgn",
+            use_fixture_when_no_token=True,
+            rapid_perf="",
+            lichess_profile="",
+        )
+
+        conn = get_connection(settings.duckdb_path)
+        init_schema(conn)
+        upsert_raw_pgns(
+            conn,
+            [
+                {
+                    "game_id": "Mon123",
+                    "user": "alice",
+                    "source": "lichess",
+                    "pgn": pgn_text,
+                    "last_timestamp_ms": 0,
+                }
+            ],
+        )
+
+        class DummyEngine:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def restart(self) -> None:
+                return None
+
+        def _fake_analyze(engine, position, settings):
+            return (
+                {
+                    "game_id": position["game_id"],
+                    "position_id": position["position_id"],
+                    "motif": "fork",
+                    "severity": 1.0,
+                    "best_uci": "e2e4",
+                    "best_san": "e4",
+                    "explanation": "",
+                    "eval_cp": 0,
+                },
+                {
+                    "result": "found",
+                    "user_uci": position.get("uci", ""),
+                    "eval_delta": 0,
+                },
+            )
+
+        with (
+            patch("tactix.pipeline.StockfishEngine", return_value=DummyEngine()),
+            patch("tactix.pipeline._analyse_with_retries", side_effect=_fake_analyze),
+        ):
+            result = pipeline.run_monitor_new_positions(settings=settings)
+
+        self.assertEqual(result["new_games"], 1)
+        self.assertGreater(result["positions_extracted"], 0)
+        self.assertGreater(result["positions_analyzed"], 0)
+        self.assertGreater(result["tactics_detected"], 0)
 
 
 if __name__ == "__main__":

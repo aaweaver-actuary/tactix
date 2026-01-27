@@ -1490,7 +1490,7 @@
       "Step 3: Trigger tactic analysis engine for each new position",
       "Step 4: Log metrics on number of positions analyzed and tactics detected"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

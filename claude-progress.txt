@@ -1110,3 +1110,13 @@ Session 2026-01-27 (feature 112 – dashboard-triggered Airflow backfill)
 - CI integration check: `node /Users/andy/tactix/verification/integration_feature_112_backfill_trigger.js`.
 - Updated feature_list.json: feature “Airflow pipeline runs on trigger from dashboard to backfill historical games from Lichess and Chess.com” marked passes=true.
 - Current passing count: 112/423.
+
+Session 2026-01-27 (feature 113 – Airflow monitor new positions)
+- Added monitor pipeline to detect newly ingested raw PGNs, extract positions, run tactics analysis, and log metrics for analyzed positions and detected tactics.
+- Added Airflow DAG `monitor_new_positions` (10-minute schedule) with metrics logging and dashboard refresh.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pipeline_helpers.py tests/test_airflow_dag.py`, `make check`.
+- UI verification (manual): `TACTIX_SCREENSHOT_NAME=feature-113-monitor-new-positions-2026-01-27b.png node /Users/andy/tactix/verification/puppeteer_feature_113_monitor_new_positions.js`.
+- UI verification screenshot: `verification/feature-113-monitor-new-positions-2026-01-27b.png`.
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_113_monitor_new_positions.js` (after rebuilding Airflow images to pick up new pipeline export).
+- Updated feature_list.json: feature “Airflow pipeline is monitoring incoming games and triggers tactic analysis for new positions” marked passes=true.
+- Current passing count: 113/423.

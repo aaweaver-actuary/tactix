@@ -19,6 +19,7 @@ from tactix.duckdb_store import (
     fetch_latest_pgn_hashes,
     fetch_latest_raw_pgns,
     fetch_metrics,
+    fetch_unanalyzed_positions,
     fetch_positions_for_games,
     fetch_position_counts,
     fetch_recent_positions,
@@ -347,6 +348,117 @@ def convert_raw_pgns_to_positions(
         "games": len(raw_pgns),
         "inserted_games": len(to_process),
         "positions": len(positions),
+    }
+
+
+def _extract_positions_for_new_games(
+    conn, settings: Settings, raw_pgns: list[dict[str, object]]
+) -> tuple[list[dict[str, object]], list[str]]:
+    game_ids = [str(row.get("game_id", "")) for row in raw_pgns if row.get("game_id")]
+    if not game_ids:
+        return [], []
+    position_counts = fetch_position_counts(conn, game_ids, settings.source)
+    to_process = [
+        row for row in raw_pgns if position_counts.get(str(row.get("game_id")), 0) == 0
+    ]
+    if not to_process:
+        return [], []
+    positions: list[dict[str, object]] = []
+    side_to_move_filter = _resolve_side_to_move_filter(settings)
+    for row in to_process:
+        positions.extend(
+            extract_positions(
+                str(row.get("pgn", "")),
+                str(row.get("user") or settings.user),
+                str(row.get("source") or settings.source),
+                game_id=str(row.get("game_id", "")),
+                side_to_move_filter=side_to_move_filter,
+            )
+        )
+    position_ids = insert_positions(conn, positions)
+    for pos, pos_id in zip(positions, position_ids, strict=False):
+        pos["position_id"] = pos_id
+    return positions, [str(row.get("game_id", "")) for row in to_process]
+
+
+def _analyze_positions(
+    conn, settings: Settings, positions: list[dict[str, object]]
+) -> tuple[int, int]:
+    if not positions:
+        return 0, 0
+    positions_analyzed = 0
+    tactics_detected = 0
+    with StockfishEngine(settings) as engine:
+        for pos in positions:
+            positions_analyzed += 1
+            result = _analyse_with_retries(engine, pos, settings)
+            if result is None:
+                continue
+            tactic_row, outcome_row = result
+            upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
+            tactics_detected += 1
+    return positions_analyzed, tactics_detected
+
+
+def run_monitor_new_positions(
+    settings: Settings | None = None,
+    source: str | None = None,
+    profile: str | None = None,
+    limit: int | None = None,
+) -> dict[str, object]:
+    settings = settings or get_settings(source=source, profile=profile)
+    if source:
+        settings.source = source
+    settings.apply_source_defaults()
+    settings.apply_lichess_profile(profile)
+    settings.apply_chesscom_profile(profile)
+    settings.ensure_dirs()
+
+    conn = get_connection(settings.duckdb_path)
+    init_schema(conn)
+
+    raw_pgns = fetch_latest_raw_pgns(conn, settings.source, limit)
+    positions_extracted = 0
+    new_game_ids: list[str] = []
+    if raw_pgns:
+        extracted_positions, new_game_ids = _extract_positions_for_new_games(
+            conn, settings, raw_pgns
+        )
+        positions_extracted = len(extracted_positions)
+
+    positions_to_analyze: list[dict[str, object]] = []
+    if new_game_ids:
+        positions_to_analyze = fetch_unanalyzed_positions(
+            conn, game_ids=new_game_ids, source=settings.source
+        )
+
+    positions_analyzed, tactics_detected = _analyze_positions(
+        conn, settings, positions_to_analyze
+    )
+
+    update_metrics_summary(conn)
+    metrics_version = write_metrics_version(conn)
+    settings.metrics_version_file.write_text(str(metrics_version))
+
+    logger.info(
+        "Monitor run complete: source=%s new_games=%s positions_extracted=%s positions_analyzed=%s tactics_detected=%s metrics_version=%s",
+        settings.source,
+        len(new_game_ids),
+        positions_extracted,
+        positions_analyzed,
+        tactics_detected,
+        metrics_version,
+    )
+
+    return {
+        "source": settings.source,
+        "user": settings.user,
+        "raw_pgns_checked": len(raw_pgns),
+        "new_games": len(new_game_ids),
+        "positions_extracted": positions_extracted,
+        "positions_analyzed": positions_analyzed,
+        "tactics_detected": tactics_detected,
+        "metrics_version": metrics_version,
     }
 
 

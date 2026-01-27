@@ -1129,3 +1129,13 @@ Session 2026-01-27 (feature 114 – Airflow webserver deployed and operational)
 - CI integration check: `node /Users/andy/tactix/verification/integration_feature_114_airflow_webserver.js`.
 - Updated feature_list.json: feature “Airflow webserver is deployed and operational” marked passes=true.
 - Current passing count: 114/423.
+
+Session 2026-01-27 (feature 115 – Airflow scheduler deployed and operational)
+- Airflow stack deploy: `docker compose -f docker/compose.yml up --build -d`.
+- Scheduler log review: `docker compose -f docker/compose.yml logs --tail 120 airflow-scheduler` (scheduler started, tasks queued/executed; only warnings noted).
+- UI verification (manual): `TACTIX_SCREENSHOT_PREFIX=feature-115-airflow-scheduler-2026-01-27c node /Users/andy/tactix/verification/puppeteer_feature_115_airflow_scheduler.js`.
+- UI verification screenshots: `verification/feature-115-airflow-scheduler-2026-01-27c-dags.png`, `verification/feature-115-airflow-scheduler-2026-01-27c-runs.png`.
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_115_airflow_scheduler.js`.
+- Tests/lint: `make check`.
+- Updated feature_list.json: feature “Airflow scheduler is deployed and operational” marked passes=true.
+- Current passing count: 115/423.

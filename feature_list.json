@@ -1512,7 +1512,7 @@
       "Step 3: Check logs for any errors or issues",
       "Step 4: Ensure that scheduled DAGs are executing as expected"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "infrastructure",

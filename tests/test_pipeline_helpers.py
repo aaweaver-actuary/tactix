@@ -91,6 +91,58 @@ class PipelineHelperTests(unittest.TestCase):
         self.settings.chesscom_profile = "unknown"
         self.assertIsNone(pipeline._resolve_side_to_move_filter(self.settings))
 
+    def test_expand_pgn_rows_splits_multi_game_pgn(self) -> None:
+        pgn_one = """[Event \"Test 1\"]
+[Site \"https://lichess.org/AbcDef12\"]
+[UTCDate \"2020.01.02\"]
+[UTCTime \"03:04:05\"]
+[White \"alice\"]
+[Black \"bob\"]
+[WhiteElo \"1200\"]
+[BlackElo \"1300\"]
+[TimeControl \"300+0\"]
+[Result \"*\"]
+
+1. e4 *
+"""
+        pgn_two = """[Event \"Test 2\"]
+[Site \"https://lichess.org/ZyXwVu98\"]
+[UTCDate \"2020.01.03\"]
+[UTCTime \"04:05:06\"]
+[White \"alice\"]
+[Black \"carol\"]
+[WhiteElo \"1250\"]
+[BlackElo \"1350\"]
+[TimeControl \"600+0\"]
+[Result \"*\"]
+
+1. d4 *
+"""
+        combined = f"{pgn_one}\n\n{pgn_two}"
+        rows = [
+            pipeline._normalize_game_row(
+                {
+                    "game_id": "bulk",
+                    "user": "alice",
+                    "source": "lichess",
+                    "pgn": combined,
+                    "last_timestamp_ms": 0,
+                },
+                self.settings,
+            )
+        ]
+
+        expanded = pipeline._expand_pgn_rows(rows, self.settings)
+
+        self.assertEqual(len(expanded), 2)
+        self.assertEqual(expanded[0]["game_id"], "AbcDef12")
+        self.assertEqual(expanded[1]["game_id"], "ZyXwVu98")
+        self.assertGreater(expanded[0]["last_timestamp_ms"], 0)
+        self.assertGreater(expanded[1]["last_timestamp_ms"], 0)
+        self.assertNotEqual(
+            expanded[0]["last_timestamp_ms"], expanded[1]["last_timestamp_ms"]
+        )
+
     def test_analysis_checkpoint_helpers(self) -> None:
         checkpoint_path = self.tmp_dir / "analysis.json"
         signature = pipeline._analysis_signature(["g1", "g2"], 3, "lichess")

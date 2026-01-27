@@ -1432,7 +1432,7 @@
       "Step 3: Store hashed PGNs in persistent storage with site metadata",
       "Step 4: Mark run status success in Airflow and log metrics"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

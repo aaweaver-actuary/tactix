@@ -1046,3 +1046,13 @@ Session 2026-01-27 (coverage remediation)
 - Added unit tests covering PGN utilities, pipeline helpers, DuckDB store edge cases, API helpers, Chess.com/Lichess client branches, and position extractor edge cases.
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_duckdb_store_helpers.py tests/test_pipeline_helpers.py tests/test_position_extractor.py tests/test_pgn_utils_helpers.py tests/test_chesscom_client.py tests/test_lichess_client.py`, `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pgn_utils_helpers.py`, `make check` (Python coverage 92.32%).
 - Coverage total now 92.32% (>= 90 threshold).
+
+Session 2026-01-27 (feature 108 – Airflow pipeline hashes and stores raw PGNs)
+- Expanded pipeline PGN ingestion to split multi-game PGN payloads, added raw PGN hash summary helper, and logged raw_pgns_inserted counts.
+- Added API endpoint `/api/raw_pgns/summary` and CI JS check script for hash coverage across Lichess/Chess.com.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_duckdb_store_helpers.py tests/test_pipeline_helpers.py`, `make check`.
+- UI verification: `TACTIX_SCREENSHOT_NAME=feature-108-airflow-raw-pgn-hash-2026-01-27.png node /Users/andy/tactix/verification/puppeteer_airflow_lichess_incremental_log.js`.
+- UI verification screenshot: `verification/feature-108-airflow-raw-pgn-hash-2026-01-27.png`.
+- CI verification: `node /Users/andy/tactix/verification/puppeteer_feature_108_raw_pgn_hashes_ci.js`.
+- Updated feature_list.json: feature “Airflow pipeline hashes and stores raw PGNs from Lichess and Chess.com” marked passes=true.
+- Current passing count: 108.

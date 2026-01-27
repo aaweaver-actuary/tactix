@@ -75,6 +75,15 @@ def daily_game_sync_dag():
             profile=profile,
         )
         result["execution_date"] = logical_date.isoformat() if logical_date else None
+        logger.info(
+            "Pipeline run succeeded: source=%s fetched_games=%s raw_pgns_inserted=%s positions=%s tactics=%s metrics_version=%s",
+            result.get("source"),
+            result.get("fetched_games"),
+            result.get("raw_pgns_inserted"),
+            result.get("positions"),
+            result.get("tactics"),
+            result.get("metrics_version"),
+        )
         return result
 
     @task(task_id="notify_dashboard")

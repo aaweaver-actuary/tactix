@@ -23,6 +23,7 @@ from tactix.pipeline import (
 )
 from tactix.duckdb_store import (
     fetch_practice_queue,
+    fetch_raw_pgns_summary,
     get_connection,
     grade_practice_attempt,
     init_schema,
@@ -171,6 +172,18 @@ def practice_next(
         "source": source or settings.source,
         "include_failed_attempt": include_failed_attempt,
         "item": items[0] if items else None,
+    }
+
+
+@app.get("/api/raw_pgns/summary")
+def raw_pgns_summary(source: str | None = Query(None)) -> dict[str, object]:
+    settings = get_settings(source=source)
+    conn = get_connection(settings.duckdb_path)
+    init_schema(conn)
+    active_source = source or settings.source
+    return {
+        "source": active_source,
+        "summary": fetch_raw_pgns_summary(conn, source=active_source),
     }
 
 

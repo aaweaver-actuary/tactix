@@ -30,3 +30,14 @@ def test_allows_api_key_header():
     token = get_settings().api_token
     response = client.get("/api/practice/queue", headers={"X-API-Key": token})
     assert response.status_code == 200
+
+
+def test_raw_pgns_summary_allows_token():
+    client = TestClient(app)
+    token = get_settings().api_token
+    response = client.get(
+        "/api/raw_pgns/summary", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert "summary" in payload

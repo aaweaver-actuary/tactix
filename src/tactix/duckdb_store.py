@@ -512,6 +512,31 @@ def fetch_latest_raw_pgns(
     return _rows_to_dicts(result)
 
 
+def fetch_raw_pgns_summary(
+    conn: duckdb.DuckDBPyConnection,
+    source: str | None = None,
+) -> list[dict[str, object]]:
+    params: list[object] = []
+    where_clause = ""
+    if source:
+        where_clause = "WHERE source = ?"
+        params.append(source)
+    result = conn.execute(
+        f"""
+        SELECT
+            source,
+            COUNT(*) AS total,
+            SUM(CASE WHEN pgn_hash IS NOT NULL AND pgn_hash <> '' THEN 1 ELSE 0 END) AS hashed,
+            SUM(CASE WHEN pgn_hash IS NULL OR pgn_hash = '' THEN 1 ELSE 0 END) AS missing
+        FROM raw_pgns
+        {where_clause}
+        GROUP BY source
+        """,
+        params,
+    )
+    return _rows_to_dicts(result)
+
+
 def fetch_position_counts(
     conn: duckdb.DuckDBPyConnection,
     game_ids: list[str],

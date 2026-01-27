@@ -223,6 +223,60 @@ class DuckdbStoreHelperTests(unittest.TestCase):
         count = self.conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         self.assertEqual(count, 1)
 
+    def test_upsert_raw_pgns_persists_hash_and_metadata(self) -> None:
+        lichess_pgn = PGN_BASE.format(
+            white_elo=1500,
+            black_elo=1400,
+            time_control="300+0",
+        )
+        chesscom_pgn = """[Event \"Test\"]
+[Site \"https://www.chess.com/game/live/123456789\"]
+[UTCDate \"2020.02.03\"]
+[UTCTime \"03:04:05\"]
+[White \"alice\"]
+[Black \"bob\"]
+[WhiteElo \"1550\"]
+[BlackElo \"1450\"]
+[TimeControl \"600+0\"]
+[Result \"*\"]
+
+1. d4 *
+"""
+
+        rows = [
+            {
+                "game_id": "lichess-1",
+                "user": "alice",
+                "source": "lichess",
+                "pgn": lichess_pgn,
+                "last_timestamp_ms": 1,
+            },
+            {
+                "game_id": "chesscom-1",
+                "user": "alice",
+                "source": "chesscom",
+                "pgn": chesscom_pgn,
+                "last_timestamp_ms": 2,
+            },
+        ]
+
+        upsert_raw_pgns(self.conn, rows)
+
+        results = self.conn.execute(
+            "SELECT game_id, source, pgn_hash, time_control, user_rating FROM raw_pgns"
+        ).fetchall()
+        rows_by_key = {(row[0], row[1]): row for row in results}
+
+        lichess_row = rows_by_key[("lichess-1", "lichess")]
+        self.assertEqual(lichess_row[2], hash_pgn(lichess_pgn))
+        self.assertEqual(lichess_row[3], "300+0")
+        self.assertEqual(lichess_row[4], 1500)
+
+        chesscom_row = rows_by_key[("chesscom-1", "chesscom")]
+        self.assertEqual(chesscom_row[2], hash_pgn(chesscom_pgn))
+        self.assertEqual(chesscom_row[3], "600+0")
+        self.assertEqual(chesscom_row[4], 1550)
+
     def test_metrics_filters_and_rating_bucket_clause(self) -> None:
         self.assertIsNone(_normalize_filter("all"))
         self.assertIsNone(_normalize_filter(""))
@@ -256,8 +310,12 @@ class DuckdbStoreHelperTests(unittest.TestCase):
                 0.0,
             ],
         )
-        start_date = datetime.combine(trend_date, datetime.min.time(), tzinfo=timezone.utc) - timedelta(days=1)
-        end_date = datetime.combine(trend_date, datetime.min.time(), tzinfo=timezone.utc) + timedelta(days=1)
+        start_date = datetime.combine(
+            trend_date, datetime.min.time(), tzinfo=timezone.utc
+        ) - timedelta(days=1)
+        end_date = datetime.combine(
+            trend_date, datetime.min.time(), tzinfo=timezone.utc
+        ) + timedelta(days=1)
         rows = fetch_metrics(
             self.conn,
             source="lichess",
@@ -381,7 +439,9 @@ class DuckdbStoreHelperTests(unittest.TestCase):
 
     def test_grade_practice_attempt_errors(self) -> None:
         with self.assertRaises(ValueError):
-            grade_practice_attempt(self.conn, tactic_id=999, position_id=1, attempted_uci="e2e4")
+            grade_practice_attempt(
+                self.conn, tactic_id=999, position_id=1, attempted_uci="e2e4"
+            )
 
         pgn = PGN_BASE.format(white_elo=1200, black_elo=1400, time_control="300+0")
         upsert_raw_pgns(
@@ -439,16 +499,16 @@ class DuckdbStoreHelperTests(unittest.TestCase):
 
     def test_upsert_tactic_requires_position_id(self) -> None:
         with self.assertRaises(ValueError):
-            upsert_tactic_with_outcome(self.conn, {"game_id": "g7"}, {"result": "found"})
+            upsert_tactic_with_outcome(
+                self.conn, {"game_id": "g7"}, {"result": "found"}
+            )
 
     def test_ensure_raw_pgns_versioned_legacy(self) -> None:
         legacy_conn = get_connection(self.tmp_dir / "legacy.duckdb")
         legacy_conn.execute(
             "CREATE TABLE raw_pgns (game_id TEXT, user TEXT, source TEXT, fetched_at TIMESTAMP, pgn TEXT, last_timestamp_ms BIGINT, cursor TEXT)"
         )
-        legacy_conn.execute(
-            "CREATE TABLE raw_pgns_legacy (game_id TEXT)"
-        )
+        legacy_conn.execute("CREATE TABLE raw_pgns_legacy (game_id TEXT)")
         pgn = PGN_BASE.format(white_elo=1200, black_elo=1300, time_control="300+0")
         legacy_conn.execute(
             "INSERT INTO raw_pgns VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?)",

@@ -42,7 +42,12 @@ from tactix.lichess_client import (
     write_checkpoint,
 )
 from tactix.logging_utils import get_logger
-from tactix.pgn_utils import latest_timestamp
+from tactix.pgn_utils import (
+    extract_game_id,
+    extract_last_timestamp_ms,
+    latest_timestamp,
+    split_pgn_chunks,
+)
 from tactix.position_extractor import extract_positions
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
@@ -103,6 +108,28 @@ def _normalize_game_row(row: Mapping[str, object], settings: Settings) -> GameRo
         "pgn": _coerce_pgn(row.get("pgn")),
         "last_timestamp_ms": _coerce_int(row.get("last_timestamp_ms")),
     }
+
+
+def _expand_pgn_rows(rows: list[GameRow], settings: Settings) -> list[GameRow]:
+    expanded: list[GameRow] = []
+    for row in rows:
+        pgn_text = row.get("pgn", "")
+        chunks = split_pgn_chunks(pgn_text)
+        if len(chunks) <= 1:
+            expanded.append(row)
+            continue
+        for chunk in chunks:
+            expanded.append(
+                {
+                    "game_id": extract_game_id(chunk),
+                    "user": row.get("user") or settings.user,
+                    "source": row.get("source") or settings.source,
+                    "fetched_at": row.get("fetched_at"),
+                    "pgn": chunk,
+                    "last_timestamp_ms": extract_last_timestamp_ms(chunk),
+                }
+            )
+    return expanded
 
 
 def _resolve_side_to_move_filter(settings: Settings) -> str | None:
@@ -408,6 +435,7 @@ def run_daily_game_sync(
         last_timestamp_value = since_ms
 
     games = [_normalize_game_row(game, settings) for game in raw_games]
+    games = _expand_pgn_rows(games, settings)
 
     games = _dedupe_games(games)
     games = _filter_games_by_window(games, window_start_ms, window_end_ms)
@@ -446,6 +474,7 @@ def run_daily_game_sync(
             "source": settings.source,
             "user": settings.user,
             "fetched_games": 0,
+            "raw_pgns_inserted": 0,
             "positions": 0,
             "tactics": 0,
             "metrics_version": metrics_version,
@@ -488,6 +517,7 @@ def run_daily_game_sync(
             "source": settings.source,
             "user": settings.user,
             "fetched_games": len(games),
+            "raw_pgns_inserted": 0,
             "positions": 0,
             "tactics": 0,
             "metrics_version": metrics_version,
@@ -526,6 +556,7 @@ def run_daily_game_sync(
         else:
             _clear_analysis_checkpoint(analysis_checkpoint_path)
 
+    raw_pgns_inserted = 0
     if not positions:
         _emit_progress(
             progress,
@@ -534,7 +565,14 @@ def run_daily_game_sync(
             message="Persisting raw PGNs",
         )
         delete_game_rows(conn, game_ids)
-        upsert_raw_pgns(conn, games_to_process)
+        raw_pgns_inserted = upsert_raw_pgns(conn, games_to_process)
+        _emit_progress(
+            progress,
+            "raw_pgns_persisted",
+            source=settings.source,
+            inserted=raw_pgns_inserted,
+            total=len(games_to_process),
+        )
 
         _emit_progress(
             progress,
@@ -564,7 +602,21 @@ def run_daily_game_sync(
             game_ids, len(positions), settings.source
         )
     else:
-        upsert_raw_pgns(conn, games_to_process)
+        raw_pgns_inserted = upsert_raw_pgns(conn, games_to_process)
+        _emit_progress(
+            progress,
+            "raw_pgns_persisted",
+            source=settings.source,
+            inserted=raw_pgns_inserted,
+            total=len(games_to_process),
+        )
+
+    logger.info(
+        "Raw PGNs persisted: raw_pgns_inserted=%s source=%s total=%s",
+        raw_pgns_inserted,
+        settings.source,
+        len(games_to_process),
+    )
 
     _emit_progress(
         progress,
@@ -635,6 +687,7 @@ def run_daily_game_sync(
         "source": settings.source,
         "user": settings.user,
         "fetched_games": len(games),
+        "raw_pgns_inserted": raw_pgns_inserted,
         "positions": len(positions),
         "tactics": tactics_count,
         "metrics_version": metrics_version,

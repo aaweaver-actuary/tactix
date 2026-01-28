@@ -1619,6 +1619,21 @@ Session 2026-01-28 (feature 155 – discovered attack high severity in bullet)
 - CI integration check: `TACTIX_DISCOVERED_ATTACK_GAME_ID=bullet-discovered-attack-high TACTIX_DISCOVERED_ATTACK_MIN_SEVERITY=1.5 node /Users/andy/tactix/verification/integration_feature_152_discovered_attack_classical_low.js`.
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_discovered_attack_bullet.py`.
 - Updated feature_list.json: feature “Stockfish detects discovered attack with high severity in bullet” marked passes=true.
+
+Session 2026-01-28 (feature 157 – discovered attack high severity in rapid)
+- Pre-work verification tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_metrics_refresh.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_duckdb_store_helpers.py tests/test_pipeline_helpers.py tests/test_pgn_utils_helpers.py tests/test_job_stream.py`.
+- Pre-change make check: `make check` (eslint warning in `client/src/App.tsx` about missing `motifDropIndicatorIndex` dependency; no errors).
+- Updated discovered-attack profile sets to allow rapid high severity; added rapid high fixture to `tests/fixtures/chesscom_rapid_sample.pgn`.
+- Added rapid high-severity discovered-attack test coverage and seed script `tmp-logs/feature_157_seed_rapid_high.py`.
+- Seeded rapid high-severity discovered-attack tactic into `data/tactix.duckdb` via `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_157_seed_rapid_high.py`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_discovered_attack_rapid_case.py -q`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_157_discovered_attack_rapid_high.js`.
+- UI verification screenshot: `verification/feature-157-discovered-attack-rapid-high-severity-2026-01-28.png`.
+- CI verification (Puppeteer): `node /Users/andy/tactix/verification/puppeteer_feature_157_discovered_attack_rapid_high_ci.js`.
+- CI verification screenshot: `verification/feature-157-discovered-attack-rapid-high-severity-ci-2026-01-28.png`.
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_157_discovered_attack_rapid_high.js`.
+- Post-change make check: `make check` (same eslint warning; no errors).
+- Updated feature_list.json: feature “Stockfish detects discovered attack with high severity in rapid” marked passes=true.
 - Current passing count: 154/486.
 
 Session 2026-01-28 (feature 156 – discovered attack high severity in blitz)

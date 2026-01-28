@@ -149,6 +149,38 @@ class BaseTacticDetector(ABC):
         return all(board_before.is_pinned(opponent, sq) for sq in attackers)
 
 
+class DiscoveredCheckDetector(BaseTacticDetector):
+    motif = "discovered_check"
+
+    def detect(self, context: TacticContext) -> bool:
+        if not context.board_after.is_check():
+            return False
+        opponent = not context.mover_color
+        king_square = context.board_after.king(opponent)
+        if king_square is None:
+            return False
+        slider_types = {chess.ROOK, chess.BISHOP, chess.QUEEN}
+        for square, piece in context.board_after.piece_map().items():
+            if (
+                piece.color != context.mover_color
+                or piece.piece_type not in slider_types
+            ):
+                continue
+            if square == context.best_move.to_square:
+                continue
+            piece_before = context.board_before.piece_at(square)
+            if not piece_before or piece_before.color != context.mover_color:
+                continue
+            if piece_before.piece_type != piece.piece_type:
+                continue
+            if king_square not in context.board_after.attacks(square):
+                continue
+            if king_square in context.board_before.attacks(square):
+                continue
+            return True
+        return False
+
+
 class DiscoveredAttackDetector(BaseTacticDetector):
     motif = "discovered_attack"
 
@@ -343,6 +375,7 @@ class MotifDetectorSuite:
 def build_default_motif_detector_suite() -> MotifDetectorSuite:
     return MotifDetectorSuite(
         [
+            DiscoveredCheckDetector(),
             DiscoveredAttackDetector(),
             SkewerDetector(),
             HangingPieceDetector(),

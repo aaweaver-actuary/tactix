@@ -1,0 +1,7 @@
+[Event "Discovered Check Fixture 1"]
+[Site "https://chess.com/game/live/1610000001"]
+[FEN "6k1/8/8/8/8/8/6B1/4K1R1 w - - 0 1"]
+[SetUp "1"]
+[Themes "discoveredCheck"]
+
+1. Bf3+ *

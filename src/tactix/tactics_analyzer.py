@@ -17,6 +17,8 @@ from tactix.tactics_explanation import format_tactic_explanation
 logger = get_logger(__name__)
 MOTIF_DETECTORS: MotifDetectorSuite = build_default_motif_detector_suite()
 _PROFILE_FAST = frozenset({"bullet", "blitz", "rapid", "classical", "correspondence"})
+_PROFILE_DISCOVERED_CHECK_LOW = frozenset({"bullet"})
+_PROFILE_DISCOVERED_CHECK_HIGH = frozenset()
 _PROFILE_DISCOVERED_ATTACK_LOW = frozenset()
 _PROFILE_DISCOVERED_ATTACK_HIGH = frozenset(
     {"bullet", "blitz", "rapid", "classical", "correspondence"}
@@ -151,6 +153,13 @@ def analyze_position(
     if motif == "pin":
         if _is_profile_in(settings, _PROFILE_FAST):
             severity = max(severity, 1.5)
+
+    if motif == "discovered_check":
+        if _is_profile_in(settings, _PROFILE_DISCOVERED_CHECK_LOW):
+            severity = min(severity, 1.0)
+        elif _is_profile_in(settings, _PROFILE_DISCOVERED_CHECK_HIGH):
+            if result == "found":
+                severity = min(severity, 1.0)
 
     if motif == "discovered_attack":
         if _is_profile_in(settings, _PROFILE_DISCOVERED_ATTACK_LOW):

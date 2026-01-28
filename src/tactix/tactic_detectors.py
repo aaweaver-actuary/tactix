@@ -53,6 +53,27 @@ class BaseTacticDetector(ABC):
         }.get(piece_type, 0)
 
     @staticmethod
+    def iter_unchanged_sliders(
+        board_before: chess.Board,
+        board_after: chess.Board,
+        mover_color: bool,
+        exclude_square: chess.Square | None = None,
+    ) -> Iterable[tuple[chess.Square, chess.Piece]]:
+        """Yield unchanged sliding pieces for the mover from before to after."""
+        slider_types = {chess.ROOK, chess.BISHOP, chess.QUEEN}
+        for square, piece in board_after.piece_map().items():
+            if piece.color != mover_color or piece.piece_type not in slider_types:
+                continue
+            if exclude_square is not None and square == exclude_square:
+                continue
+            piece_before = board_before.piece_at(square)
+            if not piece_before or piece_before.color != mover_color:
+                continue
+            if piece_before.piece_type != piece.piece_type:
+                continue
+            yield square, piece
+
+    @staticmethod
     def first_piece_in_direction(
         board: chess.Board, start: chess.Square, step: int
     ) -> chess.Square | None:
@@ -159,20 +180,12 @@ class DiscoveredCheckDetector(BaseTacticDetector):
         king_square = context.board_after.king(opponent)
         if king_square is None:
             return False
-        slider_types = {chess.ROOK, chess.BISHOP, chess.QUEEN}
-        for square, piece in context.board_after.piece_map().items():
-            if (
-                piece.color != context.mover_color
-                or piece.piece_type not in slider_types
-            ):
-                continue
-            if square == context.best_move.to_square:
-                continue
-            piece_before = context.board_before.piece_at(square)
-            if not piece_before or piece_before.color != context.mover_color:
-                continue
-            if piece_before.piece_type != piece.piece_type:
-                continue
+        for square, _piece in self.iter_unchanged_sliders(
+            context.board_before,
+            context.board_after,
+            context.mover_color,
+            exclude_square=context.best_move.to_square,
+        ):
             if king_square not in context.board_after.attacks(square):
                 continue
             if king_square in context.board_before.attacks(square):
@@ -186,20 +199,20 @@ class DiscoveredAttackDetector(BaseTacticDetector):
 
     def detect(self, context: TacticContext) -> bool:
         moved_piece = context.board_before.piece_at(context.best_move.from_square)
-        slider_types = {chess.ROOK, chess.BISHOP, chess.QUEEN}
         opponent = not context.mover_color
-        for square, piece in context.board_after.piece_map().items():
-            if (
-                piece.color != context.mover_color
-                or piece.piece_type not in slider_types
-            ):
-                continue
-            if moved_piece and moved_piece.piece_type in slider_types:
-                if square == context.best_move.to_square:
-                    continue
-            piece_before = context.board_before.piece_at(square)
-            if not piece_before or piece_before.color != context.mover_color:
-                continue
+        exclude_square = None
+        if moved_piece and moved_piece.piece_type in {
+            chess.ROOK,
+            chess.BISHOP,
+            chess.QUEEN,
+        }:
+            exclude_square = context.best_move.to_square
+        for square, _piece in self.iter_unchanged_sliders(
+            context.board_before,
+            context.board_after,
+            context.mover_color,
+            exclude_square=exclude_square,
+        ):
             before_targets = self.attacked_high_value_targets(
                 context.board_before, square, opponent
             )

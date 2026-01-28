@@ -1722,3 +1722,13 @@ Session 2026-01-28 (feature 162 – discovered check low severity in blitz)
 - CI integration check: `node /Users/andy/tactix/verification/integration_feature_162_discovered_check_blitz_low.js`.
 - Post-change make check: `make check` (same eslint warning; no errors).
 - Updated feature_list.json: feature “Stockfish detects discovered check with low severity in blitz” marked passes=true.
+
+Session 2026-01-28 (feature 163 – refactor duplicate functionality)
+- Pre-change make check: `make check` (eslint warning in `client/src/App.tsx` about missing `motifDropIndicatorIndex` dependency; no errors).
+- Refactor target: duplicate unchanged-slider scan in `DiscoveredCheckDetector.detect` and `DiscoveredAttackDetector.detect`.
+- Before → after map:
+	- Inline slider scan logic in `DiscoveredCheckDetector.detect` and `DiscoveredAttackDetector.detect` → `BaseTacticDetector.iter_unchanged_sliders` helper.
+	- Call sites in discovered check/attack detectors now reuse the shared helper (with optional `exclude_square`).
+- Added unit coverage for `iter_unchanged_sliders` in `tests/test_tactic_detectors.py`.
+- Tests: `make check` (post) including new `tests/test_tactic_detectors.py`.
+- Updated feature_list.json: feature “Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.” marked passes=true.

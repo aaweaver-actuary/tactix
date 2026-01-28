@@ -78,3 +78,13 @@ Session 2026-01-27 (regression verification – features 016/021/028/031)
 - Feature 028 (practice next unseen) UI verified; screenshot: `verification/feature-028-practice-next-unseen-2026-01-27.png`.
 - Feature 021 (Chess.com pagination) UI verified; screenshot: `verification/feature-021-chesscom-pagination-2026-01-27.png`.
 - Feature 031 (practice attempt grading) verification attempt failed due to missing practice input (queue empty); screenshot: `verification/failed-feature-031-practice-attempt-grading-2026-01-27.png`. Pass flag unchanged.
+
+Session 2026-01-28 (regression verification – features 001/002/003)
+- Precheck (10 passing features) UI verified via Puppeteer: 001, 016, 028, 033, 035, 037, 040, 044, 046, 049.
+- Precheck screenshots: `verification/regression-precheck-001-2026-01-28.png`, `verification/regression-precheck-016-2026-01-28.png`, `verification/regression-precheck-028-2026-01-28.png`, `verification/regression-precheck-033-2026-01-28.png`, `verification/regression-precheck-035-2026-01-28.png`, `verification/regression-precheck-037-2026-01-28.png`, `verification/regression-precheck-040-2026-01-28.png`, `verification/regression-precheck-044-2026-01-28.png`, `verification/regression-precheck-046-2026-01-28.png`, `verification/regression-precheck-049-2026-01-28.png`.
+- Feature 001 (Lichess rapid full pipeline): triggered Airflow daily_game_sync and verified dashboard refresh.
+- Feature 001 screenshots: `verification/feature-001-airflow-lichess-rapid-2026-01-28.png`, `verification/feature-001-dashboard-lichess-rapid-2026-01-28.png`.
+- Feature 002 (Chess.com blitz full pipeline): triggered Airflow daily_game_sync and verified dashboard refresh.
+- Feature 002 screenshots: `verification/feature-002-airflow-chesscom-blitz-2026-01-28.png`, `verification/feature-002-dashboard-chesscom-blitz-2026-01-28.png`.
+- Feature 003 (Lichess incremental since): captured Airflow incremental log and verified dashboard refresh.
+- Feature 003 screenshots: `verification/feature-003-lichess-incremental-log-2026-01-28.png`, `verification/feature-003-dashboard-lichess-incremental-2026-01-28.png`.

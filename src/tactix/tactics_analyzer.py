@@ -189,7 +189,7 @@ def analyze_position(
             severity = max(severity, 1.5)
 
     if motif == "skewer":
-        if _is_bullet_profile(settings):
+        if _is_bullet_profile(settings) or _is_blitz_profile(settings):
             severity = min(severity, 1.0)
 
     best_san, explanation = format_tactic_explanation(fen, best_move or "", motif)

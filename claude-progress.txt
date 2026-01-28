@@ -1310,3 +1310,15 @@ Session 2026-01-28 (regression fix – features 095/096 fork low severity rapid/
 - CI verification screenshots: `verification/feature-095-fork-rapid-low-severity-ci-2026-01-28.png`, `verification/feature-096-fork-classical-low-severity-ci-2026-01-28.png`.
 - Updated feature_list.json: features “Stockfish detects fork with low severity in rapid/classical” marked passes=true.
 - Current passing count: 129/423.
+
+Session 2026-01-28 (feature 128 – Stockfish pin low severity for correspondence)
+- Pre-work verification tests (randomized 12 passing suites): `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_metrics_refresh.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_duckdb_store_helpers.py tests/test_pipeline_helpers.py tests/test_pgn_utils_helpers.py tests/test_job_stream.py`.
+- Clamped pin severity for correspondence profiles in tactics analyzer and added `tests/test_pin_correspondence.py` coverage.
+- Seeded pin correspondence tactic into data/tactix.duckdb via `tmp-logs/feature_128_seed.py` (severity 0.21, best_uci f8c5).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pin_correspondence.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_128_pin_correspondence.js`.
+- UI verification screenshot: `verification/feature-128-pin-correspondence-low-severity-2026-01-28.png`.
+- CI integration check: `node /Users/andy/tactix/verification/puppeteer_feature_128_pin_correspondence_ci.js`.
+- CI verification screenshot: `verification/feature-128-pin-correspondence-low-severity-ci-2026-01-28.png`.
+- Updated feature_list.json: feature “Stockfish detects pin with low severity in correspondence” marked passes=true.
+- Current passing count: 130/423.

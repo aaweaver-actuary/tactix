@@ -44,5 +44,3 @@ async function fetchDashboard() {
     process.exit(1);
   }
 })();
-const apiBase = process.env.TACTIX_API_URL || 'http://localhost:8000';
-const apiToken = process.env.TACTIX_API_TOKEN || 'local-dev-token';

@@ -3,7 +3,7 @@ const net = require('net');
 const path = require('path');
 const { spawn } = require('child_process');
 const puppeteer = require('../client/node_modules/puppeteer');
-const fs = require('fs');
+
 const ROOT_DIR = path.resolve(__dirname, '..');
 const BACKEND_CMD = path.join(ROOT_DIR, '.venv', 'bin', 'python');
 const DUCKDB_PATH =
@@ -173,97 +173,7 @@ function startBackend() {
       backend.kill();
     }
   }
-})(); // placeholder
-const fs = require('fs');
-const net = require('net');
-const path = require('path');
-const { spawn } = require('child_process');
-const puppeteer = require('../client/node_modules/puppeteer');
-
-const ROOT_DIR = path.resolve(__dirname, '..');
-const DUCKDB_PATH =
-  process.env.TACTIX_DUCKDB_PATH ||
-  path.join(ROOT_DIR, 'data', 'tactix.duckdb');
-const API_BASE = process.env.TACTIX_API_BASE || 'http://localhost:8000';
-const DASHBOARD_URL = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
-const SCREENSHOT_NAME =
-  process.env.TACTIX_SCREENSHOT_NAME ||
-  'feature-155-discovered-attack-bullet-high-severity-2026-01-28.png';
-
-function isPortOpen(host, port, timeoutMs = 1000) {
-  return new Promise((resolve) => {
-    const socket = new net.Socket();
-    let settled = false;
-
-    const finalize = (result) => {
-      if (settled) return;
-      settled = true;
-      socket.destroy();
-      resolve(result);
-    };
-
-    socket.setTimeout(timeoutMs);
-    socket.once('connect', () => finalize(true));
-    socket.once('timeout', () => finalize(false));
-    socket.once('error', () => finalize(false));
-    socket.connect(port, host);
-  });
-}
-
-function startBackend() {
-  return new Promise((resolve, reject) => {
-    const proc = spawn(
-      BACKEND_CMD,
-      [
-        '-m',
-        'uvicorn',
-        'tactix.api:app',
-        '--host',
-        '0.0.0.0',
-        '--port',
-        '8000',
-      ],
-      {
-        cwd: ROOT_DIR,
-        env: {
-          ...process.env,
-          TACTIX_DUCKDB_PATH: DUCKDB_PATH,
-          TACTIX_SOURCE: 'chesscom',
-          TACTIX_USER: 'chesscom',
-          TACTIX_CHESSCOM_PROFILE: 'bullet',
-          TACTIX_CHESSCOM_USE_FIXTURE: '1',
-          TACTIX_USE_FIXTURE: '1',
-          CHESSCOM_USERNAME: 'chesscom',
-          CHESSCOM_USER: 'chesscom',
-        },
-        stdio: ['ignore', 'pipe', 'pipe'],
-      },
-    );
-
-    const onData = (data) => {
-      const text = data.toString();
-      if (text.includes('Uvicorn running')) {
-        cleanup();
-        resolve(proc);
-      }
-    };
-
-    const onError = (err) => {
-      cleanup();
-      reject(err);
-    };
-
-    function cleanup() {
-      proc.stdout.off('data', onData);
-      proc.stderr.off('data', onData);
-      proc.off('error', onError);
-    }
-
-    proc.stdout.on('data', onData);
-    proc.stderr.on('data', onData);
-    proc.on('error', onError);
-  });
-}
+})();
 
 (async () => {
   const backendRunning = await isPortOpen('127.0.0.1', 8000);
@@ -349,5 +259,3 @@ function startBackend() {
     }
   }
 })();
-const fs = require('fs');
-const net = require('net');

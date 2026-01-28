@@ -1,13 +1,16 @@
+import { Droppable, Draggable } from '@hello-pangea/dnd';
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
 import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
-import MetricCard from './MetricCard';
+import MotifCard from './MotifCard';
 
 interface MetricsGridProps {
   metricsData: DashboardPayload['metrics'];
   dragHandleProps?: BaseCardDragHandleProps;
   dragHandleLabel?: string;
   onCollapsedChange?: (collapsed: boolean) => void;
+  droppableId: string;
+  dropIndicatorIndex?: number | null;
 }
 
 /**
@@ -31,12 +34,21 @@ export default function MetricsGrid({
   dragHandleProps,
   dragHandleLabel,
   onCollapsedChange,
+  droppableId,
+  dropIndicatorIndex,
 }: MetricsGridProps) {
   const header = (
     <div className="flex items-center justify-between">
       <h3 className="text-lg font-display text-sand">Motif breakdown</h3>
       <Badge label="Updated" />
     </div>
+  );
+
+  const motifRows = metricsData.filter(
+    (
+      row,
+    ): row is DashboardPayload['metrics'][number] & { motif: string } =>
+      typeof row.motif === 'string' && row.motif.length > 0,
   );
 
   return (
@@ -49,16 +61,65 @@ export default function MetricsGrid({
       dragHandleLabel={dragHandleLabel}
       onCollapsedChange={onCollapsedChange}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {metricsData.map((row) => (
-          <MetricCard
-            key={row.motif}
-            title={row.motif}
-            value={`${row.found}/${row.total}`}
-            note={`${row.missed} missed, ${row.failed_attempt} failed`}
-          />
-        ))}
-      </div>
+      <Droppable droppableId={droppableId}>
+        {(dropProvided) => (
+          <div
+            ref={dropProvided.innerRef}
+            {...dropProvided.droppableProps}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
+          >
+            {motifRows.map((row, index) => (
+              <div key={row.motif} className="contents">
+                {dropIndicatorIndex === index ? (
+                  <div
+                    className="col-span-full h-0.5 rounded-full bg-teal/60"
+                    data-testid="motif-drop-indicator"
+                  />
+                ) : null}
+                <Draggable
+                  draggableId={row.motif}
+                  index={index}
+                  disableInteractiveElementBlocking
+                >
+                  {(dragProvided, dragSnapshot) => (
+                    <div
+                      ref={dragProvided.innerRef}
+                      {...dragProvided.draggableProps}
+                      style={dragProvided.draggableProps.style}
+                      data-motif-id={row.motif}
+                      className={
+                        dragSnapshot.isDragging
+                          ? 'rounded-xl ring-2 ring-teal/40 shadow-lg'
+                          : undefined
+                      }
+                    >
+                      <MotifCard
+                        motif={row.motif}
+                        found={row.found}
+                        total={row.total}
+                        missed={row.missed}
+                        failedAttempt={row.failed_attempt}
+                        dragHandleProps={
+                          (dragProvided.dragHandleProps ??
+                            undefined) as BaseCardDragHandleProps | undefined
+                        }
+                        dragHandleLabel={`Reorder ${row.motif}`}
+                      />
+                    </div>
+                  )}
+                </Draggable>
+              </div>
+            ))}
+            {dropIndicatorIndex === motifRows.length ? (
+              <div
+                className="col-span-full h-0.5 rounded-full bg-teal/60"
+                data-testid="motif-drop-indicator"
+              />
+            ) : null}
+            {dropProvided.placeholder}
+          </div>
+        )}
+      </Droppable>
     </BaseCard>
   );
 }

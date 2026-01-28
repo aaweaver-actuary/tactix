@@ -60,6 +60,9 @@ import {
 } from './utils/cardOrder';
 
 const BASE_CARD_STORAGE_KEY = 'tactix.dashboard.baseCardOrder';
+const MOTIF_CARD_STORAGE_KEY = 'tactix.dashboard.motifCardOrder';
+const BASE_CARD_DROPPABLE_ID = 'dashboard-base-cards';
+const MOTIF_CARD_DROPPABLE_ID = 'dashboard-motif-cards';
 const BASE_CARD_IDS = [
   'metrics-grid',
   'metrics-trends',
@@ -151,6 +154,10 @@ export default function App() {
   const [dropIndicatorIndex, setDropIndicatorIndex] = useState<number | null>(
     null,
   );
+  const [motifDropIndicatorIndex, setMotifDropIndicatorIndex] = useState<
+    number | null
+  >(null);
+  const [motifCardOrder, setMotifCardOrder] = useState<string[]>([]);
   const streamAbortRef = useRef<AbortController | null>(null);
   const [postgresStatus, setPostgresStatus] = useState<PostgresStatus | null>(
     null,
@@ -660,6 +667,28 @@ export default function App() {
     );
   }, [data, selectedRatingBucket, selectedTimeControl]);
 
+  const motifCardIds = useMemo(() => {
+    if (!data) return [];
+    const motifs = new Set<string>();
+    data.metrics.forEach((row) => {
+      if (row.metric_type === 'motif_breakdown' && row.motif) {
+        motifs.add(row.motif);
+      }
+    });
+    return Array.from(motifs);
+  }, [data]);
+
+  useEffect(() => {
+    if (!motifCardIds.length) return;
+    setMotifCardOrder((prev) => {
+      const base = prev.length
+        ? prev
+        : readCardOrder(MOTIF_CARD_STORAGE_KEY, motifCardIds);
+      const normalized = normalizeOrder(base, motifCardIds);
+      return areArraysEqual(normalized, prev) ? prev : normalized;
+    });
+  }, [motifCardIds]);
+
   const trendRows = useMemo(() => {
     if (!data) return [];
     return data.metrics.filter(
@@ -742,6 +771,22 @@ export default function App() {
     writeCardOrder(BASE_CARD_STORAGE_KEY, baseCardOrder);
   }, [baseCardOrder]);
 
+  useEffect(() => {
+    if (!motifCardOrder.length) return;
+    writeCardOrder(MOTIF_CARD_STORAGE_KEY, motifCardOrder);
+  }, [motifCardOrder]);
+
+  const orderedMotifBreakdown = useMemo(() => {
+    if (!motifBreakdown.length) return [];
+    if (!motifCardOrder.length) return motifBreakdown;
+    const motifMap = new Map(
+      motifBreakdown.map((row) => [row.motif, row] as const),
+    );
+    return motifCardOrder
+      .map((id) => motifMap.get(id))
+      .filter((row): row is (typeof motifBreakdown)[number] => Boolean(row));
+  }, [motifBreakdown, motifCardOrder]);
+
   const baseCardEntries: BaseCardEntry[] = useMemo(
     () => [
       {
@@ -749,7 +794,12 @@ export default function App() {
         label: 'Motif breakdown',
         visible: Boolean(data),
         render: (props) => (
-          <MetricsGrid metricsData={motifBreakdown} {...props} />
+          <MetricsGrid
+            metricsData={orderedMotifBreakdown}
+            droppableId={MOTIF_CARD_DROPPABLE_ID}
+            dropIndicatorIndex={motifDropIndicatorIndex}
+            {...props}
+          />
         ),
       },
       {
@@ -800,7 +850,7 @@ export default function App() {
     [
       data,
       includeFailedAttempt,
-      motifBreakdown,
+      orderedMotifBreakdown,
       practiceLoading,
       practiceQueue,
       trendRows,
@@ -1325,33 +1375,72 @@ export default function App() {
       </div>
 
       <DragDropContext
-        onDragUpdate={(result) =>
-          setDropIndicatorIndex(result.destination?.index ?? null)
-        }
+        onDragUpdate={(result) => {
+          if (result.destination?.droppableId === BASE_CARD_DROPPABLE_ID) {
+            setDropIndicatorIndex(result.destination?.index ?? null);
+          } else {
+            setDropIndicatorIndex(null);
+          }
+          if (result.destination?.droppableId === MOTIF_CARD_DROPPABLE_ID) {
+            setMotifDropIndicatorIndex(result.destination?.index ?? null);
+          } else {
+            setMotifDropIndicatorIndex(null);
+          }
+        }}
         onDragEnd={(result) => {
           setDropIndicatorIndex(null);
+          setMotifDropIndicatorIndex(null);
           if (!result.destination) return;
-          if (result.destination.index === result.source.index) return;
+          if (
+            result.destination.index === result.source.index &&
+            result.destination.droppableId === result.source.droppableId
+          ) {
+            return;
+          }
 
-          const visibleIds = orderedBaseCards.map((card) => card.id);
-          if (!visibleIds.length) return;
-          const visibleSet = new Set(visibleIds);
-          const currentVisibleOrder = baseCardOrder.filter((id) =>
-            visibleSet.has(id),
-          );
-          const reorderedVisible = reorderList(
-            currentVisibleOrder,
-            result.source.index,
-            result.destination.index,
-          );
-          let nextVisibleIndex = 0;
-          const nextOrder = baseCardOrder.map((id) =>
-            visibleSet.has(id) ? reorderedVisible[nextVisibleIndex++] : id,
-          );
-          setBaseCardOrder(nextOrder);
+          if (result.destination.droppableId === BASE_CARD_DROPPABLE_ID) {
+            const visibleIds = orderedBaseCards.map((card) => card.id);
+            if (!visibleIds.length) return;
+            const visibleSet = new Set(visibleIds);
+            const currentVisibleOrder = baseCardOrder.filter((id) =>
+              visibleSet.has(id),
+            );
+            const reorderedVisible = reorderList(
+              currentVisibleOrder,
+              result.source.index,
+              result.destination.index,
+            );
+            let nextVisibleIndex = 0;
+            const nextOrder = baseCardOrder.map((id) =>
+              visibleSet.has(id) ? reorderedVisible[nextVisibleIndex++] : id,
+            );
+            setBaseCardOrder(nextOrder);
+            return;
+          }
+
+          if (result.destination.droppableId === MOTIF_CARD_DROPPABLE_ID) {
+            const visibleIds = orderedMotifBreakdown
+              .map((row) => row.motif)
+              .filter((motif): motif is string => Boolean(motif));
+            if (!visibleIds.length || !motifCardOrder.length) return;
+            const visibleSet = new Set(visibleIds);
+            const currentVisibleOrder = motifCardOrder.filter((id) =>
+              visibleSet.has(id),
+            );
+            const reorderedVisible = reorderList(
+              currentVisibleOrder,
+              result.source.index,
+              result.destination.index,
+            );
+            let nextVisibleIndex = 0;
+            const nextOrder = motifCardOrder.map((id) =>
+              visibleSet.has(id) ? reorderedVisible[nextVisibleIndex++] : id,
+            );
+            setMotifCardOrder(nextOrder);
+          }
         }}
       >
-        <Droppable droppableId="dashboard-base-cards">
+        <Droppable droppableId={BASE_CARD_DROPPABLE_ID}>
           {(dropProvided) => (
             <div
               ref={dropProvided.innerRef}

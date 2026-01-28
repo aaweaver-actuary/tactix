@@ -1910,7 +1910,7 @@
       "Step 8: Test the drag-and-drop functionality across different browsers and devices to ensure compatibility",
       "Step 9: Save the new order in local storage or backend to persist user preferences"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

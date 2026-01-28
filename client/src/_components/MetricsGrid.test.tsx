@@ -3,26 +3,48 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import MetricsGrid from './MetricsGrid';
 
+vi.mock('@hello-pangea/dnd', () => ({
+  Droppable: ({ children }: { children: (props: any) => React.ReactNode }) =>
+    children({
+      droppableProps: {},
+      innerRef: () => null,
+      placeholder: null,
+    }),
+  Draggable: ({ children }: { children: (props: any, state: any) => any }) =>
+    children(
+      {
+        draggableProps: { style: {} },
+        dragHandleProps: {},
+        innerRef: () => null,
+      },
+      { isDragging: false },
+    ),
+}));
+
 vi.mock('./Badge', () => ({
   default: ({ label }: { label: string }) => (
     <span data-testid="badge">{label}</span>
   ),
 }));
 
-vi.mock('./MetricCard', () => ({
+vi.mock('./MotifCard', () => ({
   default: ({
-    title,
-    value,
-    note,
+    motif,
+    found,
+    total,
+    missed,
+    failedAttempt,
   }: {
-    title: string;
-    value: string;
-    note: string;
+    motif: string;
+    found: number;
+    total: number;
+    missed: number;
+    failedAttempt: number;
   }) => (
-    <div data-testid="metric-card">
-      <span>{title}</span>
-      <span>{value}</span>
-      <span>{note}</span>
+    <div data-testid="motif-card">
+      <span>{motif}</span>
+      <span>{`${found}/${total}`}</span>
+      <span>{`${missed} missed, ${failedAttempt} failed`}</span>
     </div>
   ),
 }));
@@ -40,6 +62,7 @@ describe('MetricsGrid', () => {
             failed_attempt: 2,
           },
         ]}
+        droppableId="motif-cards"
       />,
     );
 
@@ -69,6 +92,7 @@ describe('MetricsGrid', () => {
             failed_attempt: 2,
           },
         ]}
+        droppableId="motif-cards"
       />,
     );
 
@@ -76,7 +100,7 @@ describe('MetricsGrid', () => {
     fireEvent.click(header);
     expect(header).toHaveAttribute('aria-expanded', 'true');
 
-    const cards = screen.getAllByTestId('metric-card');
+    const cards = screen.getAllByTestId('motif-card');
     expect(cards).toHaveLength(2);
 
     expect(screen.getByText('Motif A')).toBeInTheDocument();

@@ -1710,3 +1710,15 @@ Session 2026-01-28 (feature 161 – discovered check low severity in bullet)
 - CI integration check: `node /Users/andy/tactix/verification/integration_feature_161_discovered_check_low.js`.
 - Post-change make check: `make check` (same eslint warning; no errors).
 - Updated feature_list.json: feature “Stockfish detects discovered check with low severity in bullet” marked passes=true.
+
+Session 2026-01-28 (feature 162 – discovered check low severity in blitz)
+- Pre-work verification tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_metrics_refresh.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_duckdb_store_helpers.py tests/test_pipeline_helpers.py tests/test_pgn_utils_helpers.py tests/test_job_stream.py`.
+- Pre-change make check: `make check` (eslint warning in `client/src/App.tsx` about missing `motifDropIndicatorIndex` dependency; no errors).
+- Added blitz discovered-check low-severity clamp, added discovered-check blitz fixture entry in `tests/fixtures/chesscom_blitz_sample.pgn`, and new test `tests/test_discovered_check_blitz_low.py`.
+- Seeded blitz discovered check tactic into `data/tactix.duckdb` via `TACTIX_DISCOVERED_CHECK_GAME_ID=9876543217 /Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_162_seed_blitz.py`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_discovered_check_blitz_low.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_162_discovered_check_blitz.js` (screenshot `verification/feature-162-discovered-check-blitz-low-severity-2026-01-28.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_162_discovered_check_blitz_ci.js` (screenshot `verification/feature-162-discovered-check-blitz-low-severity-ci-2026-01-28.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_162_discovered_check_blitz_low.js`.
+- Post-change make check: `make check` (same eslint warning; no errors).
+- Updated feature_list.json: feature “Stockfish detects discovered check with low severity in blitz” marked passes=true.

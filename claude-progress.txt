@@ -1572,3 +1572,15 @@ Session 2026-01-28 (feature 151 – Stockfish discovered attack low severity in 
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_discovered_attack_rapid_case.py`.
 - Updated feature_list.json: feature “Stockfish detects discovered attack with low severity in rapid” marked passes=true.
 - Current passing count: 151/486.
+
+Session 2026-01-28 (feature 152 – Stockfish discovered attack low severity in classical)
+- Pre-work verification tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_metrics_refresh.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_duckdb_store_helpers.py tests/test_pipeline_helpers.py tests/test_pgn_utils_helpers.py tests/test_job_stream.py`.
+- Added classical discovered-attack severity clamp (<= 1.0) and updated classical fixture PGN with a discovered-attack position.
+- Added unit test coverage in `tests/test_discovered_attack_classical.py` for low severity, best line/explanation persistence, and position linkage.
+- Seeded classical discovered-attack tactic into data/tactix.duckdb via `tmp-logs/feature_152_seed_classical.py` (game_id 3344556677).
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_152_discovered_attack_classical_manual.js` (screenshot `verification/feature-152-discovered-attack-classical-low-severity-2026-01-28.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_152_discovered_attack_classical_ci.js` (screenshot `verification/feature-152-discovered-attack-classical-low-severity-ci-2026-01-28.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_152_discovered_attack_classical_low.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_discovered_attack_classical.py`.
+- Updated feature_list.json: feature “Stockfish detects discovered attack with low severity in classical” marked passes=true.
+- Current passing count: 152/486.

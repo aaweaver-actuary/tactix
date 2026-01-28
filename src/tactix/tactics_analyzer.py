@@ -193,6 +193,7 @@ def analyze_position(
             _is_bullet_profile(settings)
             or _is_blitz_profile(settings)
             or _is_rapid_profile(settings)
+            or _is_classical_profile(settings)
         ):
             severity = min(severity, 1.0)
 

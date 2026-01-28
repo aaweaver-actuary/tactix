@@ -22,6 +22,20 @@
 1. e4 { [%clk 0:30:00] } e5 { [%clk 0:30:00] } 2. Nf3 { [%clk 0:29:50] } Nc6 { [%clk 0:29:50] } 3. Bb5 { [%clk 0:29:40] } a6 { [%clk 0:29:45] } 4. Ba4 { [%clk 0:29:30] } Nf6 { [%clk 0:29:35] } 5. O-O { [%clk 0:29:20] } Be7 { [%clk 0:29:25] } 0-1
 
 
+[Event "Chess.com Classical Fixture 7 - Discovered Attack"]
+[Site "https://www.chess.com/game/live/3344556677"]
+[UTCDate "2024.07.06"]
+[UTCTime "20:40:00"]
+[White "chesscom"]
+[Black "classicalbot"]
+[TimeControl "1800"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "r6r/1b3pk1/p2p2p1/1p1Pp2p/4PP1q/2Pn2NP/BP3QPN/5RK1 w - - 3 35"]
+
+35. Nf5+ gxf5 36. Qxh4 1-0
+
+
 [Event "Chess.com Classical Fixture 3"]
 [Site "https://www.chess.com/game/live/5544332212"]
 [UTCDate "2024.07.07"]

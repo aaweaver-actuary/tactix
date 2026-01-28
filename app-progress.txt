@@ -47,3 +47,10 @@ Session 2026-01-24 (feature 005 – Lichess resume mid-fetch)
 Session 2026-01-27 (regression fix – recent positions/tactics filters)
 - Fixed recent positions/tactics date filtering to normalize datetime inputs to dates before comparing against created_at.
 - Targeted pytest passed; make check completed (pytest + coverage + vitest).
+
+Session 2026-01-27 (regression fixes – features 001 + 003)
+- Feature 003: updated Airflow log Puppeteer script to target the correct task id (`run_lichess_pipeline` by default) to avoid 404 log resource errors.
+- Re-ran UI verification scripts: feature 001 and feature 003 passed with no console errors.
+- New screenshots: `verification/feature-001-ui-2026-01-27.png`, `verification/feature-003-airflow-log-2026-01-27.png`.
+- Tests: `node verification/puppeteer_regression_feature_001.js`, `node verification/puppeteer_airflow_lichess_incremental_log.js`.
+- Feature pass count: 118.

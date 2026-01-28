@@ -198,6 +198,13 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
 
+Session 2026-01-27 (regression fixes – features 001 + 003)
+- Fixed Airflow log Puppeteer script to target the correct DAG task id (`run_lichess_pipeline` by default) so log URLs stop returning 404.
+- Re-ran UI verification scripts for feature 001 + 003 with clean console output.
+- Screenshots: `verification/feature-001-ui-2026-01-27.png`, `verification/feature-003-airflow-log-2026-01-27.png`.
+- Tests: `node verification/puppeteer_regression_feature_001.js`, `node verification/puppeteer_airflow_lichess_incremental_log.js`.
+- Current passing count: 118.
+
 Session 2026-01-27 (refactor – tactics analyzer profile helpers)
 - Refactor: repeated profile parsing in `_is_*_profile` helpers → shared `_normalized_profile` used by each check.
 - Tests: `make check` (before/after), all passing; same warnings as prior runs.

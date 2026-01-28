@@ -4,6 +4,11 @@ const puppeteer = require('../client/node_modules/puppeteer');
 
 const baseUrl = process.env.TACTIX_AIRFLOW_URL || 'http://localhost:8080';
 const dagId = process.env.TACTIX_DAG_ID || 'daily_game_sync';
+const taskId =
+  process.env.TACTIX_TASK_ID ||
+  (process.env.TACTIX_SOURCE === 'chesscom'
+    ? 'run_chesscom_pipeline'
+    : 'run_lichess_pipeline');
 const screenshotName =
   process.env.TACTIX_SCREENSHOT_NAME ||
   `airflow-${dagId}-incremental-${new Date().toISOString().slice(0, 10)}.png`;
@@ -265,7 +270,7 @@ async function dismissModal(page) {
     }
     const logUrl = `${baseUrl}/dags/${dagId}/grid?dag_run_id=${encodeURIComponent(
       dagRunId,
-    )}&task_id=run_pipeline&tab=logs`;
+    )}&task_id=${encodeURIComponent(taskId)}&tab=logs`;
     await page.goto(logUrl, {
       waitUntil: 'domcontentloaded',
       timeout: 60000,

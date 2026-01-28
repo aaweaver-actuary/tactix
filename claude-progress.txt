@@ -1675,3 +1675,15 @@ Session 2026-01-28 (feature 158 – refactor duplicate dashboard job triggers)
 	- Call sites updated to pass job path, params, source, and optional filters into `triggerDashboardJob`.
 - Tests: `make check` (post) completed with same eslint warning; includes `src/utils/triggerDashboardJob.test.ts` and updated trigger tests.
 - Evidence: `make check` output shows new unit test `src/utils/triggerDashboardJob.test.ts` and updated trigger tests passing.
+
+Session 2026-01-28 (feature 159 – discovered attack high severity in classical)
+- Pre-work verification tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_metrics_refresh.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_duckdb_store_helpers.py tests/test_pipeline_helpers.py tests/test_pgn_utils_helpers.py tests/test_job_stream.py`.
+- Pre-change make check: `make check` (eslint warning in `client/src/App.tsx` about missing `motifDropIndicatorIndex` dependency; no errors).
+- Enabled classical profile in discovered-attack high-severity profile set, added classical high-severity fixture, and added classical high-severity test coverage.
+- Seeded classical discovered-attack high tactic into `data/tactix.duckdb` via `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_159_seed_classical_high.py`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_discovered_attack_classical.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_159_discovered_attack_classical_high.js` (screenshot `verification/feature-159-discovered-attack-classical-high-severity-2026-01-28.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_159_discovered_attack_classical_high_ci.js` (screenshot `verification/feature-159-discovered-attack-classical-high-severity-ci-2026-01-28.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_159_discovered_attack_classical_high.js`.
+- Post-change make check: `make check` (same eslint warning; no errors).
+- Updated feature_list.json: feature “Stockfish detects discovered attack with high severity in classical” marked passes=true.

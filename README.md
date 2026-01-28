@@ -46,21 +46,34 @@ PgAdmin is included in the Docker stack for easier database management.
 1. Open http://localhost:5050
 2. Log in with:
    - Email: `admin@tactix.io`
-    - Password: `tactix`
+   - Password: `tactix`
 3. The server list includes a preconfigured entry named `tactix-postgres`.
-    - If prompted for a password, use `tactix`.
+   - If prompted for a password, use `tactix`.
 
 ### Postgres schema map
 
 PgAdmin will show the following schemas and tables:
 
 - `tactix_ops`
-   - `ops_events`: operational events emitted by the pipeline (ingestion, analysis, etc.)
+  - `ops_events`: operational events emitted by the pipeline (ingestion, analysis, etc.)
 - `tactix_analysis`
-   - `tactics`: analyzed tactics (motif, severity, best line)
-   - `tactic_outcomes`: user outcomes for each tactic
+  - `tactics`: analyzed tactics (motif, severity, best line)
+  - `tactic_outcomes`: user outcomes for each tactic
 - `tactix_pgns`
-   - `raw_pgns`: raw/normalized PGN payloads mirrored from source APIs
+  - `raw_pgns`: raw/normalized PGN payloads mirrored from source APIs
+
+### Tactic detector architecture
+
+Tactic motif detection lives in `src/tactix/tactic_detectors.py` and is built around
+the `BaseTacticDetector` abstract class. `MotifDetectorSuite` composes concrete
+detectors in priority order, and the analyzer uses the shared `MOTIF_DETECTORS`
+instance to infer motifs.
+
+To add a new motif detector:
+
+1. Implement a `BaseTacticDetector` subclass with a `motif` name and `detect()`.
+2. Add the detector to `build_default_motif_detector_suite()` in priority order.
+3. Extend unit tests in `tests/` to cover the new detector behavior.
 
 ### Services (once implemented)
 

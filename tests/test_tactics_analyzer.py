@@ -1,24 +1,41 @@
 import unittest
 import chess
 
-from tactix.tactics_analyzer import _classify_result, _infer_motif, _score_from_pov
+from tactix.tactic_detectors import BaseTacticDetector, build_default_motif_detector_suite
 
 
 class TacticsAnalyzerTests(unittest.TestCase):
     def test_classify_result_variants(self) -> None:
-        self.assertEqual(_classify_result("e2e4", "e2e4", 0, 120), ("found", 120))
-        self.assertEqual(_classify_result("e2e4", "d2d4", 100, -250), ("missed", -350))
         self.assertEqual(
-            _classify_result(None, "d2d4", -50, -200), ("failed_attempt", -150)
+            BaseTacticDetector.classify_result("e2e4", "e2e4", 0, 120),
+            ("found", 120),
         )
-        self.assertEqual(_classify_result("e2e4", "d2d4", 20, -30), ("unclear", -50))
+        self.assertEqual(
+            BaseTacticDetector.classify_result("e2e4", "d2d4", 100, -250),
+            ("missed", -350),
+        )
+        self.assertEqual(
+            BaseTacticDetector.classify_result(None, "d2d4", -50, -200),
+            ("failed_attempt", -150),
+        )
+        self.assertEqual(
+            BaseTacticDetector.classify_result("e2e4", "d2d4", 20, -30),
+            ("unclear", -50),
+        )
 
     def test_score_from_pov(self) -> None:
-        self.assertEqual(_score_from_pov(120, chess.WHITE, chess.WHITE), 120)
-        self.assertEqual(_score_from_pov(120, chess.WHITE, chess.BLACK), -120)
-        self.assertEqual(_score_from_pov(-80, chess.BLACK, chess.WHITE), 80)
+        self.assertEqual(
+            BaseTacticDetector.score_from_pov(120, chess.WHITE, chess.WHITE), 120
+        )
+        self.assertEqual(
+            BaseTacticDetector.score_from_pov(120, chess.WHITE, chess.BLACK), -120
+        )
+        self.assertEqual(
+            BaseTacticDetector.score_from_pov(-80, chess.BLACK, chess.WHITE), 80
+        )
 
     def test_infer_motif_fork_detection(self) -> None:
+        suite = build_default_motif_detector_suite()
         board = chess.Board(None)
         board.clear()
         board.set_piece_at(chess.F5, chess.Piece(chess.KNIGHT, chess.WHITE))
@@ -28,10 +45,11 @@ class TacticsAnalyzerTests(unittest.TestCase):
         board.set_piece_at(chess.H8, chess.Piece(chess.KING, chess.BLACK))
         board.turn = chess.WHITE
 
-        motif = _infer_motif(board, chess.Move.from_uci("f5d6"))
+        motif = suite.infer_motif(board, chess.Move.from_uci("f5d6"))
         self.assertEqual(motif, "fork")
 
     def test_infer_motif_hanging_capture(self) -> None:
+        suite = build_default_motif_detector_suite()
         board = chess.Board(None)
         board.clear()
         board.set_piece_at(chess.C4, chess.Piece(chess.BISHOP, chess.WHITE))
@@ -40,7 +58,7 @@ class TacticsAnalyzerTests(unittest.TestCase):
         board.set_piece_at(chess.H8, chess.Piece(chess.KING, chess.BLACK))
         board.turn = chess.WHITE
 
-        motif = _infer_motif(board, chess.Move.from_uci("c4e6"))
+        motif = suite.infer_motif(board, chess.Move.from_uci("c4e6"))
         self.assertEqual(motif, "hanging_piece")
 
 

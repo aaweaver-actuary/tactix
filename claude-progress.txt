@@ -1333,3 +1333,10 @@ Session 2026-01-28 (feature 129 – pgadmin added to docker compose for easier d
 - CI integration check: `node /Users/andy/tactix/verification/integration_feature_129_pgadmin.js`.
 - Updated feature_list.json: feature “pgadmin added to docker compose for easier db management” marked passes=true.
 - Current passing count: 131/423.
+
+Session 2026-01-28 (feature 130 – tactics detectors consolidated into BaseTacticDetector)
+- Refactored tactic motif detection into BaseTacticDetector + MotifDetectorSuite and updated analyzer wiring.
+- Replaced legacy helper functions with detector classes for discovered attack, skewer, hanging piece, pin, fork, capture, mate, check, and escape.
+- Added guard tests to ensure legacy helpers are removed and analyzer uses the detector suite.
+- Tests: `make check` (before/after).
+- Docs: README updated with BaseTacticDetector usage guidance.

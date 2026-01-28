@@ -28,6 +28,13 @@ DEFAULT_CLASSICAL_STOCKFISH_DEPTH = 14
 DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH = 16
 
 
+def _read_fork_severity_floor() -> Optional[float]:
+    value = os.getenv("TACTIX_FORK_SEVERITY_FLOOR")
+    if not value:
+        return None
+    return float(value)
+
+
 @dataclass(slots=True)
 class Settings:
     """Central configuration for ingestion, analysis, and UI refresh."""
@@ -100,11 +107,7 @@ class Settings:
     stockfish_retry_backoff_ms: int = int(
         os.getenv("STOCKFISH_RETRY_BACKOFF_MS", "250")
     )
-    fork_severity_floor: Optional[float] = (
-        float(os.getenv("TACTIX_FORK_SEVERITY_FLOOR"))
-        if os.getenv("TACTIX_FORK_SEVERITY_FLOOR")
-        else None
-    )
+    fork_severity_floor: Optional[float] = _read_fork_severity_floor()
     metrics_version_file: Path = Path(
         os.getenv(
             "TACTIX_METRICS_VERSION_PATH", DEFAULT_DATA_DIR / "metrics_version.txt"

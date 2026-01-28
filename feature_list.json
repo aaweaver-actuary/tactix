@@ -1692,7 +1692,7 @@
       "9. Ensure previous code is completely removed and no longer in use.",
       "10. Design tests to ensure that the old code is not inadvertently called or used anywhere in the codebase."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

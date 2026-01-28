@@ -1260,3 +1260,15 @@ Session 2026-01-28 (feature 124 – Stockfish pin low severity for bullet)
 - CI verification screenshot: `verification/feature-124-pin-bullet-low-severity-ci-2026-01-28.png`.
 - Updated feature_list.json: feature “Stockfish detects pin with low severity in bullet” marked passes=true.
 - Current passing count: 124/423.
+
+Session 2026-01-28 (feature 125 – Stockfish pin low severity for blitz)
+- Pre-work verification tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_metrics_refresh.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_duckdb_store_helpers.py tests/test_pipeline_helpers.py tests/test_pgn_utils_helpers.py tests/test_job_stream.py tests/test_api_profile.py`.
+- Clamped pin severity for blitz profiles in tactics analyzer and added `tests/test_pin_blitz.py` coverage.
+- Seeded pin blitz tactic into data/tactix.duckdb via `tmp-logs/feature_125_seed.py` (severity 0.4, best_uci f8c5).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pin_blitz.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_125_pin_blitz.js`.
+- UI verification screenshot: `verification/feature-125-pin-blitz-low-severity-2026-01-28.png`.
+- CI integration check: `node /Users/andy/tactix/verification/puppeteer_feature_125_pin_blitz_ci.js`.
+- CI verification screenshot: `verification/feature-125-pin-blitz-low-severity-ci-2026-01-28.png`.
+- Updated feature_list.json: feature “Stockfish detects pin with low severity in blitz” marked passes=true.
+- Current passing count: 125/423.

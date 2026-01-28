@@ -801,7 +801,7 @@ export default function App() {
         <div className="card p-4 text-sand/70">Loading Postgres status...</div>
       ) : null}
 
-      {postgresRawPgns || postgresRawPgnsLoading ? (
+      {postgresRawPgns || postgresRawPgnsLoading || postgresRawPgnsError ? (
         <div className="card p-4" data-testid="postgres-raw-pgns">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-display text-sand">
@@ -809,6 +809,9 @@ export default function App() {
             </h3>
             <Badge label={postgresRawPgns?.status ?? 'loading'} />
           </div>
+          {postgresRawPgnsError ? (
+            <Text mode="error" value={postgresRawPgnsError} mt="2" />
+          ) : null}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="flex flex-col gap-1">
               <Text mode="uppercase" value="Total rows" />

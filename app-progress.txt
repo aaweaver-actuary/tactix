@@ -55,3 +55,13 @@ Session 2026-01-27 (regression fixes – features 001 + 003)
 - New screenshots: `verification/feature-001-ui-2026-01-27.png`, `verification/feature-003-airflow-log-2026-01-27.png`.
 - Tests: `node verification/puppeteer_regression_feature_001.js`, `node verification/puppeteer_airflow_lichess_incremental_log.js`.
 - Feature pass count: 118.
+
+Session 2026-01-28 (feature 119 – Postgres raw PGN storage)
+- UI: ensure `[data-testid="postgres-raw-pgns"]` renders even on error by showing the card with an inline error.
+- Services: `docker compose -f compose.yml ps` confirmed server/client/postgres/airflow running.
+- API checks: `curl -H 'Authorization: Bearer local-dev-token' http://localhost:8000/api/postgres/status | jq .` and `/api/postgres/raw_pgns`.
+- Ingestion check: `node verification/integration_feature_119_postgres_raw_pgns.js` (triggered daily sync when empty).
+- DB validation: `\d tactix_pgns.raw_pgns` shows metadata columns + indexes; sample rows + normalization lengths verified; duplicate check `count(*) vs count(distinct game_id||':'||source)` matched.
+- UI verification: `node verification/puppeteer_feature_119_postgres_raw_pgns.js` → `verification/feature-119-postgres-raw-pgns-2026-01-28.png`.
+- Tests: `make check` (all checks + pytest + vitest passed; Rust warnings only).
+- Feature pass count: 119.

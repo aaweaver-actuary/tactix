@@ -1356,11 +1356,15 @@ def fetch_recent_positions(
     if normalized_rating:
         conditions.append(_rating_bucket_clause(normalized_rating))
     if start_date:
+        start_date_value = (
+            start_date.date() if isinstance(start_date, datetime) else start_date
+        )
         conditions.append("CAST(p.created_at AS DATE) >= ?")
-        params.append(start_date)
+        params.append(start_date_value)
     if end_date:
+        end_date_value = end_date.date() if isinstance(end_date, datetime) else end_date
         conditions.append("CAST(p.created_at AS DATE) <= ?")
-        params.append(end_date)
+        params.append(end_date_value)
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
     query += " ORDER BY p.created_at DESC LIMIT ?"
@@ -1416,11 +1420,15 @@ def fetch_recent_tactics(
     if normalized_rating:
         conditions.append(_rating_bucket_clause(normalized_rating))
     if start_date:
+        start_date_value = (
+            start_date.date() if isinstance(start_date, datetime) else start_date
+        )
         conditions.append("CAST(t.created_at AS DATE) >= ?")
-        params.append(start_date)
+        params.append(start_date_value)
     if end_date:
+        end_date_value = end_date.date() if isinstance(end_date, datetime) else end_date
         conditions.append("CAST(t.created_at AS DATE) <= ?")
-        params.append(end_date)
+        params.append(end_date_value)
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
     query += " ORDER BY t.created_at DESC LIMIT ?"

@@ -43,3 +43,7 @@ Session 2026-01-24 (feature 005 – Lichess resume mid-fetch)
 - Regression tests cover analyze failure resume and fetch failure checkpoint; full pytest (19) passing.
 - Simulated mid-run failure: first run left raw_pgns=2/positions=16/tactics=0, rerun produced tactics=16/outcomes=16 with checkpoint=1717335000000 and metrics_version=1.
 - Puppeteer dashboard verification captured `verification/dashboard-lichess-resume.png`; feature 005 set to passes=true.
+
+Session 2026-01-27 (regression fix – recent positions/tactics filters)
+- Fixed recent positions/tactics date filtering to normalize datetime inputs to dates before comparing against created_at.
+- Targeted pytest passed; make check completed (pytest + coverage + vitest).

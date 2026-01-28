@@ -60,3 +60,17 @@
 [FEN "6k1/8/8/8/5n2/8/8/R1Q3K1 b - - 0 1"]
 
 1... Ne2+ { [%clk 0:05:00] } 0-1
+
+
+[Event "Chess.com Blitz Fixture 6"]
+[Site "https://www.chess.com/game/live/9876543214"]
+[UTCDate "2024.07.06"]
+[UTCTime "19:00:00"]
+[White "chesscom"]
+[Black "opponent5"]
+[TimeControl "300"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "r3q3/3k4/8/8/8/8/6B1/4R1K1 w - - 0 1"]
+
+1. Bc6+ 1-0

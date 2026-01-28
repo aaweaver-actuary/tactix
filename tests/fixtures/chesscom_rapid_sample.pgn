@@ -22,19 +22,6 @@
 1. e4 { [%clk 0:10:00] } c5 { [%clk 0:10:00] } 2. Nf3 { [%clk 0:09:55] } d6 { [%clk 0:09:57] } 3. d4 { [%clk 0:09:50] } cxd4 { [%clk 0:09:53] } 4. Nxd4 { [%clk 0:09:45] } Nf6 { [%clk 0:09:50] } 5. Nc3 { [%clk 0:09:40] } a6 { [%clk 0:09:48] } 0-1
 
 
-
-[Event "Chess.com Rapid Fixture 7 - Discovered Attack"]
-[Site "https://www.chess.com/game/live/6677889905"]
-[UTCDate "2024.07.09"]
-[UTCTime "16:00:00"]
-[White "chesscom"]
-[Black "rapidbot"]
-[TimeControl "600"]
-[Result "1-0"]
-[SetUp "1"]
-[FEN "r6r/1b3pk1/p2p2p1/1p1Pp2p/4PP1q/2Pn2NP/BP3QPN/5RK1 w - - 3 35"]
-
-35. Nf5+ gxf5 36. Qxh4 1-0
 [Event "Chess.com Rapid Fixture 3"]
 [Site "https://www.chess.com/game/live/6677889901"]
 [UTCDate "2024.07.05"]
@@ -87,3 +74,17 @@
 [FEN "r3q3/3k4/8/8/8/8/6B1/4R1K1 w - - 0 1"]
 
 1. Bc6+ { [%clk 0:09:45] } 1-0
+
+
+[Event "Chess.com Rapid Fixture 7 - Discovered Attack"]
+[Site "https://www.chess.com/game/live/6677889905"]
+[UTCDate "2024.07.09"]
+[UTCTime "16:00:00"]
+[White "chesscom"]
+[Black "rapidbot"]
+[TimeControl "600"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "r6r/1b3pk1/p2p2p1/1p1Pp2p/4PP1q/2Pn2NP/BP3QPN/5RK1 w - - 3 35"]
+
+35. Nf5+ gxf5 36. Qxh4 1-0

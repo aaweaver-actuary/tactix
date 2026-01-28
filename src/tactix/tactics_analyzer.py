@@ -16,6 +16,11 @@ from tactix.tactics_explanation import format_tactic_explanation
 
 logger = get_logger(__name__)
 MOTIF_DETECTORS: MotifDetectorSuite = build_default_motif_detector_suite()
+_PROFILE_FAST = frozenset({"bullet", "blitz", "rapid", "classical", "correspondence"})
+_PROFILE_DISCOVERED_ATTACK = frozenset({"bullet", "blitz", "rapid", "classical"})
+_PROFILE_FORK_LOW = frozenset({"blitz", "rapid"})
+_PROFILE_FORK_HIGH = frozenset({"bullet"})
+_PROFILE_FORK_SLOW = frozenset({"classical", "correspondence"})
 
 
 def _normalized_profile(settings: Settings | None) -> tuple[str, str]:
@@ -35,55 +40,25 @@ def _normalized_profile(settings: Settings | None) -> tuple[str, str]:
     return source, profile
 
 
+def _is_profile_in(settings: Settings | None, profiles: Iterable[str]) -> bool:
+    """Check if the current profile matches one of the provided profiles.
+
+    Chess.com "daily" is treated as "correspondence" when correspondence is
+    part of the requested profile list.
+    """
+    source, profile = _normalized_profile(settings)
+    if not profile:
+        return False
+    normalized_profiles = {str(item).strip().lower() for item in profiles}
+    if profile in normalized_profiles:
+        return True
+    if source == "chesscom" and "correspondence" in normalized_profiles:
+        return profile == "daily"
+    return False
+
+
 def _is_fast_profile(settings: Settings | None) -> bool:
-    source, profile = _normalized_profile(settings)
-    if not profile:
-        return False
-    if source == "chesscom":
-        return profile in {
-            "bullet",
-            "blitz",
-            "rapid",
-            "classical",
-            "correspondence",
-            "daily",
-        }
-    return profile in {
-        "bullet",
-        "blitz",
-        "rapid",
-        "classical",
-        "correspondence",
-    }
-
-
-def _is_bullet_profile(settings: Settings | None) -> bool:
-    _, profile = _normalized_profile(settings)
-    return profile == "bullet"
-
-
-def _is_blitz_profile(settings: Settings | None) -> bool:
-    _, profile = _normalized_profile(settings)
-    return profile == "blitz"
-
-
-def _is_rapid_profile(settings: Settings | None) -> bool:
-    _, profile = _normalized_profile(settings)
-    return profile == "rapid"
-
-
-def _is_classical_profile(settings: Settings | None) -> bool:
-    _, profile = _normalized_profile(settings)
-    return profile == "classical"
-
-
-def _is_correspondence_profile(settings: Settings | None) -> bool:
-    source, profile = _normalized_profile(settings)
-    if not profile:
-        return False
-    if source == "chesscom":
-        return profile in {"correspondence", "daily"}
-    return profile == "correspondence"
+    return _is_profile_in(settings, _PROFILE_FAST)
 
 
 def _fork_severity_floor(settings: Settings | None) -> float | None:
@@ -159,42 +134,23 @@ def analyze_position(
         else:
             severity = min(severity, 1.0)
     if mate_in_two and result == "found":
-        if (
-            _is_bullet_profile(settings)
-            or _is_blitz_profile(settings)
-            or _is_rapid_profile(settings)
-            or _is_classical_profile(settings)
-            or _is_correspondence_profile(settings)
-        ):
+        if _is_profile_in(settings, _PROFILE_FAST):
             severity = max(severity, 1.5)
     if motif == "fork":
-        if _is_blitz_profile(settings) or _is_rapid_profile(settings):
+        if _is_profile_in(settings, _PROFILE_FORK_LOW):
             severity = min(severity, 1.0)
-        if _is_bullet_profile(settings):
+        if _is_profile_in(settings, _PROFILE_FORK_HIGH):
             severity = max(severity, 1.5)
         floor = _fork_severity_floor(settings)
-        if floor is not None and (
-            _is_classical_profile(settings) or _is_correspondence_profile(settings)
-        ):
+        if floor is not None and _is_profile_in(settings, _PROFILE_FORK_SLOW):
             severity = max(severity, floor)
 
     if motif == "pin":
-        if (
-            _is_bullet_profile(settings)
-            or _is_blitz_profile(settings)
-            or _is_rapid_profile(settings)
-            or _is_classical_profile(settings)
-            or _is_correspondence_profile(settings)
-        ):
+        if _is_profile_in(settings, _PROFILE_FAST):
             severity = max(severity, 1.5)
 
     if motif == "discovered_attack":
-        if (
-            _is_bullet_profile(settings)
-            or _is_blitz_profile(settings)
-            or _is_rapid_profile(settings)
-            or _is_classical_profile(settings)
-        ):
+        if _is_profile_in(settings, _PROFILE_DISCOVERED_ATTACK):
             severity = min(severity, 1.0)
 
     if motif == "skewer":

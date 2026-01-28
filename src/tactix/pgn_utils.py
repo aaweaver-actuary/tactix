@@ -15,7 +15,7 @@ SITE_PATTERNS = [
     re.compile(r"chess\.com/.*/(\d{6,})", re.IGNORECASE),
 ]
 
-FIXTURE_SPLIT_RE = re.compile(r"\n\n(?=\[Event )")
+FIXTURE_SPLIT_RE = re.compile(r"\n{2,}(?=\[Event )")
 
 
 def split_pgn_chunks(text: str) -> list[str]:

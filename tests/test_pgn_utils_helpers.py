@@ -7,6 +7,7 @@ from tactix.pgn_utils import (
     extract_pgn_metadata,
     latest_timestamp,
     normalize_pgn,
+    split_pgn_chunks,
 )
 from unittest.mock import patch
 
@@ -138,6 +139,22 @@ class PgnUtilsHelperTests(unittest.TestCase):
 
     def test_normalize_pgn_invalid_returns_stripped(self) -> None:
         self.assertEqual(normalize_pgn("\n"), "")
+
+    def test_split_pgn_chunks_handles_extra_blank_lines(self) -> None:
+        pgn = (
+            "[Event \"Game A\"]\n"
+            "[Site \"https://example.com/a\"]\n"
+            "[Result \"*\"]\n\n"
+            "1. e4 *\n\n\n"
+            "[Event \"Game B\"]\n"
+            "[Site \"https://example.com/b\"]\n"
+            "[Result \"*\"]\n\n"
+            "1. d4 *\n"
+        )
+        chunks = split_pgn_chunks(pgn)
+        self.assertEqual(len(chunks), 2)
+        self.assertIn("Game A", chunks[0])
+        self.assertIn("Game B", chunks[1])
 
     def test_extract_game_id_fallback_hash(self) -> None:
         pgn = "not-a-pgn"

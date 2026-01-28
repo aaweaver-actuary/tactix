@@ -1,7 +1,9 @@
 import unittest
 import chess
 
+from tactix.config import Settings
 from tactix.tactic_detectors import BaseTacticDetector, build_default_motif_detector_suite
+from tactix.tactics_analyzer import _is_profile_in
 
 
 class TacticsAnalyzerTests(unittest.TestCase):
@@ -60,6 +62,16 @@ class TacticsAnalyzerTests(unittest.TestCase):
 
         motif = suite.infer_motif(board, chess.Move.from_uci("c4e6"))
         self.assertEqual(motif, "hanging_piece")
+
+    def test_is_profile_in_handles_chesscom_daily(self) -> None:
+        chesscom_daily = Settings(source="chesscom", chesscom_profile="daily")
+        self.assertTrue(_is_profile_in(chesscom_daily, {"correspondence"}))
+        self.assertFalse(_is_profile_in(chesscom_daily, {"bullet", "blitz"}))
+
+    def test_is_profile_in_normalizes_profiles(self) -> None:
+        lichess_rapid = Settings(source="lichess", lichess_profile="Rapid")
+        self.assertTrue(_is_profile_in(lichess_rapid, {"rapid"}))
+        self.assertFalse(_is_profile_in(lichess_rapid, {"blitz"}))
 
 
 if __name__ == "__main__":

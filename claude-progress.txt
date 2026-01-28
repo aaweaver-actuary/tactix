@@ -1199,3 +1199,11 @@ Session 2026-01-27 (feature 119 – Postgres raw PGN mirror)
 - UI verification (manual) blocked: `node /Users/andy/tactix/verification/puppeteer_feature_119_postgres_raw_pgns.js` timed out waiting for `[data-testid="postgres-raw-pgns"]` after Docker daemon failed to restart (Docker Desktop unavailable, rebuild failed with I/O error). Screenshot not captured.
 - CI integration check pending: `node /Users/andy/tactix/verification/integration_feature_119_postgres_raw_pgns.js` not run because API/UI unavailable.
 - Current passing count: 118/423 (feature 119 not yet marked passing).
+
+Session 2026-01-27 (feature 120 – Postgres interfaces across Rust/Python/TS)
+- Added Rust `tokio-postgres` smoke test (`src/bin/postgres_smoke.rs`) and ran `cargo run --bin postgres_smoke` (CRUD ok).
+- Confirmed Python Postgres usage via `psycopg2` in `postgres_store` and ran `verification/postgres_smoke.py` (CRUD ok).
+- Added TypeScript `pg` smoke test (`client/verification/pg_smoke.ts`) and ran `npm run pg:smoke` (CRUD ok).
+- Commands: `cargo run --bin postgres_smoke`, `/Users/andy/tactix/.venv/bin/python verification/postgres_smoke.py`, `npm run pg:smoke`.
+- UI verification not required for infra-only change.
+- Current passing count: 120/423.

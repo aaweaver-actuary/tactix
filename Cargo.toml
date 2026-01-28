@@ -14,3 +14,5 @@ crate-type = ["cdylib"]
 pyo3 = { version = "0.27.1", features = ["extension-module", "abi3-py39"] }
 pgn-reader = "0.29"
 shakmaty = "0.30"
+tokio = { version = "1.44", features = ["macros", "rt-multi-thread"] }
+tokio-postgres = "0.7"

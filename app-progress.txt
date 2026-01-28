@@ -65,3 +65,10 @@ Session 2026-01-28 (feature 119 – Postgres raw PGN storage)
 - UI verification: `node verification/puppeteer_feature_119_postgres_raw_pgns.js` → `verification/feature-119-postgres-raw-pgns-2026-01-28.png`.
 - Tests: `make check` (all checks + pytest + vitest passed; Rust warnings only).
 - Feature pass count: 119.
+
+Session 2026-01-27 (feature 120 – Postgres interfaces across Rust/Python/TS)
+- Rust: added `tokio-postgres` smoke test (`cargo run --bin postgres_smoke`) and verified CRUD with env `TACTIX_POSTGRES_*` (output: "Rust CRUD ok").
+- Python: verified psycopg2 usage via `verification/postgres_smoke.py` using `postgres_store.postgres_connection` (output: "Python CRUD ok").
+- TypeScript: added `pg` + `tsx` and ran `npm run pg:smoke` (output: "TS CRUD ok").
+- Commands: `cargo run --bin postgres_smoke`, `/Users/andy/tactix/.venv/bin/python verification/postgres_smoke.py`, `npm run pg:smoke`.
+- Feature pass count: 120.

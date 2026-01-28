@@ -1878,7 +1878,7 @@
       "13. Update existing tests to account for the new card behavior",
       "14. Document the new 'collapsed' feature in the component's README"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "ui/ux",

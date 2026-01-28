@@ -8,6 +8,7 @@ describe('PositionsList', () => {
 
     expect(html).toContain('Latest positions');
     expect(html).toContain('Fen');
+    expect(html).toContain('aria-expanded="false"');
   });
 
   it('renders position details with clock seconds', () => {

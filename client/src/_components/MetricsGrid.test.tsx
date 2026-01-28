@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import MetricsGrid from './MetricsGrid';
 
@@ -44,6 +44,8 @@ describe('MetricsGrid', () => {
     );
 
     expect(screen.getByTestId('motif-breakdown')).toBeInTheDocument();
+    const header = screen.getByRole('button', { name: /motif breakdown/i });
+    expect(header).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByText('Motif breakdown')).toBeInTheDocument();
     expect(screen.getByTestId('badge')).toHaveTextContent('Updated');
   });
@@ -69,6 +71,10 @@ describe('MetricsGrid', () => {
         ]}
       />,
     );
+
+    const header = screen.getByRole('button', { name: /motif breakdown/i });
+    fireEvent.click(header);
+    expect(header).toHaveAttribute('aria-expanded', 'true');
 
     const cards = screen.getAllByTestId('metric-card');
     expect(cards).toHaveLength(2);

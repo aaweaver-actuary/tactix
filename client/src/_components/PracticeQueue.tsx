@@ -1,5 +1,6 @@
 import { PracticeQueueItem } from '../api';
 import Badge from './Badge';
+import BaseCard from './BaseCard';
 import Text from './Text';
 
 interface PracticeQueueProps {
@@ -26,26 +27,29 @@ export default function PracticeQueue({
   onToggleIncludeFailedAttempt,
   loading,
 }: PracticeQueueProps) {
-  return (
-    <div className="card p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <div>
-          <h3 className="text-lg font-display text-sand">Practice queue</h3>
-          <Text value="Missed tactics from your games, ready to drill." />
-        </div>
-        <label className="flex items-center gap-2 text-xs text-sand/70">
-          <input
-            type="checkbox"
-            className="accent-teal"
-            checked={includeFailedAttempt}
-            onChange={(event) =>
-              onToggleIncludeFailedAttempt(event.target.checked)
-            }
-            disabled={loading}
-          />
-          Include failed attempts
-        </label>
+  const header = (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h3 className="text-lg font-display text-sand">Practice queue</h3>
+        <Text value="Missed tactics from your games, ready to drill." />
       </div>
+      <label className="flex items-center gap-2 text-xs text-sand/70">
+        <input
+          type="checkbox"
+          className="accent-teal"
+          checked={includeFailedAttempt}
+          onChange={(event) =>
+            onToggleIncludeFailedAttempt(event.target.checked)
+          }
+          disabled={loading}
+        />
+        Include failed attempts
+      </label>
+    </div>
+  );
+
+  return (
+    <BaseCard className="p-4" header={header} contentClassName="pt-3">
       {data.length ? (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -95,6 +99,6 @@ export default function PracticeQueue({
           }
         />
       )}
-    </div>
+    </BaseCard>
   );
 }

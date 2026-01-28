@@ -71,6 +71,8 @@ describe('MetricsTrends', () => {
     );
 
     expect(html).toContain('Motif trends');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('data-state="collapsed"');
     expect(html).toContain('Motif');
     expect(html).toContain('7g found');
     expect(html).toContain('30g found');

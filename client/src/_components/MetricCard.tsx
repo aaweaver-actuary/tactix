@@ -1,3 +1,4 @@
+import BaseCard from './BaseCard';
 import Text from './Text';
 
 interface MetricCardProps {
@@ -16,11 +17,20 @@ interface MetricCardProps {
  * @returns A styled card component showing the metric information.
  */
 export default function MetricCard({ title, value, note }: MetricCardProps) {
-  return (
-    <div className="card p-4 flex flex-col gap-2">
+  const header = (
+    <div className="flex flex-col gap-2">
       <Text mode="uppercase" value={title} />
       <Text mode="teal" size="3xl" value={value} />
-      {note ? <Text size="xs" mode="normal" value={note} /> : null}
     </div>
+  );
+
+  return (
+    <BaseCard
+      className="p-4"
+      header={header}
+      contentClassName={note ? 'pt-2' : undefined}
+    >
+      {note ? <Text size="xs" mode="normal" value={note} /> : null}
+    </BaseCard>
   );
 }

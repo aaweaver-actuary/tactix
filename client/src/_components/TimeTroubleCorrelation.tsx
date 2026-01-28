@@ -1,5 +1,6 @@
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
+import BaseCard from './BaseCard';
 
 interface TimeTroubleCorrelationProps {
   metricsData: DashboardPayload['metrics'];
@@ -27,14 +28,22 @@ export default function TimeTroubleCorrelation({
     return left.localeCompare(right);
   });
 
+  const header = (
+    <div className="flex items-center justify-between">
+      <h3 className="text-lg font-display text-sand">
+        Time-trouble correlation
+      </h3>
+      <Badge label="By time control" />
+    </div>
+  );
+
   return (
-    <div className="card p-4" data-testid="time-trouble-correlation">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-display text-sand">
-          Time-trouble correlation
-        </h3>
-        <Badge label="By time control" />
-      </div>
+    <BaseCard
+      className="p-4"
+      data-testid="time-trouble-correlation"
+      header={header}
+      contentClassName="pt-3"
+    >
       <p className="text-xs text-sand/70 mb-3">
         Correlation between time trouble (≤30s or ≤10% of the initial clock) and
         missed tactics. Positive values indicate more misses in time trouble.
@@ -67,6 +76,6 @@ export default function TimeTroubleCorrelation({
           </tbody>
         </table>
       </div>
-    </div>
+    </BaseCard>
   );
 }

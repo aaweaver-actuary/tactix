@@ -1,5 +1,6 @@
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
+import BaseCard from './BaseCard';
 
 interface TacticsTableProps {
   tacticsData: DashboardPayload['tactics'];
@@ -15,12 +16,15 @@ interface TacticsTableProps {
  * Each row displays the motif, result (with a badge), user's move in UCI format, and the evaluation delta in centipawns.
  */
 export default function TacticsTable({ tacticsData }: TacticsTableProps) {
+  const header = (
+    <div className="flex items-center justify-between">
+      <h3 className="text-lg font-display text-sand">Recent tactics</h3>
+      <Badge label="Live" />
+    </div>
+  );
+
   return (
-    <div className="card p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-display text-sand">Recent tactics</h3>
-        <Badge label="Live" />
-      </div>
+    <BaseCard className="p-4" header={header} contentClassName="pt-3">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-sand/60">
@@ -52,6 +56,6 @@ export default function TacticsTable({ tacticsData }: TacticsTableProps) {
           </tbody>
         </table>
       </div>
-    </div>
+    </BaseCard>
   );
 }

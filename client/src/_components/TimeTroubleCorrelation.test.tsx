@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import TimeTroubleCorrelation from './TimeTroubleCorrelation';
 
@@ -35,6 +35,10 @@ describe('TimeTroubleCorrelation', () => {
     );
 
     expect(screen.getByTestId('time-trouble-correlation')).toBeInTheDocument();
+    const header = screen.getByRole('button', {
+      name: /time-trouble correlation/i,
+    });
+    fireEvent.click(header);
     expect(screen.getByText('Time-trouble correlation')).toBeInTheDocument();
     expect(screen.getByTestId('badge')).toHaveTextContent('By time control');
     expect(screen.getByText('300+0')).toBeInTheDocument();

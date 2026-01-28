@@ -2,6 +2,7 @@
 import Hero from './_components/Hero';
 import Text from './_components/Text';
 import Badge from './_components/Badge';
+import BaseCard from './_components/BaseCard';
 import MetricCard from './_components/MetricCard';
 import TacticsTable from './_components/TacticsTable';
 import PracticeQueue from './_components/PracticeQueue';
@@ -17,6 +18,7 @@ export {
   Hero,
   Text,
   Badge,
+  BaseCard,
   MetricCard,
   TacticsTable,
   PracticeQueue,

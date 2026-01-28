@@ -40,6 +40,7 @@ describe('TacticsTable', () => {
     const doc = renderToDocument();
 
     expect(doc.querySelector('h3')?.textContent).toBe('Recent tactics');
+    expect(doc.querySelector('[aria-expanded="false"]')).not.toBeNull();
 
     const headers = Array.from(doc.querySelectorAll('th')).map((th) =>
       th.textContent?.trim(),

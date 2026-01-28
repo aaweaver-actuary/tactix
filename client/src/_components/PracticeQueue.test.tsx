@@ -43,6 +43,9 @@ describe('PracticeQueue', () => {
       screen.getByText('Missed tactics from your games, ready to drill.'),
     ).toBeInTheDocument();
 
+    const header = screen.getByRole('button', { name: /practice queue/i });
+    expect(header).toHaveAttribute('aria-expanded', 'false');
+
     const checkbox = screen.getByRole('checkbox', {
       name: /include failed attempts/i,
     }) as HTMLInputElement;
@@ -59,6 +62,9 @@ describe('PracticeQueue', () => {
         loading={true}
       />,
     );
+
+    const header = screen.getByRole('button', { name: /practice queue/i });
+    fireEvent.click(header);
 
     expect(screen.getByText('Loading practice queue…')).toBeInTheDocument();
 
@@ -77,6 +83,9 @@ describe('PracticeQueue', () => {
         loading={false}
       />,
     );
+
+    const header = screen.getByRole('button', { name: /practice queue/i });
+    fireEvent.click(header);
 
     expect(
       screen.getByText('No missed tactics queued yet.'),
@@ -108,6 +117,9 @@ describe('PracticeQueue', () => {
         loading={false}
       />,
     );
+
+    const header = screen.getByRole('button', { name: /practice queue/i });
+    fireEvent.click(header);
 
     expect(screen.getByText('Motif')).toBeInTheDocument();
     expect(screen.getByText('Result')).toBeInTheDocument();

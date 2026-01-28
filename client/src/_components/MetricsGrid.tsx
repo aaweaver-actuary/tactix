@@ -1,5 +1,6 @@
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
+import BaseCard from './BaseCard';
 import MetricCard from './MetricCard';
 
 interface MetricsGridProps {
@@ -23,12 +24,20 @@ interface MetricsGridProps {
  * ]} />
  */
 export default function MetricsGrid({ metricsData }: MetricsGridProps) {
+  const header = (
+    <div className="flex items-center justify-between">
+      <h3 className="text-lg font-display text-sand">Motif breakdown</h3>
+      <Badge label="Updated" />
+    </div>
+  );
+
   return (
-    <div className="card p-4" data-testid="motif-breakdown">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-display text-sand">Motif breakdown</h3>
-        <Badge label="Updated" />
-      </div>
+    <BaseCard
+      className="p-4"
+      data-testid="motif-breakdown"
+      header={header}
+      contentClassName="pt-3"
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {metricsData.map((row) => (
           <MetricCard
@@ -39,6 +48,6 @@ export default function MetricsGrid({ metricsData }: MetricsGridProps) {
           />
         ))}
       </div>
-    </div>
+    </BaseCard>
   );
 }

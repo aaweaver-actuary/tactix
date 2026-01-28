@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
+import BaseCard from './BaseCard';
 
 interface MetricsTrendsProps {
   metricsData: DashboardPayload['metrics'];
@@ -53,12 +54,15 @@ export default function MetricsTrends({ metricsData }: MetricsTrendsProps) {
       ? '--'
       : `${(value * 100).toFixed(1)}%`;
 
+  const header = (
+    <div className="flex items-center justify-between">
+      <h3 className="text-lg font-display text-sand">Motif trends</h3>
+      <Badge label="Rolling 7/30 games" />
+    </div>
+  );
+
   return (
-    <div className="card p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-display text-sand">Motif trends</h3>
-        <Badge label="Rolling 7/30 games" />
-      </div>
+    <BaseCard className="p-4" header={header} contentClassName="pt-3">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-sand/60">
@@ -94,6 +98,6 @@ export default function MetricsTrends({ metricsData }: MetricsTrendsProps) {
           </tbody>
         </table>
       </div>
-    </div>
+    </BaseCard>
   );
 }

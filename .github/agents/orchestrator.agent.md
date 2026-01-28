@@ -106,15 +106,8 @@ curl --max-time 10 -s -o /dev/null -w "%{http_code}\n" http://localhost:5173
 curl --max-time 10 -s -o /dev/null -w "%{http_code}\n" http://localhost:8080
 ```
 
-If Docker services are expected but not running, start them using the standard project init script:
-
-```bash
-source ./init.sh
-```
-
 Notes:
 
-- Airflow may take 1–2 minutes to become available on first boot.
 - Services/ports: API 8000, UI 5173, Airflow 8080 (network: tactix-net).
 - Log orchestration events in tmp-logs/ when relevant.
 
@@ -377,7 +370,7 @@ If any conflict exists:
 - Create automated tests for all new features and bug fixes
 - Use the dedicated `tmp-logs/` directory for logging orchestration events if needed, not any system directories such as `/tmp/`
 - Ensure that all work is committed with clear and descriptive commit messages
-- Use the running docker compose environment for testing and development as appropriate. If it is not running, they should start it up using `source ./init.sh` from the root directory. It should not be shut down unless absolutely necessary. Please use `docker ps -a` to check the status of running containers, and the ports specified in Step 1 to verify that services are up and running.
+- Use the running docker compose environment for testing and development as appropriate. It should _NEVER_ be shut down.
 - Prefix their commits with [dev]/[refactor] as appropriate to indicate the type of work being done. This gives you clarity when reviewing the git log.
 - Make refactoring a priority. There is currently too much code duplication and complexity in the codebase. Whenever they see an opportunity to improve code structure, modularity, or maintainability, they should take it. This includes creating utility functions or shared components to encapsulate repeated logic, simplifying complex functions, and breaking down large components into smaller, more manageable pieces.
 

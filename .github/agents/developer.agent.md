@@ -57,14 +57,11 @@ cat feature_list.json | grep '"passes": false' | wc -l
 Understanding the `app_spec.txt` is critical - it contains the full requirements
 for the application you're building.
 
-### STEP 2: START SERVERS (IF NOT RUNNING)
+### STEP 2: SERVERS ARE ALREADY RUNNING
 
-Use Docker Compose for a consistent local setup.
+We use Docker Compose for a consistent local setup.
 
 ```bash
-# Docker (recommended)
-docker compose -f docker/compose.yml up --build -d
-
 # Health checks
 # API health endpoint:
 curl --max-time 10 -s http://localhost:8000/api/health
@@ -78,7 +75,6 @@ curl --max-time 10 -s -o /dev/null -w "%{http_code}\n" http://localhost:8080
 
 Notes:
 
-- Airflow may take 1–2 minutes to become available on first boot.
 - Services/ports: API 8000, UI 5173, Airflow 8080 (network: tactix-net).
 - Log notable orchestration events to tmp-logs/.
 

@@ -1678,6 +1678,23 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Tactics detection logic consolidation into an abstract base class (or similar in Rust if applicable).",
+    "steps": [
+      "1. There are several variations on the same theme of detecting forks/pins/etc. There are many ways these need to be verified, but keep in mind that they should be using the same underlying logic where possible to avoid discrepancies.",
+      "2. It could be useful to have a abstract BaseTacticDetector class that implements common functionality, and then have specific detectors inherit from this base class. This way we can start to consolidate common logic, and make sure that we are consistent across different tactic detectors.",
+      "3. Implement the base class and refactor existing tactic detectors to inherit from it.",
+      "4. Thoroughly test to ensure that the refactored detectors behave as expected and produce consistent results.",
+      "5. Document the new structure and usage of the base class for future reference.",
+      "6. Review and optimize the implementation for performance and maintainability.",
+      "7. Replace existing tactic detection logic with the new class structure in all relevant parts of the codebase. This includes updating any tests to ensure they are compatible with the new structure.",
+      "8. Keep existing tactic detection tests to verify that the refactored code maintains the same functionality and accuracy as before.",
+      "9. Ensure previous code is completely removed and no longer in use.",
+      "10. Design tests to ensure that the old code is not inadvertently called or used anywhere in the codebase."
+    ],
+    "passes": false
+  },
+  {
     "category": "functional",
     "description": "Stockfish detects pin with high severity in bullet",
     "steps": [

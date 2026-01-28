@@ -1340,3 +1340,15 @@ Session 2026-01-28 (feature 130 – tactics detectors consolidated into BaseTact
 - Added guard tests to ensure legacy helpers are removed and analyzer uses the detector suite.
 - Tests: `make check` (before/after).
 - Docs: README updated with BaseTacticDetector usage guidance.
+
+Session 2026-01-28 (feature 131 – Stockfish pin high severity in bullet)
+- Raised bullet pin severity clamp to high (>= 1.5) while keeping other profiles low.
+- Updated bullet pin unit test to expect high severity.
+- Seeded bullet pin tactic into data/tactix.duckdb via `tmp-logs/feature_131_seed.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_131_pin_bullet_high.js`.
+- UI verification screenshot: `verification/feature-131-pin-bullet-high-severity-2026-01-28.png`.
+- CI integration check: `node /Users/andy/tactix/verification/puppeteer_feature_131_pin_bullet_high_ci.js`.
+- CI verification screenshot: `verification/feature-131-pin-bullet-high-severity-ci-2026-01-28.png`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pin_bullet.py`.
+- Updated feature_list.json: feature “Stockfish detects pin with high severity in bullet” marked passes=true.
+- Current passing count: 132/423.

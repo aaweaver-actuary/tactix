@@ -1296,3 +1296,17 @@ Session 2026-01-28 (feature 127 – Stockfish pin low severity for classical)
 - CI verification screenshot: `verification/feature-127-pin-classical-low-severity-ci-2026-01-28.png`.
 - Updated feature_list.json: feature “Stockfish detects pin with low severity in classical” marked passes=true.
 - Current passing count: 127/423.
+
+Session 2026-01-28 (regression fix – features 095/096 fork low severity rapid/classical)
+- Pre-work verification tests (randomized 12 passing suites): `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_metrics_refresh.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_duckdb_store_helpers.py tests/test_pipeline_helpers.py tests/test_pgn_utils_helpers.py tests/test_job_stream.py`.
+- Added fork severity floor override option and restored delta-based fork severity for classical/correspondence by default.
+- Added classical fork low-severity unit test and explicit high-severity override for classical/correspondence fork tests.
+- Seeded classical low-severity fork tactic into data/tactix.duckdb via `tmp-logs/feature_096_seed.py`.
+- Updated CI fork high-severity check to select a qualifying row when multiple severities exist.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_one_rapid.py tests/test_mate_in_one_classical.py tests/test_fork_classical.py tests/test_fork_correspondence.py`.
+- UI verification (manual): `TACTIX_SCREENSHOT_NAME=feature-095-fork-rapid-low-severity-2026-01-28.png node /Users/andy/tactix/verification/puppeteer_feature_095_fork_rapid.js`, `TACTIX_SCREENSHOT_NAME=feature-096-fork-classical-low-severity-2026-01-28.png node /Users/andy/tactix/verification/puppeteer_feature_096_fork_classical.js`.
+- UI verification screenshots: `verification/feature-095-fork-rapid-low-severity-2026-01-28.png`, `verification/feature-096-fork-classical-low-severity-2026-01-28.png`.
+- CI verification: `TACTIX_SCREENSHOT_NAME=feature-095-fork-rapid-low-severity-ci-2026-01-28.png node /Users/andy/tactix/verification/puppeteer_feature_095_fork_rapid_ci.js`, `TACTIX_SCREENSHOT_NAME=feature-096-fork-classical-low-severity-ci-2026-01-28.png node /Users/andy/tactix/verification/puppeteer_feature_096_fork_classical_ci.js`.
+- CI verification screenshots: `verification/feature-095-fork-rapid-low-severity-ci-2026-01-28.png`, `verification/feature-096-fork-classical-low-severity-ci-2026-01-28.png`.
+- Updated feature_list.json: features “Stockfish detects fork with low severity in rapid/classical” marked passes=true.
+- Current passing count: 129/423.

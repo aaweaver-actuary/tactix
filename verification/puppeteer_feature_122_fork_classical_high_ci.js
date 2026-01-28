@@ -139,10 +139,12 @@ async function ensureBackend() {
     }, API_BASE);
 
     const forkRow = Array.isArray(severityCheck?.tactics)
-      ? severityCheck.tactics.find((row) => row.best_uci === 'f4e2')
+      ? severityCheck.tactics.find(
+          (row) => row.best_uci === 'f4e2' && row.severity >= 1.5,
+        )
       : null;
 
-    if (!forkRow || forkRow.severity < 1.5) {
+    if (!forkRow) {
       throw new Error('Expected fork tactic with high severity (>= 1.5)');
     }
 

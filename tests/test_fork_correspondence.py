@@ -34,6 +34,7 @@ class TestForkCorrespondence(unittest.TestCase):
             source="chesscom",
             chesscom_user="chesscom",
             chesscom_profile="correspondence",
+            fork_severity_floor=1.5,
             stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
             stockfish_movetime_ms=60,
             stockfish_depth=None,

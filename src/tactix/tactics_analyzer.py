@@ -357,6 +357,12 @@ def _is_correspondence_profile(settings: Settings | None) -> bool:
     return profile == "correspondence"
 
 
+def _fork_severity_floor(settings: Settings | None) -> float | None:
+    if settings is None:
+        return None
+    return settings.fork_severity_floor
+
+
 def analyze_position(
     position: Dict[str, object],
     engine: StockfishEngine,
@@ -429,12 +435,13 @@ def analyze_position(
     if motif == "fork":
         if _is_blitz_profile(settings) or _is_rapid_profile(settings):
             severity = min(severity, 1.0)
-        if (
-            _is_bullet_profile(settings)
-            or _is_classical_profile(settings)
-            or _is_correspondence_profile(settings)
-        ):
+        if _is_bullet_profile(settings):
             severity = max(severity, 1.5)
+        floor = _fork_severity_floor(settings)
+        if floor is not None and (
+            _is_classical_profile(settings) or _is_correspondence_profile(settings)
+        ):
+            severity = max(severity, floor)
 
     if motif == "pin" and (
         _is_bullet_profile(settings)

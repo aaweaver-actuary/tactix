@@ -100,6 +100,11 @@ class Settings:
     stockfish_retry_backoff_ms: int = int(
         os.getenv("STOCKFISH_RETRY_BACKOFF_MS", "250")
     )
+    fork_severity_floor: Optional[float] = (
+        float(os.getenv("TACTIX_FORK_SEVERITY_FLOOR"))
+        if os.getenv("TACTIX_FORK_SEVERITY_FLOOR")
+        else None
+    )
     metrics_version_file: Path = Path(
         os.getenv(
             "TACTIX_METRICS_VERSION_PATH", DEFAULT_DATA_DIR / "metrics_version.txt"

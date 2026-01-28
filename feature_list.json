@@ -1860,6 +1860,43 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Add BaseCard component that all individual card components use",
+    "steps": [
+      "1. Review common functionality and styling across card components",
+      "2. Create BaseCard component with shared logic",
+      "3. Refactor individual card components to wrap around BaseCard",
+      "4. Test to ensure no regressions in UI or functionality",
+      "5. Update documentation to reflect new component structure",
+      "6. New functionality: Give cards a collapsed state for compact display: when the user clicks on a card (within the top part of the card), it toggles between expanded and collapsed views",
+      "7. All cards default to collapsed state on initial render",
+      "8. All cards must have a 'header' prop that is always visible, even in collapsed state",
+      "9. When expanded, cards show full content below the header",
+      "10. Add smooth transition animation when toggling between states",
+      "11. Ensure accessibility compliance for interactive elements",
+      "12. Write unit tests to cover the new collapsed/expanded functionality",
+      "13. Update existing tests to account for the new card behavior",
+      "14. Document the new 'collapsed' feature in the component's README"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ui/ux",
+    "description": "Any card wrapping a base card should be re-orderable by dragging and dropping when in a collapsed state",
+    "steps": [
+      "Step 1: Integrate drag-and-drop library (e.g., react-beautiful-dnd PLEASE review other options first) to enable reordering functionality",
+      "Step 2: Make card components draggable when collapsed",
+      "Step 3: Ensure smooth drag-and-drop experience with visual cues, such as a horizontal line indicating drop position",
+      "Step 4: Update the state to reflect new order after a drag-and-drop action",
+      "Step 5: Test drag-and-drop functionality across different browsers and devices",
+      "Step 6: Ensure accessibility compliance for drag-and-drop interactions",
+      "Step 7: Write unit and integration tests to cover drag-and-drop functionality",
+      "Step 8: Update documentation to include instructions on using the drag-and-drop feature",
+      "Step 9: Save the new order in local storage or backend to persist user preferences"
+    ],
+    "passes": false
+  },
+  {
     "category": "functional",
     "description": "Stockfish detects discovered attack with low severity in bullet",
     "steps": [

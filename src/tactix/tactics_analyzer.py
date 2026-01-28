@@ -189,7 +189,7 @@ def analyze_position(
             severity = max(severity, 1.5)
 
     if motif == "discovered_attack":
-        if _is_bullet_profile(settings):
+        if _is_bullet_profile(settings) or _is_blitz_profile(settings):
             severity = min(severity, 1.0)
 
     if motif == "skewer":

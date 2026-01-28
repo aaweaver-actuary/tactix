@@ -1550,3 +1550,14 @@ Session 2026-01-28 (feature 149 – Stockfish discovered attack low severity in 
 - Tests: `/Users/andy/tactix/.venv/bin/pytest /Users/andy/tactix/tests/test_discovered_attack_bullet.py`.
 - Updated feature_list.json: feature “Stockfish detects discovered attack with low severity in bullet” marked passes=true.
 - Current passing count: 149.
+Session 2026-01-28 (feature 150 – Stockfish discovered attack low severity in blitz)
+- Pre-work verification tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_helpers.py tests/test_api_profile.py tests/test_config_env.py tests/test_models.py tests/test_logging_utils.py tests/test_dashboard_filters.py tests/test_pgn_utils_helpers.py tests/test_duckdb_store_helpers.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_job_stream.py`.
+- Added blitz discovered-attack severity clamp (<= 1.0) and updated blitz fixture PGN with a discovered-attack position.
+- Added unit test coverage in `tests/test_discovered_attack_blitz_case.py` for low severity, best line/explanation persistence, and position linkage.
+- Seeded blitz discovered-attack tactic into data/tactix.duckdb via `tmp-logs/feature_150_seed_blitz.py` (game_id 9876543215).
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_150_discovered_attack_blitz_manual.js` (screenshot `verification/feature-150-discovered-attack-blitz-low-severity-2026-01-28.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_150_discovered_attack_blitz_ci_run.js` (screenshot `verification/feature-150-discovered-attack-blitz-low-severity-ci-2026-01-28.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_150_discovered_attack_blitz_low_check.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_discovered_attack_blitz_case.py`.
+- Updated feature_list.json: feature “Stockfish detects discovered attack with low severity in blitz” marked passes=true.
+- Current passing count: 150/486.

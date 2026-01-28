@@ -74,3 +74,17 @@
 [FEN "r3q3/3k4/8/8/8/8/6B1/4R1K1 w - - 0 1"]
 
 1. Bc6+ 1-0
+
+
+[Event "Chess.com Blitz Fixture 7 - Discovered Attack"]
+[Site "https://www.chess.com/game/live/9876543215"]
+[UTCDate "2024.07.07"]
+[UTCTime "20:15:00"]
+[White "chesscom"]
+[Black "blitzbot"]
+[TimeControl "300"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "r6r/1b3pk1/p2p2p1/1p1Pp2p/4PP1q/2Pn2NP/BP3QPN/5RK1 w - - 3 35"]
+
+35. Nf5+ gxf5 36. Qxh4 1-0

@@ -1491,3 +1491,13 @@ Session 2026-01-28 (feature 143 – Stockfish skewer high severity in rapid)
 - CI integration check: `node /Users/andy/tactix/verification/integration_feature_143_skewer_rapid_high.js`.
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_skewer_rapid.py`.
 - Updated feature_list.json: feature “Stockfish detects skewer with high severity in rapid” marked passes=true.
+
+Session 2026-01-28 (feature 144 – Stockfish skewer high severity in classical)
+- Adjusted skewer severity logic to cap found results only, enabling high-severity skewers on large eval deltas.
+- Added classical skewer high-severity fixture to `tests/fixtures/chesscom_classical_sample.pgn` and expanded `tests/test_skewer_classical.py` coverage.
+- Seeded classical high-severity skewer tactic into data/tactix.duckdb via `tmp-logs/feature_144_seed.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_144_skewer_classical_high.js` (screenshot `verification/feature-144-skewer-classical-high-severity-2026-01-28.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_144_skewer_classical_high_ci.js` (screenshot `verification/feature-144-skewer-classical-high-severity-ci-2026-01-28.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_144_skewer_classical_high.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_skewer_classical.py`.
+- Updated feature_list.json: feature “Stockfish detects skewer with high severity in classical” marked passes=true.

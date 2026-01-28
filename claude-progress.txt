@@ -1402,3 +1402,16 @@ Session 2026-01-28 (feature 135 – Stockfish pin high severity in correspondenc
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pin_correspondence.py`.
 - Updated feature_list.json: feature “Stockfish detects pin with high severity in correspondence” marked passes=true.
 - Current passing count: 136/423.
+
+Session 2026-01-28 (feature 136 – Stockfish skewer low severity in bullet)
+- Pre-work verification tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_metrics_refresh.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_duckdb_store_helpers.py tests/test_pipeline_helpers.py tests/test_pgn_utils_helpers.py tests/test_job_stream.py`.
+- Added bullet skewer severity clamp (<= 1.0) in tactics analyzer.
+- Added `tests/test_skewer_bullet.py` coverage for low severity, best line/explanation persistence, and position linkage.
+- Seeded skewer bullet tactic into data/tactix.duckdb via `tmp-logs/feature_136_seed.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_136_skewer_bullet.js`.
+- UI verification screenshot: `verification/feature-136-skewer-bullet-low-severity-2026-01-28.png`.
+- CI verification (Puppeteer): `node /Users/andy/tactix/verification/puppeteer_feature_136_skewer_bullet_ci.js`.
+- CI verification screenshot: `verification/feature-136-skewer-bullet-low-severity-ci-2026-01-28.png`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_skewer_bullet.py`.
+- Updated feature_list.json: feature “Stockfish detects skewer with low severity in bullet” marked passes=true.
+- Current passing count: 137/423.

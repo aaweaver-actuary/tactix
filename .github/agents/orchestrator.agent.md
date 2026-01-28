@@ -285,11 +285,16 @@ Blocking issues become the next unit of work.
 
 If technical debt or architecture issues are blocking progress, dispatch a refactorer agent before proceeding to new features.
 
+If you see a function that is more than 5 lines long, or a component file that is more than 200 lines long, consider dispatching a refactorer to improve code maintainability. Even in verification scripts or tests, look for opportunities to simplify and clarify the code structure, as well as an opportunity to reduce code duplication. Please consider, for example, whether or not utility functions or shared components could be created to encapsulate repeated logic. **If they can be created, they _should_ be created.**
+
 If you dispatch a refactorer, ensure the delegation packet includes:
 
 - Known issues summary
 - Refactoring goals
 - Constraints from Step 5.3
+- Verification requirements
+- Broad guidelines for acceptable code structure (`design-principles.md`)
+- The basics of SOLID principles
 
 Ensure `make check` runs before and after refactoring to maintain code quality. If it fails, we are not ready for refactoring.
 
@@ -374,5 +379,6 @@ If any conflict exists:
 - Ensure that all work is committed with clear and descriptive commit messages
 - Use the running docker compose environment for testing and development as appropriate. If it is not running, they should start it up using `source ./init.sh` from the root directory. It should not be shut down unless absolutely necessary. Please use `docker ps -a` to check the status of running containers, and the ports specified in Step 1 to verify that services are up and running.
 - Prefix their commits with [dev]/[refactor] as appropriate to indicate the type of work being done. This gives you clarity when reviewing the git log.
+- Make refactoring a priority. There is currently too much code duplication and complexity in the codebase. Whenever they see an opportunity to improve code structure, modularity, or maintainability, they should take it. This includes creating utility functions or shared components to encapsulate repeated logic, simplifying complex functions, and breaking down large components into smaller, more manageable pieces.
 
 Remember, you are dispatching a researcher agent to look for OSS solutions or a developer/refactorer agent to do the coding. You are not doing the research or coding yourself, and you are not getting my opinion. Your job is to manage the overall process and ensure high-quality results from your sub-process agents.

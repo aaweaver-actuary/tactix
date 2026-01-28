@@ -4,6 +4,7 @@ import re
 from io import StringIO
 import os
 from typing import Dict, List, Optional
+from dataclasses import dataclass
 
 import chess
 import chess.pgn
@@ -13,6 +14,93 @@ from tactix.logging_utils import get_logger
 logger = get_logger(__name__)
 
 CLK_PATTERN = re.compile(r"%clk\s+([0-9:.]+)")
+
+
+@dataclass
+class PositionContext:
+    game_id: str
+    fen: str
+    ply: int
+    move_number: int
+    side_to_move: str
+    uci: str
+    san: str
+    clock_seconds: Optional[float]
+    is_legal: bool
+
+
+@dataclass
+class PgnContext:
+    pgn: str
+    user: str
+    source: str
+    game_id: Optional[str] = None
+    side_to_move_filter: Optional[str] = None
+    _game: Optional[chess.pgn.Game] = None
+
+    def __post_init__(self):
+        self.user = self.user.lower()
+        if self._game is None:
+            self._get_game()
+
+    def _get_game(self):
+        if self._game is None:
+            self._game = chess.pgn.read_game(StringIO(self.pgn))
+
+    @property
+    def game(self) -> Optional[chess.pgn.Game]:
+        self._get_game()
+        return self._game
+
+    @property
+    def headers(self) -> Dict[str, str]:
+        self._get_game()
+        if self._game is None:
+            return {}
+        return self._game.headers
+
+    @property
+    def fen(self) -> Optional[str]:
+        board = self.board
+        if board is None:
+            return None
+        return board.fen()
+
+    @property
+    def board(self) -> Optional[chess.Board]:
+        if self._game is None:
+            self._get_game()
+        if self._game is None:
+            return None
+        return chess.Board(self.fen) if self.fen else self._game.board()
+
+    @property
+    def white(self) -> str:
+        game = self.game
+        if game is None:
+            return ""
+        return game.headers.get("White", "").lower()
+
+    @property
+    def black(self) -> str:
+        game = self.game
+        if game is None:
+            return ""
+        return game.headers.get("Black", "").lower()
+
+    @property
+    def ply(self) -> int:
+        board = self.board
+        if board is None:
+            return 0
+        return board.ply()
+
+    @property
+    def move_number(self) -> int:
+        board = self.board
+        if board is None:
+            return 0
+        return board.fullmove_number
 
 
 def _clock_from_comment(comment: str) -> Optional[float]:
@@ -44,66 +132,73 @@ def _normalize_side_filter(side_to_move_filter: str | None) -> str | None:
     return None
 
 
-def _extract_positions_python(
-    pgn: str,
-    user: str,
-    source: str,
-    game_id: str | None = None,
-    side_to_move_filter: str | None = None,
-) -> List[Dict[str, object]]:
-    game = chess.pgn.read_game(StringIO(pgn))
+def _extract_positions_python(ctx: PgnContext) -> List[Dict[str, object]]:
+    game = chess.pgn.read_game(StringIO(ctx.pgn))
     if not game:
         logger.warning("Unable to parse PGN")
         return []
 
-    white = game.headers.get("White", "").lower()
-    black = game.headers.get("Black", "").lower()
-    user_lower = user.lower()
-    if user_lower not in {white, black}:
-        logger.info("User %s not present in game headers; skipping", user)
+    if ctx.user not in {ctx.white, ctx.black}:
+        logger.info("User %s not present in game headers; skipping", ctx.user)
         return []
 
-    user_color = chess.WHITE if user_lower == white else chess.BLACK
-    board = game.board()
-    positions: List[Dict[str, object]] = []
-    normalized_side_filter = _normalize_side_filter(side_to_move_filter)
+    user_color = _get_user_color(ctx.white, ctx.user)
+
+    positions = []
+    normalized_side_filter = _normalize_side_filter(ctx.side_to_move_filter)
 
     for node in game.mainline():
         move = node.move
         if move is None:
             continue
-        is_user_to_move = board.turn == user_color
+        is_user_to_move = ctx.board.turn == user_color
         if not is_user_to_move:
-            board.push(move)
+            ctx.board.push(move)
             continue
-        side_to_move = "white" if board.turn == chess.WHITE else "black"
+        side_to_move = _get_side_to_move(ctx.board)
         if normalized_side_filter and side_to_move != normalized_side_filter:
-            board.push(move)
+            ctx.board.push(move)
             continue
-        is_legal = move in board.legal_moves
+        is_legal = move in ctx.board.legal_moves
         if not is_legal:
-            logger.warning("Illegal move %s for FEN %s", move.uci(), board.fen())
-            board.push(move)
+            logger.warning("Illegal move %s for FEN %s", move.uci(), ctx.fen)
+            ctx.board.push(move)
             continue
         positions.append(
-            {
-                "game_id": game_id or game.headers.get("Site", ""),
-                "user": user,
-                "source": source,
-                "fen": board.fen(),
-                "ply": board.ply(),
-                "move_number": board.fullmove_number,
-                "side_to_move": side_to_move,
-                "uci": move.uci(),
-                "san": board.san(move),
-                "clock_seconds": _clock_from_comment(node.comment or ""),
-                "is_legal": is_legal,
-            }
+            PositionContext(
+                game_id=ctx.game_id or game.headers.get("Site", ""),
+                user=ctx.user,
+                source=ctx.source,
+                fen=ctx.fen,
+                ply=ctx.ply,
+                move_number=ctx.move_number,
+                side_to_move=side_to_move,
+                uci=move.uci(),
+                san=ctx.board.san(move),
+                clock_seconds=_clock_from_comment(node.comment or ""),
+                is_legal=is_legal,
+            )
         )
-        board.push(move)
+        ctx.board.push(move)
 
     logger.info("Extracted %s positions for user", len(positions))
     return positions
+
+
+def _get_side_to_move(board):
+    return "white" if board.turn == chess.WHITE else "black"
+
+
+def _get_user_color(white, user_lower):
+    return chess.WHITE if user_lower == white else chess.BLACK
+
+
+def _get_black_player_name(game):
+    return game.headers.get("Black", "").lower()
+
+
+def _get_white_player_name(game):
+    return game.headers.get("White", "").lower()
 
 
 def extract_positions(

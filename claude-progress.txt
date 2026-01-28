@@ -1448,3 +1448,15 @@ Session 2026-01-28 (feature 139 – Stockfish skewer low severity in classical)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_skewer_classical.py`.
 - Updated feature_list.json: feature “Stockfish detects skewer with low severity in classical” marked passes=true.
 - Current passing count: 140/423.
+
+Session 2026-01-28 (feature 140 – Stockfish skewer low severity in correspondence)
+- Pre-work verification tests (randomized 12 passing suites): `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_metrics_refresh.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_duckdb_store_helpers.py tests/test_pipeline_helpers.py tests/test_pgn_utils_helpers.py tests/test_job_stream.py`.
+- Added correspondence skewer severity clamp (<= 1.0) in tactics analyzer.
+- Added `tests/test_skewer_correspondence.py` coverage for low severity, best line/explanation persistence, and position linkage.
+- Seeded correspondence skewer tactic into data/tactix.duckdb via `tmp-logs/feature_140_seed.py` (with TimeControl 86400).
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_140_skewer_correspondence.js` (screenshot `verification/feature-140-skewer-correspondence-low-severity-2026-01-28.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_140_skewer_correspondence_ci.js` (screenshot `verification/feature-140-skewer-correspondence-low-severity-ci-2026-01-28.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_140_skewer_correspondence_low.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_skewer_correspondence.py`.
+- Updated feature_list.json: feature “Stockfish detects skewer with low severity in correspondence” marked passes=true.
+- Current passing count: 141/423.

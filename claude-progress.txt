@@ -1687,3 +1687,14 @@ Session 2026-01-28 (feature 159 – discovered attack high severity in classical
 - CI integration check: `node /Users/andy/tactix/verification/integration_feature_159_discovered_attack_classical_high.js`.
 - Post-change make check: `make check` (same eslint warning; no errors).
 - Updated feature_list.json: feature “Stockfish detects discovered attack with high severity in classical” marked passes=true.
+Session 2026-01-28 (feature 160 – discovered attack high severity in correspondence)
+- Pre-work verification tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_metrics_refresh.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_duckdb_store_helpers.py tests/test_job_stream.py tests/test_pgn_utils_helpers.py tests/test_config_env.py`.
+- Pre-change make check: `make check` (eslint warning in `client/src/App.tsx` about missing `motifDropIndicatorIndex` dependency; no errors).
+- Allowed correspondence profile in discovered-attack high-severity profile set; added correspondence high-severity fixture and tests.
+- Seeded correspondence discovered-attack high tactic into `data/tactix.duckdb` via `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_160_seed_correspondence_high.py`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_discovered_attack_correspondence.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_160_discovered_attack_correspondence_high.js` (screenshot `verification/feature-160-discovered-attack-correspondence-high-severity-2026-01-28.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_160_discovered_attack_correspondence_high_ci.js` (screenshot `verification/feature-160-discovered-attack-correspondence-high-severity-ci-2026-01-28.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_160_discovered_attack_correspondence_high.js`.
+- Post-change make check: `make check` (same eslint warning; no errors).
+- Updated feature_list.json: feature “Stockfish detects discovered attack with high severity in correspondence” marked passes=true.

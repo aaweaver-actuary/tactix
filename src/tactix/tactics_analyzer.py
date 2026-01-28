@@ -17,8 +17,10 @@ from tactix.tactics_explanation import format_tactic_explanation
 logger = get_logger(__name__)
 MOTIF_DETECTORS: MotifDetectorSuite = build_default_motif_detector_suite()
 _PROFILE_FAST = frozenset({"bullet", "blitz", "rapid", "classical", "correspondence"})
-_PROFILE_DISCOVERED_ATTACK_LOW = frozenset({"correspondence"})
-_PROFILE_DISCOVERED_ATTACK_HIGH = frozenset({"bullet", "blitz", "rapid", "classical"})
+_PROFILE_DISCOVERED_ATTACK_LOW = frozenset()
+_PROFILE_DISCOVERED_ATTACK_HIGH = frozenset(
+    {"bullet", "blitz", "rapid", "classical", "correspondence"}
+)
 _PROFILE_FORK_LOW = frozenset({"blitz", "rapid"})
 _PROFILE_FORK_HIGH = frozenset({"bullet"})
 _PROFILE_FORK_SLOW = frozenset({"classical", "correspondence"})

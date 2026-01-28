@@ -1364,3 +1364,17 @@ Session 2026-01-28 (feature 132 – Stockfish pin high severity in blitz)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pin_blitz.py`.
 - Updated feature_list.json: feature “Stockfish detects pin with high severity in blitz” marked passes=true.
 - Current passing count: 133/423.
+
+Session 2026-01-28 (feature 133 – Stockfish pin high severity in rapid)
+- Pre-work regression UI checks (10 passing features): 001, 016, 028, 033, 035, 037, 040, 044, 046, 049.
+- Precheck screenshots: `verification/regression-133-precheck-001-2026-01-28.png`, `verification/regression-133-precheck-016-2026-01-28.png`, `verification/regression-133-precheck-028-2026-01-28.png`, `verification/regression-133-precheck-033-2026-01-28.png`, `verification/regression-133-precheck-035-2026-01-28.png`, `verification/regression-133-precheck-037-2026-01-28.png`, `verification/regression-133-precheck-040-2026-01-28.png`, `verification/regression-133-precheck-044-2026-01-28.png`, `verification/regression-133-precheck-046-2026-01-28.png`, `verification/regression-133-precheck-049-2026-01-28.png`.
+- Raised rapid pin severity clamp to high (>= 1.5) and updated rapid pin unit test expectation.
+- Seeded rapid pin tactic into data/tactix.duckdb via `tmp-logs/feature_133_seed.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_133_pin_rapid_high.js`.
+- UI verification screenshot: `verification/feature-133-pin-rapid-high-severity-2026-01-28.png`.
+- CI verification (Puppeteer): `node /Users/andy/tactix/verification/puppeteer_feature_133_pin_rapid_high_ci.js`.
+- CI verification screenshot: `verification/feature-133-pin-rapid-high-severity-ci-2026-01-28.png`.
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_133_pin_rapid_high.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_pin_rapid.py`.
+- Updated feature_list.json: feature “Stockfish detects pin with high severity in rapid” marked passes=true.
+- Current passing count: 134/423.

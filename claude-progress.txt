@@ -1352,3 +1352,15 @@ Session 2026-01-28 (feature 131 – Stockfish pin high severity in bullet)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pin_bullet.py`.
 - Updated feature_list.json: feature “Stockfish detects pin with high severity in bullet” marked passes=true.
 - Current passing count: 132/423.
+
+Session 2026-01-28 (feature 132 – Stockfish pin high severity in blitz)
+- Raised blitz pin severity clamp to high (>= 1.5).
+- Updated blitz pin unit test to expect high severity.
+- Seeded blitz pin tactic into data/tactix.duckdb via `tmp-logs/feature_132_seed.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_132_pin_blitz_high.js`.
+- UI verification screenshot: `verification/feature-132-pin-blitz-high-severity-2026-01-28.png`.
+- CI integration check: `node /Users/andy/tactix/verification/puppeteer_feature_132_pin_blitz_high_ci.js`.
+- CI verification screenshot: `verification/feature-132-pin-blitz-high-severity-ci-2026-01-28.png`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pin_blitz.py`.
+- Updated feature_list.json: feature “Stockfish detects pin with high severity in blitz” marked passes=true.
+- Current passing count: 133/423.

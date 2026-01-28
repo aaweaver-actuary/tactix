@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ButtonHTMLAttributes } from 'react';
+import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { Chess, Square } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import {
@@ -50,6 +52,46 @@ import {
   resetPracticeSessionStats,
   updatePracticeSessionStats,
 } from './utils/practiceSession';
+import {
+  normalizeOrder,
+  readCardOrder,
+  reorderList,
+  writeCardOrder,
+} from './utils/cardOrder';
+
+const BASE_CARD_STORAGE_KEY = 'tactix.dashboard.baseCardOrder';
+const BASE_CARD_IDS = [
+  'metrics-grid',
+  'metrics-trends',
+  'time-trouble-correlation',
+  'practice-queue',
+  'tactics-table',
+  'positions-list',
+];
+
+const buildCollapsedMap = (ids: string[]) =>
+  ids.reduce<Record<string, boolean>>((acc, id) => {
+    acc[id] = true;
+    return acc;
+  }, {});
+
+const areArraysEqual = (left: string[], right: string[]) => {
+  if (left.length !== right.length) return false;
+  return left.every((value, index) => value === right[index]);
+};
+
+type BaseCardRenderProps = {
+  dragHandleProps?: ButtonHTMLAttributes<HTMLButtonElement>;
+  dragHandleLabel?: string;
+  onCollapsedChange?: (collapsed: boolean) => void;
+};
+
+type BaseCardEntry = {
+  id: string;
+  label: string;
+  visible: boolean;
+  render: (props: BaseCardRenderProps) => JSX.Element | null;
+};
 
 export default function App() {
   const [data, setData] = useState<DashboardPayload | null>(null);
@@ -99,6 +141,16 @@ export default function App() {
   const [jobStatus, setJobStatus] = useState<
     'idle' | 'running' | 'error' | 'complete'
   >('idle');
+  const [baseCardOrder, setBaseCardOrder] = useState(() => {
+    const stored = readCardOrder(BASE_CARD_STORAGE_KEY, BASE_CARD_IDS);
+    return normalizeOrder(stored, BASE_CARD_IDS);
+  });
+  const [baseCardCollapsed, setBaseCardCollapsed] = useState(() =>
+    buildCollapsedMap(BASE_CARD_IDS),
+  );
+  const [dropIndicatorIndex, setDropIndicatorIndex] = useState<number | null>(
+    null,
+  );
   const streamAbortRef = useRef<AbortController | null>(null);
   const [postgresStatus, setPostgresStatus] = useState<PostgresStatus | null>(
     null,
@@ -686,6 +738,103 @@ export default function App() {
     ];
   }, [data]);
 
+  useEffect(() => {
+    writeCardOrder(BASE_CARD_STORAGE_KEY, baseCardOrder);
+  }, [baseCardOrder]);
+
+  const baseCardEntries: BaseCardEntry[] = useMemo(
+    () => [
+      {
+        id: 'metrics-grid',
+        label: 'Motif breakdown',
+        visible: Boolean(data),
+        render: (props) => (
+          <MetricsGrid metricsData={motifBreakdown} {...props} />
+        ),
+      },
+      {
+        id: 'metrics-trends',
+        label: 'Motif trends',
+        visible: Boolean(data) && trendRows.length > 0,
+        render: (props) => <MetricsTrends metricsData={trendRows} {...props} />,
+      },
+      {
+        id: 'time-trouble-correlation',
+        label: 'Time-trouble correlation',
+        visible: Boolean(data) && timeTroubleRows.length > 0,
+        render: (props) => (
+          <TimeTroubleCorrelation metricsData={timeTroubleRows} {...props} />
+        ),
+      },
+      {
+        id: 'practice-queue',
+        label: 'Practice queue',
+        visible: true,
+        render: (props) => (
+          <PracticeQueue
+            data={practiceQueue}
+            includeFailedAttempt={includeFailedAttempt}
+            onToggleIncludeFailedAttempt={setIncludeFailedAttempt}
+            loading={practiceLoading}
+            {...props}
+          />
+        ),
+      },
+      {
+        id: 'tactics-table',
+        label: 'Recent tactics',
+        visible: Boolean(data),
+        render: (props) =>
+          data ? <TacticsTable tacticsData={data.tactics} {...props} /> : null,
+      },
+      {
+        id: 'positions-list',
+        label: 'Latest positions',
+        visible: Boolean(data),
+        render: (props) =>
+          data ? (
+            <PositionsList positionsData={data.positions} {...props} />
+          ) : null,
+      },
+    ],
+    [
+      data,
+      includeFailedAttempt,
+      motifBreakdown,
+      practiceLoading,
+      practiceQueue,
+      trendRows,
+      timeTroubleRows,
+    ],
+  );
+
+  const baseCardIds = useMemo(
+    () => baseCardEntries.map((entry) => entry.id),
+    [baseCardEntries],
+  );
+
+  useEffect(() => {
+    const normalized = normalizeOrder(baseCardOrder, baseCardIds);
+    if (!areArraysEqual(normalized, baseCardOrder)) {
+      setBaseCardOrder(normalized);
+    }
+  }, [baseCardIds, baseCardOrder]);
+
+  const orderedBaseCards = useMemo(() => {
+    const baseCardMap = new Map(
+      baseCardEntries.map((entry) => [entry.id, entry]),
+    );
+    const visibleIds = baseCardEntries
+      .filter((entry) => entry.visible)
+      .map((entry) => entry.id);
+    const orderedVisible = baseCardOrder.filter((id) =>
+      visibleIds.includes(id),
+    );
+    return orderedVisible
+      .map((id) => baseCardMap.get(id))
+      .filter((entry): entry is BaseCardEntry => Boolean(entry));
+  }, [baseCardEntries, baseCardOrder]);
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
       <Hero
@@ -1175,9 +1324,99 @@ export default function App() {
         />
       </div>
 
-      {data ? <MetricsGrid metricsData={motifBreakdown} /> : null}
-      {data ? <MetricsTrends metricsData={trendRows} /> : null}
-      {data ? <TimeTroubleCorrelation metricsData={timeTroubleRows} /> : null}
+      <DragDropContext
+        onDragUpdate={(result) =>
+          setDropIndicatorIndex(result.destination?.index ?? null)
+        }
+        onDragEnd={(result) => {
+          setDropIndicatorIndex(null);
+          if (!result.destination) return;
+          if (result.destination.index === result.source.index) return;
+
+          const visibleIds = orderedBaseCards.map((card) => card.id);
+          if (!visibleIds.length) return;
+          const visibleSet = new Set(visibleIds);
+          const currentVisibleOrder = baseCardOrder.filter((id) =>
+            visibleSet.has(id),
+          );
+          const reorderedVisible = reorderList(
+            currentVisibleOrder,
+            result.source.index,
+            result.destination.index,
+          );
+          let nextVisibleIndex = 0;
+          const nextOrder = baseCardOrder.map((id) =>
+            visibleSet.has(id) ? reorderedVisible[nextVisibleIndex++] : id,
+          );
+          setBaseCardOrder(nextOrder);
+        }}
+      >
+        <Droppable droppableId="dashboard-base-cards">
+          {(dropProvided) => (
+            <div
+              ref={dropProvided.innerRef}
+              {...dropProvided.droppableProps}
+              className="space-y-3"
+            >
+              {orderedBaseCards.map((card, index) => {
+                const isCollapsed = baseCardCollapsed[card.id] ?? true;
+                const dragLabel = `Reorder ${card.label}`;
+                return (
+                  <div key={card.id}>
+                    {dropIndicatorIndex === index ? (
+                      <div
+                        className="h-0.5 rounded-full bg-teal/60"
+                        data-testid="card-drop-indicator"
+                      />
+                    ) : null}
+                    <Draggable
+                      draggableId={card.id}
+                      index={index}
+                      isDragDisabled={!isCollapsed}
+                      disableInteractiveElementBlocking
+                    >
+                      {(dragProvided, dragSnapshot) => (
+                        <div
+                          ref={dragProvided.innerRef}
+                          {...dragProvided.draggableProps}
+                          style={dragProvided.draggableProps.style}
+                          data-card-id={card.id}
+                          data-testid={`dashboard-card-${card.id}`}
+                          className={
+                            dragSnapshot.isDragging
+                              ? 'rounded-xl ring-2 ring-teal/40 shadow-lg'
+                              : undefined
+                          }
+                        >
+                          {card.render({
+                            dragHandleProps: (dragProvided.dragHandleProps ??
+                              undefined) as
+                              | ButtonHTMLAttributes<HTMLButtonElement>
+                              | undefined,
+                            dragHandleLabel: dragLabel,
+                            onCollapsedChange: (collapsed) =>
+                              setBaseCardCollapsed((prev) => ({
+                                ...prev,
+                                [card.id]: collapsed,
+                              })),
+                          })}
+                        </div>
+                      )}
+                    </Draggable>
+                  </div>
+                );
+              })}
+              {dropIndicatorIndex === orderedBaseCards.length ? (
+                <div
+                  className="h-0.5 rounded-full bg-teal/60"
+                  data-testid="card-drop-indicator"
+                />
+              ) : null}
+              {dropProvided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
       {practiceError ? (
         <div className="card p-3 text-rust">{practiceError}</div>
       ) : null}
@@ -1260,14 +1499,6 @@ export default function App() {
           <Text value={'No practice items queued yet.'} />
         )}
       </div>
-      <PracticeQueue
-        data={practiceQueue}
-        includeFailedAttempt={includeFailedAttempt}
-        onToggleIncludeFailedAttempt={setIncludeFailedAttempt}
-        loading={practiceLoading}
-      />
-      {data ? <TacticsTable tacticsData={data.tactics} /> : null}
-      {data ? <PositionsList positionsData={data.positions} /> : null}
     </div>
   );
 }

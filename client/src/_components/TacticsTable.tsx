@@ -1,9 +1,12 @@
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
-import BaseCard from './BaseCard';
+import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
 
 interface TacticsTableProps {
   tacticsData: DashboardPayload['tactics'];
+  dragHandleProps?: BaseCardDragHandleProps;
+  dragHandleLabel?: string;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 /**
@@ -15,7 +18,12 @@ interface TacticsTableProps {
  * @remarks
  * Each row displays the motif, result (with a badge), user's move in UCI format, and the evaluation delta in centipawns.
  */
-export default function TacticsTable({ tacticsData }: TacticsTableProps) {
+export default function TacticsTable({
+  tacticsData,
+  dragHandleProps,
+  dragHandleLabel,
+  onCollapsedChange,
+}: TacticsTableProps) {
   const header = (
     <div className="flex items-center justify-between">
       <h3 className="text-lg font-display text-sand">Recent tactics</h3>
@@ -24,7 +32,14 @@ export default function TacticsTable({ tacticsData }: TacticsTableProps) {
   );
 
   return (
-    <BaseCard className="p-4" header={header} contentClassName="pt-3">
+    <BaseCard
+      className="p-4"
+      header={header}
+      contentClassName="pt-3"
+      dragHandleProps={dragHandleProps}
+      dragHandleLabel={dragHandleLabel}
+      onCollapsedChange={onCollapsedChange}
+    >
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-sand/60">

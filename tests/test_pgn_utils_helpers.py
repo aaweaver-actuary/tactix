@@ -136,6 +136,47 @@ class PgnUtilsHelperTests(unittest.TestCase):
         self.assertIn('[Event "Test"]', normalized)
         self.assertIn("1. e4 e5 2. Nf3 Nc6", normalized)
 
+    def test_normalize_pgn_invalid_returns_stripped(self) -> None:
+        self.assertEqual(normalize_pgn("\n"), "")
+
+    def test_extract_game_id_fallback_hash(self) -> None:
+        pgn = "not-a-pgn"
+        self.assertEqual(extract_game_id(pgn), str(abs(hash(pgn))))
+
+    def test_extract_last_timestamp_ms_empty(self) -> None:
+        with patch("tactix.pgn_utils.time.time", return_value=2000):
+            self.assertEqual(extract_last_timestamp_ms(""), 2000 * 1000)
+
+    def test_extract_pgn_metadata_invalid_timestamp(self) -> None:
+        pgn = """[Event \"Test\"]
+[Site \"https://lichess.org/AbcDef12\"]
+[UTCDate \"bad\"]
+[UTCTime \"bad\"]
+[White \"alice\"]
+[Black \"bob\"]
+[Result \"*\"]
+
+1. e4 *
+"""
+        metadata = extract_pgn_metadata(pgn, user="alice")
+        self.assertIsNone(metadata["start_timestamp_ms"])
+
+    def test_extract_pgn_metadata_parse_errors(self) -> None:
+        pgn = '[Event "Broken"'
+        metadata = extract_pgn_metadata(pgn, user="alice")
+        self.assertIsNone(metadata["user_rating"])
+        self.assertIsNone(metadata["time_control"])
+
+    def test_extract_pgn_metadata_parser_errors_branch(self) -> None:
+        class DummyGame:
+            errors = ["parse-error"]
+            headers = {}
+
+        with patch("tactix.pgn_utils.chess.pgn.read_game", return_value=DummyGame()):
+            metadata = extract_pgn_metadata('[Event "Broken"]', user="alice")
+
+        self.assertIsNone(metadata["event"])
+
     def test_latest_timestamp_handles_mixed_inputs(self) -> None:
         rows = [
             {"last_timestamp_ms": "20"},

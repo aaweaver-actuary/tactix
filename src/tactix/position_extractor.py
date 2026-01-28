@@ -60,7 +60,7 @@ class PgnContext:
         self._get_game()
         if self._game is None:
             return {}
-        return self._game.headers
+        return dict(self._game.headers)
 
     @property
     def fen(self) -> Optional[str]:

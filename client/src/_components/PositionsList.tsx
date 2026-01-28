@@ -1,10 +1,13 @@
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
-import BaseCard from './BaseCard';
+import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
 import Text from './Text';
 
 interface PositionsListProps {
   positionsData: DashboardPayload['positions'];
+  dragHandleProps?: BaseCardDragHandleProps;
+  dragHandleLabel?: string;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 /**
@@ -21,7 +24,12 @@ interface PositionsListProps {
  *
  * Displays a header with a badge, and for each position, shows its FEN, move details, and clock time.
  */
-export default function PositionsList({ positionsData }: PositionsListProps) {
+export default function PositionsList({
+  positionsData,
+  dragHandleProps,
+  dragHandleLabel,
+  onCollapsedChange,
+}: PositionsListProps) {
   const header = (
     <div className="flex items-center justify-between">
       <h3 className="text-lg font-display text-sand">Latest positions</h3>
@@ -30,7 +38,14 @@ export default function PositionsList({ positionsData }: PositionsListProps) {
   );
 
   return (
-    <BaseCard className="p-4" header={header} contentClassName="pt-3">
+    <BaseCard
+      className="p-4"
+      header={header}
+      contentClassName="pt-3"
+      dragHandleProps={dragHandleProps}
+      dragHandleLabel={dragHandleLabel}
+      onCollapsedChange={onCollapsedChange}
+    >
       <div className="flex flex-col gap-3">
         {positionsData.map((pos) => (
           <div

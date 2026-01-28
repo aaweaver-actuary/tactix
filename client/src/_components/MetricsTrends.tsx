@@ -1,10 +1,13 @@
 import { useMemo } from 'react';
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
-import BaseCard from './BaseCard';
+import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
 
 interface MetricsTrendsProps {
   metricsData: DashboardPayload['metrics'];
+  dragHandleProps?: BaseCardDragHandleProps;
+  dragHandleLabel?: string;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 /**
@@ -17,7 +20,12 @@ interface MetricsTrendsProps {
  * @param metricsData - Array of metric objects containing trend data for motifs.
  * @returns A card component with a table of motif trends, or `null` if no data is available.
  */
-export default function MetricsTrends({ metricsData }: MetricsTrendsProps) {
+export default function MetricsTrends({
+  metricsData,
+  dragHandleProps,
+  dragHandleLabel,
+  onCollapsedChange,
+}: MetricsTrendsProps) {
   const latestByMotif = useMemo(() => {
     const map = new Map<
       string,
@@ -62,7 +70,14 @@ export default function MetricsTrends({ metricsData }: MetricsTrendsProps) {
   );
 
   return (
-    <BaseCard className="p-4" header={header} contentClassName="pt-3">
+    <BaseCard
+      className="p-4"
+      header={header}
+      contentClassName="pt-3"
+      dragHandleProps={dragHandleProps}
+      dragHandleLabel={dragHandleLabel}
+      onCollapsedChange={onCollapsedChange}
+    >
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-sand/60">

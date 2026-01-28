@@ -43,7 +43,7 @@ const run = async (): Promise<void> => {
   }
 
   const client = new Client(
-    typeof config === 'string' ? { connectionString: config } : config
+    typeof config === 'string' ? { connectionString: config } : config,
   );
 
   await client.connect();
@@ -51,17 +51,19 @@ const run = async (): Promise<void> => {
   const table = buildTableName();
   try {
     await client.query(
-      `CREATE TEMP TABLE ${table} (id SERIAL PRIMARY KEY, name TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT now())`
+      `CREATE TEMP TABLE ${table} (id SERIAL PRIMARY KEY, name TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT now())`,
     );
 
     const name = `ts-${table}`;
     const insertResult = await client.query(
       `INSERT INTO ${table} (name) VALUES ($1) RETURNING id`,
-      [name]
+      [name],
     );
     const id = insertResult.rows[0]?.id as number;
 
-    const countResult = await client.query(`SELECT COUNT(*) AS count FROM ${table}`);
+    const countResult = await client.query(
+      `SELECT COUNT(*) AS count FROM ${table}`,
+    );
     const count = Number(countResult.rows[0]?.count ?? 0);
 
     const updatedName = `ts-${table}-updated`;
@@ -70,20 +72,21 @@ const run = async (): Promise<void> => {
       id,
     ]);
 
-    const selectResult = await client.query(`SELECT name FROM ${table} WHERE id = $1`, [
-      id,
-    ]);
+    const selectResult = await client.query(
+      `SELECT name FROM ${table} WHERE id = $1`,
+      [id],
+    );
     const selectedName = selectResult.rows[0]?.name as string;
 
     await client.query(`DELETE FROM ${table} WHERE id = $1`, [id]);
 
     const remainingResult = await client.query(
-      `SELECT COUNT(*) AS count FROM ${table}`
+      `SELECT COUNT(*) AS count FROM ${table}`,
     );
     const remaining = Number(remainingResult.rows[0]?.count ?? 0);
 
     console.log(
-      `TS CRUD ok: inserted=${count}, selected='${selectedName}', remaining=${remaining}`
+      `TS CRUD ok: inserted=${count}, selected='${selectedName}', remaining=${remaining}`,
     );
   } finally {
     await client.query(`DROP TABLE IF EXISTS ${table}`);

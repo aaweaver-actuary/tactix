@@ -1894,7 +1894,7 @@
       "Step 8: Update documentation to include instructions on using the drag-and-drop feature",
       "Step 9: Save the new order in local storage or backend to persist user preferences"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "ui/ux",

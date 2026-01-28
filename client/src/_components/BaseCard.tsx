@@ -1,4 +1,14 @@
-import { HTMLAttributes, ReactNode, useId, useState } from 'react';
+import {
+  HTMLAttributes,
+  ReactNode,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from 'react';
+
+export type BaseCardDragHandleProps =
+  React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 interface BaseCardProps extends HTMLAttributes<HTMLDivElement> {
   header: ReactNode;
@@ -6,6 +16,10 @@ interface BaseCardProps extends HTMLAttributes<HTMLDivElement> {
   defaultCollapsed?: boolean;
   headerClassName?: string;
   contentClassName?: string;
+  dragHandleProps?: BaseCardDragHandleProps;
+  dragHandleLabel?: string;
+  dragHandleClassName?: string;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 const INTERACTIVE_SELECTOR = 'button, a, input, select, textarea, label';
@@ -21,11 +35,24 @@ export default function BaseCard({
   defaultCollapsed = true,
   headerClassName,
   contentClassName,
+  dragHandleProps,
+  dragHandleLabel,
+  dragHandleClassName,
+  onCollapsedChange,
   className,
   ...rest
 }: BaseCardProps) {
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const contentId = useId();
+  const onCollapsedChangeRef = useRef(onCollapsedChange);
+
+  useEffect(() => {
+    onCollapsedChangeRef.current = onCollapsedChange;
+  }, [onCollapsedChange]);
+
+  useEffect(() => {
+    onCollapsedChangeRef.current?.(collapsed);
+  }, [collapsed]);
 
   const toggle = () => setCollapsed((prev) => !prev);
 
@@ -61,6 +88,19 @@ export default function BaseCard({
       ? 'max-h-0 opacity-0 pointer-events-none'
       : 'max-h-[2000px] opacity-100 pointer-events-auto',
   ].join(' ');
+  const dragHandleVisible = Boolean(dragHandleProps) && collapsed;
+  const dragHandleClasses = [
+    'ml-2 inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white/5 text-sand/70 transition',
+    'hover:border-white/30 hover:text-sand',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal/60 focus-visible:ring-offset-2 focus-visible:ring-offset-night',
+    dragHandleVisible ? 'opacity-100' : 'opacity-0 pointer-events-none',
+    dragHandleClassName,
+    dragHandleProps?.className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const dragHandleAriaLabel =
+    dragHandleProps?.['aria-label'] || dragHandleLabel || 'Reorder card';
 
   return (
     <div className={containerClassName} {...rest}>
@@ -73,7 +113,27 @@ export default function BaseCard({
         onKeyDown={handleHeaderKeyDown}
         className={headerClasses}
       >
-        {header}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">{header}</div>
+          {dragHandleProps ? (
+            <button
+              type={dragHandleProps.type || 'button'}
+              {...dragHandleProps}
+              aria-label={dragHandleAriaLabel}
+              aria-hidden={!dragHandleVisible}
+              className={dragHandleClasses}
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
+                <circle cx="8" cy="7" r="1.5" fill="currentColor" />
+                <circle cx="16" cy="7" r="1.5" fill="currentColor" />
+                <circle cx="8" cy="12" r="1.5" fill="currentColor" />
+                <circle cx="16" cy="12" r="1.5" fill="currentColor" />
+                <circle cx="8" cy="17" r="1.5" fill="currentColor" />
+                <circle cx="16" cy="17" r="1.5" fill="currentColor" />
+              </svg>
+            </button>
+          ) : null}
+        </div>
       </div>
       <div
         id={contentId}

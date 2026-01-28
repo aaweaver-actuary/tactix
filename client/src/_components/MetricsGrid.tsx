@@ -1,10 +1,13 @@
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
-import BaseCard from './BaseCard';
+import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
 import MetricCard from './MetricCard';
 
 interface MetricsGridProps {
   metricsData: DashboardPayload['metrics'];
+  dragHandleProps?: BaseCardDragHandleProps;
+  dragHandleLabel?: string;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 /**
@@ -23,7 +26,12 @@ interface MetricsGridProps {
  *   { motif: 'Motif B', found: 8, total: 12, missed: 2, failed_attempt: 2 }
  * ]} />
  */
-export default function MetricsGrid({ metricsData }: MetricsGridProps) {
+export default function MetricsGrid({
+  metricsData,
+  dragHandleProps,
+  dragHandleLabel,
+  onCollapsedChange,
+}: MetricsGridProps) {
   const header = (
     <div className="flex items-center justify-between">
       <h3 className="text-lg font-display text-sand">Motif breakdown</h3>
@@ -37,6 +45,9 @@ export default function MetricsGrid({ metricsData }: MetricsGridProps) {
       data-testid="motif-breakdown"
       header={header}
       contentClassName="pt-3"
+      dragHandleProps={dragHandleProps}
+      dragHandleLabel={dragHandleLabel}
+      onCollapsedChange={onCollapsedChange}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {metricsData.map((row) => (

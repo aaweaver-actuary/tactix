@@ -152,6 +152,38 @@ class PositionExtractorTests(unittest.TestCase):
         positions = extract_positions("not-a-pgn", user="lichess", source="lichess")
         self.assertEqual(positions, [])
 
+    def test_pgn_context_headers_handles_unparsed(self) -> None:
+        ctx = position_extractor.PgnContext(
+            pgn="not-a-pgn", user="lichess", source="lichess"
+        )
+        self.assertEqual(ctx.headers.get("Event"), "?")
+        self.assertIsNotNone(ctx.board)
+
+    def test_pgn_context_headers_returns_dict(self) -> None:
+        pgn = """[Event \"Test\"]
+[Site \"https://lichess.org/AbcDef12\"]
+[UTCDate \"2020.01.02\"]
+[UTCTime \"03:04:05\"]
+[White \"user\"]
+[Black \"opp\"]
+[Result \"*\"]
+
+1. e4 *
+"""
+        ctx = position_extractor.PgnContext(pgn=pgn, user="user", source="lichess")
+        headers = ctx.headers
+        self.assertIsInstance(headers, dict)
+        self.assertEqual(headers.get("Event"), "Test")
+
+    def test_pgn_context_handles_empty_pgn(self) -> None:
+        ctx = position_extractor.PgnContext(pgn="", user="lichess", source="lichess")
+        self.assertIsNone(ctx.game)
+        self.assertIsNone(ctx.board)
+        self.assertIsNone(ctx.fen)
+        self.assertEqual(ctx.white, "")
+        self.assertEqual(ctx.black, "")
+        self.assertIsNone(ctx.side_to_move)
+
     def test_extract_positions_user_missing(self) -> None:
         pgn = self.games[0]
         positions = extract_positions(pgn, user="missing", source="lichess")
@@ -196,7 +228,9 @@ class PositionExtractorTests(unittest.TestCase):
             def mainline(self):
                 return [DummyNode()]
 
-        with patch("tactix.position_extractor.chess.pgn.read_game", return_value=DummyGame()):
+        with patch(
+            "tactix.position_extractor.chess.pgn.read_game", return_value=DummyGame()
+        ):
             positions = position_extractor._extract_positions_python(
                 "pgn", user="alice", source="lichess"
             )

@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import BaseCard from './BaseCard';
 
 describe('BaseCard', () => {
@@ -58,5 +58,41 @@ describe('BaseCard', () => {
 
     fireEvent.click(actionButton);
     expect(header).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('renders a drag handle and does not toggle on drag handle click', () => {
+    render(
+      <BaseCard
+        header={<span>Drag header</span>}
+        dragHandleProps={{}}
+        dragHandleLabel="Reorder card"
+      >
+        <p>Drag content</p>
+      </BaseCard>,
+    );
+
+    const header = screen.getByRole('button', { name: /drag header/i });
+    const dragHandle = screen.getByRole('button', { name: /reorder card/i });
+
+    fireEvent.click(dragHandle);
+    expect(header).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('calls onCollapsedChange when toggling', () => {
+    const onCollapsedChange = vi.fn();
+    render(
+      <BaseCard
+        header={<span>Callback header</span>}
+        onCollapsedChange={onCollapsedChange}
+      >
+        <p>Callback content</p>
+      </BaseCard>,
+    );
+
+    const header = screen.getByRole('button', { name: /callback header/i });
+    expect(onCollapsedChange).toHaveBeenCalledWith(true);
+
+    fireEvent.click(header);
+    expect(onCollapsedChange).toHaveBeenLastCalledWith(false);
   });
 });

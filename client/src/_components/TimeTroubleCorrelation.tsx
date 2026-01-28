@@ -1,9 +1,12 @@
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
-import BaseCard from './BaseCard';
+import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
 
 interface TimeTroubleCorrelationProps {
   metricsData: DashboardPayload['metrics'];
+  dragHandleProps?: BaseCardDragHandleProps;
+  dragHandleLabel?: string;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 const formatCorrelation = (value: number | null) => {
@@ -19,6 +22,9 @@ const formatRate = (value: number | null) => {
 
 export default function TimeTroubleCorrelation({
   metricsData,
+  dragHandleProps,
+  dragHandleLabel,
+  onCollapsedChange,
 }: TimeTroubleCorrelationProps) {
   if (!metricsData.length) return null;
 
@@ -43,6 +49,9 @@ export default function TimeTroubleCorrelation({
       data-testid="time-trouble-correlation"
       header={header}
       contentClassName="pt-3"
+      dragHandleProps={dragHandleProps}
+      dragHandleLabel={dragHandleLabel}
+      onCollapsedChange={onCollapsedChange}
     >
       <p className="text-xs text-sand/70 mb-3">
         Correlation between time trouble (≤30s or ≤10% of the initial clock) and

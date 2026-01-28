@@ -205,15 +205,6 @@ Session 2026-01-27 (regression fixes – features 001 + 003)
 - Screenshots: `verification/feature-001-ui-2026-01-27.png`, `verification/feature-003-airflow-log-2026-01-27.png`.
 - Tests: `node verification/puppeteer_regression_feature_001.js`, `node verification/puppeteer_airflow_lichess_incremental_log.js`.
 - Current passing count: 118.
-
-Session 2026-01-28 (feature 119 – Postgres raw PGN storage)
-- UI: ensure `[data-testid="postgres-raw-pgns"]` renders even on error by showing the card with an inline error.
-- API checks: `/api/postgres/status` and `/api/postgres/raw_pgns` verified.
-- Integration check: `node verification/integration_feature_119_postgres_raw_pgns.js`.
-- UI verification: `node verification/puppeteer_feature_119_postgres_raw_pgns.js` → `verification/feature-119-postgres-raw-pgns-2026-01-28.png`.
-- Tests: `make check`.
-- Updated feature_list.json: feature 119 marked passes=true (119/423).
-
 Session 2026-01-27 (refactor – tactics analyzer profile helpers)
 - Refactor: repeated profile parsing in `_is_*_profile` helpers → shared `_normalized_profile` used by each check.
 - Tests: `make check` (before/after), all passing; same warnings as prior runs.
@@ -1521,3 +1512,21 @@ Session 2026-01-28 (feature 146 – BaseCard with collapsed card behavior)
 - UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_146_base_card.js` (screenshot `verification/feature-146-base-card-2026-01-28.png`).
 - UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_146_base_card_ci.js` (screenshot `verification/feature-146-base-card-ci-2026-01-28.png`).
 - Updated feature_list.json: feature “Add BaseCard component that all individual card components use” marked passes=true.
+
+Session 2026-01-28 (feature 147 – drag-and-drop reorder for collapsed BaseCard)
+- Pre-work verification tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_metrics_refresh.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_duckdb_store_helpers.py tests/test_pipeline_helpers.py tests/test_pgn_utils_helpers.py tests/test_job_stream.py`.
+- Added BaseCard drag handle support, collapsed-state callbacks, and dashboard drag-and-drop ordering with @hello-pangea/dnd (drop indicators + localStorage persistence). Added card order utilities + unit tests, updated component docs.
+- Tests: `cd /Users/andy/tactix/client && npx vitest run src/_components/BaseCard.test.tsx src/utils/cardOrder.test.ts`.
+- UI verification (manual): `TACTIX_UI_URL=http://localhost:5174/ node /Users/andy/tactix/verification/puppeteer_feature_147_card_reorder.js` (screenshot `verification/feature-147-card-reorder-2026-01-28.png`).
+- CI integration check: `TACTIX_UI_URL=http://localhost:5174/ node /Users/andy/tactix/verification/integration_feature_147_card_reorder.js`.
+- Updated feature_list.json: feature “Any card wrapping a base card should be re-orderable by dragging and dropping when in a collapsed state” marked passes=true.
+- Current passing count: 147.
+
+Session 2026-01-28 (regression verification – features 001/002/003)
+- UI regression found: dashboard failed to render due to missing `@hello-pangea/dnd` dependency inside client container (Vite 500 on /src/App.tsx). Fixed by rebuilding client image and running `docker compose -f docker/compose.yml exec -T client npm install` to repopulate the node_modules volume.
+- Feature 001 (Lichess rapid full pipeline): triggered Airflow daily_game_sync and verified dashboard refresh.
+- Feature 001 screenshots: `verification/feature-001-airflow-lichess-rapid-2026-01-28.png`, `verification/feature-001-dashboard-lichess-rapid-2026-01-28.png`.
+- Feature 002 (Chess.com blitz full pipeline): triggered Airflow daily_game_sync and verified dashboard refresh.
+- Feature 002 screenshots: `verification/feature-002-airflow-chesscom-blitz-2026-01-28.png`, `verification/feature-002-dashboard-chesscom-blitz-2026-01-28.png`.
+- Feature 003 (Lichess incremental since): captured Airflow incremental log and verified dashboard refresh.
+- Feature 003 screenshots: `verification/feature-003-lichess-incremental-log-2026-01-28.png`, `verification/feature-003-dashboard-lichess-incremental-2026-01-28.png`.

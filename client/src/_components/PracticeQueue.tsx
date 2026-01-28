@@ -1,6 +1,6 @@
 import { PracticeQueueItem } from '../api';
 import Badge from './Badge';
-import BaseCard from './BaseCard';
+import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
 import Text from './Text';
 
 interface PracticeQueueProps {
@@ -8,6 +8,9 @@ interface PracticeQueueProps {
   includeFailedAttempt: boolean;
   onToggleIncludeFailedAttempt: (next: boolean) => void;
   loading: boolean;
+  dragHandleProps?: BaseCardDragHandleProps;
+  dragHandleLabel?: string;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 /**
@@ -26,6 +29,9 @@ export default function PracticeQueue({
   includeFailedAttempt,
   onToggleIncludeFailedAttempt,
   loading,
+  dragHandleProps,
+  dragHandleLabel,
+  onCollapsedChange,
 }: PracticeQueueProps) {
   const header = (
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -49,7 +55,14 @@ export default function PracticeQueue({
   );
 
   return (
-    <BaseCard className="p-4" header={header} contentClassName="pt-3">
+    <BaseCard
+      className="p-4"
+      header={header}
+      contentClassName="pt-3"
+      dragHandleProps={dragHandleProps}
+      dragHandleLabel={dragHandleLabel}
+      onCollapsedChange={onCollapsedChange}
+    >
       {data.length ? (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

@@ -1897,6 +1897,22 @@
     "passes": false
   },
   {
+    "category": "ui/ux",
+    "description": "Allow users to customize the order of tactic motifs in the dashboard",
+    "steps": [
+      "Step 1: Ensure the dashboard UI is set up to display tactic motifs",
+      "Step 2: Implement tactical motif cards by wrapping a BaseCard component",
+      "Step 3: Ensure that the drag-and-drop ordering of motif cards works now, by virtue of wrapping BaseCard",
+      "Step 4: If not, implement drag-and-drop functionality using a library like react-beautiful-dnd to the BaseCard component, not to the motif cards directly",
+      "Step 5: Add state management to track the order of motif cards (e.g., using React's useState or a state management library)",
+      "Step 6: Implement event handlers to update the order state when a user drags and drops a motif card",
+      "Step 7: Add visual indicators (like a shadow or highlight) to show which card is being dragged",
+      "Step 8: Test the drag-and-drop functionality across different browsers and devices to ensure compatibility",
+      "Step 9: Save the new order in local storage or backend to persist user preferences"
+    ],
+    "passes": false
+  },
+  {
     "category": "functional",
     "description": "Stockfish detects discovered attack with low severity in bullet",
     "steps": [

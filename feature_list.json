@@ -2813,6 +2813,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "functional",
     "description": "Metrics surface engine version comparison",
     "steps": ["Step 1: Run metrics refresh", "Step 2: Query stats endpoint", "Step 3: Validate figures and units"],
@@ -2828,6 +2839,17 @@
     "category": "functional",
     "description": "Metrics surface hint usage impact",
     "steps": ["Step 1: Run metrics refresh", "Step 2: Query stats endpoint", "Step 3: Validate figures and units"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -2849,6 +2871,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "functional",
     "description": "Maturin-built Rust extractor loads in Python pipeline",
     "steps": ["Step 1: Build Rust wheel via maturin", "Step 2: Install into virtualenv", "Step 3: Import in Python and extract FEN from sample PGN"],
@@ -2864,6 +2897,17 @@
     "category": "functional",
     "description": "React router handles games list route",
     "steps": ["Step 1: Navigate to path", "Step 2: Verify layout renders", "Step 3: Ensure data fetch executes"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -2885,6 +2929,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "functional",
     "description": "React router handles settings/token route",
     "steps": ["Step 1: Navigate to path", "Step 2: Verify layout renders", "Step 3: Ensure data fetch executes"],
@@ -2900,6 +2955,17 @@
     "category": "style",
     "description": "UI style: Color palette meets contrast ratios",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -2921,6 +2987,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: Charts use accessible colors",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
@@ -2936,6 +3013,17 @@
     "category": "style",
     "description": "UI style: Loading states skeletons",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -2957,6 +3045,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: Move list alignment",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
@@ -2972,6 +3071,17 @@
     "category": "style",
     "description": "UI style: Tooltip readability",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -2993,6 +3103,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: Modal overlay opacity",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
@@ -3008,6 +3129,17 @@
     "category": "style",
     "description": "UI style: Empty state illustrations",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3029,6 +3161,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: Typography hierarchy for headings",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
@@ -3044,6 +3187,17 @@
     "category": "style",
     "description": "UI style: Sticky filter bar",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3065,6 +3219,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: Link underline on focus",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
@@ -3080,6 +3245,17 @@
     "category": "style",
     "description": "UI style: ARIA labels on controls",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3101,6 +3277,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: Animation duration consistency",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
@@ -3116,6 +3303,17 @@
     "category": "style",
     "description": "UI style: Practice feedback color coding",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3137,6 +3335,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: Form validation inline hints",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
@@ -3152,6 +3361,17 @@
     "category": "style",
     "description": "UI style: Mobile padding for cards",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3173,6 +3393,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: SSE reconnect notice",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
@@ -3188,6 +3419,17 @@
     "category": "style",
     "description": "UI style: Board drag-and-drop smoothness",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3209,6 +3451,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: Focus trap in modals",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
@@ -3224,6 +3477,17 @@
     "category": "style",
     "description": "UI style: Hover vs touch behavior",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3245,6 +3509,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: Chart download affordance",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
@@ -3260,6 +3535,17 @@
     "category": "style",
     "description": "UI style: Jobs stream status badge",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3281,6 +3567,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: SSE live dot animation",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
@@ -3296,6 +3593,17 @@
     "category": "style",
     "description": "UI style: Board orientation toggle visibility",
     "steps": ["Step 1: Open dashboard on desktop and mobile", "Step 2: Inspect element appearance", "Step 3: Compare against design guidelines"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3317,6 +3625,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: responsive polish #4",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
@@ -3332,6 +3651,17 @@
     "category": "style",
     "description": "UI style: responsive polish #6",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3353,6 +3683,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: responsive polish #10",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
@@ -3368,6 +3709,17 @@
     "category": "style",
     "description": "UI style: responsive polish #12",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3389,6 +3741,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: responsive polish #16",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
@@ -3404,6 +3767,17 @@
     "category": "style",
     "description": "UI style: responsive polish #18",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3425,6 +3799,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: responsive polish #22",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
@@ -3440,6 +3825,17 @@
     "category": "style",
     "description": "UI style: responsive polish #24",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3461,6 +3857,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: responsive polish #28",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
@@ -3476,6 +3883,17 @@
     "category": "style",
     "description": "UI style: responsive polish #30",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3497,6 +3915,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: responsive polish #34",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
@@ -3512,6 +3941,17 @@
     "category": "style",
     "description": "UI style: responsive polish #36",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3533,6 +3973,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: responsive polish #40",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
@@ -3548,6 +3999,17 @@
     "category": "style",
     "description": "UI style: responsive polish #42",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3569,6 +4031,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: responsive polish #46",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
@@ -3584,6 +4057,17 @@
     "category": "style",
     "description": "UI style: responsive polish #48",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3605,6 +4089,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: responsive polish #52",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
@@ -3620,6 +4115,17 @@
     "category": "style",
     "description": "UI style: responsive polish #54",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3641,6 +4147,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: responsive polish #58",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
@@ -3656,6 +4173,17 @@
     "category": "style",
     "description": "UI style: responsive polish #60",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3677,6 +4205,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: responsive polish #64",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
@@ -3692,6 +4231,17 @@
     "category": "style",
     "description": "UI style: responsive polish #66",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {
@@ -3713,6 +4263,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "style",
     "description": "UI style: responsive polish #70",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
@@ -3728,6 +4289,17 @@
     "category": "style",
     "description": "UI style: responsive polish #72",
     "steps": ["Step 1: Load page", "Step 2: Resize viewport", "Step 3: Verify components remain aligned"],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
     "passes": false
   },
   {

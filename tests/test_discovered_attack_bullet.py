@@ -55,7 +55,9 @@ def _discovered_attack_high_fixture_position() -> dict[str, object]:
     )
     chunks = split_pgn_chunks(fixture_path.read_text())
     discovered_chunk = next(
-        chunk for chunk in chunks if "Bullet Fixture 7 - Discovered Attack High" in chunk
+        chunk
+        for chunk in chunks
+        if "Bullet Fixture 7 - Discovered Attack High" in chunk
     )
     game = chess.pgn.read_game(StringIO(discovered_chunk))
     if not game:

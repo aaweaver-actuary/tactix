@@ -1,4 +1,3 @@
-import os
 import shutil
 from io import StringIO
 from pathlib import Path
@@ -13,42 +12,12 @@ from tactix.duckdb_store import (
     insert_positions,
     upsert_tactic_with_outcome,
 )
-from tactix.pgn_utils import extract_game_id, split_pgn_chunks
+from tactix.pgn_utils import split_pgn_chunks
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 
 
-def _discovered_attack_fixture_position() -> dict[str, object]:
-    fixture_path = Path("tests/fixtures/discoveredattack.pgn")
-    chunks = split_pgn_chunks(fixture_path.read_text())
-    for chunk in chunks:
-        game = chess.pgn.read_game(StringIO(chunk))
-        if not game:
-            continue
-        fen = game.headers.get("FEN")
-        board = chess.Board(fen) if fen else game.board()
-        moves = list(game.mainline_moves())
-        if not moves:
-            continue
-        move = moves[0]
-        side_to_move = "white" if board.turn == chess.WHITE else "black"
-        return {
-            "game_id": extract_game_id(chunk),
-            "user": "chesscom",
-            "source": "chesscom",
-            "fen": board.fen(),
-            "ply": board.ply(),
-            "move_number": board.fullmove_number,
-            "side_to_move": side_to_move,
-            "uci": move.uci(),
-            "san": board.san(move),
-            "clock_seconds": None,
-            "is_legal": True,
-        }
-    raise SystemExit("No discovered attack fixture position found")
-
-
-def _discovered_attack_high_fixture_position() -> dict[str, object]:
+def _discovered_attack_bullet_high_position() -> dict[str, object]:
     fixture_path = Path("tests/fixtures/chesscom_bullet_sample.pgn")
     chunks = split_pgn_chunks(fixture_path.read_text())
     discovered_chunk = next(
@@ -93,15 +62,7 @@ settings = Settings(
 settings.apply_chesscom_profile("bullet")
 assert settings.stockfish_depth == DEFAULT_BULLET_STOCKFISH_DEPTH
 
-fixture_mode = os.getenv("TACTIX_DISCOVERED_ATTACK_FIXTURE", "default").strip()
-if fixture_mode == "bullet-high":
-    position = _discovered_attack_high_fixture_position()
-else:
-    position = _discovered_attack_fixture_position()
-
-override_game_id = os.getenv("TACTIX_DISCOVERED_ATTACK_GAME_ID")
-if override_game_id:
-    position["game_id"] = override_game_id
+position = _discovered_attack_bullet_high_position()
 
 conn = get_connection(Path("data") / "tactix.duckdb")
 init_schema(conn)
@@ -110,6 +71,7 @@ row = conn.execute(
     SELECT position_id, game_id, fen, uci
     FROM positions
     WHERE source = 'chesscom'
+      AND game_id = 'bullet-discovered-attack-high'
       AND uci = ?
       AND fen = ?
     ORDER BY created_at DESC
@@ -134,12 +96,13 @@ with StockfishEngine(settings) as engine:
     result = analyze_position(position, engine, settings=settings)
 
 if result is None:
-    raise SystemExit("No tactic result for discovered attack bullet fixture")
+    raise SystemExit("No tactic result for discovered attack bullet high fixture")
 
 tactic_row, outcome_row = result
 print("motif", tactic_row["motif"])
 print("severity", tactic_row["severity"])
+print("eval_delta", outcome_row["eval_delta"])
 print("best_uci", tactic_row["best_uci"])
 
 upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
-print("seeded discovered attack bullet tactic into data/tactix.duckdb")
+print("seeded discovered attack bullet high tactic into data/tactix.duckdb")

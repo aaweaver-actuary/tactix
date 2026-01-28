@@ -2,7 +2,10 @@ import unittest
 import chess
 
 from tactix.config import Settings
-from tactix.tactic_detectors import BaseTacticDetector, build_default_motif_detector_suite
+from tactix.tactic_detectors import (
+    BaseTacticDetector,
+    build_default_motif_detector_suite,
+)
 from tactix.tactics_analyzer import _is_profile_in
 
 

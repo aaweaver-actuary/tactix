@@ -1,4 +1,3 @@
-import os
 import shutil
 from io import StringIO
 from pathlib import Path
@@ -6,7 +5,7 @@ from pathlib import Path
 import chess
 import chess.pgn
 
-from tactix.config import DEFAULT_CLASSICAL_STOCKFISH_DEPTH, Settings
+from tactix.config import DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH, Settings
 from tactix.duckdb_store import (
     get_connection,
     init_schema,
@@ -18,14 +17,8 @@ from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 
 
-def _fixture_path_for_profile(profile: str) -> Path:
-    if profile == "correspondence":
-        return Path("tests/fixtures/chesscom_correspondence_sample.pgn")
-    return Path("tests/fixtures/chesscom_classical_sample.pgn")
-
-
-def _discovered_attack_fixture_position(profile: str) -> dict[str, object]:
-    fixture_path = _fixture_path_for_profile(profile)
+def _discovered_attack_fixture_position() -> dict[str, object]:
+    fixture_path = Path("tests/fixtures/chesscom_correspondence_sample.pgn")
     chunks = split_pgn_chunks(fixture_path.read_text())
     for chunk in chunks:
         game = chess.pgn.read_game(StringIO(chunk))
@@ -54,23 +47,22 @@ def _discovered_attack_fixture_position(profile: str) -> dict[str, object]:
             "clock_seconds": None,
             "is_legal": True,
         }
-    raise SystemExit(f"No discovered attack {profile} fixture position found")
+    raise SystemExit("No discovered attack correspondence fixture position found")
 
 
-def _seed_discovered_attack(profile: str) -> None:
-    position = _discovered_attack_fixture_position(profile)
+def _seed_discovered_attack() -> None:
+    position = _discovered_attack_fixture_position()
     settings = Settings(
         source="chesscom",
         chesscom_user="chesscom",
-        chesscom_profile=profile,
+        chesscom_profile="correspondence",
         stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
         stockfish_movetime_ms=60,
         stockfish_depth=None,
         stockfish_multipv=1,
     )
-    settings.apply_chesscom_profile(profile)
-    if profile == "classical":
-        assert settings.stockfish_depth == DEFAULT_CLASSICAL_STOCKFISH_DEPTH
+    settings.apply_chesscom_profile("correspondence")
+    assert settings.stockfish_depth == DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH
 
     desired_game_id = position["game_id"]
 
@@ -106,7 +98,7 @@ def _seed_discovered_attack(profile: str) -> None:
         result = analyze_position(position, engine, settings=settings)
 
     if result is None:
-        raise SystemExit(f"No tactic result for discovered attack {profile} fixture")
+        raise SystemExit("No tactic result for discovered attack correspondence")
 
     tactic_row, outcome_row = result
     print("motif", tactic_row["motif"])
@@ -114,11 +106,17 @@ def _seed_discovered_attack(profile: str) -> None:
     print("best_uci", tactic_row["best_uci"])
 
     upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
-    print(f"seeded discovered attack {profile} tactic into data/tactix.duckdb")
+    print("seeded discovered attack correspondence tactic into data/tactix.duckdb")
 
 
 if __name__ == "__main__":
-    profile = (os.getenv("TACTIX_CHESSCOM_PROFILE") or "classical").strip().lower()
-    if profile not in {"classical", "correspondence"}:
-        raise SystemExit(f"Unsupported profile: {profile}")
-    _seed_discovered_attack(profile)
+    _seed_discovered_attack()    
+    print("seeded discovered attack correspondence tactic into data/tactix.duckdb")
+
+
+if __name__ == "__main__":
+    _seed_discovered_attack()
+
+
+def _discovered_attack_fixture_position() -> dict[str, object]:
+    fixture_path = Path("tests/fixtures/chesscom_correspondence_sample.pgn")

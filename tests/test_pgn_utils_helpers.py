@@ -142,13 +142,13 @@ class PgnUtilsHelperTests(unittest.TestCase):
 
     def test_split_pgn_chunks_handles_extra_blank_lines(self) -> None:
         pgn = (
-            "[Event \"Game A\"]\n"
-            "[Site \"https://example.com/a\"]\n"
-            "[Result \"*\"]\n\n"
+            '[Event "Game A"]\n'
+            '[Site "https://example.com/a"]\n'
+            '[Result "*"]\n\n'
             "1. e4 *\n\n\n"
-            "[Event \"Game B\"]\n"
-            "[Site \"https://example.com/b\"]\n"
-            "[Result \"*\"]\n\n"
+            '[Event "Game B"]\n'
+            '[Site "https://example.com/b"]\n'
+            '[Result "*"]\n\n'
             "1. d4 *\n"
         )
         chunks = split_pgn_chunks(pgn)

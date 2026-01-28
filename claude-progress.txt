@@ -1620,3 +1620,15 @@ Session 2026-01-28 (feature 155 – discovered attack high severity in bullet)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_discovered_attack_bullet.py`.
 - Updated feature_list.json: feature “Stockfish detects discovered attack with high severity in bullet” marked passes=true.
 - Current passing count: 154/486.
+
+Session 2026-01-28 (feature 156 – discovered attack high severity in blitz)
+- Pre-work verification tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_metrics_refresh.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_duckdb_store_helpers.py tests/test_pipeline_helpers.py tests/test_pgn_utils_helpers.py tests/test_job_stream.py`.
+- Updated discovered-attack profile severity sets to allow high severity in blitz and added a blitz high-severity discovered-attack fixture in `tests/fixtures/chesscom_blitz_sample.pgn`.
+- Added blitz high-severity discovered-attack unit test in `tests/test_discovered_attack_blitz_case.py` (severity >= 1.5, best line/explanation, position linkage).
+- Seeded blitz discovered-attack high tactic into `data/tactix.duckdb` via `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_156_seed_blitz_high.py`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_discovered_attack_blitz_case.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_156_discovered_attack_blitz_high.js` (screenshot `verification/feature-156-discovered-attack-blitz-high-severity-2026-01-28.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_156_discovered_attack_blitz_high_ci.js` (screenshot `verification/feature-156-discovered-attack-blitz-high-severity-ci-2026-01-28.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_156_discovered_attack_blitz_high.js`.
+- Updated feature_list.json: feature “Stockfish detects discovered attack with high severity in blitz” marked passes=true.
+- Current passing count: 155/486.

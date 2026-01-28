@@ -1426,3 +1426,13 @@ Session 2026-01-28 (feature 137 – Stockfish skewer low severity in blitz)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_skewer_blitz.py`.
 - Updated feature_list.json: feature “Stockfish detects skewer with low severity in blitz” marked passes=true.
 - Current passing count: 138/423.
+
+Session 2026-01-28 (feature 138 – Stockfish skewer low severity in rapid)
+- Pre-work verification tests (randomized 10 passing suites): `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pgn_utils_helpers.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_airflow_dag.py tests/test_airflow_metadata_postgres.py tests/test_config_env.py tests/test_models.py tests/test_duckdb_store_helpers.py tests/test_metrics_refresh.py tests/test_job_stream.py`.
+- Added rapid skewer severity clamp (<= 1.0) in tactics analyzer.
+- Added `tests/test_skewer_rapid.py` coverage for low severity, best line/explanation persistence, and position linkage.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_138_skewer_rapid.js` (screenshot `verification/feature-138-skewer-rapid-low-severity-2026-01-28.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_138_skewer_rapid_ci.js` (screenshot `verification/feature-138-skewer-rapid-low-severity-ci-2026-01-28.png`).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_skewer_rapid.py`.
+- Updated feature_list.json: feature “Stockfish detects skewer with low severity in rapid” marked passes=true.
+- Current passing count: 139/423.

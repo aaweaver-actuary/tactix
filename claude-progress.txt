@@ -1482,3 +1482,12 @@ Session 2026-01-28 (feature 142 – Stockfish skewer high severity in blitz)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_skewer_blitz.py`.
 - Updated feature_list.json: feature “Stockfish detects skewer with high severity in blitz” marked passes=true.
 - Current passing count: 142/425.
+
+Session 2026-01-28 (feature 143 – Stockfish skewer high severity in rapid)
+- Added rapid skewer high severity seed script `tmp-logs/feature_143_seed.py` and aligned verification scripts to use `rapid-skewer-high` game_id.
+- Added rapid skewer high severity game_id assertion in `tests/test_skewer_rapid.py`.
+- Seeded rapid high-severity skewer tactic into data/tactix.duckdb via `tmp-logs/feature_143_seed.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_143_skewer_rapid_high.js` (screenshot `verification/feature-143-skewer-rapid-high-severity-2026-01-28.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_143_skewer_rapid_high.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_skewer_rapid.py`.
+- Updated feature_list.json: feature “Stockfish detects skewer with high severity in rapid” marked passes=true.

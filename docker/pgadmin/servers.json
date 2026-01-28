@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "tactix-postgres",
+      "Group": "tactix",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "tactix",
+      "Username": "tactix",
+      "SSLMode": "disable"
+    }
+  }
+}

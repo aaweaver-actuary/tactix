@@ -1675,7 +1675,7 @@
       "Updated documentation to include instructions for accessing pgadmin",
       "Updated documentation to include postgres schema map information"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "refactor",

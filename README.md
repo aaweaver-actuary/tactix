@@ -25,11 +25,12 @@ From the repo root:
    - API: `curl -s http://localhost:8000/api/health`
    - Dashboard: http://localhost:5173
    - Airflow UI: http://localhost:8080
+   - PgAdmin UI: http://localhost:5050
 
 Notes:
 
 - Airflow may take ~1–2 minutes to become available on first boot.
-- The stack uses the `tactix-net` bridge network. The containers expose ports 8000 (API), 5173 (UI), and 8080 (Airflow).
+- The stack uses the `tactix-net` bridge network. The containers expose ports 8000 (API), 5173 (UI), 8080 (Airflow), and 5050 (PgAdmin).
 - Data persists via the `data/` volume mounted into containers.
 - DuckDB remains the system-of-record. Postgres is used for operational logging (and can be extended for Airflow metadata later).
 - Postgres is exposed on port 5432 with database/user/password set to `tactix` in the Docker stack.
@@ -38,11 +39,35 @@ To stop the stack:
 
 - `docker compose -f docker/compose.yml down`
 
+### PgAdmin access (Postgres UI)
+
+PgAdmin is included in the Docker stack for easier database management.
+
+1. Open http://localhost:5050
+2. Log in with:
+   - Email: `admin@tactix.io`
+    - Password: `tactix`
+3. The server list includes a preconfigured entry named `tactix-postgres`.
+    - If prompted for a password, use `tactix`.
+
+### Postgres schema map
+
+PgAdmin will show the following schemas and tables:
+
+- `tactix_ops`
+   - `ops_events`: operational events emitted by the pipeline (ingestion, analysis, etc.)
+- `tactix_analysis`
+   - `tactics`: analyzed tactics (motif, severity, best line)
+   - `tactic_outcomes`: user outcomes for each tactic
+- `tactix_pgns`
+   - `raw_pgns`: raw/normalized PGN payloads mirrored from source APIs
+
 ### Services (once implemented)
 
 - FastAPI: http://localhost:8000 (SSE for job streams, analytics/practice APIs)
 - React/Vite dashboard: http://localhost:5173
 - Airflow UI: http://localhost:8080
+- PgAdmin: http://localhost:5050
 
 ### Next steps for contributors
 

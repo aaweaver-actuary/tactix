@@ -1390,3 +1390,15 @@ Session 2026-01-28 (feature 134 – Stockfish pin high severity in classical)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_pin_classical.py`.
 - Updated feature_list.json: feature “Stockfish detects pin with high severity in classical” marked passes=true.
 - Current passing count: 135/423.
+
+Session 2026-01-28 (feature 135 – Stockfish pin high severity in correspondence)
+- Updated pin severity logic to treat correspondence profiles as high severity and adjusted correspondence pin unit test expectations.
+- Seeded correspondence pin tactic into data/tactix.duckdb via `tmp-logs/feature_135_seed.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_135_pin_correspondence_high.js`.
+- UI verification screenshot: `verification/feature-135-pin-correspondence-high-severity-2026-01-28.png`.
+- CI verification (Puppeteer): `node /Users/andy/tactix/verification/puppeteer_feature_135_pin_correspondence_high_ci.js`.
+- CI verification screenshot: `verification/feature-135-pin-correspondence-high-severity-ci-2026-01-28.png`.
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_135_pin_correspondence_high.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pin_correspondence.py`.
+- Updated feature_list.json: feature “Stockfish detects pin with high severity in correspondence” marked passes=true.
+- Current passing count: 136/423.

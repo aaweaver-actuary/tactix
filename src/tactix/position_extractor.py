@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from io import StringIO
 import os
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Generator
 from dataclasses import dataclass
 
 import chess
@@ -102,6 +102,20 @@ class PgnContext:
             return 0
         return board.fullmove_number
 
+    @property
+    def side_to_move(self) -> Optional[str]:
+        board = self.board
+        if board is None:
+            return None
+        return "white" if board.turn == chess.WHITE else "black"
+
+    def iter_nodes(self) -> Generator[chess.pgn.ChildNode, None, None]:
+        game = self.game
+        if game is None:
+            return
+        for node in game.mainline():
+            yield node
+
 
 def _clock_from_comment(comment: str) -> Optional[float]:
     match = CLK_PATTERN.search(comment or "")
@@ -155,8 +169,8 @@ def _extract_positions_python(ctx: PgnContext) -> List[Dict[str, object]]:
         if not is_user_to_move:
             ctx.board.push(move)
             continue
-        side_to_move = _get_side_to_move(ctx.board)
-        if normalized_side_filter and side_to_move != normalized_side_filter:
+
+        if normalized_side_filter and ctx.side_to_move != normalized_side_filter:
             ctx.board.push(move)
             continue
         is_legal = move in ctx.board.legal_moves
@@ -172,7 +186,7 @@ def _extract_positions_python(ctx: PgnContext) -> List[Dict[str, object]]:
                 fen=ctx.fen,
                 ply=ctx.ply,
                 move_number=ctx.move_number,
-                side_to_move=side_to_move,
+                side_to_move=ctx.side_to_move,
                 uci=move.uci(),
                 san=ctx.board.san(move),
                 clock_seconds=_clock_from_comment(node.comment or ""),
@@ -183,10 +197,6 @@ def _extract_positions_python(ctx: PgnContext) -> List[Dict[str, object]]:
 
     logger.info("Extracted %s positions for user", len(positions))
     return positions
-
-
-def _get_side_to_move(board):
-    return "white" if board.turn == chess.WHITE else "black"
 
 
 def _get_user_color(white, user_lower):

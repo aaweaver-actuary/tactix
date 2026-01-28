@@ -1561,3 +1561,14 @@ Session 2026-01-28 (feature 150 – Stockfish discovered attack low severity in 
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_discovered_attack_blitz_case.py`.
 - Updated feature_list.json: feature “Stockfish detects discovered attack with low severity in blitz” marked passes=true.
 - Current passing count: 150/486.
+Session 2026-01-28 (feature 151 – Stockfish discovered attack low severity in rapid)
+- Pre-work verification tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_metrics_refresh.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_duckdb_store_helpers.py tests/test_pipeline_helpers.py tests/test_pgn_utils_helpers.py tests/test_job_stream.py`.
+- Added rapid discovered-attack severity clamp (<= 1.0) and updated rapid fixture PGN with a discovered-attack position.
+- Added unit test coverage in `tests/test_discovered_attack_rapid_case.py` for low severity, best line/explanation persistence, and position linkage.
+- Seeded rapid discovered-attack tactic into data/tactix.duckdb via `tmp-logs/feature_151_seed_rapid_case.py` (game_id 6677889905).
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_151_discovered_attack_rapid_manual_case.js` (screenshot `verification/feature-151-discovered-attack-rapid-low-severity-2026-01-28.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_151_discovered_attack_rapid_ci_run_case.js` (screenshot `verification/feature-151-discovered-attack-rapid-low-severity-ci-2026-01-28.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_151_discovered_attack_rapid_low_case.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_discovered_attack_rapid_case.py`.
+- Updated feature_list.json: feature “Stockfish detects discovered attack with low severity in rapid” marked passes=true.
+- Current passing count: 151/486.

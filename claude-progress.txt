@@ -206,6 +206,14 @@ Session 2026-01-27 (regression fixes – features 001 + 003)
 - Tests: `node verification/puppeteer_regression_feature_001.js`, `node verification/puppeteer_airflow_lichess_incremental_log.js`.
 - Current passing count: 118.
 
+Session 2026-01-28 (feature 119 – Postgres raw PGN storage)
+- UI: ensure `[data-testid="postgres-raw-pgns"]` renders even on error by showing the card with an inline error.
+- API checks: `/api/postgres/status` and `/api/postgres/raw_pgns` verified.
+- Integration check: `node verification/integration_feature_119_postgres_raw_pgns.js`.
+- UI verification: `node verification/puppeteer_feature_119_postgres_raw_pgns.js` → `verification/feature-119-postgres-raw-pgns-2026-01-28.png`.
+- Tests: `make check`.
+- Updated feature_list.json: feature 119 marked passes=true (119/423).
+
 Session 2026-01-27 (refactor – tactics analyzer profile helpers)
 - Refactor: repeated profile parsing in `_is_*_profile` helpers → shared `_normalized_profile` used by each check.
 - Tests: `make check` (before/after), all passing; same warnings as prior runs.

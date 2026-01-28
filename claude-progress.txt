@@ -1284,3 +1284,15 @@ Session 2026-01-28 (feature 126 – Stockfish pin low severity for rapid)
 - CI verification screenshot: `verification/feature-126-pin-rapid-low-severity-ci-2026-01-28.png`.
 - Updated feature_list.json: feature “Stockfish detects pin with low severity in rapid” marked passes=true.
 - Current passing count: 126/423.
+
+Session 2026-01-28 (feature 127 – Stockfish pin low severity for classical)
+- Pre-work verification tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pipeline_state.py tests/test_airflow_metadata_postgres.py tests/test_mate_in_one_rapid.py tests/test_mate_in_one_bullet.py tests/test_fixture_motifs.py tests/test_api_practice.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_metrics_refresh.py tests/test_position_extractor.py` (fork rapid low severity failed).
+- Adjusted fork severity rules: blitz/rapid capped low, bullet/classical/correspondence bumped high; updated classical fork test expectations and marked fork low-severity rapid/classical features as failing.
+- Added classical pin low-severity clamp and new unit test `tests/test_pin_classical.py`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_pin_classical.py` plus fork severity regression coverage across time controls.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_127_pin_classical.js`.
+- UI verification screenshot: `verification/feature-127-pin-classical-low-severity-2026-01-28.png`.
+- CI integration check: `node /Users/andy/tactix/verification/puppeteer_feature_127_pin_classical_ci.js`.
+- CI verification screenshot: `verification/feature-127-pin-classical-low-severity-ci-2026-01-28.png`.
+- Updated feature_list.json: feature “Stockfish detects pin with low severity in classical” marked passes=true.
+- Current passing count: 127/423.

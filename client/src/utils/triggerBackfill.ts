@@ -1,5 +1,5 @@
-import { DashboardPayload, client } from '../api';
-import fetchDashboard from './fetchDashboard';
+import { DashboardPayload } from '../api';
+import triggerDashboardJob from './triggerDashboardJob';
 
 export async function triggerBackfill(
   source: string | undefined,
@@ -7,13 +7,14 @@ export async function triggerBackfill(
   windowEndMs: number,
   profile?: string,
 ): Promise<DashboardPayload> {
-  await client.post('/api/jobs/daily_game_sync', null, {
-    params: {
+  return triggerDashboardJob(
+    '/api/jobs/daily_game_sync',
+    {
       source,
       backfill_start_ms: windowStartMs,
       backfill_end_ms: windowEndMs,
       profile,
     },
-  });
-  return fetchDashboard(source);
+    source,
+  );
 }

@@ -1666,3 +1666,12 @@ Session 2026-01-28 (feature 155 – discovered attack high severity in bullet)
 - CI integration check: `node /Users/andy/tactix/verification/integration_feature_155_discovered_attack_bullet_high.js`.
 - Post-change make check: completed; eslint reported 1 warning in `client/src/App.tsx` about `useMemo` dependencies (no errors).
 - Updated feature_list.json: feature “Stockfish detects discovered attack with high severity in bullet” marked passes=true.
+
+Session 2026-01-28 (feature 158 – refactor duplicate dashboard job triggers)
+- Pre-change make check: `make check` (eslint warning in `client/src/App.tsx` about missing `motifDropIndicatorIndex` dependency; no errors).
+- Refactor target: duplicated “post job + fetch dashboard” flows in `triggerBackfill`, `triggerPipeline`, `triggerMetricsRefresh`.
+- Before → after map:
+	- `triggerBackfill` / `triggerPipeline` / `triggerMetricsRefresh` inline job posting + dashboard fetch → shared `triggerDashboardJob` helper.
+	- Call sites updated to pass job path, params, source, and optional filters into `triggerDashboardJob`.
+- Tests: `make check` (post) completed with same eslint warning; includes `src/utils/triggerDashboardJob.test.ts` and updated trigger tests.
+- Evidence: `make check` output shows new unit test `src/utils/triggerDashboardJob.test.ts` and updated trigger tests passing.

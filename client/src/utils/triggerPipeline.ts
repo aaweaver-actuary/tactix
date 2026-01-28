@@ -1,9 +1,8 @@
-import { DashboardPayload, client } from '../api';
-import fetchDashboard from '../utils/fetchDashboard';
+import { DashboardPayload } from '../api';
+import triggerDashboardJob from './triggerDashboardJob';
 
 export default async function triggerPipeline(
   source?: string,
 ): Promise<DashboardPayload> {
-  await client.post('/api/jobs/daily_game_sync', null, { params: { source } });
-  return fetchDashboard(source);
+  return triggerDashboardJob('/api/jobs/daily_game_sync', { source }, source);
 }

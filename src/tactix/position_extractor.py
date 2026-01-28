@@ -4,7 +4,7 @@ import re
 from io import StringIO
 import os
 from typing import Dict, List, Optional, Generator
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 import chess
 import chess.pgn
@@ -19,6 +19,8 @@ CLK_PATTERN = re.compile(r"%clk\s+([0-9:.]+)")
 @dataclass
 class PositionContext:
     game_id: str
+    user: str
+    source: str
     fen: str
     ply: int
     move_number: int
@@ -37,6 +39,7 @@ class PgnContext:
     game_id: Optional[str] = None
     side_to_move_filter: Optional[str] = None
     _game: Optional[chess.pgn.Game] = None
+    _board: Optional[chess.Board] = None
 
     def __post_init__(self):
         self.user = self.user.lower()
@@ -72,7 +75,9 @@ class PgnContext:
             self._get_game()
         if self._game is None:
             return None
-        return chess.Board(self.fen) if self.fen else self._game.board()
+        if self._board is None:
+            self._board = self._game.board()
+        return self._board
 
     @property
     def white(self) -> str:
@@ -146,8 +151,41 @@ def _normalize_side_filter(side_to_move_filter: str | None) -> str | None:
     return None
 
 
-def _extract_positions_python(ctx: PgnContext) -> List[Dict[str, object]]:
-    game = chess.pgn.read_game(StringIO(ctx.pgn))
+def _build_pgn_context(
+    pgn: str | PgnContext,
+    user: str | None = None,
+    source: str | None = None,
+    game_id: str | None = None,
+    side_to_move_filter: str | None = None,
+) -> PgnContext:
+    if isinstance(pgn, PgnContext):
+        return pgn
+    if user is None or source is None:
+        raise ValueError("user and source are required when pgn is a string")
+    return PgnContext(
+        pgn=pgn,
+        user=user,
+        source=source,
+        game_id=game_id,
+        side_to_move_filter=side_to_move_filter,
+    )
+
+
+def _extract_positions_python(
+    pgn: str | PgnContext,
+    user: str | None = None,
+    source: str | None = None,
+    game_id: str | None = None,
+    side_to_move_filter: str | None = None,
+) -> List[Dict[str, object]]:
+    ctx = _build_pgn_context(
+        pgn,
+        user=user,
+        source=source,
+        game_id=game_id,
+        side_to_move_filter=side_to_move_filter,
+    )
+    game = ctx.game
     if not game:
         logger.warning("Unable to parse PGN")
         return []
@@ -158,42 +196,50 @@ def _extract_positions_python(ctx: PgnContext) -> List[Dict[str, object]]:
 
     user_color = _get_user_color(ctx.white, ctx.user)
 
-    positions = []
+    positions: list[dict[str, object]] = []
     normalized_side_filter = _normalize_side_filter(ctx.side_to_move_filter)
+    board = ctx.board
+    if board is None:
+        logger.warning("Unable to build board for PGN")
+        return []
 
     for node in game.mainline():
         move = node.move
         if move is None:
             continue
-        is_user_to_move = ctx.board.turn == user_color
+        is_user_to_move = board.turn == user_color
         if not is_user_to_move:
-            ctx.board.push(move)
+            board.push(move)
             continue
 
-        if normalized_side_filter and ctx.side_to_move != normalized_side_filter:
-            ctx.board.push(move)
+        side_to_move = "white" if board.turn == chess.WHITE else "black"
+        if normalized_side_filter and side_to_move != normalized_side_filter:
+            board.push(move)
             continue
-        is_legal = move in ctx.board.legal_moves
+
+        is_legal = move in board.legal_moves
         if not is_legal:
-            logger.warning("Illegal move %s for FEN %s", move.uci(), ctx.fen)
-            ctx.board.push(move)
+            logger.warning("Illegal move %s for FEN %s", move.uci(), board.fen())
+            board.push(move)
             continue
         positions.append(
-            PositionContext(
-                game_id=ctx.game_id or game.headers.get("Site", ""),
-                user=ctx.user,
-                source=ctx.source,
-                fen=ctx.fen,
-                ply=ctx.ply,
-                move_number=ctx.move_number,
-                side_to_move=ctx.side_to_move,
-                uci=move.uci(),
-                san=ctx.board.san(move),
-                clock_seconds=_clock_from_comment(node.comment or ""),
-                is_legal=is_legal,
+            asdict(
+                PositionContext(
+                    game_id=ctx.game_id or game.headers.get("Site", ""),
+                    user=ctx.user,
+                    source=ctx.source,
+                    fen=board.fen(),
+                    ply=board.ply(),
+                    move_number=board.fullmove_number,
+                    side_to_move=side_to_move,
+                    uci=move.uci(),
+                    san=board.san(move),
+                    clock_seconds=_clock_from_comment(node.comment or ""),
+                    is_legal=is_legal,
+                )
             )
         )
-        ctx.board.push(move)
+        board.push(move)
 
     logger.info("Extracted %s positions for user", len(positions))
     return positions

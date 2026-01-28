@@ -1857,7 +1857,7 @@
       "Step 3: Persist best line and explanation",
       "Step 4: Link tactic to position row"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "refactor",
@@ -1957,6 +1957,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "functional",
     "description": "Stockfish detects discovered attack with low severity in correspondence",
     "steps": [
@@ -1997,6 +2008,17 @@
       "Step 2: Ensure discovered attack is identified with eval delta tagged as high",
       "Step 3: Persist best line and explanation",
       "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
     ],
     "passes": false
   },
@@ -2045,6 +2067,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "functional",
     "description": "Stockfish detects discovered check with low severity in rapid",
     "steps": [
@@ -2074,6 +2107,17 @@
       "Step 2: Ensure discovered check is identified with eval delta tagged as low",
       "Step 3: Persist best line and explanation",
       "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
     ],
     "passes": false
   },
@@ -2111,6 +2155,17 @@
     "passes": false
   },
   {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
+    ],
+    "passes": false
+  },
+  {
     "category": "functional",
     "description": "Stockfish detects discovered check with high severity in classical",
     "steps": [
@@ -2140,6 +2195,17 @@
       "Step 2: Ensure hanging piece is identified with eval delta tagged as low",
       "Step 3: Persist best line and explanation",
       "Step 4: Link tactic to position row"
+    ],
+    "passes": false
+  },
+  {
+    "category": "refactor",
+    "description": "Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.",
+    "steps": [
+      "Step 1: Conduct a thorough review of the codebase to identify areas with duplicate code or similar logic that can be abstracted into reusable components or functions.",
+      "Step 2: Create reusable components or functions for the identified duplicate code, ensuring they are well-documented and tested.",
+      "Step 3: Replace the duplicate code in the codebase with calls to the newly created reusable components or functions.",
+      "Step 4: Test the refactored code to ensure that functionality remains intact and performance is not negatively impacted."
     ],
     "passes": false
   },

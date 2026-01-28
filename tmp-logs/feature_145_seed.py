@@ -1,0 +1,128 @@
+import shutil
+from io import StringIO
+from pathlib import Path
+
+import chess
+import chess.pgn
+
+from tactix.config import DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH, Settings
+from tactix.duckdb_store import (
+    get_connection,
+    init_schema,
+    insert_positions,
+    upsert_raw_pgns,
+    upsert_tactic_with_outcome,
+)
+from tactix.pgn_utils import split_pgn_chunks
+from tactix.stockfish_runner import StockfishEngine
+from tactix.tactics_analyzer import analyze_position
+
+
+def _skewer_correspondence_high_position() -> tuple[dict[str, object], str]:
+    fixture_path = Path("tests/fixtures/chesscom_correspondence_sample.pgn")
+    chunks = split_pgn_chunks(fixture_path.read_text())
+    skewer_pgn = next(chunk for chunk in chunks if "Correspondence Fixture 6" in chunk)
+    game = chess.pgn.read_game(StringIO(skewer_pgn))
+    if not game:
+        raise SystemExit("No skewer correspondence high game found")
+    fen = game.headers.get("FEN")
+    board = chess.Board(fen) if fen else game.board()
+    moves = list(game.mainline_moves())
+    if not moves:
+        raise SystemExit("No skewer correspondence high moves found")
+    move = moves[0]
+    side_to_move = "white" if board.turn == chess.WHITE else "black"
+    return (
+        {
+            "game_id": "correspondence-skewer-high",
+            "user": "chesscom",
+            "source": "chesscom",
+            "fen": board.fen(),
+            "ply": board.ply(),
+            "move_number": board.fullmove_number,
+            "side_to_move": side_to_move,
+            "uci": move.uci(),
+            "san": board.san(move),
+            "clock_seconds": None,
+            "is_legal": True,
+        },
+        skewer_pgn,
+    )
+
+
+settings = Settings(
+    source="chesscom",
+    chesscom_user="chesscom",
+    chesscom_profile="correspondence",
+    stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+    stockfish_movetime_ms=60,
+    stockfish_depth=None,
+    stockfish_multipv=1,
+)
+settings.apply_chesscom_profile("correspondence")
+assert settings.stockfish_depth == DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH
+
+position, raw_pgn = _skewer_correspondence_high_position()
+position_meta = position.copy()
+
+conn = get_connection(Path("data") / "tactix.duckdb")
+init_schema(conn)
+row = conn.execute(
+    """
+    SELECT position_id, game_id, fen, uci
+    FROM positions
+    WHERE source = 'chesscom'
+      AND game_id = 'correspondence-skewer-high'
+      AND uci = ?
+      AND fen = ?
+    ORDER BY created_at DESC
+    LIMIT 1
+    """,
+    [position["uci"], position["fen"]],
+).fetchone()
+
+if row:
+    position_id, game_id, fen, uci = row
+    position = {
+        "position_id": position_id,
+        "game_id": game_id,
+        "fen": fen,
+        "uci": uci,
+    }
+else:
+    position_ids = insert_positions(conn, [position])
+    position["position_id"] = position_ids[0]
+
+upsert_raw_pgns(
+    conn,
+    [
+        {
+            "game_id": position_meta["game_id"],
+            "user": position_meta["user"],
+            "source": position_meta["source"],
+            "pgn": raw_pgn,
+            "last_timestamp_ms": 0,
+            "cursor": None,
+        }
+    ],
+)
+
+with StockfishEngine(settings) as engine:
+    result = analyze_position(position, engine, settings=settings)
+
+if result is None:
+    raise SystemExit("No tactic result for skewer correspondence high fixture")
+
+tactic_row, outcome_row = result
+print("motif", tactic_row["motif"])
+print("severity", tactic_row["severity"])
+print("eval_delta", outcome_row["eval_delta"])
+print("best_uci", tactic_row["best_uci"])
+
+if tactic_row["motif"] != "skewer":
+    raise SystemExit("Expected skewer motif for correspondence high fixture")
+if tactic_row["severity"] < 1.5:
+    raise SystemExit("Expected high severity (>= 1.5) for correspondence skewer")
+
+upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
+print("seeded skewer correspondence high tactic into data/tactix.duckdb")

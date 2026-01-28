@@ -1501,3 +1501,14 @@ Session 2026-01-28 (feature 144 – Stockfish skewer high severity in classical)
 - CI integration check: `node /Users/andy/tactix/verification/integration_feature_144_skewer_classical_high.js`.
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_skewer_classical.py`.
 - Updated feature_list.json: feature “Stockfish detects skewer with high severity in classical” marked passes=true.
+
+Session 2026-01-28 (feature 145 – Stockfish skewer high severity in correspondence)
+- Pre-work regression tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_metrics_refresh.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_duckdb_store_helpers.py tests/test_pipeline_helpers.py tests/test_pgn_utils_helpers.py tests/test_job_stream.py`.
+- Fixed Python position extractor fallback to accept side_to_move_filter, return dicts with user/source, and stabilize board state for tests.
+- Added correspondence skewer high-severity fixture to `tests/fixtures/chesscom_correspondence_sample.pgn` and expanded `tests/test_skewer_correspondence.py` coverage.
+- Seeded correspondence high-severity skewer tactic into data/tactix.duckdb via `tmp-logs/feature_145_seed.py` (includes raw PGN metadata for time_control filtering).
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_145_skewer_correspondence_high.js` (screenshot `verification/feature-145-skewer-correspondence-high-severity-2026-01-28.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_145_skewer_correspondence_high_ci.js` (screenshot `verification/feature-145-skewer-correspondence-high-severity-ci-2026-01-28.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_145_skewer_correspondence_high.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_skewer_correspondence.py`.
+- Updated feature_list.json: feature “Stockfish detects skewer with high severity in correspondence” marked passes=true.

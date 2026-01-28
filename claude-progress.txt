@@ -1248,3 +1248,15 @@ Session 2026-01-28 (feature 123 – Stockfish fork high severity for corresponde
 - CI verification screenshot: `verification/feature-123-fork-correspondence-high-severity-ci-2026-01-28.png`.
 - Updated feature_list.json: feature “Stockfish detects fork with high severity in correspondence” marked passes=true.
 - Current passing count: 123/423.
+
+Session 2026-01-28 (feature 124 – Stockfish pin low severity for bullet)
+- Pre-work verification tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_helpers.py tests/test_api_profile.py tests/test_config_env.py tests/test_pgn_utils_helpers.py tests/test_duckdb_store_helpers.py tests/test_models.py tests/test_pipeline_state.py tests/test_pipeline_helpers.py tests/test_dashboard_filters.py`.
+- Added bullet pin severity clamp (<= 1.0) and new unit test in `tests/test_pin_bullet.py`.
+- Seeded pin bullet tactic into data/tactix.duckdb via `tmp-logs/feature_124_seed.py` (severity 0.55, best_uci f8c5).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_pin_bullet.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_124_pin_bullet.js`.
+- UI verification screenshot: `verification/feature-124-pin-bullet-low-severity-2026-01-28.png`.
+- CI integration check: `node /Users/andy/tactix/verification/puppeteer_feature_124_pin_bullet_ci.js`.
+- CI verification screenshot: `verification/feature-124-pin-bullet-low-severity-ci-2026-01-28.png`.
+- Updated feature_list.json: feature “Stockfish detects pin with low severity in bullet” marked passes=true.
+- Current passing count: 124/423.

@@ -1,5 +1,7 @@
 const apiBase = process.env.TACTIX_API_URL || 'http://localhost:8000';
 const apiToken = process.env.TACTIX_API_TOKEN || 'local-dev-token';
+const EXPECTED_GAME_ID =
+  process.env.TACTIX_DISCOVERED_ATTACK_GAME_ID || '3344556677';
 
 async function fetchDashboard() {
   const url = `${apiBase}/api/dashboard?source=chesscom&motif=discovered_attack`;
@@ -19,7 +21,7 @@ async function fetchDashboard() {
     const row = tactics.find(
       (item) =>
         item.motif === 'discovered_attack' &&
-        item.game_id === '3344556677' &&
+        item.game_id === EXPECTED_GAME_ID &&
         Number(item.severity) <= 1.0,
     );
     if (!row) {

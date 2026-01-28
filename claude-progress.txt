@@ -1588,9 +1588,11 @@ Session 2026-01-28 (feature 152 – Stockfish discovered attack low severity in 
 Session 2026-01-28 (feature 153 – refactor profile checks in tactics analyzer)
 - Refactored repeated profile matching logic into reusable `_is_profile_in` helper and shared profile sets inside tactics analyzer to reduce duplication.
 - Added unit coverage for profile matching helper (chesscom daily correspondence alias + normalization).
+- Relaxed `split_pgn_chunks` to handle extra blank lines between PGN games and added unit coverage.
+- Repaired `tests/fixtures/chesscom_rapid_sample.pgn` ordering + separators to restore rapid mate/discovered-attack fixtures.
 - Before → after map:
 	- `tactics_analyzer` repeated `_is_bullet_profile/_is_blitz_profile/_is_rapid_profile/_is_classical_profile/_is_correspondence_profile` checks → `_is_profile_in` with shared profile sets.
 	- Call sites in `analyze_position` → reused profile sets for mate-in-two, fork, pin, and discovered-attack checks.
-- Tests: `uv run pytest tests/test_tactics_analyzer.py -q`.
+- Tests: `uv run pytest tests/test_tactics_analyzer.py -q`, `uv run pytest tests/test_mate_in_one_rapid.py -q`, `uv run pytest tests/test_discovered_attack_rapid_case.py -q`, `uv run pytest tests/test_position_extractor.py::PositionExtractorTests::test_extracts_chesscom_rapid_black_to_move_positions -q`.
 - make check (pre): failed at `tests/test_mate_in_one_rapid.py::MateInOneRapidTests::test_rapid_mate_in_one_is_high_severity` (StopIteration, extracted 0 positions).
-- make check (post): same failure persists; no changes made to that test or fixtures.
+- make check (post): passed (eslint warning persists in `client/src/App.tsx` about `motifDropIndicatorIndex`).

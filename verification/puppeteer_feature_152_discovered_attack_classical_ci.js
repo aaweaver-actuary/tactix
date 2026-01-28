@@ -11,6 +11,9 @@ const DUCKDB_PATH =
   path.join(ROOT_DIR, 'data', 'tactix.duckdb');
 const API_BASE = process.env.TACTIX_API_BASE || 'http://localhost:8000';
 const DASHBOARD_URL = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
+const PROFILE = process.env.TACTIX_CHESSCOM_PROFILE || 'classical';
+const EXPECTED_GAME_ID =
+  process.env.TACTIX_DISCOVERED_ATTACK_GAME_ID || '3344556677';
 const SCREENSHOT_NAME =
   process.env.TACTIX_SCREENSHOT_NAME ||
   'feature-152-discovered-attack-classical-low-severity-ci-2026-01-28.png';
@@ -35,7 +38,7 @@ function startBackend() {
           TACTIX_DUCKDB_PATH: DUCKDB_PATH,
           TACTIX_SOURCE: 'chesscom',
           TACTIX_USER: 'chesscom',
-          TACTIX_CHESSCOM_PROFILE: 'classical',
+          TACTIX_CHESSCOM_PROFILE: PROFILE,
           TACTIX_CHESSCOM_USE_FIXTURE: '1',
           TACTIX_USE_FIXTURE: '1',
           CHESSCOM_USERNAME: 'chesscom',
@@ -109,7 +112,7 @@ async function ensureBackend() {
 
     await page.select('[data-testid="filter-source"]', 'chesscom');
     await page.waitForSelector('[data-testid="filter-chesscom-profile"]');
-    await page.select('[data-testid="filter-chesscom-profile"]', 'classical');
+    await page.select('[data-testid="filter-chesscom-profile"]', PROFILE);
     await page.select('[data-testid="filter-motif"]', 'discovered_attack');
 
     await page.click('[data-testid="action-run"]');
@@ -143,7 +146,7 @@ async function ensureBackend() {
       ? severityCheck.tactics.some(
           (row) =>
             row.motif === 'discovered_attack' &&
-            row.game_id === '3344556677' &&
+            row.game_id === EXPECTED_GAME_ID &&
             row.severity <= 1.0,
         )
       : false;

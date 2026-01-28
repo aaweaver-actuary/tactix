@@ -10,6 +10,7 @@ const DUCKDB_PATH =
   process.env.TACTIX_DUCKDB_PATH ||
   path.join(ROOT_DIR, 'data', 'tactix.duckdb');
 const DASHBOARD_URL = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
+const PROFILE = process.env.TACTIX_CHESSCOM_PROFILE || 'classical';
 const SCREENSHOT_NAME =
   process.env.TACTIX_SCREENSHOT_NAME ||
   'feature-152-discovered-attack-classical-low-severity-2026-01-28.png';
@@ -54,7 +55,7 @@ function startBackend() {
           TACTIX_DUCKDB_PATH: DUCKDB_PATH,
           TACTIX_SOURCE: 'chesscom',
           TACTIX_USER: 'chesscom',
-          TACTIX_CHESSCOM_PROFILE: 'classical',
+          TACTIX_CHESSCOM_PROFILE: PROFILE,
           TACTIX_CHESSCOM_USE_FIXTURE: '1',
           TACTIX_USE_FIXTURE: '1',
           CHESSCOM_USERNAME: 'chesscom',
@@ -112,7 +113,7 @@ function startBackend() {
 
     await page.select('[data-testid="filter-source"]', 'chesscom');
     await page.waitForSelector('[data-testid="filter-chesscom-profile"]');
-    await page.select('[data-testid="filter-chesscom-profile"]', 'classical');
+    await page.select('[data-testid="filter-chesscom-profile"]', PROFILE);
     await page.select('[data-testid="filter-motif"]', 'discovered_attack');
 
     await page.click('[data-testid="action-run"]');

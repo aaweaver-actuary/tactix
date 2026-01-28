@@ -1596,3 +1596,27 @@ Session 2026-01-28 (feature 153 – refactor profile checks in tactics analyzer)
 - Tests: `uv run pytest tests/test_tactics_analyzer.py -q`, `uv run pytest tests/test_mate_in_one_rapid.py -q`, `uv run pytest tests/test_discovered_attack_rapid_case.py -q`, `uv run pytest tests/test_position_extractor.py::PositionExtractorTests::test_extracts_chesscom_rapid_black_to_move_positions -q`.
 - make check (pre): failed at `tests/test_mate_in_one_rapid.py::MateInOneRapidTests::test_rapid_mate_in_one_is_high_severity` (StopIteration, extracted 0 positions).
 - make check (post): passed (eslint warning persists in `client/src/App.tsx` about `motifDropIndicatorIndex`).
+
+Session 2026-01-28 (feature 154 – discovered attack low severity in correspondence)
+- Extended discovered-attack low-severity profile set to include correspondence in `src/tactix/tactics_analyzer.py`.
+- Added correspondence discovered-attack fixture in `tests/fixtures/chesscom_correspondence_sample.pgn`.
+- Added correspondence test coverage in `tests/test_discovered_attack_classical.py` (low severity, best line/explanation, position linkage).
+- Seeded correspondence discovered-attack tactic into data/tactix.duckdb via `TACTIX_CHESSCOM_PROFILE=correspondence /Users/andy/tactix/.venv/bin/python tmp-logs/feature_152_seed_classical.py` (game_id 6677008894).
+- UI verification (manual): `TACTIX_CHESSCOM_PROFILE=correspondence TACTIX_DISCOVERED_ATTACK_GAME_ID=6677008894 TACTIX_SCREENSHOT_NAME=feature-154-discovered-attack-correspondence-low-severity-2026-01-28.png node /Users/andy/tactix/verification/puppeteer_feature_152_discovered_attack_classical_manual.js` (screenshot `verification/feature-154-discovered-attack-correspondence-low-severity-2026-01-28.png`).
+- UI verification (CI): `TACTIX_CHESSCOM_PROFILE=correspondence TACTIX_DISCOVERED_ATTACK_GAME_ID=6677008894 TACTIX_SCREENSHOT_NAME=feature-154-discovered-attack-correspondence-low-severity-ci-2026-01-28.png node /Users/andy/tactix/verification/puppeteer_feature_152_discovered_attack_classical_ci.js` (screenshot `verification/feature-154-discovered-attack-correspondence-low-severity-ci-2026-01-28.png`).
+- CI integration check: `TACTIX_DISCOVERED_ATTACK_GAME_ID=6677008894 node /Users/andy/tactix/verification/integration_feature_152_discovered_attack_classical_low.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_discovered_attack_classical.py -q`.
+- Updated feature_list.json: feature “Stockfish detects discovered attack with low severity in correspondence” marked passes=true.
+- Current passing count: 153/486.
+
+Session 2026-01-28 (feature 155 – discovered attack high severity in bullet)
+- Pre-work regression tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_helpers.py tests/test_api_profile.py tests/test_config_env.py tests/test_models.py tests/test_logging_utils.py tests/test_dashboard_filters.py tests/test_pgn_utils_helpers.py tests/test_duckdb_store_helpers.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_job_stream.py`.
+- Updated discovered-attack severity logic to allow high severity in bullet (missed/failed) while preserving low caps for other profiles.
+- Added bullet discovered-attack high fixture to `tests/fixtures/chesscom_bullet_sample.pgn` and new high-severity unit test in `tests/test_discovered_attack_bullet.py`.
+- Seeded bullet discovered-attack high tactic via `TACTIX_DISCOVERED_ATTACK_FIXTURE=bullet-high TACTIX_DISCOVERED_ATTACK_GAME_ID=bullet-discovered-attack-high /Users/andy/tactix/.venv/bin/python tmp-logs/feature_149_seed.py`.
+- UI verification (manual): `TACTIX_DISCOVERED_ATTACK_GAME_ID=bullet-discovered-attack-high TACTIX_DISCOVERED_ATTACK_MIN_SEVERITY=1.5 TACTIX_SCREENSHOT_NAME=feature-155-discovered-attack-bullet-high-severity-2026-01-28.png node /Users/andy/tactix/verification/puppeteer_feature_149_discovered_attack_bullet.js` (screenshot `verification/feature-155-discovered-attack-bullet-high-severity-2026-01-28.png`).
+- UI verification (CI): `TACTIX_DISCOVERED_ATTACK_GAME_ID=bullet-discovered-attack-high TACTIX_DISCOVERED_ATTACK_MIN_SEVERITY=1.5 TACTIX_SCREENSHOT_NAME=feature-155-discovered-attack-bullet-high-severity-ci-2026-01-28.png node /Users/andy/tactix/verification/puppeteer_feature_149_discovered_attack_bullet_ci.js` (screenshot `verification/feature-155-discovered-attack-bullet-high-severity-ci-2026-01-28.png`).
+- CI integration check: `TACTIX_DISCOVERED_ATTACK_GAME_ID=bullet-discovered-attack-high TACTIX_DISCOVERED_ATTACK_MIN_SEVERITY=1.5 node /Users/andy/tactix/verification/integration_feature_152_discovered_attack_classical_low.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_discovered_attack_bullet.py`.
+- Updated feature_list.json: feature “Stockfish detects discovered attack with high severity in bullet” marked passes=true.
+- Current passing count: 154/486.

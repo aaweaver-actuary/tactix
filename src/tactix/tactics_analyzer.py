@@ -17,9 +17,10 @@ from tactix.tactics_explanation import format_tactic_explanation
 logger = get_logger(__name__)
 MOTIF_DETECTORS: MotifDetectorSuite = build_default_motif_detector_suite()
 _PROFILE_FAST = frozenset({"bullet", "blitz", "rapid", "classical", "correspondence"})
-_PROFILE_DISCOVERED_ATTACK = frozenset(
-    {"bullet", "blitz", "rapid", "classical", "correspondence"}
+_PROFILE_DISCOVERED_ATTACK_LOW = frozenset(
+    {"blitz", "rapid", "classical", "correspondence"}
 )
+_PROFILE_DISCOVERED_ATTACK_HIGH = frozenset({"bullet"})
 _PROFILE_FORK_LOW = frozenset({"blitz", "rapid"})
 _PROFILE_FORK_HIGH = frozenset({"bullet"})
 _PROFILE_FORK_SLOW = frozenset({"classical", "correspondence"})
@@ -152,8 +153,11 @@ def analyze_position(
             severity = max(severity, 1.5)
 
     if motif == "discovered_attack":
-        if _is_profile_in(settings, _PROFILE_DISCOVERED_ATTACK):
+        if _is_profile_in(settings, _PROFILE_DISCOVERED_ATTACK_LOW):
             severity = min(severity, 1.0)
+        elif _is_profile_in(settings, _PROFILE_DISCOVERED_ATTACK_HIGH):
+            if result == "found":
+                severity = min(severity, 1.0)
 
     if motif == "skewer":
         if result == "found":

@@ -9,6 +9,7 @@ const BACKEND_CMD = path.join(ROOT_DIR, '.venv', 'bin', 'python');
 const DUCKDB_PATH =
   process.env.TACTIX_DUCKDB_PATH ||
   path.join(ROOT_DIR, 'data', 'tactix.duckdb');
+const API_BASE = process.env.TACTIX_API_BASE || 'http://localhost:8000';
 const DASHBOARD_URL = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const SCREENSHOT_NAME =
   process.env.TACTIX_SCREENSHOT_NAME ||
@@ -127,6 +128,51 @@ function startBackend() {
     );
     if (!hasDiscoveredAttack) {
       throw new Error('Expected a discovered attack row in tactics table');
+    }
+
+    const outDir = path.resolve(__dirname);
+    fs.mkdirSync(outDir, { recursive: true });
+    const outPath = path.join(outDir, SCREENSHOT_NAME);
+    await page.screenshot({ path: outPath, fullPage: true });
+
+    await browser.close();
+
+    if (consoleErrors.length) {
+      console.error('Console errors detected:', consoleErrors);
+      process.exit(1);
+    }
+  } finally {
+    if (backend) {
+      backend.kill();
+    }
+  }
+})();
+          throw new Error(`Dashboard fetch failed: ${res.status}`);
+        }
+        const data = await res.json();
+        return Array.isArray(data?.tactics)
+          ? data.tactics.some((row) => {
+              if (row.motif !== 'discovered_attack') return false;
+              if (expectedGameId && row.game_id !== expectedGameId) return false;
+              const severity = Number(row.severity);
+              if (Number.isNaN(severity)) return false;
+              if (minSeverity !== null && severity < minSeverity) return false;
+              if (maxSeverity !== null && severity > maxSeverity) return false;
+              return true;
+            })
+          : false;
+      },
+      API_BASE,
+      EXPECTED_GAME_ID,
+      MIN_SEVERITY,
+      MAX_SEVERITY,
+    );
+
+    if (!hasSeverityMatch) {
+      const expectedText = MIN_SEVERITY === null
+        ? 'low severity (<= 1.0)'
+        : `high severity (>= ${MIN_SEVERITY})`;
+      throw new Error(`Expected discovered attack tactic with ${expectedText}`);
     }
 
     const outDir = path.resolve(__dirname);

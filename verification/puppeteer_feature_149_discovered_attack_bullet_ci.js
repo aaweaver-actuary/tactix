@@ -11,6 +11,16 @@ const DUCKDB_PATH =
   path.join(ROOT_DIR, 'data', 'tactix.duckdb');
 const API_BASE = process.env.TACTIX_API_BASE || 'http://localhost:8000';
 const DASHBOARD_URL = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
+const EXPECTED_GAME_ID =
+  process.env.TACTIX_DISCOVERED_ATTACK_GAME_ID || null;
+const MIN_SEVERITY = process.env.TACTIX_DISCOVERED_ATTACK_MIN_SEVERITY
+  ? Number(process.env.TACTIX_DISCOVERED_ATTACK_MIN_SEVERITY)
+  : null;
+const MAX_SEVERITY = process.env.TACTIX_DISCOVERED_ATTACK_MAX_SEVERITY
+  ? Number(process.env.TACTIX_DISCOVERED_ATTACK_MAX_SEVERITY)
+  : MIN_SEVERITY === null
+    ? 1.0
+    : null;
 const SCREENSHOT_NAME =
   process.env.TACTIX_SCREENSHOT_NAME ||
   'feature-149-discovered-attack-bullet-low-severity-ci-2026-01-28.png';
@@ -126,7 +136,8 @@ async function ensureBackend() {
       throw new Error('Expected a discovered attack row in tactics table');
     }
 
-    const severityCheck = await page.evaluate(async (apiBase) => {
+    const severityCheck = await page.evaluate(
+      async (apiBase, expectedGameId, minSeverity, maxSeverity) => {
       const res = await fetch(
         `${apiBase}/api/dashboard?source=chesscom&motif=discovered_attack`,
         {
@@ -136,17 +147,25 @@ async function ensureBackend() {
       if (!res.ok) {
         throw new Error(`Dashboard fetch failed: ${res.status}`);
       }
-      return res.json();
-    }, API_BASE);
+      const data = await res.json();
+      return Array.isArray(data?.tactics)
+        ? data.tactics.some((row) => {
+            if (row.motif !== 'discovered_attack') return false;
+            if (expectedGameId && row.game_id !== expectedGameId) return false;
+            const severity = Number(row.severity);
+            if (Number.isNaN(severity)) return false;
+            if (minSeverity !== null && severity < minSeverity) return false;
+            if (maxSeverity !== null && severity > maxSeverity) return false;
+            return true;
+          })
+        : false;
+    }, API_BASE, EXPECTED_GAME_ID, MIN_SEVERITY, MAX_SEVERITY);
 
-    const hasLowSeverity = Array.isArray(severityCheck?.tactics)
-      ? severityCheck.tactics.some(
-          (row) => row.motif === 'discovered_attack' && row.severity <= 1.0,
-        )
-      : false;
-
-    if (!hasLowSeverity) {
-      throw new Error('Expected discovered attack tactic with low severity (<= 1.0)');
+    if (!severityCheck) {
+      const expectedText = MIN_SEVERITY === null
+        ? 'low severity (<= 1.0)'
+        : `high severity (>= ${MIN_SEVERITY})`;
+      throw new Error(`Expected discovered attack tactic with ${expectedText}`);
     }
 
     const outDir = path.resolve(__dirname);

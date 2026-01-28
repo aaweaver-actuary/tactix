@@ -1,3 +1,4 @@
+import os
 import shutil
 from io import StringIO
 from pathlib import Path
@@ -47,6 +48,37 @@ def _discovered_attack_fixture_position() -> dict[str, object]:
     raise SystemExit("No discovered attack fixture position found")
 
 
+def _discovered_attack_high_fixture_position() -> dict[str, object]:
+    fixture_path = Path("tests/fixtures/chesscom_bullet_sample.pgn")
+    chunks = split_pgn_chunks(fixture_path.read_text())
+    discovered_chunk = next(
+        chunk for chunk in chunks if "Bullet Fixture 7 - Discovered Attack High" in chunk
+    )
+    game = chess.pgn.read_game(StringIO(discovered_chunk))
+    if not game:
+        raise SystemExit("No discovered attack high bullet game found")
+    fen = game.headers.get("FEN")
+    board = chess.Board(fen) if fen else game.board()
+    moves = list(game.mainline_moves())
+    if not moves:
+        raise SystemExit("No discovered attack high bullet moves found")
+    move = moves[0]
+    side_to_move = "white" if board.turn == chess.WHITE else "black"
+    return {
+        "game_id": "bullet-discovered-attack-high",
+        "user": "chesscom",
+        "source": "chesscom",
+        "fen": board.fen(),
+        "ply": board.ply(),
+        "move_number": board.fullmove_number,
+        "side_to_move": side_to_move,
+        "uci": move.uci(),
+        "san": board.san(move),
+        "clock_seconds": None,
+        "is_legal": True,
+    }
+
+
 settings = Settings(
     source="chesscom",
     chesscom_user="chesscom",
@@ -59,7 +91,15 @@ settings = Settings(
 settings.apply_chesscom_profile("bullet")
 assert settings.stockfish_depth == DEFAULT_BULLET_STOCKFISH_DEPTH
 
-position = _discovered_attack_fixture_position()
+fixture_mode = os.getenv("TACTIX_DISCOVERED_ATTACK_FIXTURE", "default").strip()
+if fixture_mode == "bullet-high":
+    position = _discovered_attack_high_fixture_position()
+else:
+    position = _discovered_attack_fixture_position()
+
+override_game_id = os.getenv("TACTIX_DISCOVERED_ATTACK_GAME_ID")
+if override_game_id:
+    position["game_id"] = override_game_id
 
 conn = get_connection(Path("data") / "tactix.duckdb")
 init_schema(conn)

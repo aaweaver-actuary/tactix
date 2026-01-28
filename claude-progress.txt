@@ -1223,3 +1223,16 @@ Session 2026-01-28 (regression verification – features 001/002/003)
 - Feature 002 screenshots: `verification/feature-002-airflow-chesscom-blitz-2026-01-28.png`, `verification/feature-002-dashboard-chesscom-blitz-2026-01-28.png`.
 - Feature 003 (Lichess incremental since): captured Airflow incremental log and verified dashboard refresh.
 - Feature 003 screenshots: `verification/feature-003-lichess-incremental-log-2026-01-28.png`, `verification/feature-003-dashboard-lichess-incremental-2026-01-28.png`.
+
+Session 2026-01-28 (feature 122 – Stockfish fork high severity for classical)
+- Pre-work regression UI checks (10 passing features): 001, 016, 028, 033, 035, 037, 040, 044, 046, 049.
+- Precheck screenshots: `verification/regression-122-precheck-001-2026-01-28.png`, `verification/regression-122-precheck-016-2026-01-28.png`, `verification/regression-122-precheck-028-2026-01-28.png`, `verification/regression-122-precheck-033-2026-01-28.png`, `verification/regression-122-precheck-035-2026-01-28.png`, `verification/regression-122-precheck-037-2026-01-28.png`, `verification/regression-122-precheck-040-2026-01-28.png`, `verification/regression-122-precheck-044-2026-01-28.png`, `verification/regression-122-precheck-046-2026-01-28.png`, `verification/regression-122-precheck-049-2026-01-28.png`.
+- Raised fork severity clamp to high for classical profiles and updated classical fork unit test expectations.
+- Seeded classical fork tactic into data/tactix.duckdb via `tmp-logs/feature_122_seed.py` with time_control=1800 linkage.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_fork_classical.py -q`.
+- UI verification (manual): `TACTIX_SCREENSHOT_NAME=feature-122-fork-classical-high-severity-2026-01-28.png node /Users/andy/tactix/verification/puppeteer_feature_122_fork_classical_high.js`.
+- UI verification screenshot: `verification/feature-122-fork-classical-high-severity-2026-01-28.png`.
+- CI integration check: `TACTIX_SCREENSHOT_NAME=feature-122-fork-classical-high-severity-ci-2026-01-28.png node /Users/andy/tactix/verification/puppeteer_feature_122_fork_classical_high_ci.js`.
+- CI verification screenshot: `verification/feature-122-fork-classical-high-severity-ci-2026-01-28.png`.
+- Updated feature_list.json: feature “Stockfish detects fork with high severity in classical” marked passes=true.
+- Current passing count: 122/423.

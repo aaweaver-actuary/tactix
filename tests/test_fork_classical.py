@@ -19,7 +19,7 @@ from tactix.tactics_analyzer import analyze_position
 
 class TestForkClassical(unittest.TestCase):
 	@unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
-	def test_classical_fork_is_low_severity(self) -> None:
+	def test_classical_fork_is_high_severity(self) -> None:
 		fixture_path = (
 			Path(__file__).resolve().parent
 			/ "fixtures"
@@ -62,8 +62,7 @@ class TestForkClassical(unittest.TestCase):
 		tactic_row, outcome_row = result
 		self.assertEqual(tactic_row["motif"], "fork")
 		self.assertEqual(tactic_row["best_uci"], "f4e2")
-		self.assertGreater(tactic_row["severity"], 0)
-		self.assertLessEqual(tactic_row["severity"], 1.0)
+		self.assertGreaterEqual(tactic_row["severity"], 1.5)
 
 		tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
 		stored = conn.execute(

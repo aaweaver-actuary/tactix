@@ -1539,3 +1539,14 @@ Session 2026-01-28 (regression verification – features 001/002/003)
 - Feature 002 screenshots: `verification/feature-002-airflow-chesscom-blitz-2026-01-28.png`, `verification/feature-002-dashboard-chesscom-blitz-2026-01-28.png`.
 - Feature 003 (Lichess incremental since): captured Airflow incremental log and verified dashboard refresh.
 - Feature 003 screenshots: `verification/feature-003-lichess-incremental-log-2026-01-28.png`, `verification/feature-003-dashboard-lichess-incremental-2026-01-28.png`.
+
+Session 2026-01-28 (feature 149 – Stockfish discovered attack low severity in bullet)
+- Pre-work verification tests: `/Users/andy/tactix/.venv/bin/pytest tests/test_api_auth.py tests/test_api_helpers.py tests/test_api_profile.py tests/test_config_env.py tests/test_models.py tests/test_logging_utils.py tests/test_dashboard_filters.py tests/test_pgn_utils_helpers.py tests/test_duckdb_store_helpers.py tests/test_chesscom_client.py`.
+- Added bullet severity clamp for discovered attack and extended chess.com bullet fixture with a discovered-attack position.
+- Added unit test coverage in `tests/test_discovered_attack_bullet.py` for low severity, best line/explanation persistence, and position linkage.
+- Seeded bullet discovered-attack tactic into data/tactix.duckdb via `tmp-logs/feature_149_seed.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_149_discovered_attack_bullet.js` (screenshot `verification/feature-149-discovered-attack-bullet-low-severity-2026-01-28.png`).
+- UI verification (CI): `node /Users/andy/tactix/verification/puppeteer_feature_149_discovered_attack_bullet_ci.js` (screenshot `verification/feature-149-discovered-attack-bullet-low-severity-ci-2026-01-28.png`).
+- Tests: `/Users/andy/tactix/.venv/bin/pytest /Users/andy/tactix/tests/test_discovered_attack_bullet.py`.
+- Updated feature_list.json: feature “Stockfish detects discovered attack with low severity in bullet” marked passes=true.
+- Current passing count: 149.

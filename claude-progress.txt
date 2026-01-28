@@ -1207,3 +1207,9 @@ Session 2026-01-27 (feature 120 – Postgres interfaces across Rust/Python/TS)
 - Commands: `cargo run --bin postgres_smoke`, `/Users/andy/tactix/.venv/bin/python verification/postgres_smoke.py`, `npm run pg:smoke`.
 - UI verification not required for infra-only change.
 - Current passing count: 120/423.
+
+Session 2026-01-27 (regression verification – features 016/021/028/031)
+- Feature 016 (API auth) UI verified; screenshot: `verification/regression-016-auth-2026-01-27.png`.
+- Feature 028 (practice next unseen) UI verified; screenshot: `verification/feature-028-practice-next-unseen-2026-01-27.png`.
+- Feature 021 (Chess.com pagination) UI verified; screenshot: `verification/feature-021-chesscom-pagination-2026-01-27.png`.
+- Feature 031 verification attempt failed due to missing practice input (queue empty); screenshot: `verification/failed-feature-031-practice-attempt-grading-2026-01-27.png`. Pass flag unchanged.

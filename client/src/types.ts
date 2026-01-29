@@ -13,7 +13,7 @@ export type JobProgressItem = {
 
 export type PieceColor = 'w' | 'b';
 export type PieceType = 'p' | 'n' | 'b' | 'r' | 'q' | 'k';
-export type ChessPlatform = 'lichess' | 'chesscom';
+export type ChessPlatform = 'lichess' | 'chesscom' | 'all';
 export type LichessProfile =
   | 'rapid'
   | 'blitz'

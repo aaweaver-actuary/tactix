@@ -1222,9 +1222,10 @@ def get_dashboard_payload(
     end_date: datetime | None = None,
     store: BaseDbStore | None = None,
 ) -> dict[str, object]:
-    settings = settings or get_settings(source=source)
-    if source:
-        settings.source = source
+    normalized_source = None if source in (None, "all") else source
+    settings = settings or get_settings(source=normalized_source)
+    if normalized_source:
+        settings.source = normalized_source
     settings.apply_source_defaults()
     if store is None:
         store = DuckDbStore(
@@ -1232,7 +1233,7 @@ def get_dashboard_payload(
             db_path=settings.duckdb_path,
         )
     return store.get_dashboard_payload(
-        source=source,
+        source=normalized_source,
         motif=motif,
         rating_bucket=rating_bucket,
         time_control=time_control,

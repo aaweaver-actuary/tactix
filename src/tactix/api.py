@@ -154,9 +154,10 @@ def dashboard(
 ) -> dict[str, object]:
     start_datetime = _coerce_date_to_datetime(start_date)
     end_datetime = _coerce_date_to_datetime(end_date, end_of_day=True)
+    normalized_source = _normalize_source(source)
     return get_dashboard_payload(
-        get_settings(source=source),
-        source=source,
+        get_settings(source=normalized_source),
+        source=normalized_source,
         motif=motif,
         rating_bucket=rating_bucket,
         time_control=time_control,
@@ -171,17 +172,18 @@ def practice_queue(
     include_failed_attempt: bool = Query(False),
     limit: int = Query(20, ge=1, le=200),
 ) -> dict[str, object]:
-    settings = get_settings(source=source)
+    normalized_source = _normalize_source(source)
+    settings = get_settings(source=normalized_source)
     conn = get_connection(settings.duckdb_path)
     init_schema(conn)
     queue = fetch_practice_queue(
         conn,
         limit=limit,
-        source=source or settings.source,
+        source=normalized_source or settings.source,
         include_failed_attempt=include_failed_attempt,
     )
     return {
-        "source": source or settings.source,
+        "source": normalized_source or settings.source,
         "include_failed_attempt": include_failed_attempt,
         "items": queue,
     }
@@ -192,18 +194,19 @@ def practice_next(
     source: str | None = Query(None),
     include_failed_attempt: bool = Query(False),
 ) -> dict[str, object]:
-    settings = get_settings(source=source)
+    normalized_source = _normalize_source(source)
+    settings = get_settings(source=normalized_source)
     conn = get_connection(settings.duckdb_path)
     init_schema(conn)
     items = fetch_practice_queue(
         conn,
         limit=1,
-        source=source or settings.source,
+        source=normalized_source or settings.source,
         include_failed_attempt=include_failed_attempt,
         exclude_seen=True,
     )
     return {
-        "source": source or settings.source,
+        "source": normalized_source or settings.source,
         "include_failed_attempt": include_failed_attempt,
         "item": items[0] if items else None,
     }
@@ -211,10 +214,11 @@ def practice_next(
 
 @app.get("/api/raw_pgns/summary")
 def raw_pgns_summary(source: str | None = Query(None)) -> dict[str, object]:
-    settings = get_settings(source=source)
+    normalized_source = _normalize_source(source)
+    settings = get_settings(source=normalized_source)
     conn = get_connection(settings.duckdb_path)
     init_schema(conn)
-    active_source = source or settings.source
+    active_source = normalized_source or settings.source
     return {
         "source": active_source,
         "summary": fetch_raw_pgns_summary(conn, source=active_source),
@@ -360,6 +364,13 @@ def _coerce_date_to_datetime(
     if end_of_day:
         return datetime.combine(value, time.max)
     return datetime.combine(value, time.min)
+
+
+def _normalize_source(source: str | None) -> str | None:
+    if source is None:
+        return None
+    trimmed = source.strip().lower()
+    return None if trimmed == "all" else trimmed
 
 
 @app.get("/api/jobs/stream")

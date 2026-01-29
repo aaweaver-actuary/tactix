@@ -43,4 +43,19 @@ describe('fetchPracticeQueue', () => {
     });
     expect(result).toBe(data);
   });
+
+  it('omits source when set to all', async () => {
+    const data = { items: [], total: 0 };
+    getMock.mockResolvedValue({ data });
+
+    const result = await fetchPracticeQueue('all', false);
+
+    expect(getMock).toHaveBeenCalledWith('/api/practice/queue', {
+      params: {
+        source: undefined,
+        include_failed_attempt: false,
+      },
+    });
+    expect(result).toBe(data);
+  });
 });

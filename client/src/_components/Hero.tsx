@@ -31,7 +31,7 @@ interface HeroProps {
  * @param onMigrate - Callback invoked when the "Run migrations" button is clicked.
  * @param loading - Boolean indicating if an operation is currently in progress, disabling buttons.
  * @param version - Metrics version string displayed in the component.
- * @param source - Current data source identifier (e.g., 'lichess' or 'chess.com').
+ * @param source - Current data source identifier (e.g., 'lichess', 'chesscom', or 'all').
  * @param user - User identifier displayed in the component.
  * @param onSourceChange - Callback invoked when the data source selection changes.
  *
@@ -58,15 +58,18 @@ export default function Hero({
   const chesscomLabel = chesscomProfile
     ? CHESSCOM_PROFILE_LABELS[chesscomProfile]
     : 'Blitz';
+  const actionsDisabled = loading || source === 'all';
 
   return (
     <div className="card p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
         <Text mode="normal" size="sm" value="Airflow DAG · daily_game_sync" />
         <h1 className="text-3xl md:text-4xl font-display text-sand mt-2">
-          {source === 'lichess'
-            ? `Lichess ${lichessLabel.toLowerCase()} pipeline`
-            : `Chess.com ${chesscomLabel.toLowerCase()} pipeline`}
+          {source === 'all'
+            ? 'All sites overview'
+            : source === 'lichess'
+              ? `Lichess ${lichessLabel.toLowerCase()} pipeline`
+              : `Chess.com ${chesscomLabel.toLowerCase()} pipeline`}
         </h1>
         <Text
           mode="normal"
@@ -96,7 +99,7 @@ export default function Hero({
           <button
             className="button bg-teal text-night px-4 py-3 rounded-lg font-display"
             onClick={onRun}
-            disabled={loading}
+            disabled={actionsDisabled}
             data-testid="action-run"
           >
             {loading ? 'Running…' : 'Run + Refresh'}
@@ -104,7 +107,7 @@ export default function Hero({
           <button
             className="button border border-teal/50 text-teal px-4 py-3 rounded-lg"
             onClick={onBackfill}
-            disabled={loading}
+            disabled={actionsDisabled}
             data-testid="action-backfill"
           >
             Backfill history
@@ -112,7 +115,7 @@ export default function Hero({
           <button
             className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
             onClick={onMigrate}
-            disabled={loading}
+            disabled={actionsDisabled}
             data-testid="action-migrate"
           >
             Run migrations
@@ -120,7 +123,7 @@ export default function Hero({
           <button
             className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
             onClick={onRefresh}
-            disabled={loading}
+            disabled={actionsDisabled}
             data-testid="action-refresh"
           >
             Refresh metrics
@@ -136,7 +139,7 @@ export default function Hero({
               onChange={(event) => onBackfillStartChange(event.target.value)}
               className="rounded border border-sand/20 bg-night px-2 py-1 text-sand"
               data-testid="backfill-start"
-              disabled={loading}
+              disabled={actionsDisabled}
             />
           </label>
           <span>to</span>
@@ -148,7 +151,7 @@ export default function Hero({
               onChange={(event) => onBackfillEndChange(event.target.value)}
               className="rounded border border-sand/20 bg-night px-2 py-1 text-sand"
               data-testid="backfill-end"
-              disabled={loading}
+              disabled={actionsDisabled}
             />
           </label>
         </div>

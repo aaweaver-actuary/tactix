@@ -154,9 +154,10 @@ class DuckDbStore(BaseDbStore):
     ) -> dict[str, object]:
         conn = get_connection(self._db_path)
         init_schema(conn)
-        active_source = source or self.settings.source
+        active_source = None if source in (None, "all") else source
+        response_source = "all" if active_source is None else active_source
         return {
-            "source": active_source,
+            "source": response_source,
             "user": self.settings.user,
             "metrics": fetch_metrics(
                 conn,

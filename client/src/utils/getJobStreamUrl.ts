@@ -9,7 +9,7 @@ export default function getJobStreamUrl(
 ): string {
   const base = API_BASE ? API_BASE.replace(/\/$/, '') : '';
   const params = new URLSearchParams({ job });
-  if (source) params.set('source', source);
+  if (source && source !== 'all') params.set('source', source);
   if (profile) params.set('profile', profile);
   if (typeof backfillStartMs === 'number') {
     params.set('backfill_start_ms', String(backfillStartMs));

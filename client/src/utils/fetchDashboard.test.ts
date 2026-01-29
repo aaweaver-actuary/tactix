@@ -48,6 +48,18 @@ describe('fetchDashboard', () => {
     });
   });
 
+  it('omits source when set to all', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(84);
+    const payload = { ok: true } as unknown as any;
+    getMock.mockResolvedValue({ data: payload });
+
+    await fetchDashboard('all', { foo: 'bar' } as any);
+
+    expect(getMock).toHaveBeenCalledWith('/api/dashboard', {
+      params: { t: 84, foo: 'bar' },
+    });
+  });
+
   it('handles empty filters', async () => {
     vi.spyOn(Date, 'now').mockReturnValue(7);
     const payload = { ok: true } as unknown as any;

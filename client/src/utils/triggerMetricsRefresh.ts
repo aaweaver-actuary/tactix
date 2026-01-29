@@ -7,8 +7,8 @@ export default async function triggerMetricsRefresh(
 ): Promise<DashboardPayload> {
   return triggerDashboardJob(
     '/api/jobs/refresh_metrics',
-    { source },
-    source,
+    { source: source === 'all' ? undefined : source },
+    source === 'all' ? undefined : source,
     filters,
   );
 }

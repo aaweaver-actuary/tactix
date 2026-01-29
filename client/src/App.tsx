@@ -113,7 +113,7 @@ type BaseCardEntry = {
 
 export default function App() {
   const [data, setData] = useState<DashboardPayload | null>(null);
-  const [source, setSource] = useState<ChessPlatform>('lichess');
+  const [source, setSource] = useState<ChessPlatform>('all');
   const [lichessProfile, setLichessProfile] = useState<LichessProfile>('rapid');
   const [chesscomProfile, setChesscomProfile] =
     useState<ChesscomProfile>('blitz');
@@ -443,6 +443,10 @@ export default function App() {
   };
 
   const handleRun = async () => {
+    if (source === 'all') {
+      setError('Select a specific site to run the pipeline.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -465,6 +469,10 @@ export default function App() {
   };
 
   const handleBackfill = async () => {
+    if (source === 'all') {
+      setError('Select a specific site to run a backfill.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -508,6 +516,10 @@ export default function App() {
   };
 
   const handleMigrations = async () => {
+    if (source === 'all') {
+      setError('Select a specific site to run migrations.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -528,6 +540,10 @@ export default function App() {
   };
 
   const handleRefreshMetrics = async () => {
+    if (source === 'all') {
+      setError('Select a specific site to refresh metrics.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -1505,7 +1521,7 @@ export default function App() {
               className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
               value={source}
               onChange={(event) =>
-                setSource(event.target.value as 'lichess' | 'chesscom')
+                setSource(event.target.value as ChessPlatform)
               }
               disabled={loading}
               data-testid="filter-source"

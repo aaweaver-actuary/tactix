@@ -82,4 +82,4 @@ def test_pipeline_dashboard_uses_injected_store() -> None:
     result = get_dashboard_payload(settings=settings, store=store)
 
     assert result["metrics_version"] == 3
-    assert result["source"] == "lichess"
+    assert result["source"] == "all"

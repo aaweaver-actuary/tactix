@@ -31,6 +31,7 @@ class MockDbStore(BaseDbStore):
         end_date: datetime | None = None,
     ) -> dict[str, object]:
         payload = dict(self._payload)
-        payload["source"] = source or self.settings.source
+        normalized_source = None if source in (None, "all") else source
+        payload["source"] = normalized_source or "all"
         payload["user"] = self.settings.user
         return payload

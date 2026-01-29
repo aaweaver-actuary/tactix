@@ -1925,3 +1925,13 @@ Session 2026-01-29 (refactor verification – BaseChessClient/BaseDbStore/mocks)
 - Verified refactor requirements: Chess.com/Lichess clients use BaseChessClient + context + pydantic models; dashboard/pipeline uses injectable BaseChessClient/BaseDbStore; mocks validated via tests.
 - Tests: `make check` (clean; cargo warnings about deprecated pyo3 remain).
 - Updated feature_list.json: chesscom_client refactor, lichess_client refactor, BaseChessClient shared refactor, BaseChessClient in dashboard, BaseDbStore in dashboard marked passes=true.
+
+Session 2026-01-29 (dashboard combined view + filters)
+- Default dashboard source now combines all sites/time controls; ChessPlatform updated to include `all` with normalized API/store handling.
+- Dashboard filter controls now support all-sites view plus site/time control filtering; pipeline actions disabled until a specific site is selected.
+- Tests: `make check` (clean; cargo warnings about deprecated pyo3 remain).
+- Client build: `VITE_API_BASE=http://localhost:8000 npm run build`.
+- UI verification: `TACTIX_BACKEND_RUNNING=1 node /Users/andy/tactix/verification/puppeteer_feature_dashboard_combined_filters.js`.
+- Screenshots: `verification/feature-dashboard-combined-2026-01-29.png`, `verification/feature-dashboard-chesscom-2026-01-29.png`, `verification/feature-dashboard-time-control-1800-2026-01-29.png`.
+- Updated feature_list.json: “When user opens the dashboard, the default view combines all online chess sites (that are configured) and all time controls from those sites into a single unified view.” and “User can filter the dashboard view by chess site and time control using the filter controls.” marked passes=true.
+- Pass count: 179.

@@ -2229,7 +2229,7 @@
       "Verify that the default view shows games from lichess.org",
       "Verify that the default view shows bullet games, blitz games, and rapid games from both sites."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -2241,7 +2241,7 @@
       "Use the filter controls to select only blitz games.",
       "Verify that only blitz games are shown in the dashboard."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "refactor",

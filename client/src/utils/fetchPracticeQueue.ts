@@ -6,7 +6,7 @@ export default async function fetchPracticeQueue(
 ): Promise<PracticeQueueResponse> {
   const res = await client.get<PracticeQueueResponse>('/api/practice/queue', {
     params: {
-      source,
+      source: source === 'all' ? undefined : source,
       include_failed_attempt: includeFailedAttempt,
     },
   });

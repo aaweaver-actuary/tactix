@@ -112,4 +112,29 @@ describe('Hero', () => {
       screen.getByRole('heading', { name: /chess\.com bullet pipeline/i }),
     ).toBeInTheDocument();
   });
+
+  it('renders all-sites title when source is all', () => {
+    render(<Hero {...baseProps} source={'all' as const} />);
+    expect(
+      screen.getByRole('heading', { name: /all sites overview/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('disables actions when all sites are selected', () => {
+    render(<Hero {...baseProps} source={'all' as const} />);
+    expect(
+      screen.getByRole('button', { name: 'Run + Refresh' }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Backfill history' }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Run migrations' }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Refresh metrics' }),
+    ).toBeDisabled();
+    expect(screen.getByTestId('backfill-start')).toBeDisabled();
+    expect(screen.getByTestId('backfill-end')).toBeDisabled();
+  });
 });

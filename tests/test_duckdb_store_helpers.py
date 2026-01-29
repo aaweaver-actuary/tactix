@@ -31,6 +31,7 @@ from tactix.duckdb_store import (
     insert_tactics,
     upsert_raw_pgns,
     upsert_tactic_with_outcome,
+    update_metrics_summary,
 )
 from tactix.logging_utils import get_logger
 
@@ -321,6 +322,88 @@ class DuckdbStoreHelperTests(unittest.TestCase):
             self.assertTrue(payload["metrics"])
             self.assertTrue(payload["positions"])
             self.assertTrue(payload["tactics"])
+
+    def test_duckdb_store_dashboard_payload_combines_sources(self) -> None:
+        settings = Settings(
+            user="tester",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "tactix.duckdb",
+            checkpoint_path=self.tmp_dir / "since.txt",
+            metrics_version_file=self.tmp_dir / "metrics.txt",
+        )
+        store = DuckDbStore(
+            BaseDbStoreContext(settings=settings, logger=get_logger("test")),
+            db_path=settings.duckdb_path,
+        )
+        base_pgn = PGN_BASE.format(
+            white_elo=1200,
+            black_elo=1400,
+            time_control="300+0",
+        )
+        sources = ["lichess", "chesscom"]
+        for idx, source in enumerate(sources, start=1):
+            game_id = f"g-dashboard-{source}"
+            upsert_raw_pgns(
+                self.conn,
+                [
+                    {
+                        "game_id": game_id,
+                        "user": "tester",
+                        "source": source,
+                        "pgn": base_pgn,
+                        "last_timestamp_ms": 5 + idx,
+                    }
+                ],
+            )
+            position_ids = insert_positions(
+                self.conn,
+                [
+                    {
+                        "game_id": game_id,
+                        "user": "tester",
+                        "source": source,
+                        "fen": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+                        "ply": 1,
+                        "move_number": 1,
+                        "side_to_move": "black",
+                        "uci": "e2e4",
+                        "san": "e4",
+                        "clock_seconds": 300,
+                        "is_legal": True,
+                    }
+                ],
+            )
+            upsert_tactic_with_outcome(
+                self.conn,
+                {
+                    "game_id": game_id,
+                    "position_id": position_ids[0],
+                    "motif": "fork",
+                    "severity": 1.2,
+                    "best_uci": "e2e4",
+                    "best_san": "e4",
+                    "explanation": "test",
+                    "eval_cp": 50,
+                },
+                {
+                    "result": "found",
+                    "user_uci": "e2e4",
+                    "eval_delta": 0,
+                },
+            )
+
+        update_metrics_summary(self.conn)
+
+        payload = store.get_dashboard_payload(source=None)
+
+        self.assertEqual(payload["source"], "all")
+        metric_sources = {row.get("source") for row in payload["metrics"]}
+        position_sources = {row.get("source") for row in payload["positions"]}
+        tactic_sources = {row.get("source") for row in payload["tactics"]}
+        for expected in sources:
+            self.assertIn(expected, metric_sources)
+            self.assertIn(expected, position_sources)
+            self.assertIn(expected, tactic_sources)
 
     def test_upsert_raw_pgns_persists_hash_and_metadata(self) -> None:
         lichess_pgn = PGN_BASE.format(

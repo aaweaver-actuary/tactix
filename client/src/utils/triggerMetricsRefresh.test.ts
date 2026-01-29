@@ -41,4 +41,18 @@ describe('triggerMetricsRefresh', () => {
     );
     expect(result).toEqual({ data: 'dash' });
   });
+
+  it('omits source when set to all', async () => {
+    triggerDashboardJobMock.mockResolvedValue({ data: 'dash' });
+
+    const result = await triggerMetricsRefresh('all', { region: 'us' } as any);
+
+    expect(triggerDashboardJobMock).toHaveBeenCalledWith(
+      '/api/jobs/refresh_metrics',
+      { source: undefined },
+      undefined,
+      { region: 'us' },
+    );
+    expect(result).toEqual({ data: 'dash' });
+  });
 });

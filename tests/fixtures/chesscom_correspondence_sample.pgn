@@ -102,3 +102,17 @@
 [FEN "r6r/1b3pk1/p2p2p1/1p1Pp2p/4PP1q/2Pn2NP/BP3QPN/5RK1 w - - 3 35"]
 
 35. Nh1 0-1
+
+
+[Event "Chess.com Correspondence Fixture 9 - Discovered Check"]
+[Site "https://www.chess.com/game/daily/6677008892"]
+[UTCDate "2024.07.13"]
+[UTCTime "18:00:00"]
+[White "chesscom"]
+[Black "correspondencebot"]
+[TimeControl "86400"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "6k1/8/8/8/8/8/6B1/4K1R1 w - - 0 1"]
+
+1. Bf3+ 1-0

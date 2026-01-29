@@ -193,10 +193,10 @@ impl Visitor for ExtractVisitor {
         comment: RawComment<'_>,
     ) -> ControlFlow<Self::Output> {
         if let Some(index) = movetext.last_position_index {
-            if let Some(clock) = parse_clock(comment.as_bytes()) {
-                if let Some(record) = movetext.positions.get_mut(index) {
-                    record.clock_seconds = Some(clock);
-                }
+            if let Some(clock) = parse_clock(comment.as_bytes())
+                && let Some(record) = movetext.positions.get_mut(index)
+            {
+                record.clock_seconds = Some(clock);
             }
             movetext.last_position_index = None;
         }

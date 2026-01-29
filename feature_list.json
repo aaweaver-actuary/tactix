@@ -2295,7 +2295,7 @@
       "Verify that higher-level card/container components only handle content and specific functionality.",
       "Verify that higher-level card/container components are each defined separately in their own files and no containers are defined in App.tsx or other high-level files."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "data load",

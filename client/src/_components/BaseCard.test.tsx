@@ -95,4 +95,15 @@ describe('BaseCard', () => {
     fireEvent.click(header);
     expect(onCollapsedChange).toHaveBeenLastCalledWith(false);
   });
+
+  it('renders non-collapsible cards without toggle controls', () => {
+    render(
+      <BaseCard header={<span>Static header</span>} collapsible={false}>
+        <p>Static content</p>
+      </BaseCard>,
+    );
+
+    expect(screen.queryByRole('button', { name: /static header/i })).toBeNull();
+    expect(screen.getByText('Static content')).toBeInTheDocument();
+  });
 });

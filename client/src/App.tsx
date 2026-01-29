@@ -3,7 +3,6 @@ import type { ButtonHTMLAttributes } from 'react';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { ColumnDef } from '@tanstack/react-table';
 import { Chess, Square } from 'chess.js';
-import { Chessboard } from 'react-chessboard';
 import {
   DashboardPayload,
   DashboardFilters,
@@ -24,7 +23,6 @@ import fetchPostgresStatus from './utils/fetchPostgresStatus';
 import triggerMetricsRefresh from './utils/triggerMetricsRefresh';
 import submitPracticeAttempt from './utils/submitPracticeAttempt';
 import fetchPracticeQueue from './utils/fetchPracticeQueue';
-import buildPracticeFeedback from './utils/buildPracticeFeedback';
 import formatPgnMoveList from './utils/formatPgnMoveList';
 import {
   ChessPlatform,
@@ -35,26 +33,24 @@ import {
 import type { MetricsTrendsRow } from './_components/MetricsTrends';
 import {
   Badge,
-  BaseCard,
-  Text,
-  MetricCard,
-  TacticsTable,
-  RecentGamesTable,
-  PracticeQueue,
+  ErrorCard,
+  FiltersCard,
+  MetricsSummaryGrid,
   MetricsGrid,
-  MetricsTrends,
-  TimeTroubleCorrelation,
+  MotifTrendsCard,
+  TimeTroubleCorrelationCard,
+  PracticeQueueCard,
+  RecentGamesCard,
+  RecentTacticsCard,
+  PostgresStatusCard,
+  PostgresRawPgnsCard,
+  PostgresAnalysisCard,
+  JobProgressCard,
+  PracticeAttemptCard,
   PositionsList,
   Hero,
-  PracticeAttemptButton,
-  PracticeMoveInput,
-  PracticeSessionProgress,
   GameDetailModal,
 } from './components';
-import { SOURCE_OPTIONS } from './utils/SOURCE_OPTIONS';
-import { LICHESS_PROFILE_OPTIONS } from './utils/LICHESS_PROFILE_OPTIONS';
-import { CHESSCOM_PROFILE_OPTIONS } from './utils/CHESSCOM_PROFILE_OPTIONS';
-import isPiecePlayable from './utils/isPiecePlayable';
 import {
   PracticeSessionStats,
   resetPracticeSessionStats,
@@ -1160,22 +1156,11 @@ export default function App() {
         label: 'Motif trends',
         visible: Boolean(data) && trendLatestRows.length > 0,
         render: (props) => (
-          <BaseCard
-            className="p-4"
-            header={
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-display text-sand">Motif trends</h3>
-                <Badge label="Rolling 7/30 games" />
-              </div>
-            }
-            contentClassName="pt-3"
+          <MotifTrendsCard
+            data={trendLatestRows}
+            columns={metricsTrendsColumns}
             {...props}
-          >
-            <MetricsTrends
-              data={trendLatestRows}
-              columns={metricsTrendsColumns}
-            />
-          </BaseCard>
+          />
         ),
       },
       {
@@ -1183,30 +1168,11 @@ export default function App() {
         label: 'Time-trouble correlation',
         visible: Boolean(data) && timeTroubleSortedRows.length > 0,
         render: (props) => (
-          <BaseCard
-            className="p-4"
-            data-testid="time-trouble-correlation"
-            header={
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-display text-sand">
-                  Time-trouble correlation
-                </h3>
-                <Badge label="By time control" />
-              </div>
-            }
-            contentClassName="pt-3"
+          <TimeTroubleCorrelationCard
+            data={timeTroubleSortedRows}
+            columns={timeTroubleColumns}
             {...props}
-          >
-            <p className="text-xs text-sand/70 mb-3">
-              Correlation between time trouble (≤30s or ≤10% of the initial
-              clock) and missed tactics. Positive values indicate more misses in
-              time trouble.
-            </p>
-            <TimeTroubleCorrelation
-              data={timeTroubleSortedRows}
-              columns={timeTroubleColumns}
-            />
-          </BaseCard>
+          />
         ),
       },
       {
@@ -1214,39 +1180,15 @@ export default function App() {
         label: 'Practice queue',
         visible: true,
         render: (props) => (
-          <BaseCard
-            className="p-4"
-            header={
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-lg font-display text-sand">
-                    Practice queue
-                  </h3>
-                  <Text value="Missed tactics from your games, ready to drill." />
-                </div>
-                <label className="flex items-center gap-2 text-xs text-sand/70">
-                  <input
-                    type="checkbox"
-                    className="accent-teal"
-                    checked={includeFailedAttempt}
-                    onChange={(event) =>
-                      setIncludeFailedAttempt(event.target.checked)
-                    }
-                    disabled={practiceLoading}
-                  />
-                  Include failed attempts
-                </label>
-              </div>
-            }
-            contentClassName="pt-3"
+          <PracticeQueueCard
+            data={practiceLoading ? null : practiceQueue}
+            columns={practiceQueueColumns}
+            includeFailedAttempt={includeFailedAttempt}
+            loading={practiceLoading}
+            onIncludeFailedAttemptChange={setIncludeFailedAttempt}
+            onRowClick={handleGameDetail}
             {...props}
-          >
-            <PracticeQueue
-              data={practiceLoading ? null : practiceQueue}
-              columns={practiceQueueColumns}
-              onRowClick={handleGameDetail}
-            />
-          </BaseCard>
+          />
         ),
       },
       {
@@ -1255,29 +1197,15 @@ export default function App() {
         visible: Boolean(data),
         render: (props) =>
           data ? (
-            <BaseCard
-              className="p-4"
-              data-testid="recent-games-card"
-              header={
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-display text-sand">
-                    Recent games
-                  </h3>
-                  <Badge label="All sources" />
-                </div>
+            <RecentGamesCard
+              data={data.recent_games}
+              columns={recentGamesColumns}
+              onRowClick={handleGameDetail}
+              rowTestId={(row, index) =>
+                `recent-games-row-${row.source ?? 'unknown'}-${index}`
               }
-              contentClassName="pt-3"
               {...props}
-            >
-              <RecentGamesTable
-                data={data.recent_games}
-                columns={recentGamesColumns}
-                onRowClick={handleGameDetail}
-                rowTestId={(row, index) =>
-                  `recent-games-row-${row.source ?? 'unknown'}-${index}`
-                }
-              />
-            </BaseCard>
+            />
           ) : null,
       },
       {
@@ -1286,30 +1214,17 @@ export default function App() {
         visible: Boolean(data),
         render: (props) =>
           data ? (
-            <BaseCard
-              className="p-4"
-              header={
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-display text-sand">
-                    Recent tactics
-                  </h3>
-                  <Badge label="Live" />
-                </div>
+            <RecentTacticsCard
+              data={data.tactics}
+              columns={tacticsColumns}
+              onRowClick={handleGameDetail}
+              rowTestId={(row) =>
+                row.game_id
+                  ? `dashboard-game-row-${row.game_id}`
+                  : 'dashboard-game-row-unknown'
               }
-              contentClassName="pt-3"
               {...props}
-            >
-              <TacticsTable
-                data={data.tactics}
-                columns={tacticsColumns}
-                onRowClick={handleGameDetail}
-                rowTestId={(row) =>
-                  row.game_id
-                    ? `dashboard-game-row-${row.game_id}`
-                    : 'dashboard-game-row-unknown'
-                }
-              />
-            </BaseCard>
+            />
           ) : null,
       },
       {
@@ -1386,474 +1301,62 @@ export default function App() {
         onBackfillEndChange={setBackfillEndDate}
       />
 
-      {error ? <div className="card p-3 text-rust">{error}</div> : null}
+      {error ? <ErrorCard message={error} /> : null}
 
-      {postgresError ? (
-        <div className="card p-3 text-rust">{postgresError}</div>
-      ) : null}
+      {postgresError ? <ErrorCard message={postgresError} /> : null}
 
       {postgresAnalysisError ? (
-        <div className="card p-3 text-rust">{postgresAnalysisError}</div>
+        <ErrorCard message={postgresAnalysisError} />
       ) : null}
 
       {postgresRawPgnsError ? (
-        <div className="card p-3 text-rust">{postgresRawPgnsError}</div>
+        <ErrorCard message={postgresRawPgnsError} />
       ) : null}
 
-      {postgresStatus ? (
-        <div className="card p-4" data-testid="postgres-status">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-display text-sand">Postgres status</h3>
-            <Badge
-              label={
-                postgresStatus.status === 'ok'
-                  ? 'Connected'
-                  : postgresStatus.status === 'disabled'
-                    ? 'Disabled'
-                    : 'Unreachable'
-              }
-            />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="flex flex-col gap-1">
-              <Text mode="uppercase" value="Latency" />
-              <Text
-                size="sm"
-                mode="normal"
-                value={
-                  postgresStatus.latency_ms !== undefined
-                    ? `${postgresStatus.latency_ms.toFixed(2)} ms`
-                    : 'n/a'
-                }
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <Text mode="uppercase" value="Schema" />
-              <Text
-                size="sm"
-                mode="normal"
-                value={postgresStatus.schema ?? 'n/a'}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <Text mode="uppercase" value="Tables" />
-              <Text
-                size="sm"
-                mode="normal"
-                value={
-                  postgresStatus.tables && postgresStatus.tables.length
-                    ? postgresStatus.tables.join(', ')
-                    : 'n/a'
-                }
-              />
-            </div>
-          </div>
-          {postgresStatus.error ? (
-            <Text mode="error" value={postgresStatus.error} mt="2" />
-          ) : null}
-          <div className="mt-4">
-            <Text mode="uppercase" value="Recent ops events" />
-            {postgresStatus.events && postgresStatus.events.length ? (
-              <ul className="mt-2 space-y-2 text-xs text-sand/70">
-                {postgresStatus.events.slice(0, 5).map((event) => (
-                  <li key={event.id} className="flex flex-wrap gap-2">
-                    <span className="font-mono text-sand/50">
-                      {new Date(event.created_at).toLocaleTimeString()}
-                    </span>
-                    <span className="text-sand">
-                      {event.component}:{event.event_type}
-                    </span>
-                    {event.source ? <Badge label={event.source} /> : null}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <Text
-                size="xs"
-                mode="normal"
-                value={postgresLoading ? 'Loading events...' : 'No events yet'}
-                mt="2"
-              />
-            )}
-          </div>
-        </div>
-      ) : postgresLoading ? (
-        <div className="card p-4 text-sand/70">Loading Postgres status...</div>
-      ) : null}
+      <PostgresStatusCard status={postgresStatus} loading={postgresLoading} />
 
-      {postgresRawPgns || postgresRawPgnsLoading || postgresRawPgnsError ? (
-        <div className="card p-4" data-testid="postgres-raw-pgns">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-display text-sand">
-              Postgres raw PGNs
-            </h3>
-            <Badge label={postgresRawPgns?.status ?? 'loading'} />
-          </div>
-          {postgresRawPgnsError ? (
-            <Text mode="error" value={postgresRawPgnsError} mt="2" />
-          ) : null}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="flex flex-col gap-1">
-              <Text mode="uppercase" value="Total rows" />
-              <Text
-                size="sm"
-                mode="normal"
-                value={
-                  postgresRawPgns
-                    ? postgresRawPgns.total_rows.toLocaleString()
-                    : '...'
-                }
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <Text mode="uppercase" value="Distinct games" />
-              <Text
-                size="sm"
-                mode="normal"
-                value={
-                  postgresRawPgns
-                    ? postgresRawPgns.distinct_games.toLocaleString()
-                    : '...'
-                }
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <Text mode="uppercase" value="Latest ingest" />
-              <Text
-                size="sm"
-                mode="normal"
-                value={
-                  postgresRawPgns?.latest_ingested_at
-                    ? new Date(
-                        postgresRawPgns.latest_ingested_at,
-                      ).toLocaleString()
-                    : 'n/a'
-                }
-              />
-            </div>
-          </div>
-          <div className="mt-4">
-            <Text mode="uppercase" value="By source" />
-            {postgresRawPgns?.sources?.length ? (
-              <ul className="mt-2 space-y-2 text-xs text-sand/70">
-                {postgresRawPgns.sources.map((row) => (
-                  <li key={row.source} className="flex flex-wrap gap-2">
-                    <Badge label={row.source} />
-                    <span className="text-sand">
-                      {row.total_rows.toLocaleString()} rows
-                    </span>
-                    <span className="text-sand/60">
-                      {row.distinct_games.toLocaleString()} games
-                    </span>
-                    {row.latest_ingested_at ? (
-                      <span className="text-sand/50">
-                        {new Date(row.latest_ingested_at).toLocaleString()}
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <Text
-                size="xs"
-                mode="normal"
-                value={
-                  postgresRawPgnsLoading
-                    ? 'Loading raw PGNs...'
-                    : 'No raw PGN rows yet'
-                }
-                mt="2"
-              />
-            )}
-          </div>
-        </div>
-      ) : null}
+      <PostgresRawPgnsCard
+        data={postgresRawPgns}
+        loading={postgresRawPgnsLoading}
+        error={postgresRawPgnsError}
+      />
 
-      {postgresAnalysis.length || postgresAnalysisLoading ? (
-        <div className="card p-4" data-testid="postgres-analysis">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-display text-sand">
-              Postgres analysis results
-            </h3>
-            <Badge label={`${postgresAnalysis.length} rows`} />
-          </div>
-          {postgresAnalysis.length ? (
-            <ul className="space-y-2 text-xs text-sand/70">
-              {postgresAnalysis.slice(0, 5).map((row) => (
-                <li key={row.tactic_id} className="flex flex-wrap gap-2">
-                  <span className="font-mono text-sand/50">
-                    #{row.tactic_id}
-                  </span>
-                  <span className="text-sand">
-                    {row.motif ?? 'unknown'} · {row.result ?? 'n/a'}
-                  </span>
-                  {row.best_uci ? <Badge label={row.best_uci} /> : null}
-                  {row.severity !== null && row.severity !== undefined ? (
-                    <Badge label={`sev ${row.severity.toFixed(2)}`} />
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <Text
-              size="xs"
-              mode="normal"
-              value={
-                postgresAnalysisLoading
-                  ? 'Loading analysis rows...'
-                  : 'No analysis rows yet'
-              }
-              mt="2"
-            />
-          )}
-        </div>
-      ) : null}
+      <PostgresAnalysisCard
+        rows={postgresAnalysis}
+        loading={postgresAnalysisLoading}
+      />
 
-      {jobProgress.length ? (
-        <div className="card p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-display text-sand">Job progress</h3>
-            <Badge
-              label={
-                jobStatus === 'running'
-                  ? 'Running'
-                  : jobStatus === 'complete'
-                    ? 'Complete'
-                    : jobStatus === 'error'
-                      ? 'Error'
-                      : 'Idle'
-              }
-            />
-          </div>
-          <ol className="space-y-2 text-sm">
-            {jobProgress.map((entry, index) => {
-              const detail =
-                entry.analyzed !== undefined && entry.total !== undefined
-                  ? `${entry.analyzed}/${entry.total}`
-                  : entry.fetched_games !== undefined
-                    ? `${entry.fetched_games} games`
-                    : entry.positions !== undefined
-                      ? `${entry.positions} positions`
-                      : entry.metrics_version !== undefined
-                        ? `v${entry.metrics_version}`
-                        : entry.schema_version !== undefined
-                          ? `schema v${entry.schema_version}`
-                          : null;
-              const timestamp = entry.timestamp
-                ? new Date(entry.timestamp * 1000).toLocaleTimeString()
-                : null;
-              return (
-                <li
-                  key={`${entry.step}-${entry.timestamp ?? index}`}
-                  className="flex flex-wrap items-center gap-2 text-sand/80"
-                >
-                  {timestamp ? (
-                    <span className="font-mono text-xs text-sand/60">
-                      {timestamp}
-                    </span>
-                  ) : null}
-                  <span className="font-display text-sand">{entry.step}</span>
-                  {entry.message ? (
-                    <span className="text-sand/70">{entry.message}</span>
-                  ) : null}
-                  {detail ? <Badge label={detail} /> : null}
-                </li>
-              );
-            })}
-          </ol>
-        </div>
-      ) : null}
+      <JobProgressCard entries={jobProgress} status={jobStatus} />
 
-      <div className="card p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-display text-sand">Filters</h3>
-          <Badge label="Live" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
-          <label className="text-xs text-sand/60 flex flex-col gap-2">
-            Site / source
-            <select
-              className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
-              value={source}
-              onChange={(event) =>
-                setSource(event.target.value as ChessPlatform)
-              }
-              disabled={loading}
-              data-testid="filter-source"
-            >
-              {SOURCE_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          {source === 'lichess' ? (
-            <label className="text-xs text-sand/60 flex flex-col gap-2">
-              Lichess profile
-              <select
-                className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
-                value={lichessProfile}
-                onChange={(event) =>
-                  setLichessProfile(event.target.value as LichessProfile)
-                }
-                disabled={loading}
-                data-testid="filter-lichess-profile"
-              >
-                {LICHESS_PROFILE_OPTIONS.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          {source === 'chesscom' ? (
-            <label className="text-xs text-sand/60 flex flex-col gap-2">
-              Chess.com time class
-              <select
-                className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
-                value={chesscomProfile}
-                onChange={(event) =>
-                  setChesscomProfile(event.target.value as ChesscomProfile)
-                }
-                disabled={loading}
-                data-testid="filter-chesscom-profile"
-              >
-                {CHESSCOM_PROFILE_OPTIONS.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          <label className="text-xs text-sand/60 flex flex-col gap-2">
-            Motif
-            <select
-              className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
-              value={filters.motif}
-              onChange={(event) =>
-                setFilters((prev) => ({ ...prev, motif: event.target.value }))
-              }
-              disabled={loading}
-              data-testid="filter-motif"
-            >
-              {motifOptions.map((motif) => (
-                <option key={motif} value={motif}>
-                  {motif === 'all' ? 'All motifs' : motif}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs text-sand/60 flex flex-col gap-2">
-            Time control
-            <select
-              className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
-              value={filters.timeControl}
-              onChange={(event) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  timeControl: event.target.value,
-                }))
-              }
-              disabled={loading}
-              data-testid="filter-time-control"
-            >
-              {timeControlOptions.map((value) => (
-                <option key={value} value={value}>
-                  {value === 'all' ? 'All time controls' : value}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs text-sand/60 flex flex-col gap-2">
-            Rating band
-            <select
-              className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
-              value={filters.ratingBucket}
-              onChange={(event) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  ratingBucket: event.target.value,
-                }))
-              }
-              disabled={loading}
-              data-testid="filter-rating"
-            >
-              {ratingOptions.map((value) => (
-                <option key={value} value={value}>
-                  {value === 'all' ? 'All ratings' : value}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex flex-col gap-2 text-xs text-sand/60">
-            Date range
-            <div className="flex gap-2">
-              <input
-                type="date"
-                value={filters.startDate}
-                onChange={(event) =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    startDate: event.target.value,
-                  }))
-                }
-                className="flex-1 rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
-                disabled={loading}
-                data-testid="filter-start-date"
-              />
-              <input
-                type="date"
-                value={filters.endDate}
-                onChange={(event) =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    endDate: event.target.value,
-                  }))
-                }
-                className="flex-1 rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
-                disabled={loading}
-                data-testid="filter-end-date"
-              />
-            </div>
-            <button
-              className="self-start text-xs text-sand/50 hover:text-sand"
-              onClick={() =>
-                setFilters({
-                  motif: 'all',
-                  timeControl: 'all',
-                  ratingBucket: 'all',
-                  startDate: '',
-                  endDate: '',
-                })
-              }
-              disabled={loading}
-            >
-              Reset filters
-            </button>
-          </div>
-        </div>
-      </div>
+      <FiltersCard
+        source={source}
+        loading={loading}
+        lichessProfile={lichessProfile}
+        chesscomProfile={chesscomProfile}
+        filters={filters}
+        motifOptions={motifOptions}
+        timeControlOptions={timeControlOptions}
+        ratingOptions={ratingOptions}
+        onSourceChange={setSource}
+        onLichessProfileChange={setLichessProfile}
+        onChesscomProfileChange={setChesscomProfile}
+        onFiltersChange={setFilters}
+        onResetFilters={() =>
+          setFilters({
+            motif: 'all',
+            timeControl: 'all',
+            ratingBucket: 'all',
+            startDate: '',
+            endDate: '',
+          })
+        }
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <MetricCard
-          title="Positions"
-          value={`${totals.positions}`}
-          note="Captured when you were to move"
-        />
-        <MetricCard
-          title="Tactics"
-          value={`${totals.tactics}`}
-          note="Analyzed via Stockfish"
-        />
-        <MetricCard
-          title="Metrics ver."
-          value={`${data?.metrics_version ?? 0}`}
-          note="Cache bust signal"
-        />
-      </div>
+      <MetricsSummaryGrid
+        positions={totals.positions}
+        tactics={totals.tactics}
+        metricsVersion={data?.metrics_version ?? 0}
+      />
 
       <DragDropContext
         onDragUpdate={(result) => {
@@ -1987,88 +1490,21 @@ export default function App() {
           )}
         </Droppable>
       </DragDropContext>
-      {practiceError ? (
-        <div className="card p-3 text-rust">{practiceError}</div>
-      ) : null}
-      <div className="card p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-display text-sand">Practice attempt</h3>
-            <Text value={'Play the best move for the current tactic.'} />
-          </div>
-          {currentPractice ? <Badge label={currentPractice.motif} /> : null}
-        </div>
-        <PracticeSessionProgress stats={practiceSession} />
-        {currentPractice ? (
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">
-              <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-                <Chessboard
-                  id="practice-board"
-                  position={practiceFen || currentPractice.fen}
-                  onPieceDrop={handlePracticeDrop}
-                  boardOrientation={practiceOrientation}
-                  arePiecesDraggable={!practiceSubmitting}
-                  isDraggablePiece={isPiecePlayable(
-                    practiceFen,
-                    currentPractice,
-                  )}
-                  customSquareStyles={practiceHighlightStyles}
-                />
-                <Text
-                  mt={'2'}
-                  value={'Legal moves only. Drag a piece to submit.'}
-                />
-              </div>
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <Text value={'FEN'} />
-                  <Text value={currentPractice.fen} mode={'monospace'} />
-                </div>
-                <div className="flex flex-wrap gap-2 text-xs text-sand/70">
-                  <Badge
-                    label={`Move ${currentPractice.move_number}.${currentPractice.ply}`}
-                  />
-                  <Badge label={`Best ${currentPractice.best_uci || '--'}`} />
-                  {currentPractice.clock_seconds !== null ? (
-                    <Badge label={`${currentPractice.clock_seconds}s`} />
-                  ) : null}
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <PracticeMoveInput
-                    practiceMove={practiceMove}
-                    setPracticeMove={setPracticeMove}
-                    practiceSubmitting={practiceSubmitting}
-                  />
-                  <PracticeAttemptButton
-                    handlePracticeAttempt={handlePracticeAttempt}
-                    practiceSubmitting={practiceSubmitting}
-                  />
-                </div>
-                {practiceSubmitError ? (
-                  <Text mode="error" value={practiceSubmitError} />
-                ) : null}
-                {practiceFeedback ? (
-                  <div className="rounded-md border border-white/10 bg-white/5 p-3 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        label={practiceFeedback.correct ? 'Correct' : 'Missed'}
-                      />
-                      <span className="text-sand/80">
-                        {practiceFeedback.message}
-                      </span>
-                    </div>
-                    <PracticeFeedbackExplanation feedback={practiceFeedback} />
-                    <PracticeFeedback feedback={practiceFeedback} />
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </>
-        ) : (
-          <Text value={'No practice items queued yet.'} />
-        )}
-      </div>
+      {practiceError ? <ErrorCard message={practiceError} /> : null}
+      <PracticeAttemptCard
+        currentPractice={currentPractice}
+        practiceSession={practiceSession}
+        practiceFen={practiceFen}
+        practiceMove={practiceMove}
+        practiceSubmitting={practiceSubmitting}
+        practiceFeedback={practiceFeedback}
+        practiceSubmitError={practiceSubmitError}
+        practiceHighlightStyles={practiceHighlightStyles}
+        practiceOrientation={practiceOrientation}
+        setPracticeMove={setPracticeMove}
+        handlePracticeAttempt={handlePracticeAttempt}
+        handlePracticeDrop={handlePracticeDrop}
+      />
       <GameDetailModal
         open={gameDetailOpen}
         onClose={() => setGameDetailOpen(false)}
@@ -2078,30 +1514,5 @@ export default function App() {
         error={gameDetailError}
       />
     </div>
-  );
-}
-
-function PracticeFeedbackExplanation({
-  feedback,
-}: {
-  feedback: PracticeAttemptResponse;
-}) {
-  return feedback.explanation ? (
-    <Text mt={'2'} value={feedback.explanation} />
-  ) : null;
-}
-
-function PracticeFeedback({
-  feedback,
-}: {
-  feedback: PracticeAttemptResponse;
-}): JSX.Element {
-  return (
-    <Text
-      mt={'2'}
-      mode="monospace"
-      size="xs"
-      value={buildPracticeFeedback(feedback)}
-    />
   );
 }

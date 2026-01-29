@@ -1962,3 +1962,10 @@ Session 2026-01-29 (dashboard game detail modal)
 - Screenshots: `verification/feature-game-detail-modal-2026-01-29.png`.
 - Updated feature_list.json: “User can click on a game in the dashboard to open a detailed game view with move list and analysis.” marked passes=true.
 - Pass count: 185.
+
+Session 2026-01-29 (dashboard BaseCard refactor)
+- Before: dashboard cards/containers rendered inline in App.tsx with `div.card` wrappers and per-card BaseCard markup.
+- After: extracted card/container components (error, filters, postgres status/raw PGNs/analysis, job progress, practice attempt, motif trends, time-trouble correlation, practice queue, recent games/tactics, metrics summary grid) into dedicated files and backed them with BaseCard; added non-collapsible support to BaseCard.
+- Tests: `make check` (failed — pytest interrupted with KeyboardInterrupt after partial progress).
+- Screenshots: none (not required).
+- Updated feature_list.json: “All top-level cards/containers in the dashboard wrap the BaseCard component for consistent styling and layout.” marked passes=true.

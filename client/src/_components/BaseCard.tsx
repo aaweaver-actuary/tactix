@@ -14,6 +14,7 @@ interface BaseCardProps extends HTMLAttributes<HTMLDivElement> {
   header: ReactNode;
   children: ReactNode;
   defaultCollapsed?: boolean;
+  collapsible?: boolean;
   headerClassName?: string;
   contentClassName?: string;
   dragHandleProps?: BaseCardDragHandleProps;
@@ -33,6 +34,7 @@ export default function BaseCard({
   header,
   children,
   defaultCollapsed = true,
+  collapsible = true,
   headerClassName,
   contentClassName,
   dragHandleProps,
@@ -45,16 +47,22 @@ export default function BaseCard({
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const contentId = useId();
   const onCollapsedChangeRef = useRef(onCollapsedChange);
+  const isCollapsible = Boolean(collapsible);
+  const isCollapsed = isCollapsible ? collapsed : false;
 
   useEffect(() => {
     onCollapsedChangeRef.current = onCollapsedChange;
   }, [onCollapsedChange]);
 
   useEffect(() => {
+    if (!isCollapsible) return;
     onCollapsedChangeRef.current?.(collapsed);
-  }, [collapsed]);
+  }, [collapsed, isCollapsible]);
 
-  const toggle = () => setCollapsed((prev) => !prev);
+  const toggle = () => {
+    if (!isCollapsible) return;
+    setCollapsed((prev) => !prev);
+  };
 
   const handleHeaderClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (isInteractiveTarget(event.target)) return;
@@ -69,12 +77,10 @@ export default function BaseCard({
 
   const containerClassName = ['card', className].filter(Boolean).join(' ');
   const headerClasses = [
-    'cursor-pointer',
-    'focus-visible:outline-none',
-    'focus-visible:ring-2',
-    'focus-visible:ring-teal/60',
-    'focus-visible:ring-offset-2',
-    'focus-visible:ring-offset-night',
+    isCollapsible ? 'cursor-pointer' : 'cursor-default',
+    isCollapsible
+      ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal/60 focus-visible:ring-offset-2 focus-visible:ring-offset-night'
+      : null,
     headerClassName,
   ]
     .filter(Boolean)
@@ -84,11 +90,11 @@ export default function BaseCard({
     'duration-300',
     'ease-out',
     'overflow-hidden',
-    collapsed
+    isCollapsed
       ? 'max-h-0 opacity-0 pointer-events-none'
       : 'max-h-[2000px] opacity-100 pointer-events-auto',
   ].join(' ');
-  const dragHandleVisible = Boolean(dragHandleProps) && collapsed;
+  const dragHandleVisible = Boolean(dragHandleProps) && isCollapsed;
   const dragHandleClasses = [
     'ml-2 inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white/5 text-sand/70 transition',
     'hover:border-white/30 hover:text-sand',
@@ -101,18 +107,20 @@ export default function BaseCard({
     .join(' ');
   const dragHandleAriaLabel =
     dragHandleProps?.['aria-label'] || dragHandleLabel || 'Reorder card';
+  const headerProps = isCollapsible
+    ? {
+        role: 'button' as const,
+        tabIndex: 0,
+        'aria-expanded': !isCollapsed,
+        'aria-controls': contentId,
+        onClick: handleHeaderClick,
+        onKeyDown: handleHeaderKeyDown,
+      }
+    : {};
 
   return (
     <div className={containerClassName} {...rest}>
-      <div
-        role="button"
-        tabIndex={0}
-        aria-expanded={!collapsed}
-        aria-controls={contentId}
-        onClick={handleHeaderClick}
-        onKeyDown={handleHeaderKeyDown}
-        className={headerClasses}
-      >
+      <div className={headerClasses} {...headerProps}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">{header}</div>
           {dragHandleProps ? (
@@ -137,8 +145,8 @@ export default function BaseCard({
       </div>
       <div
         id={contentId}
-        aria-hidden={collapsed}
-        data-state={collapsed ? 'collapsed' : 'expanded'}
+        aria-hidden={isCollapsed}
+        data-state={isCollapsed ? 'collapsed' : 'expanded'}
         className={contentClasses}
       >
         <div className={contentClassName}>{children}</div>

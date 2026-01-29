@@ -2527,37 +2527,37 @@
     "category": "functional",
     "description": "Outcome found recorded for mate in 1",
     "steps": ["Step 1: Compare user move to engine best line", "Step 2: Compute eval swing threshold", "Step 3: Mark outcome as found and store"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Outcome found recorded for mate in 2",
     "steps": ["Step 1: Compare user move to engine best line", "Step 2: Compute eval swing threshold", "Step 3: Mark outcome as found and store"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Outcome found recorded for fork",
     "steps": ["Step 1: Compare user move to engine best line", "Step 2: Compute eval swing threshold", "Step 3: Mark outcome as found and store"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Outcome found recorded for pin",
     "steps": ["Step 1: Compare user move to engine best line", "Step 2: Compute eval swing threshold", "Step 3: Mark outcome as found and store"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Outcome found recorded for skewer",
     "steps": ["Step 1: Compare user move to engine best line", "Step 2: Compute eval swing threshold", "Step 3: Mark outcome as found and store"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Outcome found recorded for discovered attack",
     "steps": ["Step 1: Compare user move to engine best line", "Step 2: Compute eval swing threshold", "Step 3: Mark outcome as found and store"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

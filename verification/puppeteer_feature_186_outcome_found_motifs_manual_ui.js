@@ -93,17 +93,38 @@ async function waitForDashboardPaint(_page, delayMs = 2000) {
   await new Promise((resolve) => setTimeout(resolve, delayMs));
 }
 
+async function waitForDashboardResponse(page) {
+  await page.waitForResponse(
+    (response) =>
+      response.url().includes('/api/dashboard') && response.status() === 200,
+    { timeout: 30000 },
+  );
+}
+
+async function expandCardByTitle(page, title) {
+  const normalized = title.trim().toLowerCase();
+  await page.evaluate((cardTitle) => {
+    const heading = Array.from(document.querySelectorAll('h3')).find(
+      (el) => (el.textContent || '').trim().toLowerCase() === cardTitle,
+    );
+    if (!heading) return;
+    const header = heading.closest('[role="button"]');
+    if (!header) return;
+    if (header.getAttribute('aria-expanded') === 'false') {
+      header.click();
+    }
+  }, normalized);
+}
+
 async function getRecentTacticsTable(page) {
   const tableHandle = await page.evaluateHandle(() => {
-    const tables = Array.from(document.querySelectorAll('table'));
-    return (
-      tables.find((table) => {
-        const headerText = Array.from(table.querySelectorAll('thead th'))
-          .map((th) => (th.textContent || '').toLowerCase())
-          .join(' ');
-        return headerText.includes('motif') && headerText.includes('result');
-      }) || null
+    const heading = Array.from(document.querySelectorAll('h3')).find(
+      (el) => (el.textContent || '').trim().toLowerCase() === 'recent tactics',
     );
+    if (!heading) return null;
+    const card = heading.closest('.card');
+    if (!card) return null;
+    return card.querySelector('table');
   });
 
   const table = tableHandle.asElement();
@@ -157,34 +178,82 @@ async function tableHasFoundResult(table) {
     await page.waitForSelector('[data-testid="filter-chesscom-profile"]', {
       timeout: 60000,
     });
-    await page.select('[data-testid="filter-chesscom-profile"]', 'blitz');
 
-    await page.click('[data-testid="action-run"]');
-    await waitForDashboardPaint(page, 4000);
-    await page.waitForSelector('table', { timeout: 60000 });
-
-    const motifs = [
-      'mate',
-      'fork',
-      'pin',
-      'skewer',
-      'discovered_attack',
-      'discovered_check',
+    const checks = [
+      { label: 'mate in 1 (rapid)', motif: 'mate', profile: 'rapid' },
+      { label: 'mate in 2 (blitz)', motif: 'mate', profile: 'blitz' },
+      { label: 'fork (rapid)', motif: 'fork', profile: 'rapid' },
+      {
+        label: 'pin (correspondence)',
+        motif: 'pin',
+        profile: 'correspondence',
+      },
+      {
+        label: 'skewer (correspondence)',
+        motif: 'skewer',
+        profile: 'correspondence',
+      },
+      {
+        label: 'discovered attack (correspondence)',
+        motif: 'discovered_attack',
+        profile: 'correspondence',
+      },
+      {
+        label: 'discovered check (bullet)',
+        motif: 'discovered_check',
+        profile: 'bullet',
+      },
     ];
 
-    const table = await getRecentTacticsTable(page);
+    await page.waitForSelector('table', { timeout: 60000 });
+    await waitForDashboardPaint(page, 2000);
 
-    for (const motif of motifs) {
-      await page.select('[data-testid="filter-motif"]', motif);
-      await waitForDashboardPaint(page, 2000);
+    await expandCardByTitle(page, 'Recent tactics');
+    await waitForDashboardPaint(page, 500);
 
+    await Promise.all([
+      waitForDashboardResponse(page),
+      page.select('[data-testid="filter-time-control"]', 'all'),
+    ]);
+    await Promise.all([
+      waitForDashboardResponse(page),
+      page.select('[data-testid="filter-rating"]', 'all'),
+    ]);
+
+    for (const check of checks) {
+      await page.select(
+        '[data-testid="filter-chesscom-profile"]',
+        check.profile,
+      );
+      await Promise.all([
+        waitForDashboardResponse(page),
+        page.select('[data-testid="filter-motif"]', check.motif),
+      ]);
+
+      await waitForDashboardPaint(page, 1500);
+      await page.waitForFunction(
+        () => {
+          const heading = Array.from(document.querySelectorAll('h3')).find(
+            (el) => (el.textContent || '').trim().toLowerCase() === 'recent tactics',
+          );
+          const card = heading?.closest('.card');
+          const table = card?.querySelector('table');
+          if (!table) return false;
+          return Array.from(table.querySelectorAll('tbody tr')).some((row) =>
+            (row.textContent || '').toLowerCase().includes('found'),
+          );
+        },
+        { timeout: 15000 },
+      );
+
+      const table = await getRecentTacticsTable(page);
       await table.evaluate((el) =>
         el.scrollIntoView({ block: 'center', behavior: 'instant' }),
       );
 
       const hasFound = await tableHasFoundResult(table);
       if (!hasFound) {
-        throw new Error(`Expected found outcome rows for motif: ${motif}`);
+        throw new Error(`Expected found outcome rows for ${check.label}`);
       }
     }
 

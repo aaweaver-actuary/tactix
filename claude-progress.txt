@@ -198,6 +198,22 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
 
+Session 2026-01-29 (feature 186 – outcome-found motifs UI verification)
+- Seeded outcome-found tactics into DuckDB using fixture PGNs with Stockfish and refreshed metrics summary.
+- Seed commands:
+	- `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_186_seed_outcome_found_mate_in_one_rapid.py`
+	- `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_186_seed_outcome_found_mate_in_two_blitz.py`
+	- `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_186_seed_outcome_found_fork_rapid.py`
+	- `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_186_seed_outcome_found_pin_correspondence.py`
+	- `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_186_seed_outcome_found_skewer_correspondence.py`
+	- `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_186_seed_outcome_found_discovered_attack_correspondence.py`
+	- `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_186_seed_outcome_found_discovered_check_bullet.py`
+- UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_186_outcome_found_motifs_manual_ui.js` with Vite dev server.
+- Screenshot: `verification/feature-186-outcome-found-motifs-manual-2026-01-29.png`.
+- Tests: `make check`.
+- Updated feature_list.json: outcome-found motifs (mate in 1/2, fork, pin, skewer, discovered attack, discovered check) marked passing.
+- Current passing count: 204 (total 501).
+
 Session 2026-01-29 (feature – outcome found recorded for mate/fork/pin/skewer/discovered)
 - Added found-outcome assertions + persistence checks for mate-in-1/2, fork, pin, skewer, discovered attack, and discovered check; added a fixture-based discovered check found-outcome test.
 - Added Puppeteer verification scripts: `verification/puppeteer_feature_186_outcome_found_motifs.js` and `verification/puppeteer_feature_186_outcome_found_motifs_ci.js` (not run; screenshot pending).

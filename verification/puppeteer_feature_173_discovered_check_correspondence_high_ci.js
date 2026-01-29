@@ -4,25 +4,58 @@ const { spawn } = require('child_process');
 const puppeteer = require('../client/node_modules/puppeteer');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
-console.log('Starting feature 083 Puppeteer run...');
+console.log('Starting feature 173 Puppeteer run...');
 const BACKEND_CMD = path.join(ROOT_DIR, '.venv', 'bin', 'python');
 const DUCKDB_PATH =
   process.env.TACTIX_DUCKDB_PATH ||
-  path.join(ROOT_DIR, 'client', 'data', 'tactix.duckdb');
+  path.join(ROOT_DIR, 'data', 'tactix_feature_173.duckdb');
+const CHECKPOINT_PATH =
+  process.env.TACTIX_CHESSCOM_CHECKPOINT_PATH ||
+  path.join(ROOT_DIR, 'data', 'chesscom_feature_173_cursor.txt');
+const ANALYSIS_CHECKPOINT_PATH =
+  process.env.TACTIX_ANALYSIS_CHECKPOINT_PATH ||
+  path.join(ROOT_DIR, 'data', 'analysis_checkpoint_feature_173.json');
 const API_BASE = process.env.TACTIX_API_BASE || 'http://localhost:8000';
 const DASHBOARD_URL = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
+const CHESSCOM_PROFILE = process.env.TACTIX_CHESSCOM_PROFILE || 'correspondence';
 const SCREENSHOT_NAME =
   process.env.TACTIX_SCREENSHOT_NAME ||
-  'feature-083-mate-in-2-bullet-low-severity-ci-2026-01-26.png';
+  'feature-173-discovered-check-correspondence-high-severity-ci-2026-01-29.png';
+const EXPECTED_GAME_ID =
+  process.env.TACTIX_DISCOVERED_CHECK_GAME_ID ||
+  'correspondence-discovered-check-high';
+const MIN_SEVERITY = process.env.TACTIX_DISCOVERED_CHECK_MIN_SEVERITY
+  ? Number(process.env.TACTIX_DISCOVERED_CHECK_MIN_SEVERITY)
+  : 1.5;
 
 function startBackend() {
   return new Promise((resolve, reject) => {
     const proc = spawn(
       BACKEND_CMD,
-      ['-m', 'uvicorn', 'tactix.api:app', '--host', '0.0.0.0', '--port', '8000'],
+      [
+        '-m',
+        'uvicorn',
+        'tactix.api:app',
+        '--host',
+        '0.0.0.0',
+        '--port',
+        '8000',
+      ],
       {
         cwd: ROOT_DIR,
-        env: { ...process.env, TACTIX_DUCKDB_PATH: DUCKDB_PATH },
+        env: {
+          ...process.env,
+          TACTIX_DUCKDB_PATH: DUCKDB_PATH,
+          TACTIX_CHESSCOM_CHECKPOINT_PATH: CHECKPOINT_PATH,
+          TACTIX_ANALYSIS_CHECKPOINT_PATH: ANALYSIS_CHECKPOINT_PATH,
+          TACTIX_SOURCE: 'chesscom',
+          TACTIX_USER: 'chesscom',
+          TACTIX_CHESSCOM_PROFILE: CHESSCOM_PROFILE,
+          TACTIX_CHESSCOM_USE_FIXTURE: '1',
+          TACTIX_USE_FIXTURE: '1',
+          CHESSCOM_USERNAME: 'chesscom',
+          CHESSCOM_USER: 'chesscom',
+        },
         stdio: ['ignore', 'pipe', 'pipe'],
       },
     );
@@ -101,9 +134,41 @@ async function ensureBackend() {
       );
     });
     await page.waitForSelector('[data-testid="filter-chesscom-profile"]');
-    await page.select('[data-testid="filter-chesscom-profile"]', 'bullet');
-    await page.select('[data-testid="filter-motif"]', 'mate');
-    await page.select('[data-testid="filter-time-control"]', '60');
+    await page.select('[data-testid="filter-chesscom-profile"]', CHESSCOM_PROFILE);
+    await page.waitForFunction(
+      (profileValue) => {
+        const profile = document.querySelector(
+          '[data-testid="filter-chesscom-profile"]',
+        );
+        return (
+          profile instanceof HTMLSelectElement && profile.value === profileValue
+        );
+      },
+      {},
+      CHESSCOM_PROFILE,
+    );
+
+    await page.waitForFunction(() => {
+      const button = document.querySelector('[data-testid="action-run"]');
+      return button && !button.hasAttribute('disabled');
+    });
+
+    await page.click('[data-testid="action-run"]');
+    await page.waitForFunction(
+      () => {
+        const button = document.querySelector('[data-testid="action-run"]');
+        if (!button) return false;
+        const label = button.textContent || '';
+        return !button.hasAttribute('disabled') && !label.includes('Running');
+      },
+      { timeout: 60000 },
+    );
+
+    await page.select('[data-testid="filter-motif"]', 'discovered_check');
+    await page.waitForFunction(() => {
+      const motif = document.querySelector('[data-testid="filter-motif"]');
+      return motif instanceof HTMLSelectElement && motif.value === 'discovered_check';
+    });
 
     await page.waitForFunction(() => {
       const button = document.querySelector('[data-testid="action-run"]');
@@ -117,17 +182,6 @@ async function ensureBackend() {
       );
       return header?.getAttribute('aria-expanded') === 'true';
     });
-
-    await page.click('[data-testid="action-run"]');
-    await page.waitForFunction(
-      () => {
-        const button = document.querySelector('[data-testid="action-run"]');
-        if (!button) return false;
-        const label = button.textContent || '';
-        return !button.hasAttribute('disabled') && !label.includes('Running');
-      },
-      { timeout: 60000 },
-    );
     await page.waitForSelector(
       '[data-testid="dashboard-card-tactics-table"] table',
     );
@@ -137,32 +191,40 @@ async function ensureBackend() {
       '[data-testid="dashboard-card-tactics-table"] table tbody tr',
       (items) => items.map((row) => row.textContent || ''),
     );
-    const hasMateRow = rows.some((row) => row.toLowerCase().includes('mate'));
-    if (!hasMateRow) {
-      throw new Error(
-        `Expected a mate row in tactics table, found: ${rows.join(' | ')}`,
-      );
+    const hasDiscoveredCheck = rows.some((row) =>
+      row.toLowerCase().includes('discovered_check'),
+    );
+    if (!hasDiscoveredCheck) {
+      throw new Error('Expected a discovered check row in tactics table');
     }
 
-    const severityCheck = await page.evaluate(async (apiBase) => {
-      const res = await fetch(
-        `${apiBase}/api/dashboard?source=chesscom&motif=mate&time_control=60`,
-        {
-          headers: { Authorization: 'Bearer local-dev-token' },
-        },
-      );
-      if (!res.ok) {
-        throw new Error(`Dashboard fetch failed: ${res.status}`);
-      }
-      return res.json();
-    }, API_BASE);
+    const severityCheck = await page.evaluate(
+      async (apiBase, expectedGameId, minSeverity) => {
+        const res = await fetch(
+          `${apiBase}/api/dashboard?source=chesscom&motif=discovered_check&time_control=86400`,
+          {
+            headers: { Authorization: 'Bearer local-dev-token' },
+          },
+        );
+        if (!res.ok) {
+          throw new Error(`Dashboard fetch failed: ${res.status}`);
+        }
+        const data = await res.json();
+        return Array.isArray(data?.tactics)
+          ? data.tactics.some((row) => {
+              if (row.motif !== 'discovered_check') return false;
+              if (expectedGameId && row.game_id !== expectedGameId) return false;
+              return Number(row.severity) >= minSeverity;
+            })
+          : false;
+      },
+      API_BASE,
+      EXPECTED_GAME_ID,
+      MIN_SEVERITY,
+    );
 
-    const hasLowSeverity = Array.isArray(severityCheck?.tactics)
-      ? severityCheck.tactics.some((row) => row.severity <= 1.0)
-      : false;
-
-    if (!hasLowSeverity) {
-      throw new Error('Expected mate-in-two tactic with low severity (<= 1.0)');
+    if (!severityCheck) {
+      throw new Error('Expected discovered check tactic with high severity (>= 1.5)');
     }
 
     const outDir = path.resolve(__dirname);

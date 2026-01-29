@@ -1,28 +1,74 @@
 const fs = require('fs');
+const net = require('net');
 const path = require('path');
 const { spawn } = require('child_process');
 const puppeteer = require('../client/node_modules/puppeteer');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
-console.log('Starting feature 083 Puppeteer run...');
 const BACKEND_CMD = path.join(ROOT_DIR, '.venv', 'bin', 'python');
 const DUCKDB_PATH =
   process.env.TACTIX_DUCKDB_PATH ||
-  path.join(ROOT_DIR, 'client', 'data', 'tactix.duckdb');
-const API_BASE = process.env.TACTIX_API_BASE || 'http://localhost:8000';
+  path.join(ROOT_DIR, 'data', 'tactix_feature_173.duckdb');
+const CHECKPOINT_PATH =
+  process.env.TACTIX_CHESSCOM_CHECKPOINT_PATH ||
+  path.join(ROOT_DIR, 'data', 'chesscom_feature_173_cursor.txt');
+const ANALYSIS_CHECKPOINT_PATH =
+  process.env.TACTIX_ANALYSIS_CHECKPOINT_PATH ||
+  path.join(ROOT_DIR, 'data', 'analysis_checkpoint_feature_173.json');
 const DASHBOARD_URL = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
+const CHESSCOM_PROFILE = process.env.TACTIX_CHESSCOM_PROFILE || 'correspondence';
 const SCREENSHOT_NAME =
   process.env.TACTIX_SCREENSHOT_NAME ||
-  'feature-083-mate-in-2-bullet-low-severity-ci-2026-01-26.png';
+  'feature-173-discovered-check-correspondence-high-severity-2026-01-29.png';
+
+function isPortOpen(host, port, timeoutMs = 1000) {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    let settled = false;
+
+    const finalize = (result) => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      resolve(result);
+    };
+
+    socket.setTimeout(timeoutMs);
+    socket.once('connect', () => finalize(true));
+    socket.once('timeout', () => finalize(false));
+    socket.once('error', () => finalize(false));
+    socket.connect(port, host);
+  });
+}
 
 function startBackend() {
   return new Promise((resolve, reject) => {
     const proc = spawn(
       BACKEND_CMD,
-      ['-m', 'uvicorn', 'tactix.api:app', '--host', '0.0.0.0', '--port', '8000'],
+      [
+        '-m',
+        'uvicorn',
+        'tactix.api:app',
+        '--host',
+        '0.0.0.0',
+        '--port',
+        '8000',
+      ],
       {
         cwd: ROOT_DIR,
-        env: { ...process.env, TACTIX_DUCKDB_PATH: DUCKDB_PATH },
+        env: {
+          ...process.env,
+          TACTIX_DUCKDB_PATH: DUCKDB_PATH,
+          TACTIX_CHESSCOM_CHECKPOINT_PATH: CHECKPOINT_PATH,
+          TACTIX_ANALYSIS_CHECKPOINT_PATH: ANALYSIS_CHECKPOINT_PATH,
+          TACTIX_SOURCE: 'chesscom',
+          TACTIX_USER: 'chesscom',
+          TACTIX_CHESSCOM_PROFILE: CHESSCOM_PROFILE,
+          TACTIX_CHESSCOM_USE_FIXTURE: '1',
+          TACTIX_USE_FIXTURE: '1',
+          CHESSCOM_USERNAME: 'chesscom',
+          CHESSCOM_USER: 'chesscom',
+        },
         stdio: ['ignore', 'pipe', 'pipe'],
       },
     );
@@ -52,25 +98,9 @@ function startBackend() {
   });
 }
 
-async function ensureBackend() {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 1500);
-    const res = await fetch('http://localhost:8000/api/health', {
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    if (res.ok) {
-      return null;
-    }
-  } catch (err) {
-    // Fall back to starting a local backend.
-  }
-  return startBackend();
-}
-
 (async () => {
-  const backend = await ensureBackend();
+  const backendRunning = await isPortOpen('127.0.0.1', 8000);
+  const backend = backendRunning ? null : await startBackend();
   try {
     const browser = await puppeteer.launch({ headless: 'new' });
     const page = await browser.newPage();
@@ -101,9 +131,41 @@ async function ensureBackend() {
       );
     });
     await page.waitForSelector('[data-testid="filter-chesscom-profile"]');
-    await page.select('[data-testid="filter-chesscom-profile"]', 'bullet');
-    await page.select('[data-testid="filter-motif"]', 'mate');
-    await page.select('[data-testid="filter-time-control"]', '60');
+    await page.select('[data-testid="filter-chesscom-profile"]', CHESSCOM_PROFILE);
+    await page.waitForFunction(
+      (profileValue) => {
+        const profile = document.querySelector(
+          '[data-testid="filter-chesscom-profile"]',
+        );
+        return (
+          profile instanceof HTMLSelectElement && profile.value === profileValue
+        );
+      },
+      {},
+      CHESSCOM_PROFILE,
+    );
+
+    await page.waitForFunction(() => {
+      const button = document.querySelector('[data-testid="action-run"]');
+      return button && !button.hasAttribute('disabled');
+    });
+
+    await page.click('[data-testid="action-run"]');
+    await page.waitForFunction(
+      () => {
+        const button = document.querySelector('[data-testid="action-run"]');
+        if (!button) return false;
+        const label = button.textContent || '';
+        return !button.hasAttribute('disabled') && !label.includes('Running');
+      },
+      { timeout: 60000 },
+    );
+
+    await page.select('[data-testid="filter-motif"]', 'discovered_check');
+    await page.waitForFunction(() => {
+      const motif = document.querySelector('[data-testid="filter-motif"]');
+      return motif instanceof HTMLSelectElement && motif.value === 'discovered_check';
+    });
 
     await page.waitForFunction(() => {
       const button = document.querySelector('[data-testid="action-run"]');
@@ -117,17 +179,6 @@ async function ensureBackend() {
       );
       return header?.getAttribute('aria-expanded') === 'true';
     });
-
-    await page.click('[data-testid="action-run"]');
-    await page.waitForFunction(
-      () => {
-        const button = document.querySelector('[data-testid="action-run"]');
-        if (!button) return false;
-        const label = button.textContent || '';
-        return !button.hasAttribute('disabled') && !label.includes('Running');
-      },
-      { timeout: 60000 },
-    );
     await page.waitForSelector(
       '[data-testid="dashboard-card-tactics-table"] table',
     );
@@ -137,32 +188,13 @@ async function ensureBackend() {
       '[data-testid="dashboard-card-tactics-table"] table tbody tr',
       (items) => items.map((row) => row.textContent || ''),
     );
-    const hasMateRow = rows.some((row) => row.toLowerCase().includes('mate'));
-    if (!hasMateRow) {
+    const hasDiscoveredCheck = rows.some((row) =>
+      row.toLowerCase().includes('discovered_check'),
+    );
+    if (!hasDiscoveredCheck) {
       throw new Error(
-        `Expected a mate row in tactics table, found: ${rows.join(' | ')}`,
+        `Expected a discovered check row in tactics table, found: ${rows.join(' | ')}`,
       );
-    }
-
-    const severityCheck = await page.evaluate(async (apiBase) => {
-      const res = await fetch(
-        `${apiBase}/api/dashboard?source=chesscom&motif=mate&time_control=60`,
-        {
-          headers: { Authorization: 'Bearer local-dev-token' },
-        },
-      );
-      if (!res.ok) {
-        throw new Error(`Dashboard fetch failed: ${res.status}`);
-      }
-      return res.json();
-    }, API_BASE);
-
-    const hasLowSeverity = Array.isArray(severityCheck?.tactics)
-      ? severityCheck.tactics.some((row) => row.severity <= 1.0)
-      : false;
-
-    if (!hasLowSeverity) {
-      throw new Error('Expected mate-in-two tactic with low severity (<= 1.0)');
     }
 
     const outDir = path.resolve(__dirname);

@@ -116,3 +116,17 @@
 [FEN "6k1/8/8/8/8/8/6B1/4K1R1 w - - 0 1"]
 
 1. Bf3+ 1-0
+
+
+[Event "Chess.com Correspondence Fixture 10 - Discovered Check High"]
+[Site "https://www.chess.com/game/daily/6677008891"]
+[UTCDate "2024.07.14"]
+[UTCTime "19:00:00"]
+[White "chesscom"]
+[Black "correspondencebot"]
+[TimeControl "86400"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "6k1/8/8/8/3q4/8/6B1/3QK1R1 w - - 0 1"]
+
+1. Bf3+ 0-1

@@ -98,21 +98,58 @@ async function ensureBackend() {
     await page.waitForSelector('[data-testid="filter-source"]');
 
     await page.select('[data-testid="filter-source"]', 'chesscom');
+    await page.waitForFunction(() => {
+      const select = document.querySelector('[data-testid="filter-source"]');
+      const button = document.querySelector('[data-testid="action-run"]');
+      return (
+        select instanceof HTMLSelectElement &&
+        select.value === 'chesscom' &&
+        button &&
+        !button.hasAttribute('disabled')
+      );
+    });
     await page.waitForSelector('[data-testid="filter-chesscom-profile"]');
     await page.select('[data-testid="filter-chesscom-profile"]', 'classical');
     await page.select('[data-testid="filter-motif"]', 'mate');
     await page.select('[data-testid="filter-time-control"]', '1800');
 
-    await page.click('[data-testid="action-run"]');
-    await page.waitForSelector('table');
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await page.waitForFunction(() => {
+      const button = document.querySelector('[data-testid="action-run"]');
+      return button && !button.hasAttribute('disabled');
+    });
 
-    const rows = await page.$$eval('table tbody tr', (items) =>
-      items.map((row) => row.textContent || ''),
+    await page.click('[data-testid="dashboard-card-tactics-table"] [role="button"]');
+    await page.waitForFunction(() => {
+      const header = document.querySelector(
+        '[data-testid="dashboard-card-tactics-table"] [role="button"]',
+      );
+      return header?.getAttribute('aria-expanded') === 'true';
+    });
+
+    await page.click('[data-testid="action-run"]');
+    await page.waitForFunction(
+      () => {
+        const button = document.querySelector('[data-testid="action-run"]');
+        if (!button) return false;
+        const label = button.textContent || '';
+        return !button.hasAttribute('disabled') && !label.includes('Running');
+      },
+      { timeout: 60000 },
+    );
+    await page.waitForSelector(
+      '[data-testid="dashboard-card-tactics-table"] table',
+    );
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    const rows = await page.$$eval(
+      '[data-testid="dashboard-card-tactics-table"] table tbody tr',
+      (items) => items.map((row) => row.textContent || ''),
     );
     const hasMateRow = rows.some((row) => row.toLowerCase().includes('mate'));
     if (!hasMateRow) {
-      throw new Error('Expected a mate row in tactics table');
+      throw new Error(
+        `Expected a mate row in tactics table, found: ${rows.join(' | ')}`,
+      );
     }
 
     const severityCheck = await page.evaluate(async (apiBase) => {

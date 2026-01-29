@@ -266,6 +266,43 @@ def _discovered_check_correspondence_fixture_position() -> dict[str, object]:
     raise AssertionError("No discovered check correspondence fixture position found")
 
 
+def _discovered_check_correspondence_high_fixture_position() -> dict[str, object]:
+    fixture_path = (
+        Path(__file__).resolve().parent
+        / "fixtures"
+        / "chesscom_correspondence_sample.pgn"
+    )
+    chunks = split_pgn_chunks(fixture_path.read_text())
+    discovered_chunk = next(
+        chunk for chunk in chunks if "Discovered Check High" in chunk
+    )
+    game = chess.pgn.read_game(StringIO(discovered_chunk))
+    if not game:
+        raise AssertionError(
+            "No discovered check correspondence high fixture game found"
+        )
+    fen = game.headers.get("FEN")
+    board = chess.Board(fen) if fen else game.board()
+    moves = list(game.mainline_moves())
+    if not moves:
+        raise AssertionError("No moves in discovered check correspondence high fixture")
+    move = moves[0]
+    side_to_move = "white" if board.turn == chess.WHITE else "black"
+    return {
+        "game_id": "correspondence-discovered-check-high",
+        "user": "chesscom",
+        "source": "chesscom",
+        "fen": board.fen(),
+        "ply": board.ply(),
+        "move_number": board.fullmove_number,
+        "side_to_move": side_to_move,
+        "uci": move.uci(),
+        "san": board.san(move),
+        "clock_seconds": None,
+        "is_legal": True,
+    }
+
+
 class DiscoveredCheckBlitzTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_blitz_discovered_check_is_low_severity(self) -> None:
@@ -548,6 +585,50 @@ class DiscoveredCheckBlitzTests(unittest.TestCase):
         self.assertEqual(tactic_row["motif"], "discovered_check")
         self.assertGreater(tactic_row["severity"], 0)
         self.assertLessEqual(tactic_row["severity"], 1.0)
+        self.assertTrue(tactic_row["best_uci"])
+
+        tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
+        stored = conn.execute(
+            "SELECT position_id, best_san, explanation FROM tactics WHERE tactic_id = ?",
+            [tactic_id],
+        ).fetchone()
+        self.assertEqual(stored[0], position_ids[0])
+        self.assertIsNotNone(stored[1])
+        self.assertIn("Best line", stored[2] or "")
+
+    @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
+    def test_correspondence_discovered_check_is_high_severity(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            chesscom_profile="correspondence",
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=60,
+            stockfish_depth=None,
+            stockfish_multipv=1,
+        )
+        settings.apply_chesscom_profile("correspondence")
+        self.assertEqual(
+            settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH
+        )
+
+        position = _discovered_check_correspondence_high_fixture_position()
+
+        tmp_dir = Path(tempfile.mkdtemp())
+        conn = get_connection(tmp_dir / "discovered_check_correspondence_high.duckdb")
+        init_schema(conn)
+        position_ids = insert_positions(conn, [position])
+        position["position_id"] = position_ids[0]
+
+        with StockfishEngine(settings) as engine:
+            result = analyze_position(position, engine, settings=settings)
+
+        self.assertIsNotNone(result)
+        tactic_row, outcome_row = result
+        self.assertEqual(tactic_row["motif"], "discovered_check")
+        self.assertEqual(tactic_row["game_id"], "correspondence-discovered-check-high")
+        self.assertGreaterEqual(tactic_row["severity"], 1.5)
+        self.assertLessEqual(outcome_row["eval_delta"], -150)
         self.assertTrue(tactic_row["best_uci"])
 
         tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)

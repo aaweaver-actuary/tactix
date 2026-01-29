@@ -1,7 +1,10 @@
 from unittest.mock import MagicMock, patch
 
+from tactix.base_db_store import BaseDbStoreContext
 from tactix.config import Settings
+from tactix.logging_utils import get_logger
 from tactix.postgres_store import (
+    PostgresStore,
     PostgresStatus,
     fetch_ops_events,
     fetch_analysis_tactics,
@@ -26,6 +29,11 @@ def _make_settings() -> Settings:
     settings.postgres_user = "tactix"
     settings.postgres_password = "tactix"
     return settings
+
+
+def _make_store() -> PostgresStore:
+    settings = _make_settings()
+    return PostgresStore(BaseDbStoreContext(settings=settings, logger=get_logger("test")))
 
 
 def test_postgres_enabled_with_host() -> None:
@@ -218,6 +226,44 @@ def test_fetch_postgres_raw_pgns_summary_returns_totals() -> None:
     assert payload["total_rows"] == 2
     assert payload["distinct_games"] == 2
     assert payload["sources"][0]["source"] == "lichess"
+
+
+def test_postgres_store_get_status_delegates() -> None:
+    store = _make_store()
+    with patch("tactix.postgres_store.get_postgres_status") as get_status:
+        get_status.return_value = PostgresStatus(enabled=True, status="ok")
+        status = store.get_status()
+    assert status.status == "ok"
+    get_status.assert_called_once_with(store.settings)
+
+
+def test_postgres_store_fetch_ops_events_delegates() -> None:
+    store = _make_store()
+    with patch("tactix.postgres_store.fetch_ops_events") as fetch_events:
+        fetch_events.return_value = [{"event_type": "test"}]
+        events = store.fetch_ops_events(limit=5)
+    assert events == [{"event_type": "test"}]
+    fetch_events.assert_called_once_with(store.settings, limit=5)
+
+
+def test_postgres_store_fetch_analysis_tactics_delegates() -> None:
+    store = _make_store()
+    with patch("tactix.postgres_store.fetch_analysis_tactics") as fetch_tactics:
+        fetch_tactics.return_value = [{"tactic_id": 1}]
+        tactics = store.fetch_analysis_tactics(limit=12)
+    assert tactics == [{"tactic_id": 1}]
+    fetch_tactics.assert_called_once_with(store.settings, limit=12)
+
+
+def test_postgres_store_fetch_raw_pgns_summary_delegates() -> None:
+    store = _make_store()
+    with patch(
+        "tactix.postgres_store.fetch_postgres_raw_pgns_summary"
+    ) as fetch_summary:
+        fetch_summary.return_value = {"status": "ok"}
+        summary = store.fetch_raw_pgns_summary()
+    assert summary == {"status": "ok"}
+    fetch_summary.assert_called_once_with(store.settings)
 
 
 def test_fetch_postgres_raw_pgns_summary_disabled() -> None:

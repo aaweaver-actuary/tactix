@@ -43,7 +43,7 @@ def test_postgres_raw_pgns_endpoint_returns_summary() -> None:
         ],
     }
 
-    with patch("tactix.api.fetch_postgres_raw_pgns_summary", return_value=payload):
+    with patch("tactix.api.PostgresStore.fetch_raw_pgns_summary", return_value=payload):
         response = client.get(
             "/api/postgres/raw_pgns",
             headers={"Authorization": f"Bearer {token}"},
@@ -59,7 +59,7 @@ def test_postgres_analysis_endpoint_returns_rows() -> None:
     client = TestClient(app)
     token = get_settings().api_token
     with patch(
-        "tactix.api.fetch_analysis_tactics",
+        "tactix.api.PostgresStore.fetch_analysis_tactics",
         return_value=[{"tactic_id": 1, "motif": "fork"}],
     ):
         response = client.get(
@@ -77,8 +77,8 @@ def test_postgres_status_endpoint_returns_payload() -> None:
     client = TestClient(app)
     token = get_settings().api_token
     with (
-        patch("tactix.api.get_postgres_status") as get_status,
-        patch("tactix.api.fetch_ops_events", return_value=[]),
+        patch("tactix.api.PostgresStore.get_status") as get_status,
+        patch("tactix.api.PostgresStore.fetch_ops_events", return_value=[]),
     ):
         get_status.return_value = type(
             "MockStatus",

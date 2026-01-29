@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import os
-import hashlib
 from pathlib import Path
 from typing import Iterable, List, Mapping
 
 import duckdb
+from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
 from tactix.logging_utils import get_logger
-from tactix.pgn_utils import extract_pgn_metadata
 from tactix.tactics_explanation import format_tactic_explanation
 
 logger = get_logger(__name__)
@@ -129,6 +128,64 @@ CREATE TABLE IF NOT EXISTS schema_version (
 """
 
 SCHEMA_VERSION = 6
+
+
+class DuckDbStore(BaseDbStore):
+    """DuckDB-backed store implementation."""
+
+    def __init__(
+        self, context: BaseDbStoreContext, db_path: Path | None = None
+    ) -> None:
+        super().__init__(context)
+        self._db_path = db_path or context.settings.duckdb_path
+
+    @property
+    def db_path(self) -> Path:
+        return self._db_path
+
+    def get_dashboard_payload(
+        self,
+        source: str | None = None,
+        motif: str | None = None,
+        rating_bucket: str | None = None,
+        time_control: str | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> dict[str, object]:
+        conn = get_connection(self._db_path)
+        init_schema(conn)
+        active_source = source or self.settings.source
+        return {
+            "source": active_source,
+            "user": self.settings.user,
+            "metrics": fetch_metrics(
+                conn,
+                source=active_source,
+                motif=motif,
+                rating_bucket=rating_bucket,
+                time_control=time_control,
+                start_date=start_date,
+                end_date=end_date,
+            ),
+            "positions": fetch_recent_positions(
+                conn,
+                source=active_source,
+                rating_bucket=rating_bucket,
+                time_control=time_control,
+                start_date=start_date,
+                end_date=end_date,
+            ),
+            "tactics": fetch_recent_tactics(
+                conn,
+                source=active_source,
+                motif=motif,
+                rating_bucket=rating_bucket,
+                time_control=time_control,
+                start_date=start_date,
+                end_date=end_date,
+            ),
+            "metrics_version": fetch_version(conn),
+        }
 
 
 def get_connection(db_path: Path) -> duckdb.DuckDBPyConnection:
@@ -273,7 +330,7 @@ _SCHEMA_MIGRATIONS = [
 
 
 def hash_pgn(pgn: str) -> str:
-    return hashlib.sha256(pgn.encode("utf-8")).hexdigest()
+    return BaseDbStore.hash_pgn_text(pgn)
 
 
 def _ensure_raw_pgns_versioned(conn: duckdb.DuckDBPyConnection) -> None:
@@ -296,7 +353,7 @@ def _ensure_raw_pgns_versioned(conn: duckdb.DuckDBPyConnection) -> None:
             for row in legacy_rows:
                 next_id += 1
                 pgn_text = row[4] or ""
-                metadata = extract_pgn_metadata(pgn_text, str(row[1]))
+                metadata = BaseDbStore.extract_pgn_metadata(pgn_text, str(row[1]))
                 inserts.append(
                     (
                         next_id,
@@ -379,7 +436,7 @@ def upsert_raw_pgns(
             game_id = str(row["game_id"])
             source = str(row["source"])
             pgn_text = str(row["pgn"])
-            metadata = extract_pgn_metadata(pgn_text, str(row["user"]))
+            metadata = BaseDbStore.extract_pgn_metadata(pgn_text, str(row["user"]))
             pgn_hash = hash_pgn(pgn_text)
             key = (game_id, source)
             if key in latest_cache:

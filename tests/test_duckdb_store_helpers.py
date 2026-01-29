@@ -6,7 +6,10 @@ from unittest.mock import MagicMock, patch
 
 import duckdb
 
+from tactix.base_db_store import BaseDbStoreContext
+from tactix.config import Settings
 from tactix.duckdb_store import (
+    DuckDbStore,
     _append_date_range_filters,
     _ensure_raw_pgns_versioned,
     _normalize_filter,
@@ -29,6 +32,7 @@ from tactix.duckdb_store import (
     upsert_raw_pgns,
     upsert_tactic_with_outcome,
 )
+from tactix.logging_utils import get_logger
 
 
 PGN_BASE = """[Event \"Test\"]
@@ -246,6 +250,77 @@ class DuckdbStoreHelperTests(unittest.TestCase):
         )
         count = self.conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         self.assertEqual(count, 1)
+
+        def test_duckdb_store_dashboard_payload(self) -> None:
+            settings = Settings(
+                user="tester",
+                source="lichess",
+                duckdb_path=self.tmp_dir / "tactix.duckdb",
+                checkpoint_path=self.tmp_dir / "since.txt",
+                metrics_version_file=self.tmp_dir / "metrics.txt",
+            )
+            store = DuckDbStore(
+                BaseDbStoreContext(settings=settings, logger=get_logger("test")),
+                db_path=settings.duckdb_path,
+            )
+            pgn = PGN_BASE.format(white_elo=1200, black_elo=1400, time_control="300+0")
+            upsert_raw_pgns(
+                self.conn,
+                [
+                    {
+                        "game_id": "g-dashboard",
+                        "user": "tester",
+                        "source": "lichess",
+                        "pgn": pgn,
+                        "last_timestamp_ms": 5,
+                    }
+                ],
+            )
+            position_ids = insert_positions(
+                self.conn,
+                [
+                    {
+                        "game_id": "g-dashboard",
+                        "user": "tester",
+                        "source": "lichess",
+                        "fen": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+                        "ply": 1,
+                        "move_number": 1,
+                        "side_to_move": "black",
+                        "uci": "e2e4",
+                        "san": "e4",
+                        "clock_seconds": 300,
+                        "is_legal": True,
+                    }
+                ],
+            )
+            upsert_tactic_with_outcome(
+                self.conn,
+                {
+                    "game_id": "g-dashboard",
+                    "position_id": position_ids[0],
+                    "motif": "fork",
+                    "severity": 1.2,
+                    "best_uci": "e2e4",
+                    "best_san": "e4",
+                    "explanation": "test",
+                    "eval_cp": 50,
+                },
+                {
+                    "result": "found",
+                    "user_uci": "e2e4",
+                    "eval_delta": 0,
+                },
+            )
+            update_metrics_summary(self.conn)
+
+            payload = store.get_dashboard_payload(source="lichess")
+
+            self.assertEqual(payload["source"], "lichess")
+            self.assertEqual(payload["user"], "tester")
+            self.assertTrue(payload["metrics"])
+            self.assertTrue(payload["positions"])
+            self.assertTrue(payload["tactics"])
 
     def test_upsert_raw_pgns_persists_hash_and_metadata(self) -> None:
         lichess_pgn = PGN_BASE.format(

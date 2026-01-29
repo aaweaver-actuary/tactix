@@ -8,6 +8,7 @@ from collections.abc import Callable, Mapping
 from typing import TypedDict, cast
 
 import chess.engine
+from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
 from tactix.base_chess_client import BaseChessClient
 from tactix.chesscom_client import (
     ChesscomClient,
@@ -19,16 +20,15 @@ from tactix.chesscom_client import (
 )
 from tactix.config import Settings, get_settings
 from tactix.duckdb_store import (
+    DuckDbStore,
     fetch_latest_pgn_hashes,
     fetch_latest_raw_pgns,
     fetch_metrics,
     fetch_unanalyzed_positions,
     fetch_positions_for_games,
     fetch_position_counts,
-    fetch_recent_positions,
     fetch_recent_tactics,
     get_schema_version,
-    fetch_version,
     get_connection,
     hash_pgn,
     init_schema,
@@ -1220,42 +1220,22 @@ def get_dashboard_payload(
     time_control: str | None = None,
     start_date: datetime | None = None,
     end_date: datetime | None = None,
+    store: BaseDbStore | None = None,
 ) -> dict[str, object]:
     settings = settings or get_settings(source=source)
     if source:
         settings.source = source
     settings.apply_source_defaults()
-    conn = get_connection(settings.duckdb_path)
-    init_schema(conn)
-    active_source = source or settings.source
-    return {
-        "source": active_source,
-        "user": settings.user,
-        "metrics": fetch_metrics(
-            conn,
-            source=active_source,
-            motif=motif,
-            rating_bucket=rating_bucket,
-            time_control=time_control,
-            start_date=start_date,
-            end_date=end_date,
-        ),
-        "positions": fetch_recent_positions(
-            conn,
-            source=active_source,
-            rating_bucket=rating_bucket,
-            time_control=time_control,
-            start_date=start_date,
-            end_date=end_date,
-        ),
-        "tactics": fetch_recent_tactics(
-            conn,
-            source=active_source,
-            motif=motif,
-            rating_bucket=rating_bucket,
-            time_control=time_control,
-            start_date=start_date,
-            end_date=end_date,
-        ),
-        "metrics_version": fetch_version(conn),
-    }
+    if store is None:
+        store = DuckDbStore(
+            BaseDbStoreContext(settings=settings, logger=logger),
+            db_path=settings.duckdb_path,
+        )
+    return store.get_dashboard_payload(
+        source=source,
+        motif=motif,
+        rating_bucket=rating_bucket,
+        time_control=time_control,
+        start_date=start_date,
+        end_date=end_date,
+    )

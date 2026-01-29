@@ -4,17 +4,16 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Iterator, Mapping
-
-import hashlib
 import time
 
 import psycopg2
 from psycopg2.extensions import connection as PgConnection
 from psycopg2.extras import Json, RealDictCursor
 
+from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
 from tactix.config import Settings
 from tactix.logging_utils import get_logger
-from tactix.pgn_utils import extract_pgn_metadata, normalize_pgn
+from tactix.pgn_utils import normalize_pgn
 
 logger = get_logger(__name__)
 
@@ -30,6 +29,25 @@ class PostgresStatus:
     error: str | None = None
     schema: str | None = None
     tables: list[str] | None = None
+
+
+class PostgresStore(BaseDbStore):
+    """Postgres-backed store implementation."""
+
+    def __init__(self, context: BaseDbStoreContext) -> None:
+        super().__init__(context)
+
+    def get_status(self) -> PostgresStatus:
+        return get_postgres_status(self.settings)
+
+    def fetch_ops_events(self, limit: int = 10) -> list[dict[str, Any]]:
+        return fetch_ops_events(self.settings, limit=limit)
+
+    def fetch_analysis_tactics(self, limit: int = 10) -> list[dict[str, Any]]:
+        return fetch_analysis_tactics(self.settings, limit=limit)
+
+    def fetch_raw_pgns_summary(self) -> dict[str, Any]:
+        return fetch_postgres_raw_pgns_summary(self.settings)
 
 
 def _connection_kwargs(settings: Settings) -> dict[str, Any] | None:
@@ -226,7 +244,7 @@ def init_pgn_schema(conn: PgConnection) -> None:
 
 
 def _hash_pgn_text(pgn: str) -> str:
-    return hashlib.sha256(pgn.encode("utf-8")).hexdigest()
+    return BaseDbStore.hash_pgn_text(pgn)
 
 
 def upsert_postgres_raw_pgns(
@@ -271,7 +289,9 @@ def upsert_postgres_raw_pgns(
                 if latest_hash == pgn_hash:
                     latest_cache[key] = (latest_hash, latest_version)
                     continue
-                metadata = extract_pgn_metadata(pgn_text, str(row.get("user") or ""))
+                metadata = BaseDbStore.extract_pgn_metadata(
+                    pgn_text, str(row.get("user") or "")
+                )
                 new_version = latest_version + 1
                 cur.execute(
                     f"""

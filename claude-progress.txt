@@ -1904,3 +1904,19 @@ Session 2026-01-29 (progress recap – BaseTable + BaseChessClient)
 - Tests: `make check` (clean; cargo warnings about deprecated pyo3 remain).
 - Screenshots: `verification/feature-base-table-2026-01-29.png`; BaseChessClient refactor: n/a.
 - Pass count: 177.
+
+Session 2026-01-29 (BaseDbStore refactor + mocks)
+- Before/after map:
+	- src/tactix/base_db_store.py: new BaseDbStore + shared helpers and dashboard interface.
+	- src/tactix/duckdb_store.py: new DuckDbStore subclass; shared hash/metadata helpers now routed through BaseDbStore.
+	- src/tactix/postgres_store.py: new PostgresStore subclass; shared hash/metadata helpers now routed through BaseDbStore.
+	- src/tactix/pipeline.py: dashboard payload now accepts injected BaseDbStore and uses DuckDbStore by default.
+	- src/tactix/api.py: Postgres endpoints now use PostgresStore (BaseDbStore subclass).
+	- src/tactix/mock_chess_client.py: new MockChessClient for BaseChessClient testing.
+	- src/tactix/mock_db_store.py: new MockDbStore for BaseDbStore testing.
+	- tests/test_base_db_store.py: BaseDbStore helper coverage.
+	- tests/test_mock_clients.py: Mock client/store + dashboard injection coverage.
+	- tests/test_duckdb_store_helpers.py: DuckDbStore dashboard payload coverage.
+	- tests/test_postgres_store.py: PostgresStore delegation coverage.
+- Tests: pre-change `make check` (clean; cargo warnings about deprecated pyo3 remain). Post-change `make check` (clean; cargo warnings about deprecated pyo3 remain).
+- Screenshots: n/a (refactor-only change).

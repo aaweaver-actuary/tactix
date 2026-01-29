@@ -14,6 +14,7 @@ from starlette.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from tactix.base_db_store import BaseDbStoreContext
 from tactix.config import get_settings
 from tactix.logging_utils import get_logger
 from tactix.airflow_client import fetch_dag_run, trigger_dag_run
@@ -31,10 +32,7 @@ from tactix.duckdb_store import (
     init_schema,
 )
 from tactix.postgres_store import (
-    fetch_analysis_tactics,
-    fetch_ops_events,
-    fetch_postgres_raw_pgns_summary,
-    get_postgres_status,
+    PostgresStore,
     serialize_status,
 )
 
@@ -94,23 +92,26 @@ def health() -> dict[str, str]:
 @app.get("/api/postgres/status")
 def postgres_status(limit: int = Query(10, ge=1, le=50)) -> dict[str, object]:
     settings = get_settings()
-    status = get_postgres_status(settings)
+    store = PostgresStore(BaseDbStoreContext(settings=settings, logger=logger))
+    status = store.get_status()
     payload = serialize_status(status)
-    payload["events"] = fetch_ops_events(settings, limit=limit)
+    payload["events"] = store.fetch_ops_events(limit=limit)
     return payload
 
 
 @app.get("/api/postgres/analysis")
 def postgres_analysis(limit: int = Query(10, ge=1, le=200)) -> dict[str, object]:
     settings = get_settings()
-    tactics = fetch_analysis_tactics(settings, limit=limit)
+    store = PostgresStore(BaseDbStoreContext(settings=settings, logger=logger))
+    tactics = store.fetch_analysis_tactics(limit=limit)
     return {"status": "ok", "tactics": tactics}
 
 
 @app.get("/api/postgres/raw_pgns")
 def postgres_raw_pgns() -> dict[str, object]:
     settings = get_settings()
-    return fetch_postgres_raw_pgns_summary(settings)
+    store = PostgresStore(BaseDbStoreContext(settings=settings, logger=logger))
+    return store.fetch_raw_pgns_summary()
 
 
 @app.post("/api/jobs/daily_game_sync")

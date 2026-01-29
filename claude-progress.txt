@@ -1897,3 +1897,10 @@ Session 2026-01-29 (refactor – BaseTable for dashboard tables)
 - Screenshots: `verification/feature-base-table-2026-01-29.png`.
 - Updated feature_list.json: “All tables in the dashboard wrap a common BaseTable component that handles table functionality like sorting, pagination, and styling.” marked passes=true.
 - Pass count: 177.
+
+Session 2026-01-29 (progress recap – BaseTable + BaseChessClient)
+- BaseTable feature (commit 731a6d2): BaseTable refactor remains verified with `verification/feature-base-table-2026-01-29.png`.
+- BaseChessClient refactor (commit d9d0193): refactor-only change; no UI screenshot required.
+- Tests: `make check` (clean; cargo warnings about deprecated pyo3 remain).
+- Screenshots: `verification/feature-base-table-2026-01-29.png`; BaseChessClient refactor: n/a.
+- Pass count: 177.

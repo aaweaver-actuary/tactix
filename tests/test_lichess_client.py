@@ -334,13 +334,13 @@ class LichessClientTests(unittest.TestCase):
             use_fixture_when_no_token=False,
         )
         pgn_bytes = (
-            b"[Event \"Fixture\"]\n"
-            b"[Site \"https://lichess.org/abcd1234\"]\n"
-            b"[UTCDate \"2024.06.01\"]\n"
-            b"[UTCTime \"12:00:00\"]\n"
-            b"[White \"envuser\"]\n"
-            b"[Black \"opponent\"]\n"
-            b"[Result \"1-0\"]\n\n"
+            b'[Event "Fixture"]\n'
+            b'[Site "https://lichess.org/abcd1234"]\n'
+            b'[UTCDate "2024.06.01"]\n'
+            b'[UTCTime "12:00:00"]\n'
+            b'[White "envuser"]\n'
+            b'[Black "opponent"]\n'
+            b'[Result "1-0"]\n\n'
             b"1. e4 e5 1-0\n"
         )
         games_api = MagicMock()
@@ -643,7 +643,9 @@ class LichessClientTests(unittest.TestCase):
             fixture_pgn_path=self.fixture_path,
             use_fixture_when_no_token=True,
         )
-        client = LichessClient(LichessClientContext(settings=settings, logger=get_logger("test")))
+        client = LichessClient(
+            LichessClientContext(settings=settings, logger=get_logger("test"))
+        )
         request = LichessFetchRequest(since_ms=0)
         result = client.fetch_incremental_games(request)
 
@@ -658,7 +660,9 @@ class LichessClientTests(unittest.TestCase):
             checkpoint_path=self.tmp_dir / "since_auth.txt",
             metrics_version_file=self.tmp_dir / "metrics_auth.txt",
         )
-        client = LichessClient(LichessClientContext(settings=settings, logger=get_logger("test")))
+        client = LichessClient(
+            LichessClientContext(settings=settings, logger=get_logger("test"))
+        )
         self.assertFalse(client._should_refresh_token(RuntimeError("boom")))
 
     def test_fetch_remote_games_passes_until(self) -> None:

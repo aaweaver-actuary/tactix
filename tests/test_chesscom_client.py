@@ -416,11 +416,22 @@ class ChesscomClientTests(unittest.TestCase):
             metrics_version_file=self.tmp_dir / "metrics_archives.txt",
             chesscom_fixture_pgn_path=self.fixture_path,
         )
-        client = ChesscomClient(ChesscomClientContext(settings=settings, logger=get_logger("test")))
+        client = ChesscomClient(
+            ChesscomClientContext(settings=settings, logger=get_logger("test"))
+        )
 
         with (
-            patch.object(client, "_safe_fetch_archive", side_effect=[[], [{"pgn": "", "time_class": settings.chesscom_time_class}]]) as safe_fetch,
-            patch.object(client, "_append_archive_games", return_value=True) as append_games,
+            patch.object(
+                client,
+                "_safe_fetch_archive",
+                side_effect=[
+                    [],
+                    [{"pgn": "", "time_class": settings.chesscom_time_class}],
+                ],
+            ) as safe_fetch,
+            patch.object(
+                client, "_append_archive_games", return_value=True
+            ) as append_games,
         ):
             client._collect_archives(["one", "two"], since_ms=0)
 
@@ -436,9 +447,13 @@ class ChesscomClientTests(unittest.TestCase):
             metrics_version_file=self.tmp_dir / "metrics_safe.txt",
             chesscom_fixture_pgn_path=self.fixture_path,
         )
-        client = ChesscomClient(ChesscomClientContext(settings=settings, logger=get_logger("test")))
+        client = ChesscomClient(
+            ChesscomClientContext(settings=settings, logger=get_logger("test"))
+        )
 
-        with patch.object(client, "_fetch_archive_pages", side_effect=RuntimeError("boom")):
+        with patch.object(
+            client, "_fetch_archive_pages", side_effect=RuntimeError("boom")
+        ):
             result = client._safe_fetch_archive("https://example.com")
 
         self.assertEqual(result, [])
@@ -453,12 +468,14 @@ class ChesscomClientTests(unittest.TestCase):
             metrics_version_file=self.tmp_dir / "metrics_skip.txt",
             chesscom_fixture_pgn_path=self.fixture_path,
         )
-        client = ChesscomClient(ChesscomClientContext(settings=settings, logger=get_logger("test")))
+        client = ChesscomClient(
+            ChesscomClientContext(settings=settings, logger=get_logger("test"))
+        )
 
         archive_games = [
             {
                 "time_class": settings.chesscom_time_class,
-                "pgn": "[UTCDate \"2024.01.01\"]\n[UTCTime \"00:00:00\"]\n\n1. e4 e5 1-0",
+                "pgn": '[UTCDate "2024.01.01"]\n[UTCTime "00:00:00"]\n\n1. e4 e5 1-0',
                 "uuid": "id1",
             }
         ]
@@ -477,7 +494,9 @@ class ChesscomClientTests(unittest.TestCase):
             metrics_version_file=self.tmp_dir / "metrics_pgn.txt",
             chesscom_fixture_pgn_path=self.fixture_path,
         )
-        client = ChesscomClient(ChesscomClientContext(settings=settings, logger=get_logger("test")))
+        client = ChesscomClient(
+            ChesscomClientContext(settings=settings, logger=get_logger("test"))
+        )
         row, last_ts = client._coerce_game({"time_class": settings.chesscom_time_class})
 
         self.assertIsNone(row)
@@ -492,10 +511,14 @@ class ChesscomClientTests(unittest.TestCase):
             metrics_version_file=self.tmp_dir / "metrics_should_skip.txt",
             chesscom_fixture_pgn_path=self.fixture_path,
         )
-        client = ChesscomClient(ChesscomClientContext(settings=settings, logger=get_logger("test")))
+        client = ChesscomClient(
+            ChesscomClientContext(settings=settings, logger=get_logger("test"))
+        )
         row = {"game_id": "game", "last_timestamp_ms": 5}
 
-        self.assertTrue(client._should_skip_game(row, last_ts=5, since_ms=10, seen_game_ids=set()))
+        self.assertTrue(
+            client._should_skip_game(row, last_ts=5, since_ms=10, seen_game_ids=set())
+        )
 
     def test_parse_retry_after_none(self) -> None:
         self.assertIsNone(_parse_retry_after(None))

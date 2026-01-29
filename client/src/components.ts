@@ -5,6 +5,7 @@ import Badge from './_components/Badge';
 import BaseCard from './_components/BaseCard';
 import MetricCard from './_components/MetricCard';
 import TacticsTable from './_components/TacticsTable';
+import RecentGamesTable from './_components/RecentGamesTable';
 import PracticeQueue from './_components/PracticeQueue';
 import MetricsGrid from './_components/MetricsGrid';
 import MetricsTrends from './_components/MetricsTrends';
@@ -22,6 +23,7 @@ export {
   BaseCard,
   MetricCard,
   TacticsTable,
+  RecentGamesTable,
   PracticeQueue,
   MetricsGrid,
   MetricsTrends,

@@ -320,6 +320,7 @@ class DuckdbStoreHelperTests(unittest.TestCase):
             self.assertEqual(payload["source"], "lichess")
             self.assertEqual(payload["user"], "tester")
             self.assertTrue(payload["metrics"])
+            self.assertTrue(payload["recent_games"])
             self.assertTrue(payload["positions"])
             self.assertTrue(payload["tactics"])
 
@@ -398,10 +399,12 @@ class DuckdbStoreHelperTests(unittest.TestCase):
 
         self.assertEqual(payload["source"], "all")
         metric_sources = {row.get("source") for row in payload["metrics"]}
+        recent_game_sources = {row.get("source") for row in payload["recent_games"]}
         position_sources = {row.get("source") for row in payload["positions"]}
         tactic_sources = {row.get("source") for row in payload["tactics"]}
         for expected in sources:
             self.assertIn(expected, metric_sources)
+            self.assertIn(expected, recent_game_sources)
             self.assertIn(expected, position_sources)
             self.assertIn(expected, tactic_sources)
 

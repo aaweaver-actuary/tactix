@@ -2281,7 +2281,7 @@
       "Verify that the BaseCard component displays key game details like opponent, result, and date.",
       "Verify that the table wraps a common BaseTable component for consistent styling and functionality."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "refactor",

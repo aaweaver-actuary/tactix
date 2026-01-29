@@ -16,6 +16,7 @@ class MockDbStore(BaseDbStore):
             "source": context.settings.source,
             "user": context.settings.user,
             "metrics": [],
+            "recent_games": [],
             "positions": [],
             "tactics": [],
             "metrics_version": 0,

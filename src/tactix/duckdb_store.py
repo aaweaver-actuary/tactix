@@ -168,6 +168,15 @@ class DuckDbStore(BaseDbStore):
                 start_date=start_date,
                 end_date=end_date,
             ),
+            "recent_games": fetch_recent_games(
+                conn,
+                source=active_source,
+                rating_bucket=rating_bucket,
+                time_control=time_control,
+                start_date=start_date,
+                end_date=end_date,
+                user=self.settings.user,
+            ),
             "positions": fetch_recent_positions(
                 conn,
                 source=active_source,
@@ -1392,6 +1401,139 @@ def fetch_metrics(
         query += " WHERE " + " AND ".join(conditions)
     result = conn.execute(query, params)
     return _rows_to_dicts(result)
+
+
+def fetch_recent_games(
+    conn: duckdb.DuckDBPyConnection,
+    limit: int = 20,
+    source: str | None = None,
+    rating_bucket: str | None = None,
+    time_control: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+    user: str | None = None,
+) -> list[dict[str, object]]:
+    normalized_rating = _normalize_filter(rating_bucket)
+    normalized_time = _normalize_filter(time_control)
+    query = """
+        WITH latest_pgns AS (
+            SELECT * EXCLUDE (rn)
+            FROM (
+                SELECT
+                    *,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY game_id, source
+                        ORDER BY pgn_version DESC
+                    ) AS rn
+                FROM raw_pgns
+            )
+            WHERE rn = 1
+        ),
+        filtered AS (
+            SELECT
+                r.game_id,
+                r.source,
+                r.user,
+                r.pgn,
+                r.time_control,
+                r.user_rating,
+                r.last_timestamp_ms
+            FROM latest_pgns r
+    """
+    params: list[object] = []
+    conditions: list[str] = []
+    if normalized_time:
+        conditions.append("COALESCE(r.time_control, 'unknown') = ?")
+        params.append(normalized_time)
+    if normalized_rating:
+        conditions.append(_rating_bucket_clause(normalized_rating))
+    _append_date_range_filters(
+        conditions,
+        params,
+        start_date,
+        end_date,
+        "to_timestamp(r.last_timestamp_ms / 1000)",
+    )
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    query += "\n        )\n    "
+
+    if source:
+        filtered_conditions = " WHERE source = ?"
+        params.append(source)
+        final_query = (
+            query
+            + f"SELECT * FROM filtered{filtered_conditions} ORDER BY last_timestamp_ms DESC, game_id LIMIT ?"
+        )
+        params.append(limit)
+    else:
+        final_query = (
+            query
+            + """
+            , ranked AS (
+                SELECT
+                    *,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY source
+                        ORDER BY last_timestamp_ms DESC
+                    ) AS source_rank
+                FROM filtered
+            )
+            SELECT * EXCLUDE (source_rank)
+            FROM ranked
+            WHERE source_rank <= ?
+            ORDER BY last_timestamp_ms DESC, game_id
+            """
+        )
+        params.append(limit)
+
+    rows = _rows_to_dicts(conn.execute(final_query, params))
+    return [_format_recent_game_row(row, user) for row in rows]
+
+
+def _format_recent_game_row(
+    row: Mapping[str, object], user: str | None
+) -> dict[str, object]:
+    raw_user = user or str(row.get("user") or "")
+    metadata = BaseDbStore.extract_pgn_metadata(str(row.get("pgn") or ""), raw_user)
+    user_lower = raw_user.lower()
+    white = metadata.get("white_player")
+    black = metadata.get("black_player")
+    white_lower = str(white or "").lower()
+    black_lower = str(black or "").lower()
+    opponent = None
+    user_color: str | None = None
+    if white_lower and white_lower == user_lower:
+        opponent = black
+        user_color = "white"
+    elif black_lower and black_lower == user_lower:
+        opponent = white
+        user_color = "black"
+    else:
+        opponent = black or white
+
+    timestamp_ms = metadata.get("start_timestamp_ms")
+    played_at = None
+    if isinstance(timestamp_ms, (int, float)) and int(timestamp_ms) > 0:
+        played_at = datetime.fromtimestamp(
+            int(timestamp_ms) / 1000, tz=timezone.utc
+        ).isoformat()
+    else:
+        fallback_ms = row.get("last_timestamp_ms")
+        if isinstance(fallback_ms, (int, float)) and int(fallback_ms) > 0:
+            played_at = datetime.fromtimestamp(
+                int(fallback_ms) / 1000, tz=timezone.utc
+            ).isoformat()
+
+    return {
+        "game_id": str(row.get("game_id") or ""),
+        "source": row.get("source"),
+        "opponent": opponent,
+        "result": metadata.get("result"),
+        "played_at": played_at,
+        "time_control": metadata.get("time_control") or row.get("time_control") or None,
+        "user_color": user_color,
+    }
 
 
 def fetch_recent_positions(

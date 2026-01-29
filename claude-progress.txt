@@ -198,6 +198,16 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
 
+Session 2026-01-29 (feature – Recent games BaseCard)
+- Added recent games payload support in DuckDB dashboard responses (combined sources) and mapped opponent/result/date metadata from PGNs.
+- Implemented Recent games BaseCard on the dashboard using BaseTable with columns for source, opponent, result, date, and time control.
+- Added unit coverage for DuckDB dashboard payload and RecentGamesTable component.
+- Tests: `make check` (ruff check/format, ty, eslint, prettier, cargo test, pytest, vitest). Note: cargo test emitted pyo3 deprecation warnings (PyObject, Python::with_gil).
+- Puppeteer verification: `TACTIX_API_PORT=8001 node verification/puppeteer_feature_recent_games_base_card.js`.
+- Screenshot: `verification/feature-recent-games-2026-01-29.png`.
+- Updated feature_list.json: “Recent games from any site and time control are shown in a BaseCard component on the dashboard.” set passes=true.
+- Current passing count: 186.
+
 Session 2026-01-27 (regression fixes – features 001 + 003)
 - Fixed Airflow log Puppeteer script to target the correct DAG task id (`run_lichess_pipeline` by default) so log URLs stop returning 404.
 - Re-ran UI verification scripts for feature 001 + 003 with clean console output.

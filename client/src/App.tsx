@@ -39,6 +39,7 @@ import {
   Text,
   MetricCard,
   TacticsTable,
+  RecentGamesTable,
   PracticeQueue,
   MetricsGrid,
   MetricsTrends,
@@ -75,6 +76,7 @@ const BASE_CARD_IDS = [
   'metrics-trends',
   'time-trouble-correlation',
   'practice-queue',
+  'recent-games',
   'tactics-table',
   'positions-list',
 ];
@@ -101,6 +103,27 @@ const formatCorrelation = (value: number | null) => {
 
 const formatRate = (value: number | null) =>
   value === null || Number.isNaN(value) ? '--' : `${(value * 100).toFixed(1)}%`;
+
+const formatGameResult = (result: string | null, userColor: string | null) => {
+  if (!result) return '--';
+  if (result === '1/2-1/2') return 'Draw';
+  if (result === '1-0') {
+    if (userColor === 'white') return 'Win';
+    if (userColor === 'black') return 'Loss';
+  }
+  if (result === '0-1') {
+    if (userColor === 'black') return 'Win';
+    if (userColor === 'white') return 'Loss';
+  }
+  return result;
+};
+
+const formatGameDate = (value: string | null) => {
+  if (!value) return '--';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString();
+};
 
 type BaseCardRenderProps = {
   dragHandleProps?: ButtonHTMLAttributes<HTMLButtonElement>;
@@ -966,6 +989,54 @@ export default function App() {
     [],
   );
 
+  const recentGamesColumns = useMemo<
+    ColumnDef<DashboardPayload['recent_games'][number]>[]
+  >(
+    () => [
+      {
+        header: 'Source',
+        accessorKey: 'source',
+        cell: (info) => (
+          <span className="text-sand/80">
+            {String(info.getValue() ?? 'unknown')}
+          </span>
+        ),
+      },
+      {
+        header: 'Opponent',
+        accessorKey: 'opponent',
+        cell: (info) => (
+          <span className="text-sand">{String(info.getValue() ?? '--')}</span>
+        ),
+      },
+      {
+        header: 'Result',
+        accessorFn: (row) =>
+          formatGameResult(row.result ?? null, row.user_color ?? null),
+        cell: (info) => <Badge label={String(info.getValue() ?? '--')} />,
+      },
+      {
+        header: 'Date',
+        accessorFn: (row) => formatGameDate(row.played_at ?? null),
+        cell: (info) => (
+          <span className="text-sand/70">
+            {String(info.getValue() ?? '--')}
+          </span>
+        ),
+      },
+      {
+        header: 'Time control',
+        accessorKey: 'time_control',
+        cell: (info) => (
+          <span className="text-sand/70">
+            {String(info.getValue() ?? '--')}
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
+
   const practiceOrientation =
     currentPractice?.side_to_move === 'b' ? 'black' : 'white';
 
@@ -1177,6 +1248,36 @@ export default function App() {
         ),
       },
       {
+        id: 'recent-games',
+        label: 'Recent games',
+        visible: Boolean(data),
+        render: (props) =>
+          data ? (
+            <BaseCard
+              className="p-4"
+              data-testid="recent-games-card"
+              header={
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-display text-sand">
+                    Recent games
+                  </h3>
+                  <Badge label="All sources" />
+                </div>
+              }
+              contentClassName="pt-3"
+              {...props}
+            >
+              <RecentGamesTable
+                data={data.recent_games}
+                columns={recentGamesColumns}
+                rowTestId={(row, index) =>
+                  `recent-games-row-${row.source ?? 'unknown'}-${index}`
+                }
+              />
+            </BaseCard>
+          ) : null,
+      },
+      {
         id: 'tactics-table',
         label: 'Recent tactics',
         visible: Boolean(data),
@@ -1227,6 +1328,7 @@ export default function App() {
     practiceLoading,
     practiceQueueColumns,
     practiceQueue,
+    recentGamesColumns,
     tacticsColumns,
     timeTroubleColumns,
     timeTroubleSortedRows,

@@ -47,10 +47,21 @@ export type PositionRow = {
   created_at: string;
 };
 
+export type RecentGameRow = {
+  game_id: string;
+  source: string | null;
+  opponent: string | null;
+  result: string | null;
+  played_at: string | null;
+  time_control: string | null;
+  user_color: 'white' | 'black' | null;
+};
+
 export type DashboardPayload = {
   source: string;
   user: string;
   metrics: MetricsRow[];
+  recent_games: RecentGameRow[];
   positions: PositionRow[];
   tactics: TacticRow[];
   metrics_version: number;

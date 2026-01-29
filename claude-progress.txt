@@ -2017,3 +2017,8 @@ Session 2026-01-29 (features 181-185 – hanging piece high severity in bullet/b
 - Post-change make check: `make check` (ty deprecation warning for FastAPI on_event; cargo deprecation warnings; pytest/vitest warnings only).
 - Updated feature_list.json: features “Stockfish detects hanging piece with high severity in bullet/blitz/rapid/classical/correspondence” marked passes=true.
 - Pass count: 197.
+
+Session 2026-01-29 (outcome-found motifs manual UI verification)
+- Added manual UI verification script: `verification/puppeteer_feature_186_outcome_found_motifs_manual_ui.js` (uses UI controls only; no JS eval shortcuts).
+- Manual UI run blocked: recent tactics table lacks found rows for selected motifs in current fixture pipeline; requires seeding or adjusting filters/time controls per fixture.
+- Action: reverted feature_list.json outcome-found motifs (mate in 1/2, fork, pin, skewer, discovered attack/check) to passes=false pending UI verification.

@@ -1,0 +1,206 @@
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  SortingState,
+  useReactTable,
+} from '@tanstack/react-table';
+import { useMemo, useState } from 'react';
+
+const DEFAULT_PAGE_SIZES = [5, 10, 20];
+
+type BaseTableProps<TData> = {
+  data: TData[] | null;
+  columns: ColumnDef<TData, unknown>[];
+  initialPageSize?: number;
+  pageSizeOptions?: number[];
+  emptyMessage?: string;
+  loadingMessage?: string;
+  className?: string;
+};
+
+export default function BaseTable<TData>({
+  data,
+  columns,
+  initialPageSize = DEFAULT_PAGE_SIZES[0],
+  pageSizeOptions = DEFAULT_PAGE_SIZES,
+  emptyMessage = 'No rows to display.',
+  loadingMessage = 'Loading…',
+  className,
+}: BaseTableProps<TData>) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: initialPageSize,
+  });
+
+  const safeData = useMemo(() => data ?? [], [data]);
+  const table = useReactTable({
+    data: safeData,
+    columns,
+    state: {
+      sorting,
+      pagination,
+    },
+    onSortingChange: setSorting,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    manualPagination: false,
+  });
+
+  const isLoading = data === null;
+  const visibleRows = table.getRowModel().rows;
+  const pageCount = table.getPageCount();
+  const hasRows = visibleRows.length > 0;
+  const showPagination = !isLoading && pageCount > 1;
+  const wrapperClassName = ['space-y-3', className].filter(Boolean).join(' ');
+
+  return (
+    <div className={wrapperClassName}>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead className="text-sand/60">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  if (header.isPlaceholder) {
+                    return <th key={header.id} />;
+                  }
+
+                  const canSort = header.column.getCanSort();
+                  const sortState = header.column.getIsSorted();
+                  const sortLabel =
+                    sortState === 'asc'
+                      ? 'Sorted ascending'
+                      : sortState === 'desc'
+                        ? 'Sorted descending'
+                        : 'Not sorted';
+
+                  return (
+                    <th key={header.id} className="text-left py-2">
+                      <button
+                        type="button"
+                        onClick={
+                          canSort
+                            ? header.column.getToggleSortingHandler()
+                            : undefined
+                        }
+                        className={[
+                          'inline-flex items-center gap-2',
+                          canSort
+                            ? 'text-sand hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal/60 focus-visible:ring-offset-2 focus-visible:ring-offset-night'
+                            : 'text-sand/80 cursor-default',
+                        ].join(' ')}
+                        aria-label={sortLabel}
+                      >
+                        <span>
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                        </span>
+                        {canSort ? (
+                          <span className="text-[10px] text-sand/60">
+                            {sortState === 'asc'
+                              ? '▲'
+                              : sortState === 'desc'
+                                ? '▼'
+                                : '↕'}
+                          </span>
+                        ) : null}
+                      </button>
+                    </th>
+                  );
+                })}
+              </tr>
+            ))}
+          </thead>
+          <tbody className="text-sand/90">
+            {isLoading ? (
+              <tr>
+                <td
+                  colSpan={columns.length}
+                  className="py-6 text-center text-xs text-sand/70"
+                >
+                  {loadingMessage}
+                </td>
+              </tr>
+            ) : hasRows ? (
+              visibleRows.map((row) => (
+                <tr
+                  key={row.id}
+                  className="odd:bg-white/0 even:bg-white/5 border-b border-white/5"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="py-2">
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={columns.length}
+                  className="py-6 text-center text-xs text-sand/70"
+                >
+                  {emptyMessage}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {showPagination ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-sand/70">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="rounded border border-white/10 px-2 py-1 hover:border-white/30"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              Prev
+            </button>
+            <button
+              type="button"
+              className="rounded border border-white/10 px-2 py-1 hover:border-white/30"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Next
+            </button>
+          </div>
+          <div>
+            Page {table.getState().pagination.pageIndex + 1} of {pageCount}
+          </div>
+          <label className="flex items-center gap-2">
+            Rows per page
+            <select
+              className="rounded border border-white/10 bg-transparent px-2 py-1 text-sand/80"
+              value={pagination.pageSize}
+              onChange={(event) => {
+                const next = Number(event.target.value);
+                setPagination({ pageIndex: 0, pageSize: next });
+              }}
+            >
+              {pageSizeOptions.map((size) => (
+                <option key={size} value={size} className="bg-night">
+                  {size}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      ) : null}
+    </div>
+  );
+}

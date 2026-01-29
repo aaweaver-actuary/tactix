@@ -6,10 +6,13 @@ const puppeteer = require('../client/node_modules/puppeteer');
 const CLIENT_DIR = path.resolve(__dirname, '..', 'client');
 const ROOT_DIR = path.resolve(__dirname, '..');
 const BACKEND_CMD = path.join(ROOT_DIR, '.venv', 'bin', 'python');
+const API_PORT = Number(process.env.TACTIX_API_PORT || '8000');
+const API_BASE = `http://localhost:${API_PORT}`;
 const SOURCE = process.env.TACTIX_SOURCE || 'lichess';
 const SCREENSHOT_NAME =
   process.env.TACTIX_SCREENSHOT_NAME || `dashboard-${SOURCE}.png`;
-const ACTION_LABEL = process.env.TACTIX_ACTION_LABEL || 'Run + Refresh';
+const ACTION_SELECTOR =
+  process.env.TACTIX_ACTION_SELECTOR || '[data-testid="action-run"]';
 
 function startBackend() {
   return new Promise((resolve, reject) => {
@@ -22,7 +25,7 @@ function startBackend() {
         '--host',
         '0.0.0.0',
         '--port',
-        '8000',
+        String(API_PORT),
       ],
       {
         cwd: ROOT_DIR,
@@ -56,6 +59,24 @@ function startBackend() {
   });
 }
 
+function buildClient() {
+  return new Promise((resolve, reject) => {
+    const proc = spawn('npm', ['--prefix', CLIENT_DIR, 'run', 'build'], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, VITE_API_BASE: API_BASE },
+    });
+
+    proc.on('error', reject);
+    proc.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`Client build failed with exit code ${code}`));
+      }
+    });
+  });
+}
+
 function startPreview() {
   return new Promise((resolve, reject) => {
     const proc = spawn(
@@ -70,7 +91,10 @@ function startPreview() {
         '--port',
         '4173',
       ],
-      { stdio: ['ignore', 'pipe', 'pipe'] },
+      {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env },
+      },
     );
 
     const onData = (data) => {
@@ -95,6 +119,8 @@ function startPreview() {
   const server = await startPreview();
   try {
     console.log('Launching browser...');
+    console.log('Building client bundle...');
+    await buildClient();
     const browser = await puppeteer.launch({ headless: 'new' });
     const page = await browser.newPage();
     const consoleErrors = [];
@@ -115,27 +141,11 @@ function startPreview() {
     await page.goto('http://localhost:4173/', { waitUntil: 'networkidle0' });
     await page.waitForSelector('[data-testid="filter-source"]');
     if (SOURCE === 'chesscom') {
-        await page.$$eval(
-          'button',
-          (buttons, label) => {
-            const target = buttons.find(
-              (btn) => btn.textContent && btn.textContent.includes(label),
-            );
-            if (target) target.click();
-          },
-          'Chess.com',
-        );
+      await page.select('[data-testid="filter-source"]', 'chesscom');
+    } else {
+      await page.select('[data-testid="filter-source"]', 'lichess');
     }
-    await page.$$eval(
-      'button',
-      (buttons, label) => {
-        const target = buttons.find(
-          (btn) => btn.textContent && btn.textContent.includes(label),
-        );
-        if (target) target.click();
-      },
-      ACTION_LABEL,
-    );
+    await page.click(ACTION_SELECTOR);
     await new Promise((resolve) => setTimeout(resolve, 2000));
     await page.waitForSelector('table');
 

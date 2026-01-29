@@ -1886,3 +1886,14 @@ Session 2026-01-29 (feature 176 – hanging piece low severity in blitz)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_hanging_piece_blitz.py -q`.
 - Post-change make check: `make check` (same eslint warning; no errors; pytest 314 passed; coverage 90.22%).
 - Updated feature_list.json: feature “Stockfish detects hanging piece with low severity in blitz” marked passes=true.
+
+Session 2026-01-29 (refactor – BaseTable for dashboard tables)
+- Before → after map:
+	- Table markup + sorting/pagination/styling duplicated in dashboard tables → consolidated into `client/src/_components/BaseTable.tsx` with shared sorting, pagination, and styling.
+	- `TacticsTable`, `PracticeQueue`, `MetricsTrends`, `TimeTroubleCorrelation` now accept only data + column definitions and delegate rendering to BaseTable.
+	- Header sort indicator mismatch in tests → normalized header assertions to ignore sort glyphs.
+- Tests: `make check`.
+- UI verification: `TACTIX_API_PORT=8011 TACTIX_SCREENSHOT_NAME=feature-base-table-2026-01-29.png node /Users/andy/tactix/verification/puppeteer_dashboard.js`.
+- Screenshots: `verification/feature-base-table-2026-01-29.png`.
+- Updated feature_list.json: “All tables in the dashboard wrap a common BaseTable component that handles table functionality like sorting, pagination, and styling.” marked passes=true.
+- Pass count: 177.

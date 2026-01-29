@@ -26,7 +26,11 @@ export default function MotifCard({
     <div className="flex flex-col gap-1">
       <Text mode="uppercase" value={motif} />
       <Text mode="teal" size="2xl" value={`${found}/${total}`} />
-      <Text size="xs" mode="normal" value={`${missed} missed, ${failedAttempt} failed`} />
+      <Text
+        size="xs"
+        mode="normal"
+        value={`${missed} missed, ${failedAttempt} failed`}
+      />
     </div>
   );
 

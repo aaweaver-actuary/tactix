@@ -45,9 +45,7 @@ export default function MetricsGrid({
   );
 
   const motifRows = metricsData.filter(
-    (
-      row,
-    ): row is DashboardPayload['metrics'][number] & { motif: string } =>
+    (row): row is DashboardPayload['metrics'][number] & { motif: string } =>
       typeof row.motif === 'string' && row.motif.length > 0,
   );
 
@@ -100,8 +98,9 @@ export default function MetricsGrid({
                         missed={row.missed}
                         failedAttempt={row.failed_attempt}
                         dragHandleProps={
-                          (dragProvided.dragHandleProps ??
-                            undefined) as BaseCardDragHandleProps | undefined
+                          (dragProvided.dragHandleProps ?? undefined) as
+                            | BaseCardDragHandleProps
+                            | undefined
                         }
                         dragHandleLabel={`Reorder ${row.motif}`}
                       />

@@ -2257,7 +2257,7 @@
       "Ensure data fetching logic is separated from table rendering logic.",
       "Ensure the only props passed to higher-level table components are data and column definitions."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

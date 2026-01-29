@@ -1,78 +1,61 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import MetricsTrends from './MetricsTrends';
 
+const formatPercent = (value: number | null) =>
+  value === null || Number.isNaN(value) ? '--' : `${(value * 100).toFixed(1)}%`;
+
 describe('MetricsTrends', () => {
   it('returns empty markup when no valid trend data exists', () => {
-    const metricsData = [
-      {
-        motif: 'alpha',
-        metric_type: 'count',
-        trend_date: '2023-01-01',
-        window_days: 7,
-        found_rate: 0.1,
-      },
-      {
-        motif: 'beta',
-        metric_type: 'trend',
-        trend_date: null,
-        window_days: 30,
-        found_rate: 0.2,
-      },
-    ] as any[];
-
-    const html = renderToStaticMarkup(
-      <MetricsTrends metricsData={metricsData} />,
-    );
+    const html = renderToStaticMarkup(<MetricsTrends data={[]} columns={[]} />);
 
     expect(html).toBe('');
   });
 
-  it('renders latest trends per motif and formats percentages', () => {
-    const metricsData = [
+  it('renders trend rows and formats percentages', () => {
+    const data = [
       {
         motif: 'alpha',
-        metric_type: 'trend',
-        trend_date: '2023-01-01',
-        window_days: 7,
-        found_rate: 0.1234,
-      },
-      {
-        motif: 'alpha',
-        metric_type: 'trend',
-        trend_date: '2023-01-05',
-        window_days: 7,
-        found_rate: 0.345,
-      },
-      {
-        motif: 'alpha',
-        metric_type: 'trend',
-        trend_date: '2023-01-03',
-        window_days: 30,
-        found_rate: null,
+        seven: {
+          found_rate: 0.345,
+          trend_date: '2023-01-05',
+        },
+        thirty: {
+          found_rate: null,
+          trend_date: '2023-01-03',
+        },
       },
       {
         motif: 'beta',
-        metric_type: 'trend',
-        trend_date: '2023-02-01',
-        window_days: 30,
-        found_rate: 0.5,
-      },
-      {
-        motif: 'ignored',
-        metric_type: 'count',
-        trend_date: '2023-02-02',
-        window_days: 7,
-        found_rate: 0.9,
+        thirty: {
+          found_rate: 0.5,
+          trend_date: '2023-02-01',
+        },
       },
     ] as any[];
 
+    const columns = [
+      { header: 'Motif', accessorKey: 'motif' },
+      {
+        header: '7g found',
+        accessorFn: (row: any) => row.seven?.found_rate ?? null,
+        cell: (info: any) => formatPercent(info.getValue()),
+      },
+      {
+        header: '30g found',
+        accessorFn: (row: any) => row.thirty?.found_rate ?? null,
+        cell: (info: any) => formatPercent(info.getValue()),
+      },
+      {
+        header: 'Last update',
+        accessorFn: (row: any) =>
+          row.seven?.trend_date || row.thirty?.trend_date || '--',
+      },
+    ];
+
     const html = renderToStaticMarkup(
-      <MetricsTrends metricsData={metricsData} />,
+      <MetricsTrends data={data as any} columns={columns as any} />,
     );
 
-    expect(html).toContain('Motif trends');
-    expect(html).toContain('aria-expanded="false"');
-    expect(html).toContain('data-state="collapsed"');
     expect(html).toContain('Motif');
     expect(html).toContain('7g found');
     expect(html).toContain('30g found');
@@ -80,8 +63,6 @@ describe('MetricsTrends', () => {
 
     expect(html).toContain('alpha');
     expect(html).toContain('beta');
-    expect(html).not.toContain('ignored');
-
     expect(html).toContain('34.5%');
     expect(html).toContain('--');
     expect(html).toContain('50.0%');

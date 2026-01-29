@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ButtonHTMLAttributes } from 'react';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
+import { ColumnDef } from '@tanstack/react-table';
 import { Chess, Square } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import {
@@ -28,8 +29,10 @@ import {
   JobProgressItem,
   LichessProfile,
 } from './types';
+import type { MetricsTrendsRow } from './_components/MetricsTrends';
 import {
   Badge,
+  BaseCard,
   Text,
   MetricCard,
   TacticsTable,
@@ -82,6 +85,18 @@ const areArraysEqual = (left: string[], right: string[]) => {
   if (left.length !== right.length) return false;
   return left.every((value, index) => value === right[index]);
 };
+
+const formatPercent = (value: number | null) =>
+  value === null || Number.isNaN(value) ? '--' : `${(value * 100).toFixed(1)}%`;
+
+const formatCorrelation = (value: number | null) => {
+  if (value === null || Number.isNaN(value)) return '--';
+  const rounded = value.toFixed(2);
+  return value > 0 ? `+${rounded}` : rounded;
+};
+
+const formatRate = (value: number | null) =>
+  value === null || Number.isNaN(value) ? '--' : `${(value * 100).toFixed(1)}%`;
 
 type BaseCardRenderProps = {
   dragHandleProps?: ButtonHTMLAttributes<HTMLButtonElement>;
@@ -699,6 +714,31 @@ export default function App() {
     );
   }, [data, selectedRatingBucket, selectedTimeControl]);
 
+  const trendLatestRows = useMemo<MetricsTrendsRow[]>(() => {
+    if (!trendRows.length) return [];
+    const map = new Map<string, MetricsTrendsRow>();
+    trendRows.forEach((row) => {
+      if (!row.trend_date) return;
+      const current = map.get(row.motif) || { motif: row.motif };
+      const slot =
+        row.window_days === 7
+          ? 'seven'
+          : row.window_days === 30
+            ? 'thirty'
+            : null;
+      if (!slot) return;
+      const existing = current[slot];
+      if (
+        !existing ||
+        new Date(row.trend_date) > new Date(existing.trend_date || 0)
+      ) {
+        current[slot] = row;
+      }
+      map.set(row.motif, current);
+    });
+    return Array.from(map.values());
+  }, [trendRows]);
+
   const timeTroubleRows = useMemo(() => {
     if (!data) return [];
     return data.metrics.filter(
@@ -710,6 +750,190 @@ export default function App() {
           : row.time_control === selectedTimeControl),
     );
   }, [data, selectedTimeControl]);
+
+  const timeTroubleSortedRows = useMemo(() => {
+    if (!timeTroubleRows.length) return [];
+    return [...timeTroubleRows].sort((a, b) => {
+      const left = a.time_control ?? 'unknown';
+      const right = b.time_control ?? 'unknown';
+      return left.localeCompare(right);
+    });
+  }, [timeTroubleRows]);
+
+  const tacticsColumns = useMemo<
+    ColumnDef<DashboardPayload['tactics'][number]>[]
+  >(
+    () => [
+      {
+        header: 'Motif',
+        accessorKey: 'motif',
+        cell: (info) => (
+          <span className="font-display text-sm uppercase tracking-wide">
+            {String(info.getValue())}
+          </span>
+        ),
+      },
+      {
+        header: 'Result',
+        accessorKey: 'result',
+        cell: (info) => <Badge label={String(info.getValue())} />,
+      },
+      {
+        header: 'Move',
+        accessorKey: 'user_uci',
+        cell: (info) => (
+          <span className="font-mono text-xs">{String(info.getValue())}</span>
+        ),
+      },
+      {
+        header: 'Delta (cp)',
+        accessorKey: 'eval_delta',
+        cell: (info) => (
+          <span className="font-mono text-xs text-rust">
+            {String(info.getValue())}
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const practiceQueueColumns = useMemo<ColumnDef<PracticeQueueItem>[]>(
+    () => [
+      {
+        header: 'Motif',
+        accessorKey: 'motif',
+        cell: (info) => (
+          <span className="font-display text-sm uppercase tracking-wide">
+            {String(info.getValue())}
+          </span>
+        ),
+      },
+      {
+        header: 'Result',
+        accessorKey: 'result',
+        cell: (info) => <Badge label={String(info.getValue())} />,
+      },
+      {
+        header: 'Best',
+        accessorKey: 'best_uci',
+        cell: (info) => (
+          <span className="font-mono text-xs text-teal">
+            {String(info.getValue() || '--')}
+          </span>
+        ),
+      },
+      {
+        header: 'Your move',
+        accessorKey: 'user_uci',
+        cell: (info) => (
+          <span className="font-mono text-xs">{String(info.getValue())}</span>
+        ),
+      },
+      {
+        header: 'Move',
+        accessorFn: (row) => `${row.move_number}.${row.ply}`,
+        cell: (info) => (
+          <span className="font-mono text-xs">{String(info.getValue())}</span>
+        ),
+      },
+      {
+        header: 'Delta',
+        accessorKey: 'eval_delta',
+        cell: (info) => (
+          <span className="font-mono text-xs text-rust">
+            {String(info.getValue())}
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const metricsTrendsColumns = useMemo<ColumnDef<MetricsTrendsRow>[]>(
+    () => [
+      {
+        header: 'Motif',
+        accessorKey: 'motif',
+        cell: (info) => (
+          <span className="font-display text-sm uppercase tracking-wide">
+            {String(info.getValue())}
+          </span>
+        ),
+      },
+      {
+        header: '7g found',
+        accessorFn: (row) => row.seven?.found_rate ?? null,
+        cell: (info) => (
+          <span className="font-mono text-xs text-teal">
+            {formatPercent(info.getValue() as number | null)}
+          </span>
+        ),
+      },
+      {
+        header: '30g found',
+        accessorFn: (row) => row.thirty?.found_rate ?? null,
+        cell: (info) => (
+          <span className="font-mono text-xs text-teal">
+            {formatPercent(info.getValue() as number | null)}
+          </span>
+        ),
+      },
+      {
+        header: 'Last update',
+        accessorFn: (row) =>
+          row.seven?.trend_date || row.thirty?.trend_date || '--',
+        cell: (info) => (
+          <span className="font-mono text-xs text-sand/70">
+            {String(info.getValue())}
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const timeTroubleColumns = useMemo<
+    ColumnDef<DashboardPayload['metrics'][number]>[]
+  >(
+    () => [
+      {
+        header: 'Time control',
+        accessorKey: 'time_control',
+        cell: (info) => (
+          <span className="text-sand">
+            {String(info.getValue() ?? 'unknown')}
+          </span>
+        ),
+      },
+      {
+        header: 'Correlation',
+        accessorFn: (row) => row.found_rate ?? null,
+        cell: (info) => (
+          <span className="text-sand">
+            {formatCorrelation(info.getValue() as number | null)}
+          </span>
+        ),
+      },
+      {
+        header: 'Time trouble rate',
+        accessorFn: (row) => row.miss_rate ?? null,
+        cell: (info) => (
+          <span className="text-sand">
+            {formatRate(info.getValue() as number | null)}
+          </span>
+        ),
+      },
+      {
+        header: 'Samples',
+        accessorKey: 'total',
+        cell: (info) => (
+          <span className="text-sand/80">{String(info.getValue())}</span>
+        ),
+      },
+    ],
+    [],
+  );
 
   const practiceOrientation =
     currentPractice?.side_to_move === 'b' ? 'black' : 'white';
@@ -805,15 +1029,55 @@ export default function App() {
       {
         id: 'metrics-trends',
         label: 'Motif trends',
-        visible: Boolean(data) && trendRows.length > 0,
-        render: (props) => <MetricsTrends metricsData={trendRows} {...props} />,
+        visible: Boolean(data) && trendLatestRows.length > 0,
+        render: (props) => (
+          <BaseCard
+            className="p-4"
+            header={
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-display text-sand">Motif trends</h3>
+                <Badge label="Rolling 7/30 games" />
+              </div>
+            }
+            contentClassName="pt-3"
+            {...props}
+          >
+            <MetricsTrends
+              data={trendLatestRows}
+              columns={metricsTrendsColumns}
+            />
+          </BaseCard>
+        ),
       },
       {
         id: 'time-trouble-correlation',
         label: 'Time-trouble correlation',
-        visible: Boolean(data) && timeTroubleRows.length > 0,
+        visible: Boolean(data) && timeTroubleSortedRows.length > 0,
         render: (props) => (
-          <TimeTroubleCorrelation metricsData={timeTroubleRows} {...props} />
+          <BaseCard
+            className="p-4"
+            data-testid="time-trouble-correlation"
+            header={
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-display text-sand">
+                  Time-trouble correlation
+                </h3>
+                <Badge label="By time control" />
+              </div>
+            }
+            contentClassName="pt-3"
+            {...props}
+          >
+            <p className="text-xs text-sand/70 mb-3">
+              Correlation between time trouble (≤30s or ≤10% of the initial
+              clock) and missed tactics. Positive values indicate more misses in
+              time trouble.
+            </p>
+            <TimeTroubleCorrelation
+              data={timeTroubleSortedRows}
+              columns={timeTroubleColumns}
+            />
+          </BaseCard>
         ),
       },
       {
@@ -821,13 +1085,38 @@ export default function App() {
         label: 'Practice queue',
         visible: true,
         render: (props) => (
-          <PracticeQueue
-            data={practiceQueue}
-            includeFailedAttempt={includeFailedAttempt}
-            onToggleIncludeFailedAttempt={setIncludeFailedAttempt}
-            loading={practiceLoading}
+          <BaseCard
+            className="p-4"
+            header={
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-display text-sand">
+                    Practice queue
+                  </h3>
+                  <Text value="Missed tactics from your games, ready to drill." />
+                </div>
+                <label className="flex items-center gap-2 text-xs text-sand/70">
+                  <input
+                    type="checkbox"
+                    className="accent-teal"
+                    checked={includeFailedAttempt}
+                    onChange={(event) =>
+                      setIncludeFailedAttempt(event.target.checked)
+                    }
+                    disabled={practiceLoading}
+                  />
+                  Include failed attempts
+                </label>
+              </div>
+            }
+            contentClassName="pt-3"
             {...props}
-          />
+          >
+            <PracticeQueue
+              data={practiceLoading ? null : practiceQueue}
+              columns={practiceQueueColumns}
+            />
+          </BaseCard>
         ),
       },
       {
@@ -835,7 +1124,23 @@ export default function App() {
         label: 'Recent tactics',
         visible: Boolean(data),
         render: (props) =>
-          data ? <TacticsTable tacticsData={data.tactics} {...props} /> : null,
+          data ? (
+            <BaseCard
+              className="p-4"
+              header={
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-display text-sand">
+                    Recent tactics
+                  </h3>
+                  <Badge label="Live" />
+                </div>
+              }
+              contentClassName="pt-3"
+              {...props}
+            >
+              <TacticsTable data={data.tactics} columns={tacticsColumns} />
+            </BaseCard>
+          ) : null,
       },
       {
         id: 'positions-list',
@@ -850,11 +1155,16 @@ export default function App() {
     [
       data,
       includeFailedAttempt,
+      metricsTrendsColumns,
+      motifDropIndicatorIndex,
       orderedMotifBreakdown,
       practiceLoading,
+      practiceQueueColumns,
       practiceQueue,
-      trendRows,
-      timeTroubleRows,
+      tacticsColumns,
+      timeTroubleColumns,
+      timeTroubleSortedRows,
+      trendLatestRows,
     ],
   );
 

@@ -1,14 +1,5 @@
-import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { vi } from 'vitest';
 import TacticsTable from './TacticsTable';
-
-vi.mock('./Badge', () => ({
-  __esModule: true,
-  default: ({ label }: { label: string }) => (
-    <span data-testid="badge">{label}</span>
-  ),
-}));
 
 const sampleData = [
   {
@@ -27,9 +18,16 @@ const sampleData = [
   },
 ];
 
+const columns = [
+  { header: 'Motif', accessorKey: 'motif' },
+  { header: 'Result', accessorKey: 'result' },
+  { header: 'Move', accessorKey: 'user_uci' },
+  { header: 'Delta (cp)', accessorKey: 'eval_delta' },
+];
+
 function renderToDocument() {
   const html = renderToStaticMarkup(
-    <TacticsTable tacticsData={sampleData as any} />,
+    <TacticsTable data={sampleData as any} columns={columns as any} />,
   );
   const parser = new DOMParser();
   return parser.parseFromString(html, 'text/html');
@@ -39,11 +37,8 @@ describe('TacticsTable', () => {
   it('renders the title and table headers', () => {
     const doc = renderToDocument();
 
-    expect(doc.querySelector('h3')?.textContent).toBe('Recent tactics');
-    expect(doc.querySelector('[aria-expanded="false"]')).not.toBeNull();
-
     const headers = Array.from(doc.querySelectorAll('th')).map((th) =>
-      th.textContent?.trim(),
+      th.textContent?.replace(/[▲▼↕]/g, '').trim(),
     );
     expect(headers).toEqual(['Motif', 'Result', 'Move', 'Delta (cp)']);
   });
@@ -67,10 +62,5 @@ describe('TacticsTable', () => {
     expect(secondRowCells).toContain('fork');
     expect(secondRowCells).toContain('g1f3');
     expect(secondRowCells).toContain('-85');
-
-    const badges = Array.from(
-      doc.querySelectorAll('[data-testid="badge"]'),
-    ).map((el) => el.textContent?.trim());
-    expect(badges).toEqual(['Live', 'correct', 'wrong']);
   });
 });

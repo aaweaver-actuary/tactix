@@ -2344,7 +2344,7 @@
       "After refactoring, run all unit tests to ensure no functionality is broken.",
       "Each new function added must have specific unit tests to verify its SINGLE RESPONSIBILITY."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "refactor",
@@ -2368,7 +2368,7 @@
       "After refactoring, run all unit tests to ensure no functionality is broken.",
       "Each new function added must have specific unit tests to verify its SINGLE RESPONSIBILITY."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "refactor",
@@ -2383,7 +2383,7 @@
       "After refactoring, run all unit tests to ensure no functionality is broken.",
       "Each new function added must have specific unit tests to verify its SINGLE RESPONSIBILITY."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "refactor",
@@ -2395,7 +2395,7 @@
       "Run all unit tests to ensure no functionality is broken after the refactor.",
       "Ensure that downstream code using the clients is updated to accept a client object as an injectable dependency, rather than instantiating specific clients directly."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "refactor",
@@ -2421,7 +2421,7 @@
       "Run all unit tests to ensure no functionality is broken after the refactor.",
       "Ensure that downstream code using the stores is updated to accept a store object as an injectable dependency, rather than instantiating specific stores directly."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",

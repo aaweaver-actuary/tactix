@@ -1920,3 +1920,8 @@ Session 2026-01-29 (BaseDbStore refactor + mocks)
 	- tests/test_postgres_store.py: PostgresStore delegation coverage.
 - Tests: pre-change `make check` (clean; cargo warnings about deprecated pyo3 remain). Post-change `make check` (clean; cargo warnings about deprecated pyo3 remain).
 - Screenshots: n/a (refactor-only change).
+
+Session 2026-01-29 (refactor verification – BaseChessClient/BaseDbStore/mocks)
+- Verified refactor requirements: Chess.com/Lichess clients use BaseChessClient + context + pydantic models; dashboard/pipeline uses injectable BaseChessClient/BaseDbStore; mocks validated via tests.
+- Tests: `make check` (clean; cargo warnings about deprecated pyo3 remain).
+- Updated feature_list.json: chesscom_client refactor, lichess_client refactor, BaseChessClient shared refactor, BaseChessClient in dashboard, BaseDbStore in dashboard marked passes=true.

@@ -2477,7 +2477,7 @@
       "Step 3: Persist best line and explanation",
       "Step 4: Link tactic to position row"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -2488,7 +2488,7 @@
       "Step 3: Persist best line and explanation",
       "Step 4: Link tactic to position row"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -2499,7 +2499,7 @@
       "Step 3: Persist best line and explanation",
       "Step 4: Link tactic to position row"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -2510,7 +2510,7 @@
       "Step 3: Persist best line and explanation",
       "Step 4: Link tactic to position row"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -2521,7 +2521,7 @@
       "Step 3: Persist best line and explanation",
       "Step 4: Link tactic to position row"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

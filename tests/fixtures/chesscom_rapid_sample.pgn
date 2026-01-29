@@ -144,3 +144,17 @@
 [FEN "6k1/4q3/8/8/8/8/4R3/6K1 w - - 0 1"]
 
 1. Rxe7 1-0
+
+
+[Event "Chess.com Rapid Fixture 12 - Hanging Piece High"]
+[Site "https://www.chess.com/game/live/6677889910"]
+[UTCDate "2024.07.14"]
+[UTCTime "18:20:00"]
+[White "chesscom"]
+[Black "rapidbot"]
+[TimeControl "600"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "r5k1/5p2/8/8/8/8/8/Q5KR w - - 0 1"]
+
+1. Qxa8 0-1

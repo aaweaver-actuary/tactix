@@ -180,6 +180,8 @@ def analyze_position(
         if _is_profile_in(settings, _PROFILE_HANGING_PIECE_HIGH):
             if result == "found":
                 severity = min(severity, 1.0)
+            else:
+                severity = max(severity, 1.5)
         elif _is_profile_in(settings, _PROFILE_HANGING_PIECE_LOW):
             severity = min(severity, 1.0)
 

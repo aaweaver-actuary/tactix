@@ -11,7 +11,7 @@
 
 
 [Event "Chess.com Correspondence Fixture 2"]
-[Site "https://www.chess.com/game/daily/6677008899"]
+[Site "https://www.chess.com/game/daily/6677008892"]
 [UTCDate "2024.07.06"]
 [UTCTime "10:30:00"]
 [White "opponent"]
@@ -23,7 +23,7 @@
 
 
 [Event "Chess.com Correspondence Fixture 3"]
-[Site "https://www.chess.com/game/daily/6677008898"]
+[Site "https://www.chess.com/game/daily/6677008899"]
 [UTCDate "2024.07.07"]
 [UTCTime "11:15:00"]
 [White "opponent2"]
@@ -91,7 +91,7 @@
 
 
 [Event "Chess.com Correspondence Fixture 8 - Discovered Attack High"]
-[Site "https://www.chess.com/game/daily/6677008893"]
+[Site "https://www.chess.com/game/daily/6677008898"]
 [UTCDate "2024.07.12"]
 [UTCTime "16:20:00"]
 [White "chesscom"]
@@ -105,7 +105,7 @@
 
 
 [Event "Chess.com Correspondence Fixture 9 - Discovered Check"]
-[Site "https://www.chess.com/game/daily/6677008892"]
+[Site "https://www.chess.com/game/daily/6677008893"]
 [UTCDate "2024.07.13"]
 [UTCTime "18:00:00"]
 [White "chesscom"]
@@ -144,3 +144,17 @@
 [FEN "6k1/4q3/8/8/8/8/4R3/6K1 w - - 0 1"]
 
 1. Rxe7 1-0
+
+
+[Event "Chess.com Correspondence Fixture 12 - Hanging Piece High"]
+[Site "https://www.chess.com/game/daily/6677008900"]
+[UTCDate "2024.07.16"]
+[UTCTime "20:20:00"]
+[White "chesscom"]
+[Black "correspondencebot"]
+[TimeControl "86400"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "r2b2k1/5p2/8/8/8/8/8/Q5KR w - - 0 1"]
+
+1. Qxa8 0-1

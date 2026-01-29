@@ -130,3 +130,17 @@
 [FEN "6k1/8/8/8/3q4/8/6B1/3QK1R1 w - - 0 1"]
 
 1. Bf3+ 0-1
+
+
+[Event "Chess.com Rapid Fixture 11 - Hanging Piece Low"]
+[Site "https://www.chess.com/game/live/6677889909"]
+[UTCDate "2024.07.13"]
+[UTCTime "18:05:00"]
+[White "chesscom"]
+[Black "rapidbot"]
+[TimeControl "600"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "6k1/4q3/8/8/8/8/4R3/6K1 w - - 0 1"]
+
+1. Rxe7 1-0

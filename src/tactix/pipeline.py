@@ -8,9 +8,12 @@ from collections.abc import Callable, Mapping
 from typing import TypedDict, cast
 
 import chess.engine
+from tactix.base_chess_client import BaseChessClient
 from tactix.chesscom_client import (
+    ChesscomClient,
+    ChesscomClientContext,
+    ChesscomFetchRequest,
     ChesscomFetchResult,
-    fetch_incremental_games as fetch_chesscom_games,
     read_cursor as read_chesscom_cursor,
     write_cursor as write_chesscom_cursor,
 )
@@ -38,7 +41,9 @@ from tactix.duckdb_store import (
     write_metrics_version,
 )
 from tactix.lichess_client import (
-    fetch_incremental_games as fetch_lichess_games,
+    LichessClient,
+    LichessClientContext,
+    LichessFetchRequest,
     read_checkpoint,
     write_checkpoint,
 )
@@ -625,6 +630,7 @@ def run_daily_game_sync(
     window_start_ms: int | None = None,
     window_end_ms: int | None = None,
     profile: str | None = None,
+    client: BaseChessClient | None = None,
 ) -> dict[str, object]:
     settings = settings or get_settings(source=source, profile=profile)
     if source:
@@ -633,6 +639,17 @@ def run_daily_game_sync(
     settings.apply_lichess_profile(profile)
     settings.apply_chesscom_profile(profile)
     settings.ensure_dirs()
+
+    if client is None:
+        if settings.source == "chesscom":
+            client = ChesscomClient(
+                ChesscomClientContext(settings=settings, logger=logger)
+            )
+        else:
+            client = LichessClient(
+                LichessClientContext(settings=settings, logger=logger)
+            )
+    assert client is not None
 
     backfill_mode = window_start_ms is not None or window_end_ms is not None
 
@@ -672,8 +689,11 @@ def run_daily_game_sync(
                 last_timestamp_value = int(cursor_value.split(":", 1)[0])
             except ValueError:
                 last_timestamp_value = 0
-        chesscom_result = fetch_chesscom_games(
-            settings, cursor_value, full_history=backfill_mode
+        chesscom_result = cast(
+            ChesscomFetchResult,
+            client.fetch_incremental_games(
+                ChesscomFetchRequest(cursor=cursor_value, full_history=backfill_mode)
+            ),
         )
         raw_games = [cast(Mapping[str, object], row) for row in chesscom_result.games]
         next_cursor = chesscom_result.next_cursor or cursor_value
@@ -686,7 +706,9 @@ def run_daily_game_sync(
         until_ms = window_end_ms if backfill_mode else None
         raw_games = [
             cast(Mapping[str, object], row)
-            for row in fetch_lichess_games(settings, since_ms, until_ms)
+            for row in client.fetch_incremental_games(
+                LichessFetchRequest(since_ms=since_ms, until_ms=until_ms)
+            ).games
         ]
         last_timestamp_value = since_ms
 

@@ -12,8 +12,12 @@ import requests
 import chess.pgn
 
 from tactix.config import Settings, get_settings
+from tactix.logging_utils import get_logger
 from tactix.chesscom_client import (
     ARCHIVES_URL,
+    ChesscomClient,
+    ChesscomClientContext,
+    ChesscomRateLimitError,
     _auth_headers,
     _build_cursor,
     _coerce_int,
@@ -373,6 +377,136 @@ class ChesscomClientTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
 
+    def test_get_with_backoff_raises_on_retry_exhaustion(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            chesscom_token="token",
+            chesscom_use_fixture_when_no_token=False,
+            chesscom_max_retries=0,
+            chesscom_retry_backoff_ms=0,
+            duckdb_path=self.tmp_dir / "db_backoff_fail.duckdb",
+            chesscom_checkpoint_path=self.tmp_dir / "since_backoff_fail.txt",
+            metrics_version_file=self.tmp_dir / "metrics_backoff_fail.txt",
+            chesscom_fixture_pgn_path=self.fixture_path,
+        )
+
+        class DummyResponse:
+            def __init__(self, status_code, headers=None):
+                self.status_code = status_code
+                self.headers = headers or {}
+
+            def raise_for_status(self):
+                if self.status_code >= 400:
+                    raise requests.HTTPError(f"{self.status_code} Error")
+
+        def fake_get(*_args, **_kwargs):
+            return DummyResponse(429, headers={"Retry-After": "0"})
+
+        with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
+            with self.assertRaises(ChesscomRateLimitError):
+                _get_with_backoff(settings, "https://example.com", timeout=5)
+
+    def test_collect_archives_skips_empty_and_breaks(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            duckdb_path=self.tmp_dir / "db_archives.duckdb",
+            chesscom_checkpoint_path=self.tmp_dir / "since_archives.txt",
+            metrics_version_file=self.tmp_dir / "metrics_archives.txt",
+            chesscom_fixture_pgn_path=self.fixture_path,
+        )
+        client = ChesscomClient(ChesscomClientContext(settings=settings, logger=get_logger("test")))
+
+        with (
+            patch.object(client, "_safe_fetch_archive", side_effect=[[], [{"pgn": "", "time_class": settings.chesscom_time_class}]]) as safe_fetch,
+            patch.object(client, "_append_archive_games", return_value=True) as append_games,
+        ):
+            client._collect_archives(["one", "two"], since_ms=0)
+
+        self.assertEqual(safe_fetch.call_count, 2)
+        append_games.assert_called_once()
+
+    def test_safe_fetch_archive_handles_exception(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            duckdb_path=self.tmp_dir / "db_safe.duckdb",
+            chesscom_checkpoint_path=self.tmp_dir / "since_safe.txt",
+            metrics_version_file=self.tmp_dir / "metrics_safe.txt",
+            chesscom_fixture_pgn_path=self.fixture_path,
+        )
+        client = ChesscomClient(ChesscomClientContext(settings=settings, logger=get_logger("test")))
+
+        with patch.object(client, "_fetch_archive_pages", side_effect=RuntimeError("boom")):
+            result = client._safe_fetch_archive("https://example.com")
+
+        self.assertEqual(result, [])
+
+    def test_append_archive_games_skips_when_since(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            chesscom_time_class="blitz",
+            duckdb_path=self.tmp_dir / "db_skip.duckdb",
+            chesscom_checkpoint_path=self.tmp_dir / "since_skip.txt",
+            metrics_version_file=self.tmp_dir / "metrics_skip.txt",
+            chesscom_fixture_pgn_path=self.fixture_path,
+        )
+        client = ChesscomClient(ChesscomClientContext(settings=settings, logger=get_logger("test")))
+
+        archive_games = [
+            {
+                "time_class": settings.chesscom_time_class,
+                "pgn": "[UTCDate \"2024.01.01\"]\n[UTCTime \"00:00:00\"]\n\n1. e4 e5 1-0",
+                "uuid": "id1",
+            }
+        ]
+        games: list[dict] = []
+        client._append_archive_games(games, archive_games, since_ms=9999999999999)
+
+        self.assertEqual(games, [])
+
+    def test_coerce_game_missing_pgn(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            chesscom_time_class="blitz",
+            duckdb_path=self.tmp_dir / "db_pgn.duckdb",
+            chesscom_checkpoint_path=self.tmp_dir / "since_pgn.txt",
+            metrics_version_file=self.tmp_dir / "metrics_pgn.txt",
+            chesscom_fixture_pgn_path=self.fixture_path,
+        )
+        client = ChesscomClient(ChesscomClientContext(settings=settings, logger=get_logger("test")))
+        row, last_ts = client._coerce_game({"time_class": settings.chesscom_time_class})
+
+        self.assertIsNone(row)
+        self.assertEqual(last_ts, 0)
+
+    def test_should_skip_game_when_since(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            duckdb_path=self.tmp_dir / "db_should_skip.duckdb",
+            chesscom_checkpoint_path=self.tmp_dir / "since_should_skip.txt",
+            metrics_version_file=self.tmp_dir / "metrics_should_skip.txt",
+            chesscom_fixture_pgn_path=self.fixture_path,
+        )
+        client = ChesscomClient(ChesscomClientContext(settings=settings, logger=get_logger("test")))
+        row = {"game_id": "game", "last_timestamp_ms": 5}
+
+        self.assertTrue(client._should_skip_game(row, last_ts=5, since_ms=10, seen_game_ids=set()))
+
+    def test_parse_retry_after_none(self) -> None:
+        self.assertIsNone(_parse_retry_after(None))
+
+    def test_parse_retry_after_date_without_tz(self) -> None:
+        header = "Wed, 21 Oct 2015 07:28:00"
+        self.assertIsNotNone(_parse_retry_after(header))
+
+    def test_parse_cursor_non_digit(self) -> None:
+        self.assertEqual(_parse_cursor("abc"), (0, "abc"))
+
     def test_write_cursor_none_roundtrip(self) -> None:
         path = self.tmp_dir / "cursor.txt"
         write_cursor(path, None)
@@ -419,7 +553,10 @@ class ChesscomClientTests(unittest.TestCase):
         def fake_get(*_args, **_kwargs):
             return DummyResponse({"games": [], "next_page": "https://example.com/loop"})
 
-        with patch("tactix.chesscom_client._get_with_backoff", side_effect=fake_get) as backoff:
+        with patch(
+            "tactix.chesscom_client.ChesscomClient._get_with_backoff",
+            side_effect=fake_get,
+        ) as backoff:
             games = _fetch_archive_pages(settings, "https://example.com/loop")
 
         self.assertEqual(games, [])
@@ -437,7 +574,10 @@ class ChesscomClientTests(unittest.TestCase):
         )
         settings.apply_source_defaults()
 
-        with patch("tactix.chesscom_client._get_with_backoff", side_effect=RuntimeError("boom")):
+        with patch(
+            "tactix.chesscom_client.ChesscomClient._get_with_backoff",
+            side_effect=RuntimeError("boom"),
+        ):
             fallback_games = _fetch_remote_games(settings, since_ms=0)
         self.assertGreaterEqual(len(fallback_games), 1)
 
@@ -448,7 +588,10 @@ class ChesscomClientTests(unittest.TestCase):
             def json(self):
                 return self._data
 
-        with patch("tactix.chesscom_client._get_with_backoff", return_value=DummyResponse({"archives": []})):
+        with patch(
+            "tactix.chesscom_client.ChesscomClient._get_with_backoff",
+            return_value=DummyResponse({"archives": []}),
+        ):
             empty = _fetch_remote_games(settings, since_ms=0)
         self.assertEqual(empty, [])
 

@@ -5,16 +5,26 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 import chess.pgn
+import berserk
 
 from tactix.config import Settings
+from tactix.logging_utils import get_logger
 from tactix.lichess_client import (
+    LichessClient,
+    LichessClientContext,
+    LichessFetchRequest,
+    LichessTokenError,
+    build_client,
+    _coerce_pgn_text,
     _coerce_perf_type,
     _extract_status_code,
     _fetch_remote_games,
     _fetch_remote_games_once,
     _is_auth_error,
+    _pgn_to_game_row,
     _read_cached_token,
     _refresh_lichess_token,
+    _resolve_perf_value,
     _resolve_access_token,
     _write_cached_token,
     fetch_incremental_games,
@@ -261,7 +271,9 @@ class LichessClientTests(unittest.TestCase):
             target_settings.lichess_token = "new-token"
             return "new-token"
 
-        with patch("tactix.lichess_client._fetch_remote_games_once") as fetch_once:
+        with patch(
+            "tactix.lichess_client.LichessClient._fetch_remote_games_once"
+        ) as fetch_once:
             fetch_once.side_effect = [FakeAuthError(401), []]
             with patch(
                 "tactix.lichess_client._refresh_lichess_token",
@@ -354,7 +366,7 @@ class LichessClientTests(unittest.TestCase):
         )
 
         with patch(
-            "tactix.lichess_client._fetch_remote_games_once",
+            "tactix.lichess_client.LichessClient._fetch_remote_games_once",
             side_effect=RuntimeError("boom"),
         ):
             with self.assertRaises(RuntimeError):
@@ -462,6 +474,43 @@ class LichessClientTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             _refresh_lichess_token(settings)
 
+    def test_refresh_token_requires_access_token(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "db_refresh_missing.duckdb",
+            checkpoint_path=self.tmp_dir / "since_refresh_missing.txt",
+            metrics_version_file=self.tmp_dir / "metrics_refresh_missing.txt",
+            lichess_oauth_refresh_token="refresh",
+            lichess_oauth_client_id="client",
+            lichess_oauth_client_secret="secret",
+            lichess_oauth_token_url="https://lichess.org/api/token",
+        )
+
+        class DummyResponse:
+            def raise_for_status(self) -> None:
+                return None
+
+            def json(self) -> dict:
+                return {}
+
+        with patch("tactix.lichess_client.requests.post", return_value=DummyResponse()):
+            with self.assertRaises(LichessTokenError):
+                _refresh_lichess_token(settings)
+
+    def test_build_client_returns_berserk_client(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "db_client.duckdb",
+            checkpoint_path=self.tmp_dir / "since_client.txt",
+            metrics_version_file=self.tmp_dir / "metrics_client.txt",
+            lichess_token="token",
+        )
+
+        client = build_client(settings)
+        self.assertIsInstance(client, berserk.Client)
+
     def test_profile_perf_type_passed_to_api(self) -> None:
         settings = Settings(
             user="envuser",
@@ -536,6 +585,81 @@ class LichessClientTests(unittest.TestCase):
 
         _, kwargs = games_api.export_by_player.call_args
         self.assertEqual(kwargs.get("perf_type"), "correspondence")
+
+    def test_resolve_perf_value_prefers_profile(self) -> None:
+        settings = Settings(
+            user="envuser",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "db.duckdb",
+            checkpoint_path=self.tmp_dir / "since.txt",
+            metrics_version_file=self.tmp_dir / "metrics.txt",
+            lichess_profile="blitz",
+        )
+
+        self.assertEqual(_resolve_perf_value(settings), "blitz")
+        settings.lichess_profile = ""
+        settings.rapid_perf = "rapid"
+        self.assertEqual(_resolve_perf_value(settings), "rapid")
+
+    def test_coerce_pgn_text_handles_bytes(self) -> None:
+        self.assertEqual(_coerce_pgn_text(b"1. e4"), "1. e4")
+        self.assertEqual(_coerce_pgn_text("1. d4"), "1. d4")
+
+    def test_pgn_to_game_row_handles_none(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "db.duckdb",
+            checkpoint_path=self.tmp_dir / "since.txt",
+            metrics_version_file=self.tmp_dir / "metrics.txt",
+        )
+
+        self.assertIsNone(_pgn_to_game_row(None, settings))
+
+    def test_pgn_to_game_row_builds_payload(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "db.duckdb",
+            checkpoint_path=self.tmp_dir / "since.txt",
+            metrics_version_file=self.tmp_dir / "metrics.txt",
+        )
+
+        pgn_text = split_pgn_chunks(self.fixture_path.read_text())[0]
+        row = _pgn_to_game_row(pgn_text, settings)
+        self.assertIsNotNone(row)
+        self.assertEqual(row["user"], "lichess")
+        self.assertEqual(row["source"], "lichess")
+        self.assertIn("pgn", row)
+        self.assertIn("last_timestamp_ms", row)
+
+    def test_lichess_client_fetch_incremental_games_fixture(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "db_fetch.duckdb",
+            checkpoint_path=self.tmp_dir / "since_fetch.txt",
+            metrics_version_file=self.tmp_dir / "metrics_fetch.txt",
+            fixture_pgn_path=self.fixture_path,
+            use_fixture_when_no_token=True,
+        )
+        client = LichessClient(LichessClientContext(settings=settings, logger=get_logger("test")))
+        request = LichessFetchRequest(since_ms=0)
+        result = client.fetch_incremental_games(request)
+
+        self.assertGreaterEqual(len(result.games), 1)
+        self.assertGreaterEqual(result.last_timestamp_ms, 0)
+
+    def test_should_refresh_token_false_when_not_auth(self) -> None:
+        settings = Settings(
+            user="lichess",
+            source="lichess",
+            duckdb_path=self.tmp_dir / "db_auth.duckdb",
+            checkpoint_path=self.tmp_dir / "since_auth.txt",
+            metrics_version_file=self.tmp_dir / "metrics_auth.txt",
+        )
+        client = LichessClient(LichessClientContext(settings=settings, logger=get_logger("test")))
+        self.assertFalse(client._should_refresh_token(RuntimeError("boom")))
 
     def test_fetch_remote_games_passes_until(self) -> None:
         settings = Settings(

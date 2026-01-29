@@ -6,7 +6,7 @@ from pathlib import Path
 import chess
 import chess.pgn
 
-from tactix.config import DEFAULT_BLITZ_STOCKFISH_DEPTH, Settings
+from tactix.config import Settings
 from tactix.duckdb_store import (
     get_connection,
     init_schema,
@@ -18,8 +18,7 @@ from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 
 
-def _discovered_check_fixture_position() -> dict[str, object]:
-    fixture_path = Path("tests/fixtures/chesscom_blitz_sample.pgn")
+def _discovered_check_fixture_position(fixture_path: Path) -> dict[str, object]:
     chunks = split_pgn_chunks(fixture_path.read_text())
     for chunk in chunks:
         game = chess.pgn.read_game(StringIO(chunk))
@@ -48,22 +47,28 @@ def _discovered_check_fixture_position() -> dict[str, object]:
             "clock_seconds": None,
             "is_legal": True,
         }
-    raise SystemExit("No discovered check blitz fixture position found")
+    raise SystemExit("No discovered check fixture position found")
 
+
+profile = os.getenv("TACTIX_CHESSCOM_PROFILE", "blitz")
+fixture_name = os.getenv("TACTIX_DISCOVERED_CHECK_FIXTURE")
+if fixture_name:
+    fixture_path = Path(f"tests/fixtures/{fixture_name}")
+else:
+    fixture_path = Path(f"tests/fixtures/chesscom_{profile}_sample.pgn")
 
 settings = Settings(
     source="chesscom",
     chesscom_user="chesscom",
-    chesscom_profile="blitz",
+    chesscom_profile=profile,
     stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
     stockfish_movetime_ms=60,
     stockfish_depth=None,
     stockfish_multipv=1,
 )
-settings.apply_chesscom_profile("blitz")
-assert settings.stockfish_depth == DEFAULT_BLITZ_STOCKFISH_DEPTH
+settings.apply_chesscom_profile(profile)
 
-position = _discovered_check_fixture_position()
+position = _discovered_check_fixture_position(fixture_path)
 
 override_game_id = os.getenv("TACTIX_DISCOVERED_CHECK_GAME_ID")
 if override_game_id:
@@ -104,7 +109,7 @@ with StockfishEngine(settings) as engine:
     result = analyze_position(position, engine, settings=settings)
 
 if result is None:
-    raise SystemExit("No tactic result for discovered check blitz fixture")
+    raise SystemExit("No tactic result for discovered check fixture")
 
 tactic_row, outcome_row = result
 print("motif", tactic_row["motif"])
@@ -112,4 +117,4 @@ print("severity", tactic_row["severity"])
 print("best_uci", tactic_row["best_uci"])
 
 upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
-print("seeded discovered check blitz tactic into data/tactix.duckdb")
+print("seeded discovered check tactic into data/tactix.duckdb")

@@ -17,6 +17,7 @@ const ANALYSIS_CHECKPOINT_PATH =
   path.join(ROOT_DIR, 'data', 'analysis_checkpoint_feature_164.json');
 const API_BASE = process.env.TACTIX_API_BASE || 'http://localhost:8000';
 const DASHBOARD_URL = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
+const CHESSCOM_PROFILE = process.env.TACTIX_CHESSCOM_PROFILE || 'rapid';
 const SCREENSHOT_NAME =
   process.env.TACTIX_SCREENSHOT_NAME ||
   'feature-164-discovered-check-rapid-low-severity-ci-2026-01-28.png';
@@ -45,7 +46,7 @@ function startBackend() {
           TACTIX_ANALYSIS_CHECKPOINT_PATH: ANALYSIS_CHECKPOINT_PATH,
           TACTIX_SOURCE: 'chesscom',
           TACTIX_USER: 'chesscom',
-          TACTIX_CHESSCOM_PROFILE: 'rapid',
+          TACTIX_CHESSCOM_PROFILE: CHESSCOM_PROFILE,
           TACTIX_CHESSCOM_USE_FIXTURE: '1',
           TACTIX_USE_FIXTURE: '1',
           CHESSCOM_USERNAME: 'chesscom',
@@ -119,7 +120,7 @@ async function ensureBackend() {
 
     await page.select('[data-testid="filter-source"]', 'chesscom');
     await page.waitForSelector('[data-testid="filter-chesscom-profile"]');
-    await page.select('[data-testid="filter-chesscom-profile"]', 'rapid');
+    await page.select('[data-testid="filter-chesscom-profile"]', CHESSCOM_PROFILE);
     await page.select('[data-testid="filter-motif"]', 'discovered_check');
 
     await page.click('[data-testid="action-run"]');

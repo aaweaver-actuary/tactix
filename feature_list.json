@@ -2307,7 +2307,7 @@
       "Open the dashboard.",
       "Verify that historical game data from both sites is immediately available in the dashboard without additional loading time (except minor database network latency)."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "ui/ux",

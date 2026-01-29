@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import json
 import time as time_module
+from collections import OrderedDict
 from collections.abc import Iterator
 from datetime import date, datetime, time
 from queue import Empty, Queue
-from threading import Thread
+from threading import Lock, Thread
 from typing import cast
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
@@ -38,6 +39,13 @@ from tactix.postgres_store import (
 )
 
 logger = get_logger(__name__)
+
+_DASHBOARD_CACHE_TTL_S = 300
+_DASHBOARD_CACHE_MAX_ENTRIES = 32
+_DASHBOARD_CACHE: "OrderedDict[tuple[object, ...], tuple[float, dict[str, object]]]" = (
+    OrderedDict()
+)
+_DASHBOARD_CACHE_LOCK = Lock()
 
 
 def _extract_api_token(request: Request) -> str | None:
@@ -129,12 +137,14 @@ def trigger_daily_sync(
         window_end_ms=backfill_end_ms,
         profile=profile,
     )
+    _refresh_dashboard_cache_async(_sources_for_cache_refresh(source))
     return {"status": "ok", "result": result}
 
 
 @app.post("/api/jobs/refresh_metrics")
 def trigger_refresh_metrics(source: str | None = Query(None)) -> dict[str, object]:
     result = run_refresh_metrics(get_settings(source=source), source=source)
+    _refresh_dashboard_cache_async(_sources_for_cache_refresh(source))
     return {"status": "ok", "result": result}
 
 
@@ -156,8 +166,21 @@ def dashboard(
     start_datetime = _coerce_date_to_datetime(start_date)
     end_datetime = _coerce_date_to_datetime(end_date, end_of_day=True)
     normalized_source = _normalize_source(source)
-    return get_dashboard_payload(
-        get_settings(source=normalized_source),
+    settings = get_settings(source=normalized_source)
+    cache_key = _dashboard_cache_key(
+        settings,
+        normalized_source,
+        motif,
+        rating_bucket,
+        time_control,
+        start_datetime,
+        end_datetime,
+    )
+    cached = _get_cached_dashboard_payload(cache_key)
+    if cached is not None:
+        return cached
+    payload = get_dashboard_payload(
+        settings,
         source=normalized_source,
         motif=motif,
         rating_bucket=rating_bucket,
@@ -165,6 +188,8 @@ def dashboard(
         start_date=start_datetime,
         end_date=end_datetime,
     )
+    _set_dashboard_cache(cache_key, payload)
+    return payload
 
 
 @app.get("/api/practice/queue")
@@ -394,6 +419,110 @@ def _normalize_source(source: str | None) -> str | None:
     return None if trimmed == "all" else trimmed
 
 
+def _dashboard_cache_key(
+    settings,
+    source: str | None,
+    motif: str | None,
+    rating_bucket: str | None,
+    time_control: str | None,
+    start_date: datetime | None,
+    end_date: datetime | None,
+) -> tuple[object, ...]:
+    return (
+        settings.user,
+        str(settings.duckdb_path),
+        source or "all",
+        motif or "all",
+        rating_bucket or "all",
+        time_control or "all",
+        start_date.isoformat() if start_date else None,
+        end_date.isoformat() if end_date else None,
+    )
+
+
+def _get_cached_dashboard_payload(key: tuple[object, ...]) -> dict[str, object] | None:
+    now = time_module.time()
+    with _DASHBOARD_CACHE_LOCK:
+        cached = _DASHBOARD_CACHE.get(key)
+        if not cached:
+            return None
+        cached_at, payload = cached
+        if now - cached_at > _DASHBOARD_CACHE_TTL_S:
+            _DASHBOARD_CACHE.pop(key, None)
+            return None
+        _DASHBOARD_CACHE.move_to_end(key)
+        return payload
+
+
+def _set_dashboard_cache(key: tuple[object, ...], payload: dict[str, object]) -> None:
+    with _DASHBOARD_CACHE_LOCK:
+        _DASHBOARD_CACHE[key] = (time_module.time(), payload)
+        _DASHBOARD_CACHE.move_to_end(key)
+        while len(_DASHBOARD_CACHE) > _DASHBOARD_CACHE_MAX_ENTRIES:
+            _DASHBOARD_CACHE.popitem(last=False)
+
+
+def _clear_dashboard_cache() -> None:
+    with _DASHBOARD_CACHE_LOCK:
+        _DASHBOARD_CACHE.clear()
+
+
+def _prime_dashboard_cache(
+    source: str | None = None,
+    motif: str | None = None,
+    rating_bucket: str | None = None,
+    time_control: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+) -> None:
+    settings = get_settings(source=source)
+    payload = get_dashboard_payload(
+        settings,
+        source=source,
+        motif=motif,
+        rating_bucket=rating_bucket,
+        time_control=time_control,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    key = _dashboard_cache_key(
+        settings,
+        source,
+        motif,
+        rating_bucket,
+        time_control,
+        start_date,
+        end_date,
+    )
+    _set_dashboard_cache(key, payload)
+
+
+def _refresh_dashboard_cache_async(sources: list[str | None]) -> None:
+    def worker() -> None:
+        for source in sources:
+            try:
+                _prime_dashboard_cache(source=source)
+            except Exception:  # pragma: no cover - defensive
+                logger.exception(
+                    "Failed to prime dashboard cache", extra={"source": source}
+                )
+
+    Thread(target=worker, daemon=True).start()
+
+
+@app.on_event("startup")
+def _warm_dashboard_cache_on_startup() -> None:
+    _refresh_dashboard_cache_async([None, "lichess", "chesscom"])
+
+
+def _sources_for_cache_refresh(source: str | None) -> list[str | None]:
+    normalized = _normalize_source(source)
+    sources: list[str | None] = [None]
+    if normalized is not None:
+        sources.append(normalized)
+    return sources
+
+
 @app.get("/api/jobs/stream")
 def stream_jobs(
     job: str = Query("daily_game_sync"),
@@ -485,6 +614,8 @@ def stream_jobs(
                 result = run_migrations(settings, source=source, progress=progress)
             else:
                 raise ValueError(f"Unsupported job: {job}")
+            if job in {"daily_game_sync", "refresh_metrics"}:
+                _refresh_dashboard_cache_async(_sources_for_cache_refresh(source))
             queue.put(
                 (
                     "complete",

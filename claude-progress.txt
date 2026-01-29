@@ -198,6 +198,16 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
 
+Session 2026-01-29 (feature – prefetch + cache dashboard data)
+- Added in-memory dashboard payload cache with TTL + LRU limits, plus warm cache on startup and refresh after sync/metrics jobs.
+- Added dashboard cache tests in `tests/test_api_dashboard_cache.py`.
+- Updated Puppeteer verification to confirm recent games for both sources without manual runs and captured screenshot `verification/feature-dashboard-prefetch-cache-2026-01-29.png`.
+- Airflow pipeline triggers executed for Lichess + Chess.com via `TACTIX_SOURCE=lichess|chesscom node verification/integration_feature_111_airflow_trigger.js`; verified DuckDB has raw PGNs for both sources (lichess=15, chesscom=37).
+- Built frontend with `VITE_API_BASE=http://localhost:8001 npm --prefix client run build` and ran `TACTIX_BACKEND_PORT=8001 node verification/puppeteer_feature_dashboard_prefetch_cache.js`.
+- Tests: `make check` (ruff/ty/eslint/prettier, cargo tests, pytest, vitest) all passed; ty noted FastAPI `on_event` deprecation warning.
+- Updated feature_list.json: “Historical game data for the user is pre-fetched…” marked passes=true.
+- Current passing count: 189/501.
+
 Session 2026-01-29 (feature – dashboard game detail modal)
 - Wired game detail modal opening for recent games + practice queue rows; generalized handler for any row with a game id.
 - Added RecentGamesTable unit test to confirm row click handling; existing GameDetailModal tests cover keyboard navigation + modal details.

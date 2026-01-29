@@ -102,3 +102,17 @@
 [FEN "r6r/1b3pk1/p2p2p1/1p1Pp2p/4PP1q/2Pn2NP/BP3QPN/5RK1 w - - 3 35"]
 
 35. Nh1 0-1
+
+
+[Event "Chess.com Rapid Fixture 9 - Discovered Check"]
+[Site "https://www.chess.com/game/live/6677889907"]
+[UTCDate "2024.07.11"]
+[UTCTime "17:00:00"]
+[White "rapidbot"]
+[Black "chesscom"]
+[TimeControl "600"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "6rk/6b1/8/8/8/8/8/6K1 b - - 0 1"]
+
+1... Bf6+ 0-1

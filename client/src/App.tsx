@@ -1517,9 +1517,9 @@ export default function App() {
           </div>
           {currentPractice ? <Badge label={currentPractice.motif} /> : null}
         </div>
+        <PracticeSessionProgress stats={practiceSession} />
         {currentPractice ? (
           <>
-            <PracticeSessionProgress stats={practiceSession} />
             <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">
               <div className="rounded-lg border border-white/10 bg-white/5 p-3">
                 <Chessboard

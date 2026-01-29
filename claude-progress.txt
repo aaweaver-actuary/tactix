@@ -1732,3 +1732,21 @@ Session 2026-01-28 (feature 163 – refactor duplicate functionality)
 - Added unit coverage for `iter_unchanged_sliders` in `tests/test_tactic_detectors.py`.
 - Tests: `make check` (post) including new `tests/test_tactic_detectors.py`.
 - Updated feature_list.json: feature “Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.” marked passes=true.
+Session 2026-01-28 (feature 164 – discovered check low severity in rapid)
+- Pre-work verification scripts (passes=true):
+	- `node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`
+	- `node /Users/andy/tactix/verification/puppeteer_feature_023_stockfish_checksum.js`
+	- `node /Users/andy/tactix/verification/puppeteer_feature_024_promotion_en_passant.js`
+	- `node /Users/andy/tactix/verification/puppeteer_feature_025_castling.js`
+	- `node /Users/andy/tactix/verification/puppeteer_feature_026_rolling_averages.js`
+	- `node /Users/andy/tactix/verification/puppeteer_feature_027_time_trouble.js`
+	- `node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js` (failed; screenshot `verification/failed-feature-030-practice-session-progress.png`)
+- Regression fix: always render practice session progress; reran `node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js` (screenshot `verification/feature-030-practice-session-progress.png`).
+- Pre-change make check: `make check` (eslint warning in `client/src/App.tsx` about missing `motifDropIndicatorIndex` dependency; no errors).
+- Added rapid discovered check low-severity clamp, updated rapid fixture for discovered check, and added rapid test case in `tests/test_discovered_check_blitz_low.py`.
+- Tests: `uv run pytest tests/test_discovered_check_blitz_low.py -k rapid`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_164_rapid.js` (screenshot `verification/feature-164-discovered-check-rapid-low-severity-2026-01-28.png`).
+- Post-change make check: `make check` (same eslint warning; no errors).
+- Updated feature_list.json: feature “Stockfish detects discovered check with low severity in rapid” marked passes=true.
+- Note: feature 030 marked failing after regression detection; UI fix completed but left passes=false pending re-verification policy.

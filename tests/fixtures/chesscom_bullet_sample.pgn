@@ -88,3 +88,17 @@
 [FEN "r6r/1b3pk1/p2p2p1/1p1Pp2p/4PP1q/2Pn2NP/BP3QPN/5RK1 w - - 3 35"]
 
 35. Nh1 0-1
+
+
+[Event "Chess.com Bullet Fixture 8 - Hanging Piece Low"]
+[Site "https://www.chess.com/game/live/2234567897"]
+[UTCDate "2024.07.10"]
+[UTCTime "23:10:00"]
+[White "chesscom"]
+[Black "bulletbot"]
+[TimeControl "60"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "6k1/4q3/8/8/8/8/4R3/6K1 w - - 0 1"]
+
+1. Rxe7 1-0

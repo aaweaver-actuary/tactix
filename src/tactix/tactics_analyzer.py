@@ -27,6 +27,10 @@ _PROFILE_DISCOVERED_ATTACK_LOW = frozenset()
 _PROFILE_DISCOVERED_ATTACK_HIGH = frozenset(
     {"bullet", "blitz", "rapid", "classical", "correspondence"}
 )
+_PROFILE_HANGING_PIECE_LOW = frozenset()
+_PROFILE_HANGING_PIECE_HIGH = frozenset(
+    {"bullet", "blitz", "rapid", "classical", "correspondence"}
+)
 _PROFILE_FORK_LOW = frozenset({"blitz", "rapid"})
 _PROFILE_FORK_HIGH = frozenset({"bullet"})
 _PROFILE_FORK_SLOW = frozenset({"classical", "correspondence"})
@@ -171,6 +175,13 @@ def analyze_position(
         elif _is_profile_in(settings, _PROFILE_DISCOVERED_ATTACK_HIGH):
             if result == "found":
                 severity = min(severity, 1.0)
+
+    if motif == "hanging_piece":
+        if _is_profile_in(settings, _PROFILE_HANGING_PIECE_HIGH):
+            if result == "found":
+                severity = min(severity, 1.0)
+        elif _is_profile_in(settings, _PROFILE_HANGING_PIECE_LOW):
+            severity = min(severity, 1.0)
 
     if motif == "skewer":
         if result == "found":

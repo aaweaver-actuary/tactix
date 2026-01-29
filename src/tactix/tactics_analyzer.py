@@ -20,7 +20,7 @@ _PROFILE_FAST = frozenset({"bullet", "blitz", "rapid", "classical", "corresponde
 _PROFILE_DISCOVERED_CHECK_LOW = frozenset(
     {"bullet", "blitz", "rapid", "classical", "correspondence"}
 )
-_PROFILE_DISCOVERED_CHECK_HIGH = frozenset({"blitz"})
+_PROFILE_DISCOVERED_CHECK_HIGH = frozenset({"blitz", "rapid"})
 _PROFILE_DISCOVERED_ATTACK_LOW = frozenset()
 _PROFILE_DISCOVERED_ATTACK_HIGH = frozenset(
     {"bullet", "blitz", "rapid", "classical", "correspondence"}

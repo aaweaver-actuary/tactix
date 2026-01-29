@@ -116,3 +116,17 @@
 [FEN "6k1/8/8/8/8/8/6B1/4K1R1 w - - 0 1"]
 
 1. Bf3+ 1-0
+
+
+[Event "Chess.com Blitz Fixture 10 - Discovered Check High"]
+[Site "https://www.chess.com/game/live/9876543218"]
+[UTCDate "2024.07.10"]
+[UTCTime "21:45:00"]
+[White "chesscom"]
+[Black "blitzbot"]
+[TimeControl "300"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "6k1/8/8/8/3q4/8/6B1/3QK1R1 w - - 0 1"]
+
+1. Bf3+ 0-1

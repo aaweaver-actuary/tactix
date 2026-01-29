@@ -1726,6 +1726,21 @@ Session 2026-01-28 (feature 162 – discovered check low severity in blitz)
 Session 2026-01-28 (feature 163 – refactor duplicate functionality)
 - Pre-change make check: `make check` (eslint warning in `client/src/App.tsx` about missing `motifDropIndicatorIndex` dependency; no errors).
 - Refactor target: duplicate unchanged-slider scan in `DiscoveredCheckDetector.detect` and `DiscoveredAttackDetector.detect`.
+Session 2026-01-28 (feature 169 – discovered check high severity in blitz)
+- Pre-work verification (passes=true): `node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`, `node /Users/andy/tactix/verification/puppeteer_feature_023_stockfish_checksum.js`, `node /Users/andy/tactix/verification/puppeteer_feature_024_promotion_en_passant.js`, `node /Users/andy/tactix/verification/puppeteer_feature_025_castling.js`, `node /Users/andy/tactix/verification/puppeteer_feature_026_rolling_averages.js`, `node /Users/andy/tactix/verification/puppeteer_feature_027_time_trouble.js`, `node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`, `node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js`, `node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`, `node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js`.
+- Pre-change make check: `make check` (eslint warning in `client/src/App.tsx` about missing `motifDropIndicatorIndex` dependency; no errors).
+- Enabled discovered-check high severity for blitz by adding a blitz high profile and prioritizing high severity handling in tactics analyzer.
+- Added blitz discovered-check high fixture in `tests/fixtures/chesscom_blitz_sample.pgn` (FEN `6k1/8/8/8/3q4/8/6B1/3QK1R1 w - - 0 1`).
+- Added high-severity coverage in `tests/test_discovered_check_blitz_low.py` (severity >= 1.5, eval_delta <= -150, best line/explanation, position linkage).
+- Generalized `tmp-logs/feature_162_seed_blitz.py` with `TACTIX_DISCOVERED_CHECK_EVENT` to target the new fixture.
+- Seeded blitz high-severity discovered check: `TACTIX_DISCOVERED_CHECK_EVENT=\"discovered check high\" TACTIX_DISCOVERED_CHECK_GAME_ID=blitz-discovered-check-high /Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_162_seed_blitz.py`.
+- UI verification (manual): `TACTIX_SCREENSHOT_NAME=feature-169-discovered-check-blitz-high-severity-2026-01-28.png node /Users/andy/tactix/verification/puppeteer_feature_162_discovered_check_blitz.js` (screenshot `verification/feature-169-discovered-check-blitz-high-severity-2026-01-28.png`).
+- UI verification (CI): `TACTIX_SCREENSHOT_NAME=feature-169-discovered-check-blitz-high-severity-ci-2026-01-28.png node /Users/andy/tactix/verification/puppeteer_feature_162_discovered_check_blitz_ci.js` (screenshot `verification/feature-169-discovered-check-blitz-high-severity-ci-2026-01-28.png`).
+- Integration check (JS eval) requested via `node -e ...` but skipped by user.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_discovered_check_blitz_low.py -k \"high or low\"`.
+- Post-change make check: `make check` (same eslint warning; no errors).
+- Updated feature_list.json: feature “Stockfish detects discovered check with high severity in blitz” marked passes=true.
+- Current passing count: 169/486.
 - Before → after map:
 	- Inline slider scan logic in `DiscoveredCheckDetector.detect` and `DiscoveredAttackDetector.detect` → `BaseTacticDetector.iter_unchanged_sliders` helper.
 	- Call sites in discovered check/attack detectors now reuse the shared helper (with optional `exclude_square`).

@@ -20,12 +20,15 @@ from tactix.tactics_analyzer import analyze_position
 
 def _discovered_check_fixture_position(fixture_path: Path) -> dict[str, object]:
     chunks = split_pgn_chunks(fixture_path.read_text())
+    target_event = (
+        os.getenv("TACTIX_DISCOVERED_CHECK_EVENT") or "discovered check"
+    ).lower()
     for chunk in chunks:
         game = chess.pgn.read_game(StringIO(chunk))
         if not game:
             continue
         event = (game.headers.get("Event") or "").lower()
-        if "discovered check" not in event:
+        if target_event not in event:
             continue
         fen = game.headers.get("FEN")
         board = chess.Board(fen) if fen else game.board()

@@ -37,6 +37,33 @@ const screenshotName =
       timeout: 60000,
     });
 
+    const progressSnapshot = await page.evaluate(() => {
+      const summary = document.querySelector(
+        '[data-testid="practice-session-summary"]',
+      );
+      const progress = document.querySelector(
+        '[data-testid="practice-progress-bar"]',
+      );
+      const streak = document.querySelector(
+        '[data-testid="practice-streak-progress"]',
+      );
+      return {
+        summaryText: summary?.textContent || '',
+        progressNow: progress?.getAttribute('aria-valuenow'),
+        streakNow: streak?.getAttribute('aria-valuenow'),
+      };
+    });
+
+    if (!progressSnapshot.summaryText) {
+      throw new Error('Practice session summary text missing.');
+    }
+    if (progressSnapshot.progressNow === null) {
+      throw new Error('Practice progress bar aria-valuenow missing.');
+    }
+    if (progressSnapshot.streakNow === null) {
+      throw new Error('Practice streak bar aria-valuenow missing.');
+    }
+
     const outDir = path.resolve(__dirname);
     fs.mkdirSync(outDir, { recursive: true });
     const outPath = path.join(outDir, screenshotName);

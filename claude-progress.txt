@@ -1935,3 +1935,11 @@ Session 2026-01-29 (dashboard combined view + filters)
 - Screenshots: `verification/feature-dashboard-combined-2026-01-29.png`, `verification/feature-dashboard-chesscom-2026-01-29.png`, `verification/feature-dashboard-time-control-1800-2026-01-29.png`.
 - Updated feature_list.json: “When user opens the dashboard, the default view combines all online chess sites (that are configured) and all time controls from those sites into a single unified view.” and “User can filter the dashboard view by chess site and time control using the filter controls.” marked passes=true.
 - Pass count: 179.
+
+Session 2026-01-29 (dashboard game detail modal)
+- Added game detail modal with move list + analysis (engine eval + blunder flags), wired tactics table row clicks, and new game detail API endpoint.
+- Tests: `make check` (clean; cargo warnings about deprecated pyo3 remain).
+- UI verification: `TACTIX_API_PORT=8011 node /Users/andy/tactix/verification/puppeteer_feature_game_detail_modal.js`.
+- Screenshots: `verification/feature-game-detail-modal-2026-01-29.png`.
+- Updated feature_list.json: “User can click on a game in the dashboard to open a detailed game view with move list and analysis.” marked passes=true.
+- Pass count: 185.

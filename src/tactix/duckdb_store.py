@@ -1509,6 +1509,114 @@ def fetch_recent_tactics(
     return _rows_to_dicts(result)
 
 
+def fetch_game_detail(
+    conn: duckdb.DuckDBPyConnection,
+    game_id: str,
+    user: str,
+    source: str | None = None,
+) -> dict[str, object]:
+    query = """
+        WITH latest_pgns AS (
+            SELECT * EXCLUDE (rn)
+            FROM (
+                SELECT
+                    *,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY game_id, source
+                        ORDER BY pgn_version DESC
+                    ) AS rn
+                FROM raw_pgns
+            )
+            WHERE rn = 1
+        )
+        SELECT *
+        FROM latest_pgns
+        WHERE game_id = ?
+    """
+    params: list[object] = [game_id]
+    if source:
+        query += " AND source = ?"
+        params.append(source)
+    result = conn.execute(query, params)
+    row = result.fetchone()
+    if not row and source:
+        fallback_result = conn.execute(
+            """
+            WITH latest_pgns AS (
+                SELECT * EXCLUDE (rn)
+                FROM (
+                    SELECT
+                        *,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY game_id, source
+                            ORDER BY pgn_version DESC
+                        ) AS rn
+                    FROM raw_pgns
+                )
+                WHERE rn = 1
+            )
+            SELECT *
+            FROM latest_pgns
+            WHERE game_id = ?
+            """,
+            [game_id],
+        )
+        row = fallback_result.fetchone()
+        if row:
+            result = fallback_result
+    if not row:
+        return {
+            "game_id": game_id,
+            "source": source,
+            "pgn": None,
+            "metadata": {},
+            "analysis": [],
+        }
+    columns = [desc[0] for desc in result.description]
+    pgn_row = dict(zip(columns, row))
+    pgn = pgn_row.get("pgn")
+    metadata = BaseDbStore.extract_pgn_metadata(pgn or "", user)
+    analysis_query = """
+        SELECT
+            t.tactic_id,
+            t.position_id,
+            t.game_id,
+            t.motif,
+            t.severity,
+            t.best_uci,
+            t.best_san,
+            t.explanation,
+            t.eval_cp,
+            t.created_at,
+            o.result,
+            o.user_uci,
+            o.eval_delta,
+            p.move_number,
+            p.ply,
+            p.san,
+            p.uci,
+            p.side_to_move,
+            p.fen
+        FROM tactics t
+        LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
+        LEFT JOIN positions p ON p.position_id = t.position_id
+        WHERE t.game_id = ?
+    """
+    analysis_params: list[object] = [game_id]
+    if source:
+        analysis_query += " AND p.source = ?"
+        analysis_params.append(source)
+    analysis_query += " ORDER BY p.ply ASC, t.created_at ASC"
+    analysis_rows = _rows_to_dicts(conn.execute(analysis_query, analysis_params))
+    return {
+        "game_id": game_id,
+        "source": pgn_row.get("source") or source,
+        "pgn": pgn,
+        "metadata": metadata,
+        "analysis": analysis_rows,
+    }
+
+
 def fetch_practice_tactic(
     conn: duckdb.DuckDBPyConnection, tactic_id: int
 ) -> dict[str, object] | None:

@@ -19,6 +19,8 @@ type BaseTableProps<TData> = {
   emptyMessage?: string;
   loadingMessage?: string;
   className?: string;
+  onRowClick?: (row: TData) => void;
+  rowTestId?: (row: TData, index: number) => string;
 };
 
 export default function BaseTable<TData>({
@@ -29,6 +31,8 @@ export default function BaseTable<TData>({
   emptyMessage = 'No rows to display.',
   loadingMessage = 'Loading…',
   className,
+  onRowClick,
+  rowTestId,
 }: BaseTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pagination, setPagination] = useState({
@@ -130,10 +134,21 @@ export default function BaseTable<TData>({
                 </td>
               </tr>
             ) : hasRows ? (
-              visibleRows.map((row) => (
+              visibleRows.map((row, index) => (
                 <tr
                   key={row.id}
-                  className="odd:bg-white/0 even:bg-white/5 border-b border-white/5"
+                  className={[
+                    'odd:bg-white/0 even:bg-white/5 border-b border-white/5',
+                    onRowClick ? 'cursor-pointer hover:bg-white/10' : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  onClick={
+                    onRowClick ? () => onRowClick(row.original) : undefined
+                  }
+                  data-testid={
+                    rowTestId ? rowTestId(row.original, index) : undefined
+                  }
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="py-2">

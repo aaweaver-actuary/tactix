@@ -5,6 +5,11 @@ import BaseTable from './BaseTable';
 interface TacticsTableProps {
   data: DashboardPayload['tactics'];
   columns: ColumnDef<DashboardPayload['tactics'][number]>[];
+  onRowClick?: (row: DashboardPayload['tactics'][number]) => void;
+  rowTestId?: (
+    row: DashboardPayload['tactics'][number],
+    index: number,
+  ) => string;
 }
 
 /**
@@ -13,6 +18,18 @@ interface TacticsTableProps {
  * @param data - Array of tactic objects.
  * @param columns - Column definitions for the BaseTable.
  */
-export default function TacticsTable({ data, columns }: TacticsTableProps) {
-  return <BaseTable data={data} columns={columns} />;
+export default function TacticsTable({
+  data,
+  columns,
+  onRowClick,
+  rowTestId,
+}: TacticsTableProps) {
+  return (
+    <BaseTable
+      data={data}
+      columns={columns}
+      onRowClick={onRowClick}
+      rowTestId={rowTestId}
+    />
+  );
 }

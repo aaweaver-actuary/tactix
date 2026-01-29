@@ -26,6 +26,7 @@ from tactix.pipeline import (
 )
 from tactix.duckdb_store import (
     fetch_practice_queue,
+    fetch_game_detail,
     fetch_raw_pgns_summary,
     get_connection,
     grade_practice_attempt,
@@ -223,6 +224,26 @@ def raw_pgns_summary(source: str | None = Query(None)) -> dict[str, object]:
         "source": active_source,
         "summary": fetch_raw_pgns_summary(conn, source=active_source),
     }
+
+
+@app.get("/api/games/{game_id}")
+def game_detail(
+    game_id: str,
+    source: str | None = Query(None),
+) -> dict[str, object]:
+    normalized_source = _normalize_source(source)
+    settings = get_settings(source=normalized_source)
+    conn = get_connection(settings.duckdb_path)
+    init_schema(conn)
+    payload = fetch_game_detail(
+        conn,
+        game_id=game_id,
+        user=settings.user,
+        source=normalized_source,
+    )
+    if not payload.get("pgn"):
+        raise HTTPException(status_code=404, detail="Game not found")
+    return payload
 
 
 @app.post("/api/practice/attempt")

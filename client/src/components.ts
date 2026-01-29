@@ -13,6 +13,7 @@ import PositionsList from './_components/PositionsList';
 import PracticeAttemptButton from './_components/PracticeAttemptButton';
 import PracticeMoveInput from './_components/PracticeMoveInput';
 import PracticeSessionProgress from './_components/PracticeSessionProgress';
+import GameDetailModal from './_components/GameDetailModal';
 
 export {
   Hero,
@@ -29,4 +30,5 @@ export {
   PracticeAttemptButton,
   PracticeMoveInput,
   PracticeSessionProgress,
+  GameDetailModal,
 };

@@ -7,6 +7,7 @@ import { Chessboard } from 'react-chessboard';
 import {
   DashboardPayload,
   DashboardFilters,
+  GameDetailResponse,
   PostgresAnalysisRow,
   PostgresRawPgnsSummary,
   PostgresStatus,
@@ -16,6 +17,7 @@ import {
 import { getAuthHeaders } from './utils/getAuthHeaders';
 import getJobStreamUrl from './utils/getJobStreamUrl';
 import fetchDashboard from './utils/fetchDashboard';
+import fetchGameDetail from './utils/fetchGameDetail';
 import fetchPostgresAnalysis from './utils/fetchPostgresAnalysis';
 import fetchPostgresRawPgns from './utils/fetchPostgresRawPgns';
 import fetchPostgresStatus from './utils/fetchPostgresStatus';
@@ -23,6 +25,7 @@ import triggerMetricsRefresh from './utils/triggerMetricsRefresh';
 import submitPracticeAttempt from './utils/submitPracticeAttempt';
 import fetchPracticeQueue from './utils/fetchPracticeQueue';
 import buildPracticeFeedback from './utils/buildPracticeFeedback';
+import formatPgnMoveList from './utils/formatPgnMoveList';
 import {
   ChessPlatform,
   ChesscomProfile,
@@ -45,6 +48,7 @@ import {
   PracticeAttemptButton,
   PracticeMoveInput,
   PracticeSessionProgress,
+  GameDetailModal,
 } from './components';
 import { SOURCE_OPTIONS } from './utils/SOURCE_OPTIONS';
 import { LICHESS_PROFILE_OPTIONS } from './utils/LICHESS_PROFILE_OPTIONS';
@@ -192,6 +196,10 @@ export default function App() {
     string | null
   >(null);
   const [postgresRawPgnsLoading, setPostgresRawPgnsLoading] = useState(false);
+  const [gameDetailOpen, setGameDetailOpen] = useState(false);
+  const [gameDetail, setGameDetail] = useState<GameDetailResponse | null>(null);
+  const [gameDetailLoading, setGameDetailLoading] = useState(false);
+  const [gameDetailError, setGameDetailError] = useState<string | null>(null);
 
   const normalizedFilters = useMemo<DashboardFilters>(
     () => ({
@@ -776,6 +784,11 @@ export default function App() {
     });
   }, [timeTroubleRows]);
 
+  const gameDetailMoves = useMemo(() => {
+    if (!gameDetail?.pgn) return [];
+    return formatPgnMoveList(gameDetail.pgn);
+  }, [gameDetail]);
+
   const tacticsColumns = useMemo<
     ColumnDef<DashboardPayload['tactics'][number]>[]
   >(
@@ -792,13 +805,15 @@ export default function App() {
       {
         header: 'Result',
         accessorKey: 'result',
-        cell: (info) => <Badge label={String(info.getValue())} />,
+        cell: (info) => <Badge label={String(info.getValue() || '--')} />,
       },
       {
         header: 'Move',
         accessorKey: 'user_uci',
         cell: (info) => (
-          <span className="font-mono text-xs">{String(info.getValue())}</span>
+          <span className="font-mono text-xs">
+            {String(info.getValue() || '--')}
+          </span>
         ),
       },
       {
@@ -806,7 +821,7 @@ export default function App() {
         accessorKey: 'eval_delta',
         cell: (info) => (
           <span className="font-mono text-xs text-rust">
-            {String(info.getValue())}
+            {String(info.getValue() ?? '--')}
           </span>
         ),
       },
@@ -1027,8 +1042,34 @@ export default function App() {
       .filter((row): row is (typeof motifBreakdown)[number] => Boolean(row));
   }, [motifBreakdown, motifCardOrder]);
 
-  const baseCardEntries: BaseCardEntry[] = useMemo(
-    () => [
+  const baseCardEntries: BaseCardEntry[] = useMemo(() => {
+    const handleGameDetail = async (
+      row: DashboardPayload['tactics'][number],
+    ): Promise<void> => {
+      if (!row.game_id) {
+        setGameDetailError('Selected tactic is missing a game id.');
+        setGameDetailOpen(true);
+        return;
+      }
+      setGameDetailOpen(true);
+      setGameDetailLoading(true);
+      setGameDetailError(null);
+      setGameDetail(null);
+      try {
+        const detail = await fetchGameDetail(
+          row.game_id,
+          row.source ?? (source === 'all' ? undefined : source),
+        );
+        setGameDetail(detail);
+      } catch (err) {
+        console.error(err);
+        setGameDetailError('Failed to load game details.');
+      } finally {
+        setGameDetailLoading(false);
+      }
+    };
+
+    return [
       {
         id: 'metrics-grid',
         label: 'Motif breakdown',
@@ -1154,7 +1195,16 @@ export default function App() {
               contentClassName="pt-3"
               {...props}
             >
-              <TacticsTable data={data.tactics} columns={tacticsColumns} />
+              <TacticsTable
+                data={data.tactics}
+                columns={tacticsColumns}
+                onRowClick={handleGameDetail}
+                rowTestId={(row) =>
+                  row.game_id
+                    ? `dashboard-game-row-${row.game_id}`
+                    : 'dashboard-game-row-unknown'
+                }
+              />
             </BaseCard>
           ) : null,
       },
@@ -1167,22 +1217,22 @@ export default function App() {
             <PositionsList positionsData={data.positions} {...props} />
           ) : null,
       },
-    ],
-    [
-      data,
-      includeFailedAttempt,
-      metricsTrendsColumns,
-      motifDropIndicatorIndex,
-      orderedMotifBreakdown,
-      practiceLoading,
-      practiceQueueColumns,
-      practiceQueue,
-      tacticsColumns,
-      timeTroubleColumns,
-      timeTroubleSortedRows,
-      trendLatestRows,
-    ],
-  );
+    ];
+  }, [
+    data,
+    includeFailedAttempt,
+    metricsTrendsColumns,
+    motifDropIndicatorIndex,
+    orderedMotifBreakdown,
+    practiceLoading,
+    practiceQueueColumns,
+    practiceQueue,
+    tacticsColumns,
+    timeTroubleColumns,
+    timeTroubleSortedRows,
+    trendLatestRows,
+    source,
+  ]);
 
   const baseCardIds = useMemo(
     () => baseCardEntries.map((entry) => entry.id),
@@ -1914,6 +1964,14 @@ export default function App() {
           <Text value={'No practice items queued yet.'} />
         )}
       </div>
+      <GameDetailModal
+        open={gameDetailOpen}
+        onClose={() => setGameDetailOpen(false)}
+        game={gameDetail}
+        moves={gameDetailMoves}
+        loading={gameDetailLoading}
+        error={gameDetailError}
+      />
     </div>
   );
 }

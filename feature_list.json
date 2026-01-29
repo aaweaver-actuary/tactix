@@ -2269,7 +2269,7 @@
       "Verify that the detailed game view shows the full move list.",
       "Verify that the detailed game view includes analysis features like engine evaluation and blunder checks."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

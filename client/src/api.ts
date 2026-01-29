@@ -20,14 +20,19 @@ export type MetricsRow = {
 
 export type TacticRow = {
   tactic_id: number;
+  game_id?: string | null;
+  position_id?: number | null;
   source: string | null;
   motif: string;
-  result: string;
-  user_uci: string;
-  eval_delta: number;
-  severity: number;
+  result: string | null;
+  user_uci: string | null;
+  eval_delta: number | null;
+  severity: number | null;
   created_at: string;
-  best_uci: string;
+  best_uci: string | null;
+  best_san?: string | null;
+  explanation?: string | null;
+  eval_cp?: number | null;
 };
 
 export type PositionRow = {
@@ -152,6 +157,52 @@ export type PostgresAnalysisRow = {
 export type PostgresAnalysisResponse = {
   status: string;
   tactics: PostgresAnalysisRow[];
+};
+
+export type GameDetailMetadata = {
+  user_rating: number | null;
+  time_control: string | null;
+  white_player: string | null;
+  black_player: string | null;
+  white_elo: number | null;
+  black_elo: number | null;
+  result: string | null;
+  event: string | null;
+  site: string | null;
+  utc_date: string | null;
+  utc_time: string | null;
+  termination: string | null;
+  start_timestamp_ms: number | null;
+};
+
+export type GameDetailAnalysisRow = {
+  tactic_id: number;
+  position_id: number | null;
+  game_id: string | null;
+  motif: string | null;
+  severity: number | null;
+  best_uci: string | null;
+  best_san: string | null;
+  explanation: string | null;
+  eval_cp: number | null;
+  created_at: string;
+  result: string | null;
+  user_uci: string | null;
+  eval_delta: number | null;
+  move_number: number | null;
+  ply: number | null;
+  san: string | null;
+  uci: string | null;
+  side_to_move: string | null;
+  fen: string | null;
+};
+
+export type GameDetailResponse = {
+  game_id: string;
+  source: string | null;
+  pgn: string | null;
+  metadata: GameDetailMetadata;
+  analysis: GameDetailAnalysisRow[];
 };
 
 export type PostgresRawPgnSourceSummary = {

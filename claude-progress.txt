@@ -1866,3 +1866,11 @@ Session 2026-01-29 (feature 174 – hanging piece low severity in bullet)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_hanging_piece_bullet.py -q`.
 - Post-change make check: `make check` (eslint warning in `client/src/App.tsx`; no errors; pytest coverage 90.06%).
 - Updated feature_list.json: feature “Stockfish detects hanging piece with low severity in bullet” marked passes=true.
+
+Session 2026-01-29 (feature 175 – refactor duplicate date filters)
+- Refactor: extracted `_append_date_range_filters` in `src/tactix/duckdb_store.py` to centralize date-range filtering for recent positions/tactics queries.
+- Before → after map:
+	- `fetch_recent_positions`/`fetch_recent_tactics` inline date range condition building → `_append_date_range_filters` helper.
+	- Call sites updated to use the helper with `p.created_at`/`t.created_at` columns.
+- Tests: `make check` (pre-change), `make check` (post-change + docstring; eslint warning in `client/src/App.tsx` persists; pytest 313 passed; coverage 90.22%).
+- Evidence: new unit test `test_append_date_range_filters_casts_datetime_values` in `tests/test_duckdb_store_helpers.py`.

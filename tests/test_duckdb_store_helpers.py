@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 import duckdb
 
 from tactix.duckdb_store import (
+    _append_date_range_filters,
     _ensure_raw_pgns_versioned,
     _normalize_filter,
     _rating_bucket_clause,
@@ -84,6 +85,29 @@ class DuckdbStoreHelperTests(unittest.TestCase):
 
         limited = fetch_latest_raw_pgns(self.conn, source="lichess", limit=1)
         self.assertEqual(len(limited), 1)
+
+    def test_append_date_range_filters_casts_datetime_values(self) -> None:
+        conditions: list[str] = []
+        params: list[object] = []
+        start_date = datetime(2024, 1, 2, tzinfo=timezone.utc)
+        end_date = datetime(2024, 1, 5, tzinfo=timezone.utc)
+
+        _append_date_range_filters(
+            conditions,
+            params,
+            start_date,
+            end_date,
+            "p.created_at",
+        )
+
+        self.assertEqual(
+            conditions,
+            [
+                "CAST(p.created_at AS DATE) >= ?",
+                "CAST(p.created_at AS DATE) <= ?",
+            ],
+        )
+        self.assertEqual(params, [start_date.date(), end_date.date()])
 
     def test_empty_helpers_short_circuit(self) -> None:
         self.assertEqual(upsert_raw_pgns(self.conn, []), 0)

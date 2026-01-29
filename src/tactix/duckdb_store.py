@@ -1257,6 +1257,26 @@ def _normalize_filter(value: str | None) -> str | None:
     return trimmed
 
 
+def _append_date_range_filters(
+    conditions: list[str],
+    params: list[object],
+    start_date: datetime | None,
+    end_date: datetime | None,
+    column: str,
+) -> None:
+    """Append start/end date filters for a timestamp column using DATE casting."""
+    if start_date:
+        start_date_value = (
+            start_date.date() if isinstance(start_date, datetime) else start_date
+        )
+        conditions.append(f"CAST({column} AS DATE) >= ?")
+        params.append(start_date_value)
+    if end_date:
+        end_date_value = end_date.date() if isinstance(end_date, datetime) else end_date
+        conditions.append(f"CAST({column} AS DATE) <= ?")
+        params.append(end_date_value)
+
+
 def _rating_bucket_clause(bucket: str) -> str:
     if bucket == "unknown":
         return "r.user_rating IS NULL"
@@ -1355,16 +1375,13 @@ def fetch_recent_positions(
         params.append(normalized_time)
     if normalized_rating:
         conditions.append(_rating_bucket_clause(normalized_rating))
-    if start_date:
-        start_date_value = (
-            start_date.date() if isinstance(start_date, datetime) else start_date
-        )
-        conditions.append("CAST(p.created_at AS DATE) >= ?")
-        params.append(start_date_value)
-    if end_date:
-        end_date_value = end_date.date() if isinstance(end_date, datetime) else end_date
-        conditions.append("CAST(p.created_at AS DATE) <= ?")
-        params.append(end_date_value)
+    _append_date_range_filters(
+        conditions,
+        params,
+        start_date,
+        end_date,
+        "p.created_at",
+    )
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
     query += " ORDER BY p.created_at DESC LIMIT ?"
@@ -1419,16 +1436,13 @@ def fetch_recent_tactics(
         params.append(normalized_time)
     if normalized_rating:
         conditions.append(_rating_bucket_clause(normalized_rating))
-    if start_date:
-        start_date_value = (
-            start_date.date() if isinstance(start_date, datetime) else start_date
-        )
-        conditions.append("CAST(t.created_at AS DATE) >= ?")
-        params.append(start_date_value)
-    if end_date:
-        end_date_value = end_date.date() if isinstance(end_date, datetime) else end_date
-        conditions.append("CAST(t.created_at AS DATE) <= ?")
-        params.append(end_date_value)
+    _append_date_range_filters(
+        conditions,
+        params,
+        start_date,
+        end_date,
+        "t.created_at",
+    )
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
     query += " ORDER BY t.created_at DESC LIMIT ?"

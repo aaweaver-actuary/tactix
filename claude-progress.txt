@@ -1824,3 +1824,12 @@ Session 2026-01-29 (feature 170 – discovered check high severity in rapid)
 - CI integration check: `TACTIX_DISCOVERED_CHECK_GAME_ID=rapid-discovered-check-high node /Users/andy/tactix/verification/integration_feature_170_discovered_check_rapid_high.js`.
 - Post-change make check: `make check` (eslint warning in `client/src/App.tsx`; no errors).
 - Updated feature_list.json: feature “Stockfish detects discovered check with high severity in rapid” marked passes=true.
+Session 2026-01-29 (feature 171 – refactor duplicate functionality)
+- Pre-change make check: `make check` (eslint warning in `client/src/App.tsx`; no errors).
+- Refactor target: duplicate fixture PGN loading logic in `chesscom_client._load_fixture_games` and `lichess_client._load_fixture_games`.
+- Before → after map:
+	- Inline fixture PGN parsing/filtering in `chesscom_client._load_fixture_games` / `lichess_client._load_fixture_games` → shared `pgn_utils.load_fixture_games` helper.
+	- Call sites updated to pass fixture path, user/source, since/until, and keep Chess.com fixture log messages.
+- Tests: `make check` (post) including new `tests/test_pgn_utils_helpers.py` coverage for fixture loader.
+- Evidence: `make check` output shows `src/tactix/pgn_utils.py` at 100% coverage and total coverage at 90.28%.
+- Updated feature_list.json: feature “Regularly do a deep dive of the codebase, identify duplicate functionality or logic, and refactor it into reusable components or functions to improve maintainability.” marked passes=true for #171.

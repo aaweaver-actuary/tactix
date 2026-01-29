@@ -16,7 +16,7 @@ from tactix.pgn_utils import (
     extract_game_id,
     extract_last_timestamp_ms,
     latest_timestamp,
-    split_pgn_chunks,
+    load_fixture_games,
 )
 
 logger = get_logger(__name__)
@@ -115,29 +115,15 @@ def write_cursor(path: Path, cursor: str | None) -> None:
 
 
 def _load_fixture_games(settings: Settings, since_ms: int) -> List[dict]:
-    path = settings.chesscom_fixture_pgn_path
-    if not path.exists():
-        logger.warning("Chess.com fixture PGN path missing: %s", path)
-        return []
-
-    games: List[dict] = []
-    for raw in split_pgn_chunks(path.read_text()):
-        last_ts = extract_last_timestamp_ms(raw)
-        if since_ms and last_ts <= since_ms:
-            continue
-        games.append(
-            {
-                "game_id": extract_game_id(raw),
-                "user": settings.user,
-                "source": settings.source,
-                "fetched_at": datetime.now(timezone.utc),
-                "pgn": raw,
-                "last_timestamp_ms": last_ts,
-            }
-        )
-
-    logger.info("Loaded %s Chess.com fixture PGNs from %s", len(games), path)
-    return games
+    return load_fixture_games(
+        settings.chesscom_fixture_pgn_path,
+        settings.user,
+        settings.source,
+        since_ms,
+        logger=logger,
+        missing_message="Chess.com fixture PGN path missing: %s",
+        loaded_message="Loaded %s Chess.com fixture PGNs from %s",
+    )
 
 
 def _next_page_url(data: dict, current_url: str) -> str | None:

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import logging
 import re
 import time
 from datetime import datetime, timezone
 from io import StringIO
+from pathlib import Path
 from typing import Iterable
 from collections.abc import Mapping
 
@@ -20,6 +22,46 @@ FIXTURE_SPLIT_RE = re.compile(r"\n{2,}(?=\[Event )")
 
 def split_pgn_chunks(text: str) -> list[str]:
     return [chunk.strip() for chunk in FIXTURE_SPLIT_RE.split(text) if chunk.strip()]
+
+
+def load_fixture_games(
+    path: Path,
+    user: str,
+    source: str,
+    since_ms: int,
+    *,
+    until_ms: int | None = None,
+    logger: logging.Logger | None = None,
+    missing_message: str = "Fixture PGN path missing: %s",
+    loaded_message: str = "Loaded %s fixture PGNs from %s",
+) -> list[dict[str, object]]:
+    """Load fixture PGNs from disk and apply since/until timestamp filters."""
+    active_logger = logger or logging.getLogger(__name__)
+    if not path.exists():
+        active_logger.warning(missing_message, path)
+        return []
+
+    chunks = split_pgn_chunks(path.read_text())
+    games: list[dict[str, object]] = []
+    for raw in chunks:
+        last_ts = extract_last_timestamp_ms(raw)
+        if since_ms and last_ts <= since_ms:
+            continue
+        if until_ms is not None and last_ts >= until_ms:
+            continue
+        games.append(
+            {
+                "game_id": extract_game_id(raw),
+                "user": user,
+                "source": source,
+                "fetched_at": datetime.now(timezone.utc),
+                "pgn": raw,
+                "last_timestamp_ms": last_ts,
+            }
+        )
+
+    active_logger.info(loaded_message, len(games), path)
+    return games
 
 
 def extract_game_id(pgn: str) -> str:

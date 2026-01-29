@@ -23,8 +23,8 @@ from tactix.logging_utils import get_logger
 from tactix.pgn_utils import (
     extract_game_id,
     extract_last_timestamp_ms,
+    load_fixture_games,
     latest_timestamp,
-    split_pgn_chunks,
 )
 
 logger = get_logger(__name__)
@@ -77,32 +77,15 @@ class LichessGameRow(TypedDict):
 def _load_fixture_games(
     settings: Settings, since_ms: int, until_ms: int | None = None
 ) -> List[LichessGameRow]:
-    path = settings.fixture_pgn_path
-    if not path.exists():
-        logger.warning("Fixture PGN path missing: %s", path)
-        return []
-
-    chunks = split_pgn_chunks(path.read_text())
-    games: List[LichessGameRow] = []
-    for raw in chunks:
-        last_ts = extract_last_timestamp_ms(raw)
-        if since_ms and last_ts <= since_ms:
-            continue
-        if until_ms is not None and last_ts >= until_ms:
-            continue
-        games.append(
-            {
-                "game_id": extract_game_id(raw),
-                "user": settings.user,
-                "source": settings.source,
-                "fetched_at": datetime.now(timezone.utc),
-                "pgn": raw,
-                "last_timestamp_ms": last_ts,
-            }
-        )
-
-    logger.info("Loaded %s fixture PGNs from %s", len(games), path)
-    return games
+    games = load_fixture_games(
+        settings.fixture_pgn_path,
+        settings.user,
+        settings.source,
+        since_ms,
+        until_ms=until_ms,
+        logger=logger,
+    )
+    return cast(List[LichessGameRow], games)
 
 
 def read_checkpoint(path: Path) -> int:

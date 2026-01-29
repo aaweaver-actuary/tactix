@@ -1,10 +1,13 @@
+import tempfile
 import unittest
 from datetime import datetime, timezone
+from pathlib import Path
 
 from tactix.pgn_utils import (
     extract_game_id,
     extract_last_timestamp_ms,
     extract_pgn_metadata,
+    load_fixture_games,
     latest_timestamp,
     normalize_pgn,
     split_pgn_chunks,
@@ -84,6 +87,21 @@ class PgnUtilsHelperTests(unittest.TestCase):
 
         with patch("tactix.pgn_utils.time.time", return_value=1000):
             self.assertEqual(extract_last_timestamp_ms("invalid"), 1000 * 1000)
+
+    def test_extract_last_timestamp_ms_invalid_timestamp(self) -> None:
+        invalid_ts = """[Event \"Test\"]
+[Site \"https://lichess.org/AbcDef12\"]
+[UTCDate \"bad\"]
+[UTCTime \"bad\"]
+[White \"user\"]
+[Black \"opp\"]
+[Result \"*\"]
+
+1. e4 *
+"""
+
+        with patch("tactix.pgn_utils.time.time", return_value=1234):
+            self.assertEqual(extract_last_timestamp_ms(invalid_ts), 1234 * 1000)
 
     def test_extract_pgn_metadata_picks_user_rating_and_time_control(self) -> None:
         pgn = """[Event \"Test\"]
@@ -204,6 +222,104 @@ class PgnUtilsHelperTests(unittest.TestCase):
         ]
 
         self.assertEqual(latest_timestamp(rows), 20)
+
+    def test_load_fixture_games_filters_by_since_and_until(self) -> None:
+        pgn = (
+            '[Event "Game A"]\n'
+            '[Site "https://lichess.org/AbcDef12"]\n'
+            '[UTCDate "2020.01.01"]\n'
+            '[UTCTime "00:00:00"]\n'
+            '[White "user"]\n'
+            '[Black "opp"]\n'
+            '[Result "*"]\n\n'
+            '1. e4 *\n\n'
+            '[Event "Game B"]\n'
+            '[Site "https://chess.com/game/live/123456"]\n'
+            '[UTCDate "2020.01.02"]\n'
+            '[UTCTime "00:00:00"]\n'
+            '[White "user"]\n'
+            '[Black "opp"]\n'
+            '[Result "*"]\n\n'
+            '1. d4 *\n'
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "fixtures.pgn"
+            path.write_text(pgn)
+
+            since_ms = int(
+                datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp() * 1000
+            )
+            games_since = load_fixture_games(
+                path, "user", "lichess", since_ms, logger=None
+            )
+            self.assertEqual(len(games_since), 1)
+            self.assertEqual(games_since[0]["game_id"], "123456")
+
+            until_ms = int(
+                datetime(2020, 1, 2, tzinfo=timezone.utc).timestamp() * 1000
+            )
+            games_until = load_fixture_games(
+                path, "user", "lichess", 0, until_ms=until_ms, logger=None
+            )
+            self.assertEqual(len(games_until), 1)
+            self.assertEqual(games_until[0]["game_id"], "AbcDef12")
+
+    def test_load_fixture_games_missing_path_returns_empty(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            missing_path = Path(tmp) / "missing.pgn"
+            games = load_fixture_games(missing_path, "user", "lichess", 0)
+
+        self.assertEqual(games, [])
+
+    def test_load_fixture_games_filters_by_since_and_until(self) -> None:
+        pgn = (
+            '[Event "Game A"]\n'
+            '[Site "https://lichess.org/AbcDef12"]\n'
+            '[UTCDate "2020.01.01"]\n'
+            '[UTCTime "00:00:00"]\n'
+            '[White "user"]\n'
+            '[Black "opp"]\n'
+            '[Result "*"]\n\n'
+            '1. e4 *\n\n'
+            '[Event "Game B"]\n'
+            '[Site "https://chess.com/game/live/123456"]\n'
+            '[UTCDate "2020.01.02"]\n'
+            '[UTCTime "00:00:00"]\n'
+            '[White "user"]\n'
+            '[Black "opp"]\n'
+            '[Result "*"]\n\n'
+            '1. d4 *\n'
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "fixtures.pgn"
+            path.write_text(pgn)
+
+            since_ms = int(
+                datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp() * 1000
+            )
+            games_since = load_fixture_games(
+                path, "user", "lichess", since_ms, logger=None
+            )
+            self.assertEqual(len(games_since), 1)
+            self.assertEqual(games_since[0]["game_id"], "123456")
+
+            until_ms = int(
+                datetime(2020, 1, 2, tzinfo=timezone.utc).timestamp() * 1000
+            )
+            games_until = load_fixture_games(
+                path, "user", "lichess", 0, until_ms=until_ms, logger=None
+            )
+            self.assertEqual(len(games_until), 1)
+            self.assertEqual(games_until[0]["game_id"], "AbcDef12")
+
+    def test_load_fixture_games_missing_path_returns_empty(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            missing_path = Path(tmp) / "missing.pgn"
+            games = load_fixture_games(missing_path, "user", "lichess", 0)
+
+        self.assertEqual(games, [])
 
 
 if __name__ == "__main__":

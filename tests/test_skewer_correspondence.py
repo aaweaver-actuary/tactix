@@ -118,6 +118,7 @@ class SkewerCorrespondenceTests(unittest.TestCase):
         self.assertGreater(tactic_row["severity"], 0)
         self.assertLessEqual(tactic_row["severity"], 1.0)
         self.assertTrue(tactic_row["best_uci"])
+        self.assertEqual(outcome_row["result"], "found")
 
         tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
         stored = conn.execute(
@@ -127,6 +128,12 @@ class SkewerCorrespondenceTests(unittest.TestCase):
         self.assertEqual(stored[0], position_ids[0])
         self.assertIsNotNone(stored[1])
         self.assertIn("Best line", stored[2] or "")
+        stored_outcome = conn.execute(
+            "SELECT result, user_uci FROM tactic_outcomes WHERE tactic_id = ?",
+            [tactic_id],
+        ).fetchone()
+        self.assertEqual(stored_outcome[0], "found")
+        self.assertEqual(stored_outcome[1], position["uci"])
 
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_correspondence_skewer_is_high_severity(self) -> None:

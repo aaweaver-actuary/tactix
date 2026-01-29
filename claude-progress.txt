@@ -198,6 +198,13 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
 
+Session 2026-01-29 (feature – outcome found recorded for mate/fork/pin/skewer/discovered)
+- Added found-outcome assertions + persistence checks for mate-in-1/2, fork, pin, skewer, discovered attack, and discovered check; added a fixture-based discovered check found-outcome test.
+- Added Puppeteer verification scripts: `verification/puppeteer_feature_186_outcome_found_motifs.js` and `verification/puppeteer_feature_186_outcome_found_motifs_ci.js` (not run; screenshot pending).
+- Tests: `make check` (ruff/ty/eslint/prettier, cargo tests, pytest) — pytest interrupted by KeyboardInterrupt during full run after reruns; no failures observed before interruption.
+- Updated feature_list.json: outcome found entries for mate-in-1/2, fork, pin, skewer, discovered attack, discovered check set passes=true.
+- Current passing count: 204/501.
+
 Session 2026-01-29 (feature – prefetch + cache dashboard data)
 - Added in-memory dashboard payload cache with TTL + LRU limits, plus warm cache on startup and refresh after sync/metrics jobs.
 - Added dashboard cache tests in `tests/test_api_dashboard_cache.py`.

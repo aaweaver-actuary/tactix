@@ -62,12 +62,19 @@ class MateInTwoBlitzTests(unittest.TestCase):
         self.assertEqual(tactic_row["best_uci"], "c5f2")
         self.assertGreaterEqual(tactic_row["severity"], 1.5)
         self.assertLessEqual(abs(outcome_row["eval_delta"]), 100)
+        self.assertEqual(outcome_row["result"], "found")
 
         tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
         stored_position_id = conn.execute(
             "SELECT position_id FROM tactics WHERE tactic_id = ?", [tactic_id]
         ).fetchone()[0]
         self.assertEqual(stored_position_id, position_ids[0])
+        stored_outcome = conn.execute(
+            "SELECT result, user_uci FROM tactic_outcomes WHERE tactic_id = ?",
+            [tactic_id],
+        ).fetchone()
+        self.assertEqual(stored_outcome[0], "found")
+        self.assertEqual(stored_outcome[1], "c5f2")
 
         stored_line = conn.execute(
             "SELECT best_san, explanation FROM tactics WHERE tactic_id = ?",

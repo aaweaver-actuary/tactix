@@ -62,12 +62,19 @@ class MateInOneRapidTests(unittest.TestCase):
         self.assertEqual(tactic_row["best_uci"], "d8h4")
         self.assertGreaterEqual(tactic_row["severity"], 1.5)
         self.assertLessEqual(abs(outcome_row["eval_delta"]), 100)
+        self.assertEqual(outcome_row["result"], "found")
 
         tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
         stored_position_id = conn.execute(
             "SELECT position_id FROM tactics WHERE tactic_id = ?", [tactic_id]
         ).fetchone()[0]
         self.assertEqual(stored_position_id, position_ids[0])
+        stored_outcome = conn.execute(
+            "SELECT result, user_uci FROM tactic_outcomes WHERE tactic_id = ?",
+            [tactic_id],
+        ).fetchone()
+        self.assertEqual(stored_outcome[0], "found")
+        self.assertEqual(stored_outcome[1], "d8h4")
 
         attempt = grade_practice_attempt(conn, tactic_id, position_ids[0], "d8h4")
         self.assertIn("Best line", attempt["explanation"] or "")
@@ -119,6 +126,7 @@ class TestForkRapid(unittest.TestCase):
         self.assertEqual(tactic_row["best_uci"], "f4e2")
         self.assertGreater(tactic_row["severity"], 0)
         self.assertLessEqual(tactic_row["severity"], 1.0)
+        self.assertEqual(outcome_row["result"], "found")
 
         tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
         stored = conn.execute(
@@ -128,6 +136,12 @@ class TestForkRapid(unittest.TestCase):
         self.assertEqual(stored[0], position_ids[0])
         self.assertIsNotNone(stored[1])
         self.assertIn("Best line", stored[2] or "")
+        stored_outcome = conn.execute(
+            "SELECT result, user_uci FROM tactic_outcomes WHERE tactic_id = ?",
+            [tactic_id],
+        ).fetchone()
+        self.assertEqual(stored_outcome[0], "found")
+        self.assertEqual(stored_outcome[1], "f4e2")
 
         attempt = grade_practice_attempt(conn, tactic_id, position_ids[0], "f4e2")
         self.assertIn("Best line", attempt["explanation"] or "")

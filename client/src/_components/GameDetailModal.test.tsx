@@ -1,4 +1,5 @@
-import { renderToStaticMarkup } from 'react-dom/server';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
 import GameDetailModal from './GameDetailModal';
 import type { GameDetailResponse } from '../api';
 
@@ -47,7 +48,7 @@ const sampleGame: GameDetailResponse = {
 };
 
 function renderModal() {
-  const html = renderToStaticMarkup(
+  render(
     <GameDetailModal
       open
       onClose={() => undefined}
@@ -57,21 +58,44 @@ function renderModal() {
       error={null}
     />,
   );
-  const parser = new DOMParser();
-  return parser.parseFromString(html, 'text/html');
 }
 
 describe('GameDetailModal', () => {
-  it('renders move list and analysis sections', () => {
-    const doc = renderModal();
-    const modal = doc.querySelector('[data-testid="game-detail-modal"]');
-    expect(modal).not.toBeNull();
+  it('renders move list, player info, and metadata sections', () => {
+    renderModal();
+    expect(screen.getByTestId('game-detail-modal')).toBeInTheDocument();
 
-    const moves = doc.querySelectorAll('[data-testid="game-move-row"]');
+    const moves = screen.getAllByTestId('game-move-row');
     expect(moves).toHaveLength(2);
 
-    const analysis = doc.querySelector('[data-testid="game-detail-analysis"]');
-    expect(analysis?.textContent).toContain('Eval (cp)');
-    expect(analysis?.textContent).toContain('Blunder');
+    const analysis = screen.getByTestId('game-detail-analysis');
+    expect(analysis.textContent).toContain('Eval (cp)');
+    expect(analysis.textContent).toContain('Blunder');
+
+    const players = screen.getByTestId('game-detail-players');
+    expect(players.textContent).toContain('Alice');
+    expect(players.textContent).toContain('Bob');
+
+    const metadata = screen.getByTestId('game-detail-metadata');
+    expect(metadata.textContent).toContain('Test');
+    expect(metadata.textContent).toContain('https://chess.com/game/123');
+  });
+
+  it('supports keyboard navigation shortcuts', () => {
+    renderModal();
+    const currentMove = () => screen.getByTestId('game-detail-current-move');
+    expect(currentMove().textContent).toContain('2. Nf3 Nc6');
+
+    fireEvent.keyDown(window, { key: 'ArrowLeft' });
+    expect(currentMove().textContent).toContain('1. e4 e5');
+
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    expect(currentMove().textContent).toContain('2. Nf3 Nc6');
+
+    fireEvent.keyDown(window, { key: 'ArrowUp' });
+    expect(currentMove().textContent).toContain('1. e4 e5');
+
+    fireEvent.keyDown(window, { key: 'ArrowDown' });
+    expect(currentMove().textContent).toContain('2. Nf3 Nc6');
   });
 });

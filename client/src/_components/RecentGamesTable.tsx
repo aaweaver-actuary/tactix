@@ -5,6 +5,7 @@ import BaseTable from './BaseTable';
 interface RecentGamesTableProps {
   data: DashboardPayload['recent_games'];
   columns: ColumnDef<DashboardPayload['recent_games'][number]>[];
+  onRowClick?: (row: DashboardPayload['recent_games'][number]) => void;
   rowTestId?: (
     row: DashboardPayload['recent_games'][number],
     index: number,
@@ -20,7 +21,15 @@ interface RecentGamesTableProps {
 export default function RecentGamesTable({
   data,
   columns,
+  onRowClick,
   rowTestId,
 }: RecentGamesTableProps) {
-  return <BaseTable data={data} columns={columns} rowTestId={rowTestId} />;
+  return (
+    <BaseTable
+      data={data}
+      columns={columns}
+      onRowClick={onRowClick}
+      rowTestId={rowTestId}
+    />
+  );
 }

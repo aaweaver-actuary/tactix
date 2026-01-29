@@ -2320,7 +2320,7 @@
       "Verify that the modal allows the user to step through the moves of the game with navigation control buttons.",
       "Verify that the modal allows the user to step through the moves of the game using keyboard arrow keys (left/right -> previous/next move, up/down -> start/end of the line or game)."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "refactor",

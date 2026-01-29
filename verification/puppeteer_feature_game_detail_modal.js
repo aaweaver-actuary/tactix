@@ -128,6 +128,13 @@ function startPreview() {
   });
 }
 
+async function getTextContent(handle) {
+  if (!handle) return '';
+  const prop = await handle.getProperty('textContent');
+  const value = await prop.jsonValue();
+  return value ? String(value) : '';
+}
+
 (async () => {
   console.log('Starting backend...');
   const backend = await startBackend();
@@ -160,50 +167,32 @@ function startPreview() {
     await new Promise((resolve) => setTimeout(resolve, 2000));
     await page.waitForSelector('[data-testid="dashboard-card-tactics-table"]');
 
-    await page.click('[data-testid="dashboard-card-tactics-table"] [role="button"]');
-    await page.waitForSelector(
-      '[data-testid="dashboard-card-tactics-table"] [data-state]',
-    );
-    let expandedState = await page.$eval(
-      '[data-testid="dashboard-card-tactics-table"] [data-state]',
-      (el) => el.getAttribute('data-state') || 'unknown',
-    );
-    if (expandedState !== 'expanded') {
-      await page.click('[data-testid="dashboard-card-tactics-table"] [role="button"]');
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      expandedState = await page.$eval(
-        '[data-testid="dashboard-card-tactics-table"] [data-state]',
-        (el) => el.getAttribute('data-state') || 'unknown',
-      );
-    }
+    await page.click('[data-testid="recent-games-card"] [role="button"]');
+    await page.waitForSelector('[data-testid="recent-games-card"] table');
 
-    await page.waitForSelector(
-      '[data-testid="dashboard-card-tactics-table"] table tbody tr',
+    const firstRow = await page.waitForSelector(
+      '[data-testid="recent-games-card"] table tbody tr',
     );
-    const firstRowText = await page.$eval(
-      '[data-testid="dashboard-card-tactics-table"] table tbody tr',
-      (el) => el.textContent || '',
-    );
+    const firstRowText = await getTextContent(firstRow);
     if (firstRowText.toLowerCase().includes('no rows')) {
-      throw new Error('No tactics rows found for lichess source');
+      throw new Error('No recent games rows found for lichess source');
     }
     for (let attempt = 0; attempt < 6; attempt += 1) {
-      const rowText = await page.$eval(
-        '[data-testid="dashboard-card-tactics-table"] table tbody tr',
-        (el) => el.textContent || '',
+      const row = await page.waitForSelector(
+        '[data-testid="recent-games-card"] table tbody tr',
       );
+      const rowText = await getTextContent(row);
       const lower = rowText.toLowerCase();
       if (!lower.includes('loading') && !lower.includes('no rows')) {
         break;
       }
       await new Promise((resolve) => setTimeout(resolve, 1000));
       if (attempt === 5) {
-        throw new Error('Tactics table did not return any rows');
+        throw new Error('Recent games table did not return any rows');
       }
     }
-    await page.$eval(
-      '[data-testid="dashboard-card-tactics-table"] table tbody tr',
-      (el) => el.click(),
+    await page.click(
+      '[data-testid="recent-games-card"] table tbody tr',
     );
     await page.waitForSelector('[data-testid="game-detail-modal"]', {
       visible: true,
@@ -215,10 +204,10 @@ function startPreview() {
       throw new Error('Expected move list rows in game detail modal');
     }
 
-    const analysisText = await page.$eval(
+    const analysisSection = await page.waitForSelector(
       '[data-testid="game-detail-analysis"]',
-      (el) => el.textContent || '',
     );
+    const analysisText = await getTextContent(analysisSection);
     const hasEval = analysisText.includes('Eval');
     const hasFlags =
       analysisText.includes('Flags') ||

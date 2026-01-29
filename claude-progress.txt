@@ -198,6 +198,15 @@ Session 2026-01-25 (feature 021 – Chess.com pagination >200 games)
 - Updated feature_list.json: feature 021 marked passes=true after verification.
 - Current passing count: 21.
 
+Session 2026-01-29 (feature – dashboard game detail modal)
+- Wired game detail modal opening for recent games + practice queue rows; generalized handler for any row with a game id.
+- Added RecentGamesTable unit test to confirm row click handling; existing GameDetailModal tests cover keyboard navigation + modal details.
+- Tests: `make check`.
+- UI verification: `node verification/puppeteer_feature_game_detail_modal.js`.
+- Screenshot: `verification/feature-game-detail-modal-2026-01-29.png`.
+- Updated feature_list.json: game detail modal feature marked passes=true.
+- Current passing count: 187.
+
 Session 2026-01-29 (feature – Recent games BaseCard)
 - Added recent games payload support in DuckDB dashboard responses (combined sources) and mapped opponent/result/date metadata from PGNs.
 - Implemented Recent games BaseCard on the dashboard using BaseTable with columns for source, opponent, result, date, and time control.

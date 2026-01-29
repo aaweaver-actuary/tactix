@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { GameDetailResponse } from '../api';
 import Badge from './Badge';
 import Text from './Text';
@@ -22,6 +22,7 @@ export default function GameDetailModal({
   loading,
   error,
 }: GameDetailModalProps) {
+  const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
   const analysisRows = useMemo(() => {
     if (!game?.analysis?.length) return [];
     return game.analysis.map((row) => {
@@ -52,6 +53,64 @@ export default function GameDetailModal({
       };
     });
   }, [game]);
+
+  const moveCount = moves.length;
+  const lastMoveIndex = moveCount > 0 ? moveCount - 1 : 0;
+  const currentMove = moveCount ? moves[currentMoveIndex] : 'No moves loaded';
+
+  const metadataRows = useMemo(() => {
+    if (!game) return [];
+    const meta = game.metadata;
+    const entries = [
+      { label: 'Event', value: meta.event },
+      { label: 'Site', value: meta.site },
+      { label: 'UTC date', value: meta.utc_date },
+      { label: 'UTC time', value: meta.utc_time },
+      { label: 'Termination', value: meta.termination },
+      { label: 'Time control', value: meta.time_control },
+      { label: 'Result', value: meta.result },
+      {
+        label: 'Start',
+        value:
+          meta.start_timestamp_ms !== null &&
+          meta.start_timestamp_ms !== undefined
+            ? new Date(meta.start_timestamp_ms).toLocaleString()
+            : null,
+      },
+    ];
+    return entries.filter((entry) => Boolean(entry.value));
+  }, [game]);
+
+  useEffect(() => {
+    if (!open) return;
+    setCurrentMoveIndex(lastMoveIndex);
+  }, [open, lastMoveIndex]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (event: KeyboardEvent) => {
+      if (!moveCount) return;
+      if (
+        event.key === 'ArrowLeft' ||
+        event.key === 'ArrowRight' ||
+        event.key === 'ArrowUp' ||
+        event.key === 'ArrowDown'
+      ) {
+        event.preventDefault();
+      }
+      if (event.key === 'ArrowLeft') {
+        setCurrentMoveIndex((prev) => Math.max(0, prev - 1));
+      } else if (event.key === 'ArrowRight') {
+        setCurrentMoveIndex((prev) => Math.min(lastMoveIndex, prev + 1));
+      } else if (event.key === 'ArrowUp') {
+        setCurrentMoveIndex(0);
+      } else if (event.key === 'ArrowDown') {
+        setCurrentMoveIndex(lastMoveIndex);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [open, lastMoveIndex, moveCount]);
 
   if (!open) return null;
 
@@ -115,19 +174,140 @@ export default function GameDetailModal({
               ) : null}
             </div>
 
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-[1.2fr_1fr]">
+              <div
+                className="rounded-lg border border-white/10 bg-white/5 p-4"
+                data-testid="game-detail-players"
+              >
+                <Text mode="uppercase" value="Players" />
+                <div className="mt-3 space-y-2 text-sm text-sand/90">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sand/70">White</span>
+                    <span className="font-mono">
+                      {game.metadata.white_player || 'Unknown'}
+                      {game.metadata.white_elo
+                        ? ` (${game.metadata.white_elo})`
+                        : ''}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sand/70">Black</span>
+                    <span className="font-mono">
+                      {game.metadata.black_player || 'Unknown'}
+                      {game.metadata.black_elo
+                        ? ` (${game.metadata.black_elo})`
+                        : ''}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div
+                className="rounded-lg border border-white/10 bg-white/5 p-4"
+                data-testid="game-detail-metadata"
+              >
+                <Text mode="uppercase" value="Game metadata" />
+                <div className="mt-3 space-y-2 text-xs text-sand/70">
+                  {metadataRows.length ? (
+                    metadataRows.map((entry) => (
+                      <div
+                        key={entry.label}
+                        className="flex items-center justify-between gap-2"
+                      >
+                        <span className="uppercase tracking-wide">
+                          {entry.label}
+                        </span>
+                        <span className="text-sand/90">{entry.value}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sand/50">No metadata available.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-4">
               <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <Text mode="uppercase" value="Move list" />
-                  <Badge label={`${moves.length} ply`} />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge label={`${moves.length} ply`} />
+                    <Badge label={currentMove} />
+                  </div>
+                </div>
+                <div
+                  className="mt-3 flex flex-wrap items-center gap-2"
+                  data-testid="game-detail-navigation"
+                >
+                  <button
+                    type="button"
+                    className="rounded-md border border-white/10 px-2 py-1 text-xs text-sand/70 hover:border-white/30 disabled:opacity-40"
+                    onClick={() => setCurrentMoveIndex(0)}
+                    disabled={!moveCount || currentMoveIndex === 0}
+                    aria-label="First move"
+                    data-testid="game-detail-nav-first"
+                  >
+                    First
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-md border border-white/10 px-2 py-1 text-xs text-sand/70 hover:border-white/30 disabled:opacity-40"
+                    onClick={() =>
+                      setCurrentMoveIndex((prev) => Math.max(0, prev - 1))
+                    }
+                    disabled={!moveCount || currentMoveIndex === 0}
+                    aria-label="Previous move"
+                    data-testid="game-detail-nav-prev"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-md border border-white/10 px-2 py-1 text-xs text-sand/70 hover:border-white/30 disabled:opacity-40"
+                    onClick={() =>
+                      setCurrentMoveIndex((prev) =>
+                        Math.min(lastMoveIndex, prev + 1),
+                      )
+                    }
+                    disabled={!moveCount || currentMoveIndex === lastMoveIndex}
+                    aria-label="Next move"
+                    data-testid="game-detail-nav-next"
+                  >
+                    Next
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-md border border-white/10 px-2 py-1 text-xs text-sand/70 hover:border-white/30 disabled:opacity-40"
+                    onClick={() => setCurrentMoveIndex(lastMoveIndex)}
+                    disabled={!moveCount || currentMoveIndex === lastMoveIndex}
+                    aria-label="Last move"
+                    data-testid="game-detail-nav-last"
+                  >
+                    Last
+                  </button>
+                  <span className="text-xs text-sand/50">
+                    Use ←/→ for prev/next, ↑/↓ for start/end
+                  </span>
                 </div>
                 <ol
                   className="mt-3 max-h-64 space-y-1 overflow-y-auto text-sm text-sand/90"
                   data-testid="game-detail-moves"
                 >
                   {moves.length ? (
-                    moves.map((move) => (
-                      <li key={move} data-testid="game-move-row">
+                    moves.map((move, index) => (
+                      <li
+                        key={`${move}-${index}`}
+                        data-testid="game-move-row"
+                        data-selected={
+                          index === currentMoveIndex ? 'true' : 'false'
+                        }
+                        className={
+                          index === currentMoveIndex
+                            ? 'rounded-md bg-teal/15 px-2 py-1 text-sand'
+                            : undefined
+                        }
+                        onClick={() => setCurrentMoveIndex(index)}
+                      >
                         {move}
                       </li>
                     ))
@@ -135,6 +315,12 @@ export default function GameDetailModal({
                     <li className="text-sand/60">No moves available.</li>
                   )}
                 </ol>
+                <div
+                  className="mt-2 text-xs text-sand/60"
+                  data-testid="game-detail-current-move"
+                >
+                  Current: <span className="text-sand/90">{currentMove}</span>
+                </div>
               </div>
 
               <div className="rounded-lg border border-white/10 bg-white/5 p-4">

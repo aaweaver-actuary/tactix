@@ -1114,11 +1114,12 @@ export default function App() {
   }, [motifBreakdown, motifCardOrder]);
 
   const baseCardEntries: BaseCardEntry[] = useMemo(() => {
-    const handleGameDetail = async (
-      row: DashboardPayload['tactics'][number],
-    ): Promise<void> => {
+    const handleGameDetail = async (row: {
+      game_id?: string | null;
+      source?: string | null;
+    }): Promise<void> => {
       if (!row.game_id) {
-        setGameDetailError('Selected tactic is missing a game id.');
+        setGameDetailError('Selected game is missing a game id.');
         setGameDetailOpen(true);
         return;
       }
@@ -1243,6 +1244,7 @@ export default function App() {
             <PracticeQueue
               data={practiceLoading ? null : practiceQueue}
               columns={practiceQueueColumns}
+              onRowClick={handleGameDetail}
             />
           </BaseCard>
         ),
@@ -1270,6 +1272,7 @@ export default function App() {
               <RecentGamesTable
                 data={data.recent_games}
                 columns={recentGamesColumns}
+                onRowClick={handleGameDetail}
                 rowTestId={(row, index) =>
                   `recent-games-row-${row.source ?? 'unknown'}-${index}`
                 }

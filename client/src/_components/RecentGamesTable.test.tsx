@@ -1,4 +1,6 @@
+import { render, fireEvent, screen } from '@testing-library/react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { vi } from 'vitest';
 import RecentGamesTable from './RecentGamesTable';
 
 const sampleData = [
@@ -73,5 +75,22 @@ describe('RecentGamesTable', () => {
     expect(secondRowCells).toContain('opponent2');
     expect(secondRowCells).toContain('0-1');
     expect(secondRowCells).toContain('2026-01-28T18:30:00.000Z');
+  });
+
+  it('fires onRowClick when a row is clicked', () => {
+    const handleRowClick = vi.fn();
+    render(
+      <RecentGamesTable
+        data={sampleData as any}
+        columns={columns as any}
+        onRowClick={handleRowClick}
+      />,
+    );
+
+    const rows = screen.getAllByRole('row');
+    fireEvent.click(rows[1]);
+
+    expect(handleRowClick).toHaveBeenCalledTimes(1);
+    expect(handleRowClick).toHaveBeenCalledWith(sampleData[0]);
   });
 });

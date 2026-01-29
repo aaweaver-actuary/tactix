@@ -1750,3 +1750,12 @@ Session 2026-01-28 (feature 164 – discovered check low severity in rapid)
 - Post-change make check: `make check` (same eslint warning; no errors).
 - Updated feature_list.json: feature “Stockfish detects discovered check with low severity in rapid” marked passes=true.
 - Note: feature 030 marked failing after regression detection; UI fix completed but left passes=false pending re-verification policy.
+
+Session 2026-01-28 (regression verification – features 001/002/003)
+- Mandatory pre-check: `make check` completed; eslint warning in `client/src/App.tsx` about missing `motifDropIndicatorIndex` dependency. Rust warnings: deprecated `pyo3::PyObject` alias and `Python::with_gil`.
+- Feature 001 (Lichess rapid full pipeline): Airflow daily_game_sync triggered and dashboard refreshed.
+	- Screenshots: `verification/feature-001-airflow-lichess-rapid-2026-01-28c.png`, `verification/feature-001-dashboard-lichess-rapid-2026-01-28c.png`, `verification/feature-001-raw-pgn-summary-2026-01-28-lichess.png`, `verification/feature-001-positions-lichess-2026-01-28c.png`.
+- Feature 002 (Chess.com blitz full pipeline): Airflow daily_game_sync triggered and dashboard refreshed.
+	- Screenshots: `verification/feature-002-airflow-chesscom-blitz-2026-01-28c.png`, `verification/feature-002-dashboard-chesscom-blitz-2026-01-28c.png`, `verification/feature-001-raw-pgn-summary-2026-01-28-chesscom.png`, `verification/feature-002-positions-chesscom-2026-01-28c.png`.
+- Feature 003 (Lichess incremental since): Airflow daily_game_sync triggered; incremental log captured; dashboard refreshed.
+	- Screenshots: `verification/feature-003-lichess-incremental-log-2026-01-28c.png`, `verification/feature-003-dashboard-lichess-incremental-2026-01-28d.png`, `verification/feature-001-raw-pgn-summary-2026-01-28-lichess.png`, `verification/feature-003-positions-lichess-2026-01-28c.png`.

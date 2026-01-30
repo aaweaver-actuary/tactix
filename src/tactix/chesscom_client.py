@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
@@ -538,6 +538,11 @@ def _client_for_settings(settings: Settings) -> ChesscomClient:
     return ChesscomClient(context)
 
 
+def _client_method[T](settings: Settings, method: Callable[..., T], *args, **kwargs) -> T:
+    client = _client_for_settings(settings)
+    return method(client, *args, **kwargs)
+
+
 def _get_with_backoff(settings: Settings, url: str, timeout: int) -> requests.Response:
     """Fetch a URL with exponential backoff on 429 responses.
 
@@ -550,7 +555,7 @@ def _get_with_backoff(settings: Settings, url: str, timeout: int) -> requests.Re
         Response object.
     """
 
-    return _client_for_settings(settings)._get_with_backoff(url, timeout)
+    return _client_method(settings, ChesscomClient._get_with_backoff, url, timeout)
 
 
 def _parse_cursor(cursor: str | None) -> tuple[int, str]:
@@ -633,7 +638,7 @@ def _load_fixture_games(settings: Settings, since_ms: int) -> list[dict]:
         Raw fixture games.
     """
 
-    return _client_for_settings(settings)._load_fixture_games(since_ms)
+    return _client_method(settings, ChesscomClient._load_fixture_games, since_ms)
 
 
 def _next_page_url(data: dict, current_url: str) -> str | None:
@@ -726,7 +731,7 @@ def _fetch_archive_pages(settings: Settings, archive_url: str) -> list[dict]:
         List of raw game dictionaries.
     """
 
-    return _client_for_settings(settings)._fetch_archive_pages(archive_url)
+    return _client_method(settings, ChesscomClient._fetch_archive_pages, archive_url)
 
 
 def _fetch_remote_games(
@@ -743,7 +748,12 @@ def _fetch_remote_games(
         Raw game rows.
     """
 
-    return _client_for_settings(settings)._fetch_remote_games(since_ms, full_history)
+    return _client_method(
+        settings,
+        ChesscomClient._fetch_remote_games,
+        since_ms,
+        full_history,
+    )
 
 
 def _filter_by_cursor(rows: list[dict], cursor: str | None) -> list[dict]:

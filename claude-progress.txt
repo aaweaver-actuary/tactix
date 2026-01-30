@@ -1,3 +1,9 @@
+Session 2026-01-30 (refactor consolidation – chesscom wrapper helper follow-up)
+- Added shared Chess.com module-level wrapper helper to reduce client method duplication; public API unchanged.
+- Before → After map:
+	- chesscom_client module-level wrapper calls → chesscom_client._client_method helper
+- Tests: `make check` (before), `make check` (after; interrupted by KeyboardInterrupt during pytest run).
+
 Session 2026-01-30 (refactor consolidation – tmp-logs _ensure_position)
 - Consolidated tmp-logs seed helpers to share a single _ensure_position implementation.
 - Before → After map:

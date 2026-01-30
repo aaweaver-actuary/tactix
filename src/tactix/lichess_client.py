@@ -35,7 +35,7 @@ from tactix.chess_clients.chess_game_row import (
 from tactix.chess_clients.fetch_helpers import (
     load_fixture_games,
     run_incremental_fetch,
-    should_use_fixture_data,
+    use_fixture_games,
 )
 from tactix.config import Settings
 from tactix.pgn_utils import (
@@ -155,21 +155,12 @@ class LichessClient(BaseChessClient):
             List of game rows.
         """
 
-        if self._use_fixture_games():
-            return self._load_fixture_games(request.since_ms, request.until_ms)
-        return self._fetch_remote_games(request.since_ms, request.until_ms)
-
-    def _use_fixture_games(self) -> bool:
-        """Decide if fixture data should be used.
-
-        Returns:
-            True when fixtures should be used, otherwise False.
-        """
-
-        return should_use_fixture_data(
+        if use_fixture_games(
             self.settings.lichess.token,
             self.settings.use_fixture_when_no_token,
-        )
+        ):
+            return self._load_fixture_games(request.since_ms, request.until_ms)
+        return self._fetch_remote_games(request.since_ms, request.until_ms)
 
     def _load_fixture_games(self, since_ms: int, until_ms: int | None) -> list[dict]:
         """Load Lichess fixture games.

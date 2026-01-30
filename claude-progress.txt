@@ -1,3 +1,16 @@
+Session 2026-01-30 (refactor consolidation – fixture decision helper)
+- Centralized the fixture-usage decision helper for chess clients.
+- Before → After map:
+	- chesscom_client._use_fixture_games + lichess_client._use_fixture_games → chess_clients.fetch_helpers.use_fixture_games
+- Tests: `make check` (before), `make check` (after).
+
+Session 2026-01-30 (refactor consolidation – unify fixture loader)
+- Unified fixture PGN loading in pgn_utils and re-exported the helper for chess client fetchers.
+- Before → After map:
+	- chess_clients.fetch_helpers.load_fixture_games + pgn_utils.load_fixture_games → pgn_utils.load_fixture_games (re-exported in chess_clients.fetch_helpers)
+	- chess_clients.fixture_helpers.load_fixture_games_for_client → removed (no longer used)
+- Tests: `make check` (before), `make check` (after).
+
 Session 2026-01-30 (refactor consolidation – Stockfish test dedupe)
 - Removed redundant Stockfish checksum tests by converting the legacy module into a deprecated stub.
 - Before → After map:

@@ -12,10 +12,15 @@ def should_use_fixture_data(token: str | None, use_fixture_when_no_token: bool) 
     return should_use_fixture_games(token, use_fixture_when_no_token)
 
 
+def use_fixture_games(token: str | None, use_fixture_when_no_token: bool) -> bool:
+    return should_use_fixture_data(token, use_fixture_when_no_token)
+
+
 __all__ = [
     "load_fixture_games",
     "run_incremental_fetch",
     "should_use_fixture_data",
+    "use_fixture_games",
 ]
 
 

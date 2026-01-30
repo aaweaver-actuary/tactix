@@ -3,10 +3,11 @@ from __future__ import annotations
 import json
 import logging
 import os
+from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable, cast
+from typing import cast
 
 import berserk
 import requests
@@ -20,21 +21,21 @@ from tenacity import (
     wait_exponential,
 )
 
-from tactix.base_chess_client import (
+from tactix.chess_clients.base_chess_client import (
     BaseChessClient,
     BaseChessClientContext,
     ChessFetchRequest,
     ChessFetchResult,
-    ChessGameRow,
 )
+from tactix.chess_clients.chess_game_row import ChessGameRow
 from tactix.config import Settings
-from tactix.logging_utils import get_logger
 from tactix.pgn_utils import (
     extract_game_id,
     extract_last_timestamp_ms,
-    load_fixture_games,
     latest_timestamp,
+    load_fixture_games,
 )
+from tactix.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -44,11 +45,6 @@ __all__ = [
     "LichessFetchRequest",
     "LichessFetchResult",
     "LichessGameRow",
-    "build_client",
-    "fetch_incremental_games",
-    "latest_timestamp",
-    "read_checkpoint",
-    "write_checkpoint",
     "_coerce_perf_type",
     "_extract_status_code",
     "_fetch_remote_games",
@@ -58,6 +54,11 @@ __all__ = [
     "_refresh_lichess_token",
     "_resolve_access_token",
     "_write_cached_token",
+    "build_client",
+    "fetch_incremental_games",
+    "latest_timestamp",
+    "read_checkpoint",
+    "write_checkpoint",
 ]
 
 
@@ -157,9 +158,7 @@ class LichessClient(BaseChessClient):
             True when fixtures should be used, otherwise False.
         """
 
-        return bool(
-            not self.settings.lichess_token and self.settings.use_fixture_when_no_token
-        )
+        return bool(not self.settings.lichess_token and self.settings.use_fixture_when_no_token)
 
     def _load_fixture_games(self, since_ms: int, until_ms: int | None) -> list[dict]:
         """Load Lichess fixture games.
@@ -202,9 +201,7 @@ class LichessClient(BaseChessClient):
 
         return self._fetch_remote_games_with_refresh(since_ms, until_ms)
 
-    def _fetch_remote_games_with_refresh(
-        self, since_ms: int, until_ms: int | None
-    ) -> list[dict]:
+    def _fetch_remote_games_with_refresh(self, since_ms: int, until_ms: int | None) -> list[dict]:
         """Fetch remote games and refresh token on auth errors.
 
         Args:
@@ -236,9 +233,7 @@ class LichessClient(BaseChessClient):
 
         return bool(_is_auth_error(exc) and self.settings.lichess_oauth_refresh_token)
 
-    def _fetch_remote_games_once(
-        self, since_ms: int, until_ms: int | None
-    ) -> list[dict]:
+    def _fetch_remote_games_once(self, since_ms: int, until_ms: int | None) -> list[dict]:
         """Fetch games from the remote API once.
 
         Args:
@@ -356,7 +351,7 @@ def _pgn_to_game_row(pgn: object, settings: Settings) -> dict | None:
         game_id=game_id,
         user=settings.user,
         source=settings.source,
-        fetched_at=datetime.now(timezone.utc),
+        fetched_at=datetime.now(UTC),
         pgn=pgn_text,
         last_timestamp_ms=last_ts,
     )
@@ -419,18 +414,34 @@ def _read_cached_token(path: Path) -> str | None:
         Cached token string if available.
     """
 
+    raw = _read_cached_token_text(path)
+    if raw is None:
+        return None
+    return _parse_cached_token(raw)
+
+
+def _read_cached_token_text(path: Path) -> str | None:
     try:
         raw = path.read_text().strip()
     except FileNotFoundError:
         return None
-    if not raw:
-        return None
+    return raw or None
+
+
+def _parse_cached_token(raw: str) -> str | None:
+    payload = _parse_cached_payload(raw)
+    if payload is None:
+        return raw
+    token = payload.get("access_token")
+    return str(token) if token else None
+
+
+def _parse_cached_payload(raw: str) -> dict[str, object] | None:
     try:
         payload = json.loads(raw)
     except json.JSONDecodeError:
-        return raw
-    token = payload.get("access_token") if isinstance(payload, dict) else None
-    return token or None
+        return None
+    return payload if isinstance(payload, dict) else None
 
 
 def _write_cached_token(path: Path, token: str) -> None:
@@ -446,7 +457,7 @@ def _write_cached_token(path: Path, token: str) -> None:
         json.dumps(
             {
                 "access_token": token,
-                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(UTC).isoformat(),
             }
         )
     )

@@ -33,7 +33,7 @@ from tactix.duckdb_store import (
     upsert_tactic_with_outcome,
     update_metrics_summary,
 )
-from tactix.logging_utils import get_logger
+from tactix.utils.logger import get_logger
 
 
 PGN_BASE = """[Event \"Test\"]

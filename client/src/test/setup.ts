@@ -1,12 +1,10 @@
 import '@testing-library/jest-dom/vitest';
-import { afterEach, vi } from 'vitest';
+import { afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
 
 afterEach(() => {
   cleanup();
 });
-
-(globalThis as unknown as { jest: typeof vi }).jest = vi;
 
 (
   globalThis as unknown as {

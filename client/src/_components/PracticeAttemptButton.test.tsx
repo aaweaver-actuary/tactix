@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { act } from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { act } from 'react-dom/test-utils';
+import { vi } from 'vitest';
 import PracticeAttemptButton from './PracticeAttemptButton';
 
 describe('PracticeAttemptButton', () => {
@@ -21,7 +21,7 @@ describe('PracticeAttemptButton', () => {
   });
 
   it('renders default label and is enabled when not submitting', () => {
-    const handlePracticeAttempt = jest.fn().mockResolvedValue(undefined);
+    const handlePracticeAttempt = vi.fn().mockResolvedValue(undefined);
 
     act(() => {
       root.render(
@@ -39,7 +39,7 @@ describe('PracticeAttemptButton', () => {
   });
 
   it('renders submitting label and is disabled when submitting', () => {
-    const handlePracticeAttempt = jest.fn().mockResolvedValue(undefined);
+    const handlePracticeAttempt = vi.fn().mockResolvedValue(undefined);
 
     act(() => {
       root.render(
@@ -56,7 +56,7 @@ describe('PracticeAttemptButton', () => {
   });
 
   it('calls handlePracticeAttempt on click', async () => {
-    const handlePracticeAttempt = jest.fn().mockResolvedValue(undefined);
+    const handlePracticeAttempt = vi.fn().mockResolvedValue(undefined);
 
     act(() => {
       root.render(

@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from typing import Mapping, cast
+from collections.abc import Mapping
+from typing import cast
 
-from tactix.base_chess_client import (
+from tactix.chess_clients.base_chess_client import (
     BaseChessClient,
     BaseChessClientContext,
     ChessFetchRequest,
     ChessFetchResult,
-    ChessGameRow,
 )
+from tactix.chess_clients.chess_game_row import ChessGameRow
 
 
 class MockChessClient(BaseChessClient):
@@ -44,15 +45,11 @@ class MockChessClient(BaseChessClient):
             return games
         since_ms = request.since_ms or 0
         until_ms = request.until_ms
-        filtered: list[dict[str, object]] = []
-        for row in games:
-            last_ts = cast(int, row.get("last_timestamp_ms", 0))
-            if last_ts < since_ms:
-                continue
-            if until_ms is not None and last_ts >= until_ms:
-                continue
-            filtered.append(row)
-        return filtered
+        return [
+            row
+            for row in games
+            if _row_in_window(cast(int, row.get("last_timestamp_ms", 0)), since_ms, until_ms)
+        ]
 
     def _apply_cursor(
         self,
@@ -70,17 +67,16 @@ class MockChessClient(BaseChessClient):
         if self._page_size is None:
             return remaining, next_cursor
         page = remaining[: self._page_size]
-        if offset + len(page) < len(games):
-            next_cursor = str(offset + len(page))
-        else:
-            next_cursor = None
+        next_cursor = str(offset + len(page)) if offset + len(page) < len(games) else None
         return page, next_cursor
 
     def fetch_incremental_games(self, request: ChessFetchRequest) -> ChessFetchResult:
         games = self._normalize_games()
         games = self._apply_window(games, request)
         games, next_cursor = self._apply_cursor(games, request)
-        last_ts = max(
-            (cast(int, row.get("last_timestamp_ms", 0)) for row in games), default=0
-        )
+        last_ts = max((cast(int, row.get("last_timestamp_ms", 0)) for row in games), default=0)
         return self._build_fetch_result(games, next_cursor, last_ts)
+
+
+def _row_in_window(last_ts: int, since_ms: int, until_ms: int | None) -> bool:
+    return last_ts >= since_ms and (until_ms is None or last_ts < until_ms)

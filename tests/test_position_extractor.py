@@ -1,6 +1,8 @@
 from pathlib import Path
+import sys
+import types
 import unittest
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 import chess
 
@@ -10,102 +12,62 @@ from tactix.position_extractor import extract_positions
 
 def _read_fixture_games() -> list[str]:
     path = Path(__file__).resolve().parent / "fixtures" / "lichess_rapid_sample.pgn"
-    return [
-        chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
-    ]
+    return [chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()]
 
 
 def _read_chesscom_games() -> list[str]:
     path = Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
-    return [
-        chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
-    ]
+    return [chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()]
 
 
 def _read_chesscom_bullet_games() -> list[str]:
     path = Path(__file__).resolve().parent / "fixtures" / "chesscom_bullet_sample.pgn"
-    return [
-        chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
-    ]
+    return [chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()]
 
 
 def _read_chesscom_rapid_games() -> list[str]:
     path = Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
-    return [
-        chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
-    ]
+    return [chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()]
 
 
 def _read_chesscom_classical_games() -> list[str]:
-    path = (
-        Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
-    )
-    return [
-        chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
-    ]
+    path = Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
+    return [chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()]
 
 
 def _read_chesscom_correspondence_games() -> list[str]:
-    path = (
-        Path(__file__).resolve().parent
-        / "fixtures"
-        / "chesscom_correspondence_sample.pgn"
-    )
-    return [
-        chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
-    ]
+    path = Path(__file__).resolve().parent / "fixtures" / "chesscom_correspondence_sample.pgn"
+    return [chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()]
 
 
 def _read_promotion_en_passant_games() -> list[str]:
-    path = (
-        Path(__file__).resolve().parent
-        / "fixtures"
-        / "lichess_promotion_en_passant.pgn"
-    )
-    return [
-        chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
-    ]
+    path = Path(__file__).resolve().parent / "fixtures" / "lichess_promotion_en_passant.pgn"
+    return [chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()]
 
 
 def _read_castling_games() -> list[str]:
-    path = (
-        Path(__file__).resolve().parent / "fixtures" / "lichess_castling_both_sides.pgn"
-    )
-    return [
-        chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
-    ]
+    path = Path(__file__).resolve().parent / "fixtures" / "lichess_castling_both_sides.pgn"
+    return [chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()]
 
 
 def _read_lichess_bullet_games() -> list[str]:
     path = Path(__file__).resolve().parent / "fixtures" / "lichess_bullet_sample.pgn"
-    return [
-        chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
-    ]
+    return [chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()]
 
 
 def _read_lichess_blitz_games() -> list[str]:
     path = Path(__file__).resolve().parent / "fixtures" / "lichess_blitz_sample.pgn"
-    return [
-        chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
-    ]
+    return [chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()]
 
 
 def _read_lichess_classical_games() -> list[str]:
     path = Path(__file__).resolve().parent / "fixtures" / "lichess_classical_sample.pgn"
-    return [
-        chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
-    ]
+    return [chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()]
 
 
 def _read_lichess_correspondence_games() -> list[str]:
-    path = (
-        Path(__file__).resolve().parent
-        / "fixtures"
-        / "lichess_correspondence_sample.pgn"
-    )
-    return [
-        chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()
-    ]
+    path = Path(__file__).resolve().parent / "fixtures" / "lichess_correspondence_sample.pgn"
+    return [chunk.strip() for chunk in path.read_text().split("\n\n\n") if chunk.strip()]
 
 
 class PositionExtractorTests(unittest.TestCase):
@@ -125,9 +87,7 @@ class PositionExtractorTests(unittest.TestCase):
 
     def test_extracts_only_user_to_move_positions(self) -> None:
         pgn = self.games[0]
-        positions = extract_positions(
-            pgn, user="lichess", source="lichess", game_id="fixture1"
-        )
+        positions = extract_positions(pgn, user="lichess", source="lichess", game_id="fixture1")
         self.assertGreater(len(positions), 0)
 
         first = positions[0]
@@ -153,9 +113,7 @@ class PositionExtractorTests(unittest.TestCase):
         self.assertEqual(positions, [])
 
     def test_pgn_context_headers_handles_unparsed(self) -> None:
-        ctx = position_extractor.PgnContext(
-            pgn="not-a-pgn", user="lichess", source="lichess"
-        )
+        ctx = position_extractor.PgnContext(pgn="not-a-pgn", user="lichess", source="lichess")
         self.assertEqual(ctx.headers.get("Event"), "?")
         self.assertIsNotNone(ctx.board)
 
@@ -175,19 +133,166 @@ class PositionExtractorTests(unittest.TestCase):
         self.assertIsInstance(headers, dict)
         self.assertEqual(headers.get("Event"), "Test")
 
+    def test_pgn_context_headers_empty_for_unparsed(self) -> None:
+        ctx = position_extractor.PgnContext(pgn="", user="lichess", source="lichess")
+        self.assertEqual(ctx.headers, {})
+
     def test_pgn_context_handles_empty_pgn(self) -> None:
         ctx = position_extractor.PgnContext(pgn="", user="lichess", source="lichess")
         self.assertIsNone(ctx.game)
         self.assertIsNone(ctx.board)
         self.assertIsNone(ctx.fen)
+        self.assertEqual(ctx.ply, 0)
+        self.assertEqual(ctx.move_number, 0)
         self.assertEqual(ctx.white, "")
         self.assertEqual(ctx.black, "")
         self.assertIsNone(ctx.side_to_move)
+
+    def test_pgn_context_properties_with_valid_game(self) -> None:
+        pgn = """[Event \"Test\"]
+[Site \"https://lichess.org/AbcDef12\"]
+[UTCDate \"2020.01.02\"]
+[UTCTime \"03:04:05\"]
+[White \"user\"]
+[Black \"opp\"]
+[Result \"*\"]
+
+1. e4 *
+"""
+        ctx = position_extractor.PgnContext(pgn=pgn, user="user", source="lichess")
+        self.assertTrue(ctx.fen.startswith("rnbqkbnr/pppppppp/8/8/"))
+        self.assertEqual(ctx.ply, 0)
+        self.assertEqual(ctx.move_number, 1)
+        self.assertEqual(ctx.side_to_move, "white")
+
+    def test_clock_from_comment_invalid_parts(self) -> None:
+        self.assertIsNone(position_extractor._clock_from_comment("%clk 1:2:3:4"))
+
+    def test_clock_from_comment_invalid_float(self) -> None:
+        self.assertIsNone(position_extractor._clock_from_comment("%clk 0:00:xx"))
+
+    def test_build_pgn_context_returns_existing(self) -> None:
+        ctx = position_extractor.PgnContext(pgn="", user="lichess", source="lichess")
+        self.assertIs(position_extractor._build_pgn_context(ctx), ctx)
+
+    def test_build_pgn_context_requires_user_source(self) -> None:
+        with self.assertRaises(ValueError):
+            position_extractor._build_pgn_context("[Event]\n\n1. e4 *")
+
+    def test_resolve_game_context_logs_when_missing_game(self) -> None:
+        ctx = position_extractor.PgnContext(pgn="", user="lichess", source="lichess")
+        self.assertIsNone(position_extractor._resolve_game_context(ctx))
+
+    def test_resolve_game_context_handles_missing_board(self) -> None:
+        pgn = """[Event \"Test\"]
+[Site \"https://lichess.org/AbcDef12\"]
+[UTCDate \"2020.01.02\"]
+[UTCTime \"03:04:05\"]
+[White \"user\"]
+[Black \"opp\"]
+[Result \"*\"]
+
+1. e4 *
+"""
+        ctx = position_extractor.PgnContext(pgn=pgn, user="user", source="lichess")
+        with patch.object(
+            position_extractor.PgnContext, "board", new_callable=PropertyMock
+        ) as mock_board:
+            mock_board.return_value = None
+            self.assertIsNone(position_extractor._resolve_game_context(ctx))
 
     def test_extract_positions_user_missing(self) -> None:
         pgn = self.games[0]
         positions = extract_positions(pgn, user="missing", source="lichess")
         self.assertEqual(positions, [])
+
+    def test_extract_positions_uses_rust_extractor_when_available(self) -> None:
+        pgn = self.games[0]
+        dummy_module = types.SimpleNamespace(
+            extract_positions=lambda *_args: [
+                {
+                    "game_id": "rust",
+                    "user": "lichess",
+                    "source": "lichess",
+                    "fen": "",
+                    "ply": 0,
+                    "move_number": 0,
+                    "side_to_move": "white",
+                    "uci": "",
+                    "san": "",
+                    "clock_seconds": None,
+                    "is_legal": True,
+                }
+            ]
+        )
+
+        with patch("tactix.position_extractor.os.getenv", return_value=None):
+            with patch.dict(sys.modules, {"tactix._core": dummy_module}):
+                positions = extract_positions(pgn, user="lichess", source="lichess")
+
+        self.assertEqual(positions[0]["game_id"], "rust")
+
+    def test_extract_positions_falls_back_when_rust_missing(self) -> None:
+        pgn = self.games[0]
+        dummy_module = types.SimpleNamespace()
+
+        with patch("tactix.position_extractor.os.getenv", return_value=None):
+            with patch.dict(sys.modules, {"tactix._core": dummy_module}):
+                positions = extract_positions(pgn, user="lichess", source="lichess")
+
+        expected = position_extractor._extract_positions_python(
+            pgn, user="lichess", source="lichess"
+        )
+        self.assertEqual(positions, expected)
+
+    def test_iter_position_contexts_empty_game(self) -> None:
+        game = chess.pgn.Game()
+        board = game.board()
+        ctx = position_extractor.PgnContext(pgn="", user="user", source="lichess")
+        positions = position_extractor._iter_position_contexts(
+            ctx,
+            game,
+            board,
+            chess.WHITE,
+            None,
+        )
+        self.assertEqual(positions, [])
+
+    def test_iter_position_contexts_skips_none_move(self) -> None:
+        class DummyGame:
+            headers: dict[str, str] = {}
+
+            def mainline(self):
+                return [types.SimpleNamespace(move=None, comment="")]
+
+        game = DummyGame()
+        board = chess.Board()
+        ctx = position_extractor.PgnContext(pgn="", user="user", source="lichess")
+        positions = position_extractor._iter_position_contexts(
+            ctx,
+            game,
+            board,
+            chess.WHITE,
+            None,
+        )
+        self.assertEqual(positions, [])
+
+    def test_extract_positions_falls_back_when_rust_fails(self) -> None:
+        pgn = self.games[0]
+
+        def _boom(*_args):
+            raise RuntimeError("boom")
+
+        dummy_module = types.SimpleNamespace(extract_positions=_boom)
+
+        with patch("tactix.position_extractor.os.getenv", return_value=None):
+            with patch.dict(sys.modules, {"tactix._core": dummy_module}):
+                positions = extract_positions(pgn, user="lichess", source="lichess")
+
+        expected = position_extractor._extract_positions_python(
+            pgn, user="lichess", source="lichess"
+        )
+        self.assertEqual(positions, expected)
 
     def test_illegal_move_skipped(self) -> None:
         class DummyBoard:
@@ -228,9 +333,7 @@ class PositionExtractorTests(unittest.TestCase):
             def mainline(self):
                 return [DummyNode()]
 
-        with patch(
-            "tactix.position_extractor.chess.pgn.read_game", return_value=DummyGame()
-        ):
+        with patch("tactix.position_extractor.chess.pgn.read_game", return_value=DummyGame()):
             positions = position_extractor._extract_positions_python(
                 "pgn", user="alice", source="lichess"
             )
@@ -239,9 +342,7 @@ class PositionExtractorTests(unittest.TestCase):
 
     def test_extracts_chesscom_white_positions_with_clocks(self) -> None:
         pgn = self.chesscom_games[0]
-        positions = extract_positions(
-            pgn, user="chesscom", source="chesscom", game_id="chesscom1"
-        )
+        positions = extract_positions(pgn, user="chesscom", source="chesscom", game_id="chesscom1")
         self.assertGreater(len(positions), 0)
 
         first = positions[0]
@@ -254,9 +355,7 @@ class PositionExtractorTests(unittest.TestCase):
 
     def test_extracts_chesscom_black_positions_with_clocks(self) -> None:
         pgn = self.chesscom_games[1]
-        positions = extract_positions(
-            pgn, user="chesscom", source="chesscom", game_id="chesscom2"
-        )
+        positions = extract_positions(pgn, user="chesscom", source="chesscom", game_id="chesscom2")
         self.assertGreater(len(positions), 0)
 
         first = positions[0]
@@ -678,16 +777,12 @@ class PositionExtractorTests(unittest.TestCase):
 
     def test_non_user_game_is_skipped(self) -> None:
         pgn = self.games[0]
-        positions = extract_positions(
-            pgn, user="someoneelse", source="lichess", game_id="fixture1"
-        )
+        positions = extract_positions(pgn, user="someoneelse", source="lichess", game_id="fixture1")
         self.assertEqual(positions, [])
 
     def test_extracts_en_passant_move(self) -> None:
         pgn = self.promotion_en_passant_games[0]
-        positions = extract_positions(
-            pgn, user="ep_user", source="lichess", game_id="ep1"
-        )
+        positions = extract_positions(pgn, user="ep_user", source="lichess", game_id="ep1")
         ep_positions = [pos for pos in positions if pos["uci"] == "e5d6"]
         self.assertEqual(len(ep_positions), 1)
 
@@ -699,9 +794,7 @@ class PositionExtractorTests(unittest.TestCase):
 
     def test_extracts_promotion_move(self) -> None:
         pgn = self.promotion_en_passant_games[1]
-        positions = extract_positions(
-            pgn, user="promo_user", source="lichess", game_id="promo1"
-        )
+        positions = extract_positions(pgn, user="promo_user", source="lichess", game_id="promo1")
         promo_positions = [pos for pos in positions if pos["uci"] == "b7a8q"]
         self.assertEqual(len(promo_positions), 1)
 
@@ -713,9 +806,7 @@ class PositionExtractorTests(unittest.TestCase):
 
     def test_extracts_kingside_castle(self) -> None:
         pgn = self.castling_games[0]
-        positions = extract_positions(
-            pgn, user="castle_white", source="lichess", game_id="castle1"
-        )
+        positions = extract_positions(pgn, user="castle_white", source="lichess", game_id="castle1")
         castles = [pos for pos in positions if pos["san"] == "O-O"]
         self.assertEqual(len(castles), 1)
 
@@ -727,9 +818,7 @@ class PositionExtractorTests(unittest.TestCase):
 
     def test_extracts_queenside_castle(self) -> None:
         pgn = self.castling_games[1]
-        positions = extract_positions(
-            pgn, user="castle_black", source="lichess", game_id="castle2"
-        )
+        positions = extract_positions(pgn, user="castle_black", source="lichess", game_id="castle2")
         castles = [pos for pos in positions if pos["san"] == "O-O-O"]
         self.assertEqual(len(castles), 1)
 

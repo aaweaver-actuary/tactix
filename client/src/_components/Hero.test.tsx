@@ -1,24 +1,25 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { vi } from 'vitest';
 import Hero from './Hero';
 import { SOURCE_OPTIONS } from '../utils/SOURCE_OPTIONS';
 
 describe('Hero', () => {
   const baseProps = {
-    onRun: jest.fn(),
-    onBackfill: jest.fn(),
-    onRefresh: jest.fn(),
-    onMigrate: jest.fn(),
+    onRun: vi.fn(),
+    onBackfill: vi.fn(),
+    onRefresh: vi.fn(),
+    onMigrate: vi.fn(),
     loading: false,
     version: 42,
     source: 'lichess' as const,
     profile: 'rapid' as const,
     user: 'andy',
-    onSourceChange: jest.fn(),
+    onSourceChange: vi.fn(),
     backfillStartDate: '2024-01-01',
     backfillEndDate: '2024-02-01',
-    onBackfillStartChange: jest.fn(),
-    onBackfillEndChange: jest.fn(),
+    onBackfillStartChange: vi.fn(),
+    onBackfillEndChange: vi.fn(),
   };
 
   it('renders title and metadata', () => {

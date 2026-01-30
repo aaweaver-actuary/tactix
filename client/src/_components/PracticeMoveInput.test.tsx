@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { vi } from 'vitest';
 import PracticeMoveInput from './PracticeMoveInput';
 
 describe('PracticeMoveInput', () => {
@@ -35,7 +36,7 @@ describe('PracticeMoveInput', () => {
   });
 
   it('calls setPracticeMove on change', () => {
-    const setPracticeMove = jest.fn();
+    const setPracticeMove = vi.fn();
     render(
       <PracticeMoveInput
         practiceMove=""

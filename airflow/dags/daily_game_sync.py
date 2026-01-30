@@ -7,7 +7,7 @@ from airflow.operators.python import get_current_context
 from airflow.utils import timezone
 
 from tactix.config import get_settings
-from tactix.logging_utils import get_logger
+from tactix.utils.logger import get_logger
 from tactix.pipeline import get_dashboard_payload, run_daily_game_sync
 
 logger = get_logger(__name__)

@@ -8,8 +8,8 @@ import chess.pgn
 import berserk
 
 from tactix.config import Settings
-from tactix.logging_utils import get_logger
-from tactix.lichess_client import (
+from tactix.utils.logger import get_logger
+from tactix.chess_clients.lichess_client import (
     LichessClient,
     LichessClientContext,
     LichessFetchRequest,
@@ -314,7 +314,7 @@ class LichessClientTests(unittest.TestCase):
         fake_client.games = games_api
 
         with patch("tactix.lichess_client.build_client", return_value=fake_client):
-            from tactix import lichess_client
+            from tactix.chess_clients import lichess_client
 
             result = lichess_client._fetch_remote_games_once(settings, since_ms=0)
 
@@ -529,7 +529,7 @@ class LichessClientTests(unittest.TestCase):
         fake_client.games = games_api
 
         with patch("tactix.lichess_client.build_client", return_value=fake_client):
-            from tactix import lichess_client
+            from tactix.chess_clients import lichess_client
 
             lichess_client._fetch_remote_games_once(settings, since_ms=0)
 
@@ -554,7 +554,7 @@ class LichessClientTests(unittest.TestCase):
         fake_client.games = games_api
 
         with patch("tactix.lichess_client.build_client", return_value=fake_client):
-            from tactix import lichess_client
+            from tactix.chess_clients import lichess_client
 
             lichess_client._fetch_remote_games_once(settings, since_ms=0)
 
@@ -579,7 +579,7 @@ class LichessClientTests(unittest.TestCase):
         fake_client.games = games_api
 
         with patch("tactix.lichess_client.build_client", return_value=fake_client):
-            from tactix import lichess_client
+            from tactix.chess_clients import lichess_client
 
             lichess_client._fetch_remote_games_once(settings, since_ms=0)
 
@@ -682,7 +682,7 @@ class LichessClientTests(unittest.TestCase):
         fake_client.games = games_api
 
         with patch("tactix.lichess_client.build_client", return_value=fake_client):
-            from tactix import lichess_client
+            from tactix.chess_clients import lichess_client
 
             lichess_client._fetch_remote_games_once(settings, since_ms=0, until_ms=1234)
 

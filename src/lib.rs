@@ -259,7 +259,7 @@ fn extract_positions(
     source: &str,
     game_id: Option<&str>,
     side_to_move_filter: Option<&str>,
-) -> PyResult<Vec<PyObject>> {
+) -> PyResult<Vec<Py<PyAny>>> {
     let side_filter = normalize_side_filter(side_to_move_filter);
     let mut reader = Reader::new(Cursor::new(pgn.as_bytes()));
     let mut visitor = ExtractVisitor::new(user, source, game_id, side_filter);
@@ -280,7 +280,7 @@ fn extract_positions(
         None => Vec::new(),
     };
 
-    Python::with_gil(|py| {
+    Python::attach(|py| {
         let mut output = Vec::with_capacity(records.len());
         for record in records {
             let dict = PyDict::new(py);

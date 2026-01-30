@@ -27,7 +27,6 @@ from tactix.duckdb_store import (
     grade_practice_attempt,
     init_schema,
 )
-from tactix.logging_utils import get_logger
 from tactix.pipeline import (
     get_dashboard_payload,
     run_daily_game_sync,
@@ -38,6 +37,7 @@ from tactix.postgres_store import (
     PostgresStore,
     serialize_status,
 )
+from tactix.utils.logger import get_logger
 
 logger = get_logger(__name__)
 

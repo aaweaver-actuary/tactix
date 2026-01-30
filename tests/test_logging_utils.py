@@ -1,7 +1,7 @@
 import logging
 import unittest
 
-from tactix.logging_utils import get_logger, set_level
+from tactix.utils.logger import get_logger, set_level
 
 
 class LoggingUtilsTests(unittest.TestCase):

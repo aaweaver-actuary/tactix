@@ -5,7 +5,7 @@ import pytest
 
 from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
 from tactix.config import Settings
-from tactix.logging_utils import get_logger
+from tactix.utils.logger import get_logger
 from tactix.mock_db_store import MockDbStore
 from tactix.pgn_utils import extract_pgn_metadata
 
@@ -38,7 +38,7 @@ def _context() -> BaseDbStoreContext:
 
 def test_hash_pgn_text_matches_sha256() -> None:
     expected = hashlib.sha256("pgn".encode("utf-8")).hexdigest()
-    assert BaseDbStore.hash_pgn_text("pgn") == expected
+    assert BaseDbStore.hash_pgn("pgn") == expected
 
 
 def test_extract_pgn_metadata_matches_helper() -> None:
@@ -61,7 +61,7 @@ def test_base_store_requires_dashboard_payload() -> None:
 
 def test_build_pgn_upsert_plan_skips_matching_hash() -> None:
     pgn_text = "pgn"
-    latest_hash = BaseDbStore.hash_pgn_text(pgn_text)
+    latest_hash = BaseDbStore.hash_pgn(pgn_text)
     plan = BaseDbStore.build_pgn_upsert_plan(
         pgn_text=pgn_text,
         user="alice",
@@ -115,3 +115,8 @@ def test_build_outcome_insert_plan_applies_defaults() -> None:
     assert plan.result == "unclear"
     assert plan.user_uci == ""
     assert plan.eval_delta == 0
+
+
+def test_base_db_store_exposes_logger() -> None:
+    store = MockDbStore(_context())
+    assert store.logger.name == "test"

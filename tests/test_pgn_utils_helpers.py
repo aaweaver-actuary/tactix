@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from tactix.pgn_utils import (
+    _extract_site_id,
     extract_game_id,
     extract_last_timestamp_ms,
     extract_pgn_metadata,
@@ -75,9 +76,7 @@ class PgnUtilsHelperTests(unittest.TestCase):
 1. e4 *
 """
 
-        expected_dotted = int(
-            datetime(2020, 1, 2, 3, 4, 5, tzinfo=timezone.utc).timestamp() * 1000
-        )
+        expected_dotted = int(datetime(2020, 1, 2, 3, 4, 5, tzinfo=timezone.utc).timestamp() * 1000)
         expected_dashed = int(
             datetime(2020, 1, 3, 10, 20, 30, tzinfo=timezone.utc).timestamp() * 1000
         )
@@ -182,6 +181,9 @@ class PgnUtilsHelperTests(unittest.TestCase):
         with patch("tactix.pgn_utils.time.time", return_value=2000):
             self.assertEqual(extract_last_timestamp_ms(""), 2000 * 1000)
 
+    def test_extract_site_id_none_game(self) -> None:
+        self.assertIsNone(_extract_site_id(None))
+
     def test_extract_pgn_metadata_invalid_timestamp(self) -> None:
         pgn = """[Event \"Test\"]
 [Site \"https://lichess.org/AbcDef12\"]
@@ -232,7 +234,7 @@ class PgnUtilsHelperTests(unittest.TestCase):
             '[White "user"]\n'
             '[Black "opp"]\n'
             '[Result "*"]\n\n'
-            '1. e4 *\n\n'
+            "1. e4 *\n\n"
             '[Event "Game B"]\n'
             '[Site "https://chess.com/game/live/123456"]\n'
             '[UTCDate "2020.01.02"]\n'
@@ -240,25 +242,19 @@ class PgnUtilsHelperTests(unittest.TestCase):
             '[White "user"]\n'
             '[Black "opp"]\n'
             '[Result "*"]\n\n'
-            '1. d4 *\n'
+            "1. d4 *\n"
         )
 
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "fixtures.pgn"
             path.write_text(pgn)
 
-            since_ms = int(
-                datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp() * 1000
-            )
-            games_since = load_fixture_games(
-                path, "user", "lichess", since_ms, logger=None
-            )
+            since_ms = int(datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp() * 1000)
+            games_since = load_fixture_games(path, "user", "lichess", since_ms, logger=None)
             self.assertEqual(len(games_since), 1)
             self.assertEqual(games_since[0]["game_id"], "123456")
 
-            until_ms = int(
-                datetime(2020, 1, 2, tzinfo=timezone.utc).timestamp() * 1000
-            )
+            until_ms = int(datetime(2020, 1, 2, tzinfo=timezone.utc).timestamp() * 1000)
             games_until = load_fixture_games(
                 path, "user", "lichess", 0, until_ms=until_ms, logger=None
             )
@@ -281,7 +277,7 @@ class PgnUtilsHelperTests(unittest.TestCase):
             '[White "user"]\n'
             '[Black "opp"]\n'
             '[Result "*"]\n\n'
-            '1. e4 *\n\n'
+            "1. e4 *\n\n"
             '[Event "Game B"]\n'
             '[Site "https://chess.com/game/live/123456"]\n'
             '[UTCDate "2020.01.02"]\n'
@@ -289,25 +285,19 @@ class PgnUtilsHelperTests(unittest.TestCase):
             '[White "user"]\n'
             '[Black "opp"]\n'
             '[Result "*"]\n\n'
-            '1. d4 *\n'
+            "1. d4 *\n"
         )
 
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "fixtures.pgn"
             path.write_text(pgn)
 
-            since_ms = int(
-                datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp() * 1000
-            )
-            games_since = load_fixture_games(
-                path, "user", "lichess", since_ms, logger=None
-            )
+            since_ms = int(datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp() * 1000)
+            games_since = load_fixture_games(path, "user", "lichess", since_ms, logger=None)
             self.assertEqual(len(games_since), 1)
             self.assertEqual(games_since[0]["game_id"], "123456")
 
-            until_ms = int(
-                datetime(2020, 1, 2, tzinfo=timezone.utc).timestamp() * 1000
-            )
+            until_ms = int(datetime(2020, 1, 2, tzinfo=timezone.utc).timestamp() * 1000)
             games_until = load_fixture_games(
                 path, "user", "lichess", 0, until_ms=until_ms, logger=None
             )

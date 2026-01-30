@@ -19,8 +19,8 @@ from tactix.base_db_store import (
     TacticInsertPlan,
 )
 from tactix.config import Settings
-from tactix.logging_utils import get_logger
 from tactix.pgn_utils import normalize_pgn
+from tactix.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -255,7 +255,7 @@ def init_pgn_schema(conn: PgConnection) -> None:
 
 
 def _hash_pgn_text(pgn: str) -> str:
-    return BaseDbStore.hash_pgn_text(pgn)
+    return BaseDbStore.hash_pgn(pgn)
 
 
 def _fetch_latest_pgn_metadata(
@@ -361,15 +361,42 @@ def _maybe_upsert_raw_pgn_row(
     latest_cache: dict[tuple[str, str], tuple[str | None, int]],
 ) -> int:
     game_id, source = _parse_game_source(row)
-    if not game_id or not source:
+    if not _has_game_source(game_id, source):
         return 0
-    pgn_text = str(row.get("pgn") or "")
     key = (game_id, source)
-    if key in latest_cache:
-        latest_hash, latest_version = latest_cache[key]
-    else:
-        latest_hash, latest_version = _fetch_latest_pgn_metadata(cur, game_id, source)
-    plan = BaseDbStore.build_pgn_upsert_plan(
+    latest_hash, latest_version = _latest_pgn_metadata(cur, key, latest_cache)
+    plan = _build_pgn_upsert_plan(row, latest_hash, latest_version)
+    if plan is None:
+        latest_cache[key] = (latest_hash, latest_version)
+        return 0
+    _insert_raw_pgn_row(cur, game_id, source, row, plan)
+    return _record_upsert_result(cur, key, plan, latest_cache)
+
+
+def _has_game_source(game_id: str, source: str) -> bool:
+    return bool(game_id and source)
+
+
+def _latest_pgn_metadata(
+    cur,
+    key: tuple[str, str],
+    latest_cache: dict[tuple[str, str], tuple[str | None, int]],
+) -> tuple[str | None, int]:
+    cached = latest_cache.get(key)
+    if cached is not None:
+        return cached
+    latest_hash, latest_version = _fetch_latest_pgn_metadata(cur, key[0], key[1])
+    latest_cache[key] = (latest_hash, latest_version)
+    return latest_hash, latest_version
+
+
+def _build_pgn_upsert_plan(
+    row: Mapping[str, object],
+    latest_hash: str | None,
+    latest_version: int,
+) -> PgnUpsertPlan | None:
+    pgn_text = str(row.get("pgn") or "")
+    return BaseDbStore.build_pgn_upsert_plan(
         pgn_text=pgn_text,
         user=str(row.get("user") or ""),
         latest_hash=latest_hash,
@@ -380,14 +407,18 @@ def _maybe_upsert_raw_pgn_row(
         last_timestamp_ms=cast(int, row.get("last_timestamp_ms", 0)),
         cursor=row.get("cursor"),
     )
-    if plan is None:
-        latest_cache[key] = (latest_hash, latest_version)
+
+
+def _record_upsert_result(
+    cur,
+    key: tuple[str, str],
+    plan: PgnUpsertPlan,
+    latest_cache: dict[tuple[str, str], tuple[str | None, int]],
+) -> int:
+    if not cur.rowcount:
         return 0
-    _insert_raw_pgn_row(cur, game_id, source, row, plan)
-    if cur.rowcount:
-        latest_cache[key] = (plan.pgn_hash, plan.pgn_version)
-        return 1
-    return 0
+    latest_cache[key] = (plan.pgn_hash, plan.pgn_version)
+    return 1
 
 
 def _upsert_postgres_raw_pgn_rows(
@@ -425,47 +456,60 @@ def upsert_postgres_raw_pgns(
 def fetch_postgres_raw_pgns_summary(settings: Settings) -> dict[str, Any]:
     with postgres_connection(settings) as conn:
         if conn is None or not postgres_pgns_enabled(settings):
-            return {
-                "status": "disabled",
-                "total_rows": 0,
-                "distinct_games": 0,
-                "latest_ingested_at": None,
-                "sources": [],
-            }
+            return _disabled_raw_pgn_summary()
         init_pgn_schema(conn)
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(
-                f"""
-                SELECT
-                    source,
-                    COUNT(*) AS total_rows,
-                    COUNT(DISTINCT game_id) AS distinct_games,
-                    MAX(ingested_at) AS latest_ingested_at
-                FROM {PGN_SCHEMA}.raw_pgns
-                GROUP BY source
-                ORDER BY source
-                """
-            )
-            sources = cur.fetchall()
-            cur.execute(
-                f"""
-                SELECT
-                    COUNT(*) AS total_rows,
-                    COUNT(DISTINCT game_id) AS distinct_games,
-                    MAX(ingested_at) AS latest_ingested_at
-                FROM {PGN_SCHEMA}.raw_pgns
-                """
-            )
-            totals = cur.fetchone() or {}
-        return {
-            "status": "ok",
-            "total_rows": totals.get("total_rows", 0) if isinstance(totals, Mapping) else 0,
-            "distinct_games": totals.get("distinct_games", 0) if isinstance(totals, Mapping) else 0,
-            "latest_ingested_at": totals.get("latest_ingested_at")
-            if isinstance(totals, Mapping)
-            else None,
-            "sources": [dict(row) for row in sources],
-        }
+            sources, totals = _fetch_raw_pgn_summary(cur)
+        return _build_raw_pgn_summary(sources, totals)
+
+
+def _disabled_raw_pgn_summary() -> dict[str, Any]:
+    return {
+        "status": "disabled",
+        "total_rows": 0,
+        "distinct_games": 0,
+        "latest_ingested_at": None,
+        "sources": [],
+    }
+
+
+def _fetch_raw_pgn_summary(cur) -> tuple[list[Mapping[str, Any]], Mapping[str, Any]]:
+    cur.execute(
+        f"""
+        SELECT
+            source,
+            COUNT(*) AS total_rows,
+            COUNT(DISTINCT game_id) AS distinct_games,
+            MAX(ingested_at) AS latest_ingested_at
+        FROM {PGN_SCHEMA}.raw_pgns
+        GROUP BY source
+        ORDER BY source
+        """
+    )
+    sources = cur.fetchall()
+    cur.execute(
+        f"""
+        SELECT
+            COUNT(*) AS total_rows,
+            COUNT(DISTINCT game_id) AS distinct_games,
+            MAX(ingested_at) AS latest_ingested_at
+        FROM {PGN_SCHEMA}.raw_pgns
+        """
+    )
+    totals = cur.fetchone() or {}
+    return sources, totals if isinstance(totals, Mapping) else {}
+
+
+def _build_raw_pgn_summary(
+    sources: list[Mapping[str, Any]], totals: Mapping[str, Any]
+) -> dict[str, Any]:
+    return {
+        "status": "ok",
+        "total_rows": totals.get("total_rows", 0),
+        "distinct_games": totals.get("distinct_games", 0),
+        "latest_ingested_at": totals.get("latest_ingested_at"),
+        "sources": [dict(row) for row in sources],
+    }
 
 
 def _delete_existing_analysis(cur, position_id: int) -> None:
@@ -683,14 +727,18 @@ def _build_schema_label(settings: Settings) -> str:
 
 def _collect_tables(conn: PgConnection, settings: Settings) -> list[str]:
     tables: list[str] = []
-    tables.extend([f"tactix_ops.{name}" for name in _list_tables(conn, "tactix_ops")])
+    tables.extend(_schema_tables(conn, "tactix_ops", "tactix_ops"))
     if settings.postgres_analysis_enabled:
         init_analysis_schema(conn)
-        tables.extend([f"{ANALYSIS_SCHEMA}.{name}" for name in _list_tables(conn, ANALYSIS_SCHEMA)])
+        tables.extend(_schema_tables(conn, ANALYSIS_SCHEMA, ANALYSIS_SCHEMA))
     if settings.postgres_pgns_enabled:
         init_pgn_schema(conn)
-        tables.extend([f"{PGN_SCHEMA}.{name}" for name in _list_tables(conn, PGN_SCHEMA)])
+        tables.extend(_schema_tables(conn, PGN_SCHEMA, PGN_SCHEMA))
     return tables
+
+
+def _schema_tables(conn: PgConnection, schema: str, label: str) -> list[str]:
+    return [f"{label}.{name}" for name in _list_tables(conn, schema)]
 
 
 def get_postgres_status(settings: Settings) -> PostgresStatus:

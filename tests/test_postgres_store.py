@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 from tactix.base_db_store import BaseDbStoreContext
 from tactix.config import Settings
-from tactix.logging_utils import get_logger
+from tactix.utils.logger import get_logger
 from tactix.postgres_store import (
     PostgresStore,
     PostgresStatus,

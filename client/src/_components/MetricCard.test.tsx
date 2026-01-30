@@ -1,8 +1,9 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { vi } from 'vitest';
 import MetricCard from './MetricCard';
 
-jest.mock('./Text', () => ({
+vi.mock('./Text', () => ({
   __esModule: true,
   default: ({ value }: { value: string }) => <span>{value}</span>,
 }));

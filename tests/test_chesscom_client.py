@@ -12,15 +12,15 @@ import requests
 import chess.pgn
 
 from tactix.config import Settings, get_settings
-from tactix.logging_utils import get_logger
-from tactix.chesscom_client import (
+from tactix.utils.logger import get_logger
+from tactix.chess_clients.chesscom_client import (
     ARCHIVES_URL,
     ChesscomClient,
     ChesscomClientContext,
     ChesscomRateLimitError,
     _auth_headers,
     _build_cursor,
-    _coerce_int,
+    to_int,
     _fetch_archive_pages,
     _fetch_remote_games,
     _filter_by_cursor,
@@ -49,14 +49,10 @@ class ChesscomClientTests(unittest.TestCase):
             Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
         )
         self.classical_fixture_path = (
-            Path(__file__).resolve().parent
-            / "fixtures"
-            / "chesscom_classical_sample.pgn"
+            Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
         )
         self.correspondence_fixture_path = (
-            Path(__file__).resolve().parent
-            / "fixtures"
-            / "chesscom_correspondence_sample.pgn"
+            Path(__file__).resolve().parent / "fixtures" / "chesscom_correspondence_sample.pgn"
         )
 
     def test_fixture_fetch_respects_since(self) -> None:
@@ -416,9 +412,7 @@ class ChesscomClientTests(unittest.TestCase):
             metrics_version_file=self.tmp_dir / "metrics_archives.txt",
             chesscom_fixture_pgn_path=self.fixture_path,
         )
-        client = ChesscomClient(
-            ChesscomClientContext(settings=settings, logger=get_logger("test"))
-        )
+        client = ChesscomClient(ChesscomClientContext(settings=settings, logger=get_logger("test")))
 
         with (
             patch.object(
@@ -429,9 +423,7 @@ class ChesscomClientTests(unittest.TestCase):
                     [{"pgn": "", "time_class": settings.chesscom_time_class}],
                 ],
             ) as safe_fetch,
-            patch.object(
-                client, "_append_archive_games", return_value=True
-            ) as append_games,
+            patch.object(client, "_append_archive_games", return_value=True) as append_games,
         ):
             client._collect_archives(["one", "two"], since_ms=0)
 
@@ -447,13 +439,9 @@ class ChesscomClientTests(unittest.TestCase):
             metrics_version_file=self.tmp_dir / "metrics_safe.txt",
             chesscom_fixture_pgn_path=self.fixture_path,
         )
-        client = ChesscomClient(
-            ChesscomClientContext(settings=settings, logger=get_logger("test"))
-        )
+        client = ChesscomClient(ChesscomClientContext(settings=settings, logger=get_logger("test")))
 
-        with patch.object(
-            client, "_fetch_archive_pages", side_effect=RuntimeError("boom")
-        ):
+        with patch.object(client, "_fetch_archive_pages", side_effect=RuntimeError("boom")):
             result = client._safe_fetch_archive("https://example.com")
 
         self.assertEqual(result, [])
@@ -468,9 +456,7 @@ class ChesscomClientTests(unittest.TestCase):
             metrics_version_file=self.tmp_dir / "metrics_skip.txt",
             chesscom_fixture_pgn_path=self.fixture_path,
         )
-        client = ChesscomClient(
-            ChesscomClientContext(settings=settings, logger=get_logger("test"))
-        )
+        client = ChesscomClient(ChesscomClientContext(settings=settings, logger=get_logger("test")))
 
         archive_games = [
             {
@@ -494,9 +480,7 @@ class ChesscomClientTests(unittest.TestCase):
             metrics_version_file=self.tmp_dir / "metrics_pgn.txt",
             chesscom_fixture_pgn_path=self.fixture_path,
         )
-        client = ChesscomClient(
-            ChesscomClientContext(settings=settings, logger=get_logger("test"))
-        )
+        client = ChesscomClient(ChesscomClientContext(settings=settings, logger=get_logger("test")))
         row, last_ts = client._coerce_game({"time_class": settings.chesscom_time_class})
 
         self.assertIsNone(row)
@@ -511,14 +495,10 @@ class ChesscomClientTests(unittest.TestCase):
             metrics_version_file=self.tmp_dir / "metrics_should_skip.txt",
             chesscom_fixture_pgn_path=self.fixture_path,
         )
-        client = ChesscomClient(
-            ChesscomClientContext(settings=settings, logger=get_logger("test"))
-        )
+        client = ChesscomClient(ChesscomClientContext(settings=settings, logger=get_logger("test")))
         row = {"game_id": "game", "last_timestamp_ms": 5}
 
-        self.assertTrue(
-            client._should_skip_game(row, last_ts=5, since_ms=10, seen_game_ids=set())
-        )
+        self.assertTrue(client._should_skip_game(row, last_ts=5, since_ms=10, seen_game_ids=set()))
 
     def test_parse_retry_after_none(self) -> None:
         self.assertIsNone(_parse_retry_after(None))
@@ -554,7 +534,7 @@ class ChesscomClientTests(unittest.TestCase):
         current = "https://api.chess.com/pub/player/user/games/2024/07"
         data = {"next": {"href": "https://example.com/next"}}
         self.assertEqual(_next_page_url(data, current), "https://example.com/next")
-        self.assertIsNone(_coerce_int("bad"))
+        self.assertIsNone(to_int("bad"))
 
     def test_fetch_archive_pages_detects_loop(self) -> None:
         settings = Settings(

@@ -1,12 +1,12 @@
 import unittest
 
-from tactix.base_chess_client import (
+from tactix.chess_clients.base_chess_client import (
     BaseChessClient,
     BaseChessClientContext,
     ChessFetchRequest,
 )
 from tactix.config import Settings
-from tactix.logging_utils import get_logger
+from tactix.utils.logger import get_logger
 
 
 class DummyClient(BaseChessClient):

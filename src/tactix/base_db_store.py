@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timezone
-import hashlib
 import logging
-from typing import Callable, Mapping, cast
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass
+from datetime import datetime
+from typing import cast
 
 from tactix.config import Settings
 from tactix.pgn_utils import extract_pgn_metadata
+from tactix.utils import hash, now
 
 
 @dataclass(slots=True)
@@ -55,6 +56,17 @@ class OutcomeInsertPlan:
     eval_delta: object
 
 
+def _normalize_pgn_text(
+    pgn_text: str,
+    normalize_pgn: Callable[[str], str] | None,
+) -> str | None:
+    return normalize_pgn(pgn_text) if normalize_pgn else None
+
+
+def _is_latest_hash(latest_hash: str | None, pgn_hash: str) -> bool:
+    return latest_hash == pgn_hash
+
+
 class BaseDbStore:
     """Base class for database stores.
 
@@ -76,28 +88,11 @@ class BaseDbStore:
 
         return self._context.settings
 
-    @property
-    def logger(self) -> logging.Logger:
-        """Expose the logger from the context."""
-
-        return self._context.logger
-
-    @staticmethod
-    def hash_pgn_text(pgn: str) -> str:
-        """Hash PGN text using SHA-256."""
-
-        return hashlib.sha256(pgn.encode("utf-8")).hexdigest()
-
     @staticmethod
     def extract_pgn_metadata(pgn: str, user: str) -> Mapping[str, object]:
         """Extract PGN metadata using shared utilities."""
 
         return extract_pgn_metadata(pgn, user)
-
-    def _now_utc(self) -> datetime:
-        """Return the current UTC time."""
-
-        return datetime.now(timezone.utc)
 
     @staticmethod
     def build_pgn_upsert_plan(
@@ -107,28 +102,24 @@ class BaseDbStore:
         latest_hash: str | None,
         latest_version: int,
         normalize_pgn: Callable[[str], str] | None = None,
-        hash_pgn: Callable[[str], str] | None = None,
         fetched_at: datetime | None = None,
         ingested_at: datetime | None = None,
         last_timestamp_ms: int = 0,
         cursor: object | None = None,
     ) -> PgnUpsertPlan | None:
-        normalized = normalize_pgn(pgn_text) if normalize_pgn else None
-        hash_input = normalized or pgn_text
-        hash_fn = hash_pgn or BaseDbStore.hash_pgn_text
-        pgn_hash = hash_fn(hash_input)
-        if latest_hash == pgn_hash:
+        normalized = _normalize_pgn_text(pgn_text, normalize_pgn)
+        pgn_hash = hash(normalized) if normalized else hash(pgn_text)
+        if _is_latest_hash(latest_hash, pgn_hash):
             return None
         metadata = BaseDbStore.extract_pgn_metadata(pgn_text, user)
-        now = datetime.now(timezone.utc)
         return PgnUpsertPlan(
             pgn_text=pgn_text,
             pgn_hash=pgn_hash,
             pgn_version=latest_version + 1,
             normalized_pgn=normalized,
             metadata=metadata,
-            fetched_at=fetched_at or now,
-            ingested_at=ingested_at or now,
+            fetched_at=fetched_at or now(),
+            ingested_at=ingested_at or now(),
             last_timestamp_ms=last_timestamp_ms,
             cursor=cursor,
         )

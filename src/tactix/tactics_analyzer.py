@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 
 import chess
 
 from tactix.config import Settings
-from tactix.logging_utils import get_logger
+from tactix.const import TIME_CONTROLS
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactic_detectors import (
     BaseTacticDetector,
@@ -13,23 +13,10 @@ from tactix.tactic_detectors import (
     build_default_motif_detector_suite,
 )
 from tactix.tactics_explanation import format_tactic_explanation
+from tactix.utils.logger import get_logger
 
 logger = get_logger(__name__)
 MOTIF_DETECTORS: MotifDetectorSuite = build_default_motif_detector_suite()
-_PROFILE_FAST = frozenset({"bullet", "blitz", "rapid", "classical", "correspondence"})
-_PROFILE_DISCOVERED_CHECK_LOW = frozenset(
-    {"bullet", "blitz", "rapid", "classical", "correspondence"}
-)
-_PROFILE_DISCOVERED_CHECK_HIGH = frozenset({"blitz", "rapid", "classical", "correspondence"})
-_PROFILE_DISCOVERED_ATTACK_LOW = frozenset()
-_PROFILE_DISCOVERED_ATTACK_HIGH = frozenset(
-    {"bullet", "blitz", "rapid", "classical", "correspondence"}
-)
-_PROFILE_HANGING_PIECE_LOW = frozenset()
-_PROFILE_HANGING_PIECE_HIGH = frozenset({"bullet", "blitz", "rapid", "classical", "correspondence"})
-_PROFILE_FORK_LOW = frozenset({"blitz", "rapid"})
-_PROFILE_FORK_HIGH = frozenset({"bullet"})
-_PROFILE_FORK_SLOW = frozenset({"classical", "correspondence"})
 _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS = {
     "discovered_attack": -1200,
     "discovered_check": -950,
@@ -61,15 +48,25 @@ MATE_IN_ONE = 1
 MATE_IN_TWO = 2
 
 
+
 def _normalized_profile(settings: Settings | None) -> tuple[str, str]:
     if settings is None:
         return "", ""
-    source = (settings.source or "").strip().lower()
-    if source == "chesscom":
-        profile = (settings.chesscom_profile or settings.chesscom_time_class or "").strip().lower()
-    else:
-        profile = (settings.lichess_profile or settings.rapid_perf or "").strip().lower()
+    source = _normalized_source(settings.source)
+    profile = _normalized_profile_name(settings, source)
     return source, profile
+
+
+def _normalized_source(value: str | None) -> str:
+    return (value or "").strip().lower()
+
+
+def _normalized_profile_name(settings: Settings, source: str) -> str:
+    if source == "chesscom":
+        raw_profile = settings.chesscom_profile or settings.chesscom_time_class
+    else:
+        raw_profile = settings.lichess_profile or settings.rapid_perf
+    return (raw_profile or "").strip().lower()
 
 
 def _is_profile_in(settings: Settings | None, profiles: Iterable[str]) -> bool:
@@ -81,16 +78,22 @@ def _is_profile_in(settings: Settings | None, profiles: Iterable[str]) -> bool:
     source, profile = _normalized_profile(settings)
     if not profile:
         return False
-    normalized_profiles = {str(item).strip().lower() for item in profiles}
+    normalized_profiles = _normalized_profiles(profiles)
     if profile in normalized_profiles:
         return True
-    if source == "chesscom" and "correspondence" in normalized_profiles:
-        return profile == "daily"
-    return False
+    return _is_chesscom_daily_match(source, profile, normalized_profiles)
+
+
+def _normalized_profiles(profiles: Iterable[str]) -> set[str]:
+    return {str(item).strip().lower() for item in profiles}
+
+
+def _is_chesscom_daily_match(source: str, profile: str, normalized_profiles: set[str]) -> bool:
+    return source == "chesscom" and "correspondence" in normalized_profiles and profile == "daily"
 
 
 def _is_fast_profile(settings: Settings | None) -> bool:
-    return _is_profile_in(settings, _PROFILE_FAST)
+    return _is_profile_in(settings, TIME_CONTROLS)
 
 
 def _fork_severity_floor(settings: Settings | None) -> float | None:
@@ -200,29 +203,40 @@ def _override_motif_for_missed(
     best_motif: str | None,
     result: str,
 ) -> str:
-    if user_motif in _OVERRIDEABLE_USER_MOTIFS and (
-        (result == "missed" and best_motif in _MISSED_OVERRIDE_TARGETS)
-        or (result == "failed_attempt" and best_motif in _FAILED_ATTEMPT_OVERRIDE_TARGETS)
-    ):
-        return best_motif or user_motif
-    return user_motif
+    if not _should_override_motif(user_motif, best_motif, result):
+        return user_motif
+    return best_motif or user_motif
+
+
+def _should_override_motif(user_motif: str, best_motif: str | None, result: str) -> bool:
+    if user_motif not in _OVERRIDEABLE_USER_MOTIFS:
+        return False
+    if result == "missed":
+        return bool(best_motif in _MISSED_OVERRIDE_TARGETS)
+    if result == "failed_attempt":
+        return bool(best_motif in _FAILED_ATTEMPT_OVERRIDE_TARGETS)
+    return False
 
 
 def _reclassify_failed_attempt(result: str, delta: int, motif: str, user_motif: str) -> str:
-    reclassify_motif = user_motif if user_motif in _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS else None
-    if (
-        reclassify_motif is None
-        and motif in _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS
-        and motif != "discovered_attack"
-    ):
-        reclassify_motif = motif
-    if (
-        result == "missed"
-        and reclassify_motif is not None
-        and delta > _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS[reclassify_motif]
-    ):
-        return "failed_attempt"
-    return result
+    reclassify_motif = _reclassify_motif(motif, user_motif)
+    if not _should_reclassify(result, delta, reclassify_motif):
+        return result
+    return "failed_attempt"
+
+
+def _reclassify_motif(motif: str, user_motif: str) -> str | None:
+    if user_motif in _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS:
+        return user_motif
+    if motif in _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS and motif != "discovered_attack":
+        return motif
+    return None
+
+
+def _should_reclassify(result: str, delta: int, reclassify_motif: str | None) -> bool:
+    if result != "missed" or reclassify_motif is None:
+        return False
+    return delta > _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS[reclassify_motif]
 
 
 def _apply_mate_overrides(
@@ -234,25 +248,64 @@ def _apply_mate_overrides(
     mate_in_one: bool,
     mate_in_two: bool,
 ) -> tuple[str, str, int | None]:
-    mate_in: int | None = None
-    if mate_in_one:
-        mate_in = MATE_IN_ONE
-        if motif != "hanging_piece":
-            motif = "mate"
-    if mate_in_two:
-        mate_in = MATE_IN_TWO
-        motif = "mate"
-    if mate_in in {MATE_IN_ONE, MATE_IN_TWO}:
-        missed_threshold = _MATE_MISSED_SCORE_MULTIPLIER * mate_in
-        if (result == "missed" and after_cp >= missed_threshold) or (
-            mate_in == MATE_IN_TWO
-            and result == "unclear"
-            and best_move
-            and user_move_uci != best_move
-            and after_cp >= missed_threshold
-        ):
-            result = "failed_attempt"
+    mate_in = _resolve_mate_in(mate_in_one, mate_in_two)
+    motif = _override_mate_motif(motif, mate_in)
+    if _should_upgrade_mate_result(
+        result,
+        best_move,
+        user_move_uci,
+        after_cp,
+        mate_in,
+    ):
+        result = "failed_attempt"
     return result, motif, mate_in
+
+
+def _resolve_mate_in(mate_in_one: bool, mate_in_two: bool) -> int | None:
+    if mate_in_two:
+        return MATE_IN_TWO
+    if mate_in_one:
+        return MATE_IN_ONE
+    return None
+
+
+def _override_mate_motif(motif: str, mate_in: int | None) -> str:
+    if mate_in == MATE_IN_TWO:
+        return "mate"
+    if mate_in == MATE_IN_ONE and motif != "hanging_piece":
+        return "mate"
+    return motif
+
+
+def _should_upgrade_mate_result(
+    result: str,
+    best_move: str | None,
+    user_move_uci: str,
+    after_cp: int,
+    mate_in: int | None,
+) -> bool:
+    if mate_in not in {MATE_IN_ONE, MATE_IN_TWO}:
+        return False
+    missed_threshold = _MATE_MISSED_SCORE_MULTIPLIER * mate_in
+    if _is_missed_mate(result, after_cp, missed_threshold):
+        return True
+    return _is_unclear_two_move_mate(result, best_move, user_move_uci, after_cp, missed_threshold)
+
+
+def _is_missed_mate(result: str, after_cp: int, threshold: int) -> bool:
+    return result == "missed" and after_cp >= threshold
+
+
+def _is_unclear_two_move_mate(
+    result: str,
+    best_move: str | None,
+    user_move_uci: str,
+    after_cp: int,
+    threshold: int,
+) -> bool:
+    if result != "unclear" or best_move is None:
+        return False
+    return user_move_uci != best_move and after_cp >= threshold
 
 
 def _adjust_severity_for_mate(
@@ -263,29 +316,37 @@ def _adjust_severity_for_mate(
     settings: Settings | None,
 ) -> float:
     if mate_in_one and result == "found":
-        return (
-            max(severity, _SEVERITY_MAX)
-            if _is_fast_profile(settings)
-            else min(severity, _SEVERITY_MIN)
-        )
-    if mate_in_two and result == "found" and _is_profile_in(settings, _PROFILE_FAST):
+        return _severity_for_mate_one(severity, settings)
+    if mate_in_two and result == "found":
+        return _severity_for_mate_two(severity, settings)
+    return severity
+
+
+def _severity_for_mate_one(severity: float, settings: Settings | None) -> float:
+    if _is_fast_profile(settings):
+        return max(severity, _SEVERITY_MAX)
+    return min(severity, _SEVERITY_MIN)
+
+
+def _severity_for_mate_two(severity: float, settings: Settings | None) -> float:
+    if _is_profile_in(settings, TIME_CONTROLS):
         return max(severity, _SEVERITY_MAX)
     return severity
 
 
 def _adjust_severity_for_fork(severity: float, settings: Settings | None) -> float:
-    if _is_profile_in(settings, _PROFILE_FORK_LOW):
+    if _is_profile_in(settings, TIME_CONTROLS):
         severity = min(severity, _SEVERITY_MIN)
-    if _is_profile_in(settings, _PROFILE_FORK_HIGH):
+    if _is_profile_in(settings, TIME_CONTROLS):
         severity = max(severity, _SEVERITY_MAX)
     floor = _fork_severity_floor(settings)
-    if floor is not None and _is_profile_in(settings, _PROFILE_FORK_SLOW):
+    if floor is not None and _is_profile_in(settings, TIME_CONTROLS):
         severity = max(severity, floor)
     return severity
 
 
 def _adjust_severity_for_pin(severity: float, settings: Settings | None) -> float:
-    if _is_profile_in(settings, _PROFILE_FAST):
+    if _is_profile_in(settings, TIME_CONTROLS):
         return max(severity, _SEVERITY_MAX)
     return severity
 
@@ -295,11 +356,9 @@ def _adjust_severity_for_discovered_check(
     result: str,
     settings: Settings | None,
 ) -> float:
-    if _is_profile_in(settings, _PROFILE_DISCOVERED_CHECK_HIGH) and result == "found":
+    if _is_profile_in(settings, TIME_CONTROLS) and result == "found":
         return min(severity, _SEVERITY_MIN)
-    if not _is_profile_in(settings, _PROFILE_DISCOVERED_CHECK_HIGH) and _is_profile_in(
-        settings, _PROFILE_DISCOVERED_CHECK_LOW
-    ):
+    if not _is_profile_in(settings, TIME_CONTROLS) and _is_profile_in(settings, TIME_CONTROLS):
         return min(severity, _SEVERITY_MIN)
     return severity
 
@@ -309,9 +368,9 @@ def _adjust_severity_for_discovered_attack(
     result: str,
     settings: Settings | None,
 ) -> float:
-    if _is_profile_in(settings, _PROFILE_DISCOVERED_ATTACK_LOW):
+    if _is_profile_in(settings, TIME_CONTROLS):
         return min(severity, _SEVERITY_MIN)
-    if _is_profile_in(settings, _PROFILE_DISCOVERED_ATTACK_HIGH) and result == "found":
+    if _is_profile_in(settings, TIME_CONTROLS) and result == "found":
         return min(severity, _SEVERITY_MIN)
     return severity
 
@@ -321,9 +380,9 @@ def _adjust_severity_for_hanging_piece(
     result: str,
     settings: Settings | None,
 ) -> float:
-    if _is_profile_in(settings, _PROFILE_HANGING_PIECE_HIGH):
+    if _is_profile_in(settings, TIME_CONTROLS):
         return min(severity, _SEVERITY_MIN) if result == "found" else max(severity, _SEVERITY_MAX)
-    if _is_profile_in(settings, _PROFILE_HANGING_PIECE_LOW):
+    if _is_profile_in(settings, TIME_CONTROLS):
         return min(severity, _SEVERITY_MIN)
     return severity
 
@@ -343,19 +402,51 @@ def _adjust_severity(
     settings: Settings | None,
 ) -> float:
     severity = _adjust_severity_for_mate(severity, result, mate_in_one, mate_in_two, settings)
-    if motif == "fork":
-        severity = _adjust_severity_for_fork(severity, settings)
-    elif motif == "pin":
-        severity = _adjust_severity_for_pin(severity, settings)
-    elif motif == "discovered_check":
-        severity = _adjust_severity_for_discovered_check(severity, result, settings)
-    elif motif == "discovered_attack":
-        severity = _adjust_severity_for_discovered_attack(severity, result, settings)
-    elif motif == "hanging_piece":
-        severity = _adjust_severity_for_hanging_piece(severity, result, settings)
-    elif motif == "skewer":
-        severity = _adjust_severity_for_skewer(severity, result)
-    return severity
+    adjuster = _SEVERITY_ADJUSTERS.get(motif)
+    if adjuster is None:
+        return severity
+    return adjuster(severity, result, settings)
+
+
+def _adjust_fork_wrapper(severity: float, result: str, settings: Settings | None) -> float:
+    del result
+    return _adjust_severity_for_fork(severity, settings)
+
+
+def _adjust_pin_wrapper(severity: float, result: str, settings: Settings | None) -> float:
+    del result
+    return _adjust_severity_for_pin(severity, settings)
+
+
+def _adjust_discovered_check_wrapper(
+    severity: float, result: str, settings: Settings | None
+) -> float:
+    return _adjust_severity_for_discovered_check(severity, result, settings)
+
+
+def _adjust_discovered_attack_wrapper(
+    severity: float, result: str, settings: Settings | None
+) -> float:
+    return _adjust_severity_for_discovered_attack(severity, result, settings)
+
+
+def _adjust_hanging_piece_wrapper(severity: float, result: str, settings: Settings | None) -> float:
+    return _adjust_severity_for_hanging_piece(severity, result, settings)
+
+
+def _adjust_skewer_wrapper(severity: float, result: str, settings: Settings | None) -> float:
+    del settings
+    return _adjust_severity_for_skewer(severity, result)
+
+
+_SEVERITY_ADJUSTERS: dict[str, Callable[[float, str, Settings | None], float]] = {
+    "fork": _adjust_fork_wrapper,
+    "pin": _adjust_pin_wrapper,
+    "discovered_check": _adjust_discovered_check_wrapper,
+    "discovered_attack": _adjust_discovered_attack_wrapper,
+    "hanging_piece": _adjust_hanging_piece_wrapper,
+    "skewer": _adjust_skewer_wrapper,
+}
 
 
 def analyze_position(

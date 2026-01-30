@@ -10,19 +10,26 @@ from typing import TypedDict, cast
 
 import chess.engine
 
-from tactix.base_chess_client import BaseChessClient
 from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
-from tactix.chesscom_client import (
+from tactix.chess_clients.base_chess_client import BaseChessClient
+from tactix.chess_clients.chesscom_client import (
     ChesscomClient,
     ChesscomClientContext,
     ChesscomFetchRequest,
     ChesscomFetchResult,
 )
-from tactix.chesscom_client import (
+from tactix.chess_clients.chesscom_client import (
     read_cursor as read_chesscom_cursor,
 )
-from tactix.chesscom_client import (
+from tactix.chess_clients.chesscom_client import (
     write_cursor as write_chesscom_cursor,
+)
+from tactix.chess_clients.lichess_client import (
+    LichessClient,
+    LichessClientContext,
+    LichessFetchRequest,
+    read_checkpoint,
+    write_checkpoint,
 )
 from tactix.config import Settings, get_settings
 from tactix.duckdb_store import (
@@ -46,14 +53,6 @@ from tactix.duckdb_store import (
     upsert_tactic_with_outcome,
     write_metrics_version,
 )
-from tactix.lichess_client import (
-    LichessClient,
-    LichessClientContext,
-    LichessFetchRequest,
-    read_checkpoint,
-    write_checkpoint,
-)
-from tactix.logging_utils import get_logger
 from tactix.pgn_utils import (
     extract_game_id,
     extract_last_timestamp_ms,
@@ -73,6 +72,7 @@ from tactix.postgres_store import (
 )
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
+from tactix.utils.logger import get_logger
 
 logger = get_logger(__name__)
 ANALYSIS_PROGRESS_BUCKETS = 20
@@ -81,6 +81,15 @@ INDEX_OFFSET = 1
 RESUME_INDEX_START = 0
 SINGLE_PGN_CHUNK = 1
 ZERO_COUNT = 0
+LICHESS_BLACK_PROFILES = {"bullet", "blitz", "rapid", "classical", "correspondence"}
+CHESSCOM_BLACK_PROFILES = {
+    "bullet",
+    "blitz",
+    "rapid",
+    "classical",
+    "correspondence",
+    "daily",
+}
 
 
 class GameRow(TypedDict):
@@ -170,44 +179,64 @@ def _normalize_game_row(row: Mapping[str, object], settings: Settings) -> GameRo
 def _expand_pgn_rows(rows: list[GameRow], settings: Settings) -> list[GameRow]:
     expanded: list[GameRow] = []
     for row in rows:
-        pgn_text = row.get("pgn", "")
-        chunks = split_pgn_chunks(pgn_text)
-        if len(chunks) <= SINGLE_PGN_CHUNK:
-            expanded.append(row)
-            continue
-        expanded.extend(
-            [
-                cast(
-                    GameRow,
-                    {
-                        "game_id": extract_game_id(chunk),
-                        "user": row.get("user") or settings.user,
-                        "source": row.get("source") or settings.source,
-                        "fetched_at": row.get("fetched_at"),
-                        "pgn": chunk,
-                        "last_timestamp_ms": extract_last_timestamp_ms(chunk),
-                    },
-                )
-                for chunk in chunks
-            ]
-        )
+        expanded.extend(_expand_single_pgn_row(row, settings))
     return expanded
 
 
+def _expand_single_pgn_row(row: GameRow, settings: Settings) -> list[GameRow]:
+    pgn_text = row.get("pgn", "")
+    chunks = split_pgn_chunks(pgn_text)
+    if len(chunks) <= SINGLE_PGN_CHUNK:
+        return [row]
+    return [_build_chunk_row(row, chunk, settings) for chunk in chunks]
+
+
+def _build_chunk_row(row: GameRow, chunk: str, settings: Settings) -> GameRow:
+    return cast(
+        GameRow,
+        {
+            "game_id": extract_game_id(chunk),
+            "user": row.get("user") or settings.user,
+            "source": row.get("source") or settings.source,
+            "fetched_at": row.get("fetched_at"),
+            "pgn": chunk,
+            "last_timestamp_ms": extract_last_timestamp_ms(chunk),
+        },
+    )
+
+
 def _resolve_side_to_move_filter(settings: Settings) -> str | None:
-    source = (settings.source or "").strip().lower()
-    if source == "lichess":
-        profile = (settings.lichess_profile or settings.rapid_perf or "").strip().lower()
-        if profile in {"bullet", "blitz", "rapid", "classical", "correspondence"}:
-            return "black"
+    source = _normalized_source(settings.source)
+    profile = _normalized_profile_for_source(settings, source)
+    black_profiles = _black_profiles_for_source(source)
+    if not profile or black_profiles is None:
         return None
+    return _side_filter_for_profile(profile, black_profiles)
+
+
+def _normalized_source(source: str | None) -> str:
+    return (source or "").strip().lower()
+
+
+def _normalized_profile_for_source(settings: Settings, source: str) -> str:
+    profiles = {
+        "lichess": settings.lichess_profile or settings.rapid_perf,
+        "chesscom": settings.chesscom_profile or settings.chesscom_time_class,
+    }
+    raw_profile = profiles.get(source)
+    return (raw_profile or "").strip().lower()
+
+
+def _black_profiles_for_source(source: str) -> set[str] | None:
+    if source == "lichess":
+        return LICHESS_BLACK_PROFILES
     if source == "chesscom":
-        profile = (settings.chesscom_profile or settings.chesscom_time_class or "").strip().lower()
-        if profile in {"bullet", "blitz", "rapid", "classical"}:
-            return "black"
-        if profile in {"correspondence", "daily"}:
-            return "black"
+        return CHESSCOM_BLACK_PROFILES
     return None
+
+
+def _side_filter_for_profile(profile: str, black_profiles: set[str]) -> str | None:
+    return "black" if profile in black_profiles else None
 
 
 def _emit_progress(progress: ProgressCallback | None, step: str, **fields: object) -> None:
@@ -270,19 +299,9 @@ def _fetch_chesscom_games(
 ) -> FetchContext:
     cursor_before = read_chesscom_cursor(settings.checkpoint_path)
     cursor_value = None if backfill_mode else cursor_before
-    last_timestamp_value = 0
-    if cursor_value:
-        try:
-            last_timestamp_value = int(cursor_value.split(":", 1)[0])
-        except ValueError:
-            last_timestamp_value = 0
-    chesscom_result = cast(
-        ChesscomFetchResult,
-        client.fetch_incremental_games(
-            ChesscomFetchRequest(cursor=cursor_value, full_history=backfill_mode)
-        ),
-    )
-    raw_games = [cast(Mapping[str, object], row) for row in chesscom_result.games]
+    last_timestamp_value = _cursor_last_timestamp(cursor_value)
+    chesscom_result = _request_chesscom_games(client, cursor_value, backfill_mode)
+    raw_games = _chesscom_raw_games(chesscom_result)
     next_cursor = chesscom_result.next_cursor or cursor_value
     last_timestamp_value = chesscom_result.last_timestamp_ms
     return FetchContext(
@@ -294,6 +313,30 @@ def _fetch_chesscom_games(
         chesscom_result=chesscom_result,
         last_timestamp_ms=last_timestamp_value,
     )
+
+
+def _cursor_last_timestamp(cursor_value: str | None) -> int:
+    if not cursor_value:
+        return 0
+    try:
+        return int(cursor_value.split(":", 1)[0])
+    except ValueError:
+        return 0
+
+
+def _request_chesscom_games(
+    client: BaseChessClient, cursor_value: str | None, backfill_mode: bool
+) -> ChesscomFetchResult:
+    return cast(
+        ChesscomFetchResult,
+        client.fetch_incremental_games(
+            ChesscomFetchRequest(cursor=cursor_value, full_history=backfill_mode)
+        ),
+    )
+
+
+def _chesscom_raw_games(chesscom_result: ChesscomFetchResult) -> list[Mapping[str, object]]:
+    return [cast(Mapping[str, object], row) for row in chesscom_result.games]
 
 
 def _fetch_lichess_games(
@@ -402,32 +445,87 @@ def _prepare_games_for_sync(
         window_end_ms,
     )
     games = _normalize_and_expand_games(fetch_context.raw_games, settings)
+    games, window_filtered = _filter_games_for_window(
+        games,
+        window_start_ms,
+        window_end_ms,
+    )
+    _maybe_emit_window_filtered(
+        settings,
+        progress,
+        backfill_mode,
+        window_filtered,
+        window_start_ms,
+        window_end_ms,
+    )
+    last_timestamp_value = _resolve_last_timestamp_value(games, fetch_context.last_timestamp_ms)
+    _emit_fetch_progress(
+        settings,
+        progress,
+        fetch_context,
+        backfill_mode,
+        window_start_ms,
+        window_end_ms,
+        len(games),
+    )
+    return games, fetch_context, window_filtered, last_timestamp_value
+
+
+def _filter_games_for_window(
+    games: list[GameRow],
+    window_start_ms: int | None,
+    window_end_ms: int | None,
+) -> tuple[list[GameRow], int]:
     pre_window_count = len(games)
-    games = _filter_games_by_window(games, window_start_ms, window_end_ms)
-    window_filtered = pre_window_count - len(games)
-    if backfill_mode and window_filtered:
-        _emit_backfill_window_filtered(
-            settings,
-            progress,
-            window_filtered,
-            window_start_ms,
-            window_end_ms,
-        )
-    last_timestamp_value = fetch_context.last_timestamp_ms
-    if games:
-        last_timestamp_value = latest_timestamp(games) or last_timestamp_value
+    filtered = _filter_games_by_window(games, window_start_ms, window_end_ms)
+    return filtered, pre_window_count - len(filtered)
+
+
+def _maybe_emit_window_filtered(
+    settings: Settings,
+    progress: ProgressCallback | None,
+    backfill_mode: bool,
+    window_filtered: int,
+    window_start_ms: int | None,
+    window_end_ms: int | None,
+) -> None:
+    if not backfill_mode or not window_filtered:
+        return
+    _emit_backfill_window_filtered(
+        settings,
+        progress,
+        window_filtered,
+        window_start_ms,
+        window_end_ms,
+    )
+
+
+def _resolve_last_timestamp_value(games: list[GameRow], fallback: int) -> int:
+    if not games:
+        return fallback
+    return latest_timestamp(games) or fallback
+
+
+def _emit_fetch_progress(
+    settings: Settings,
+    progress: ProgressCallback | None,
+    fetch_context: FetchContext,
+    backfill_mode: bool,
+    window_start_ms: int | None,
+    window_end_ms: int | None,
+    fetched_games: int,
+) -> None:
     _emit_progress(
         progress,
         "fetch_games",
         source=settings.source,
-        fetched_games=len(games),
+        fetched_games=fetched_games,
         since_ms=fetch_context.since_ms,
         cursor=fetch_context.next_cursor or fetch_context.cursor_value,
         backfill=backfill_mode,
         backfill_start_ms=window_start_ms,
         backfill_end_ms=window_end_ms,
     )
-    return games, fetch_context, window_filtered, last_timestamp_value
 
 
 def _build_no_games_payload(
@@ -439,6 +537,8 @@ def _build_no_games_payload(
     window_filtered: int,
 ) -> dict[str, object]:
     metrics_version = _update_metrics_and_version(settings, conn)
+    checkpoint_ms = _no_games_checkpoint(settings, backfill_mode, fetch_context)
+    cursor = _no_games_cursor(backfill_mode, fetch_context)
     return {
         "source": settings.source,
         "user": settings.user,
@@ -449,16 +549,26 @@ def _build_no_games_payload(
         "positions": 0,
         "tactics": 0,
         "metrics_version": metrics_version,
-        "checkpoint_ms": None
-        if backfill_mode or settings.source == "chesscom"
-        else fetch_context.since_ms,
-        "cursor": fetch_context.cursor_before
-        if backfill_mode
-        else (fetch_context.next_cursor or fetch_context.cursor_value),
+        "checkpoint_ms": checkpoint_ms,
+        "cursor": cursor,
         "last_timestamp_ms": last_timestamp_value or fetch_context.since_ms,
         "since_ms": fetch_context.since_ms,
         "window_filtered": window_filtered,
     }
+
+
+def _no_games_checkpoint(
+    settings: Settings, backfill_mode: bool, fetch_context: FetchContext
+) -> int | None:
+    if backfill_mode or settings.source == "chesscom":
+        return None
+    return fetch_context.since_ms
+
+
+def _no_games_cursor(backfill_mode: bool, fetch_context: FetchContext) -> str | None:
+    if backfill_mode:
+        return fetch_context.cursor_before
+    return fetch_context.next_cursor or fetch_context.cursor_value
 
 
 def _handle_no_games(
@@ -521,13 +631,12 @@ def _build_no_games_after_dedupe_payload(
     window_filtered: int,
 ) -> dict[str, object]:
     metrics_version = _update_metrics_and_version(settings, conn)
-    if not backfill_mode:
-        if settings.source == "chesscom":
-            write_chesscom_cursor(settings.checkpoint_path, fetch_context.next_cursor)
-        else:
-            checkpoint_value = max(fetch_context.since_ms, last_timestamp_value)
-            write_checkpoint(settings.checkpoint_path, checkpoint_value)
-            last_timestamp_value = checkpoint_value
+    checkpoint_ms, last_timestamp_value = _apply_no_games_dedupe_checkpoint(
+        settings,
+        backfill_mode,
+        fetch_context,
+        last_timestamp_value,
+    )
     return {
         "source": settings.source,
         "user": settings.user,
@@ -539,16 +648,28 @@ def _build_no_games_after_dedupe_payload(
         "positions": 0,
         "tactics": 0,
         "metrics_version": metrics_version,
-        "checkpoint_ms": None
-        if backfill_mode
-        else max(fetch_context.since_ms, last_timestamp_value),
-        "cursor": fetch_context.cursor_before
-        if backfill_mode
-        else (fetch_context.next_cursor or fetch_context.cursor_value),
+        "checkpoint_ms": checkpoint_ms,
+        "cursor": _no_games_cursor(backfill_mode, fetch_context),
         "last_timestamp_ms": last_timestamp_value,
         "since_ms": fetch_context.since_ms,
         "window_filtered": window_filtered,
     }
+
+
+def _apply_no_games_dedupe_checkpoint(
+    settings: Settings,
+    backfill_mode: bool,
+    fetch_context: FetchContext,
+    last_timestamp_value: int,
+) -> tuple[int | None, int]:
+    if backfill_mode:
+        return None, last_timestamp_value
+    if settings.source == "chesscom":
+        write_chesscom_cursor(settings.checkpoint_path, fetch_context.next_cursor)
+        return None, last_timestamp_value
+    checkpoint_value = max(fetch_context.since_ms, last_timestamp_value)
+    write_checkpoint(settings.checkpoint_path, checkpoint_value)
+    return checkpoint_value, checkpoint_value
 
 
 def _handle_no_games_after_dedupe(
@@ -585,12 +706,42 @@ def _update_daily_checkpoint(
     if backfill_mode:
         return None, last_timestamp_value
     if settings.source == "chesscom":
-        write_chesscom_cursor(settings.checkpoint_path, fetch_context.next_cursor)
-        if fetch_context.chesscom_result:
-            last_timestamp_value = fetch_context.chesscom_result.last_timestamp_ms
-        elif games:
-            last_timestamp_value = latest_timestamp(games) or last_timestamp_value
-        return None, last_timestamp_value
+        return _update_chesscom_checkpoint(settings, fetch_context, games, last_timestamp_value)
+    return _update_lichess_checkpoint(settings, fetch_context, games)
+
+
+def _update_chesscom_checkpoint(
+    settings: Settings,
+    fetch_context: FetchContext,
+    games: list[GameRow],
+    last_timestamp_value: int,
+) -> tuple[int | None, int]:
+    write_chesscom_cursor(settings.checkpoint_path, fetch_context.next_cursor)
+    last_timestamp_value = _resolve_chesscom_last_timestamp(
+        fetch_context,
+        games,
+        last_timestamp_value,
+    )
+    return None, last_timestamp_value
+
+
+def _resolve_chesscom_last_timestamp(
+    fetch_context: FetchContext,
+    games: list[GameRow],
+    last_timestamp_value: int,
+) -> int:
+    if fetch_context.chesscom_result:
+        return fetch_context.chesscom_result.last_timestamp_ms
+    if games:
+        return latest_timestamp(games) or last_timestamp_value
+    return last_timestamp_value
+
+
+def _update_lichess_checkpoint(
+    settings: Settings,
+    fetch_context: FetchContext,
+    games: list[GameRow],
+) -> tuple[int | None, int]:
     checkpoint_value = max(fetch_context.since_ms, latest_timestamp(games))
     write_checkpoint(settings.checkpoint_path, checkpoint_value)
     return checkpoint_value, checkpoint_value
@@ -1152,11 +1303,9 @@ def _analyze_positions_with_progress(
     analysis_signature: str,
     progress: ProgressCallback | None,
 ) -> tuple[int, int, int]:
-    postgres_synced = 0
     analysis_pg_enabled = postgres_analysis_enabled(settings)
     with postgres_connection(settings) as pg_conn:
-        if pg_conn is not None and analysis_pg_enabled:
-            init_analysis_schema(pg_conn)
+        _init_analysis_schema_if_needed(pg_conn, analysis_pg_enabled)
         tactics_count, postgres_written = _run_analysis_loop(
             conn,
             settings,
@@ -1168,12 +1317,38 @@ def _analyze_positions_with_progress(
             pg_conn,
             analysis_pg_enabled,
         )
-        if pg_conn is not None and analysis_pg_enabled and postgres_written == ZERO_COUNT:
-            postgres_synced = _sync_postgres_analysis_results(conn, pg_conn, settings)
-            postgres_written += postgres_synced
+        postgres_synced, postgres_written = _maybe_sync_analysis_results(
+            conn,
+            settings,
+            pg_conn,
+            analysis_pg_enabled,
+            postgres_written,
+        )
+    _maybe_clear_analysis_checkpoint(analysis_checkpoint_path)
+    return tactics_count, postgres_written, postgres_synced
+
+
+def _init_analysis_schema_if_needed(pg_conn, analysis_pg_enabled: bool) -> None:
+    if pg_conn is not None and analysis_pg_enabled:
+        init_analysis_schema(pg_conn)
+
+
+def _maybe_sync_analysis_results(
+    conn,
+    settings: Settings,
+    pg_conn,
+    analysis_pg_enabled: bool,
+    postgres_written: int,
+) -> tuple[int, int]:
+    if pg_conn is None or not analysis_pg_enabled or postgres_written != ZERO_COUNT:
+        return 0, postgres_written
+    postgres_synced = _sync_postgres_analysis_results(conn, pg_conn, settings)
+    return postgres_synced, postgres_written + postgres_synced
+
+
+def _maybe_clear_analysis_checkpoint(analysis_checkpoint_path) -> None:
     if analysis_checkpoint_path is not None:
         _clear_analysis_checkpoint(analysis_checkpoint_path)
-    return tactics_count, postgres_written, postgres_synced
 
 
 def _dedupe_games(rows: list[GameRow]) -> list[GameRow]:
@@ -1198,15 +1373,12 @@ def _filter_games_by_window(
 ) -> list[GameRow]:
     if start_ms is None and end_ms is None:
         return rows
-    filtered: list[GameRow] = []
-    for game in rows:
-        last_ts = game["last_timestamp_ms"]
-        if start_ms is not None and last_ts < start_ms:
-            continue
-        if end_ms is not None and last_ts >= end_ms:
-            continue
-        filtered.append(game)
-    return filtered
+    return [game for game in rows if _within_window(game, start_ms, end_ms)]
+
+
+def _within_window(game: GameRow, start_ms: int | None, end_ms: int | None) -> bool:
+    last_ts = game["last_timestamp_ms"]
+    return (start_ms is None or last_ts >= start_ms) and (end_ms is None or last_ts < end_ms)
 
 
 def _filter_backfill_games(
@@ -1222,15 +1394,24 @@ def _filter_backfill_games(
     to_process: list[GameRow] = []
     skipped: list[GameRow] = []
     for game in rows:
-        game_id = game["game_id"]
-        pgn_text = game["pgn"]
-        current_hash = hash_pgn(pgn_text)
-        existing_hash = latest_hashes.get(game_id)
-        if existing_hash == current_hash and position_counts.get(game_id, ZERO_COUNT) > ZERO_COUNT:
+        if _should_skip_backfill(game, latest_hashes, position_counts):
             skipped.append(game)
-            continue
-        to_process.append(game)
+        else:
+            to_process.append(game)
     return to_process, skipped
+
+
+def _should_skip_backfill(
+    game: GameRow,
+    latest_hashes: Mapping[str, str],
+    position_counts: Mapping[str, int],
+) -> bool:
+    game_id = game["game_id"]
+    current_hash = hash_pgn(game["pgn"])
+    existing_hash = latest_hashes.get(game_id)
+    return bool(
+        existing_hash == current_hash and position_counts.get(game_id, ZERO_COUNT) > ZERO_COUNT
+    )
 
 
 def _compute_pgn_hashes(rows: list[GameRow], source: str) -> dict[str, str]:
@@ -1252,17 +1433,29 @@ def _validate_raw_pgn_hashes(
         return {"computed": 0, "matched": 0}
     computed = _compute_pgn_hashes(rows, source)
     stored = fetch_latest_pgn_hashes(conn, list(computed.keys()), source)
-    matched = sum(1 for game_id, pgn_hash in computed.items() if stored.get(game_id) == pgn_hash)
-    if matched != len(computed):
-        missing = [
-            game_id for game_id, pgn_hash in computed.items() if stored.get(game_id) != pgn_hash
-        ]
-        missing_sorted = ", ".join(sorted(missing))
-        raise ValueError(
-            f"Raw PGN hash mismatch for source={source} expected={len(computed)} "
-            f"matched={matched} missing={missing_sorted}"
-        )
+    matched = _count_hash_matches(computed, stored)
+    _raise_for_hash_mismatch(source, computed, stored, matched)
     return {"computed": len(computed), "matched": matched}
+
+
+def _count_hash_matches(computed: Mapping[str, str], stored: Mapping[str, str]) -> int:
+    return sum(1 for game_id, pgn_hash in computed.items() if stored.get(game_id) == pgn_hash)
+
+
+def _raise_for_hash_mismatch(
+    source: str,
+    computed: Mapping[str, str],
+    stored: Mapping[str, str],
+    matched: int,
+) -> None:
+    if matched == len(computed):
+        return
+    missing = [game_id for game_id, pgn_hash in computed.items() if stored.get(game_id) != pgn_hash]
+    missing_sorted = ", ".join(sorted(missing))
+    raise ValueError(
+        f"Raw PGN hash mismatch for source={source} expected={len(computed)} "
+        f"matched={matched} missing={missing_sorted}"
+    )
 
 
 def run_migrations(
@@ -1313,38 +1506,41 @@ def convert_raw_pgns_to_positions(
 
     raw_pgns = fetch_latest_raw_pgns(conn, settings.source, limit)
     if not raw_pgns:
-        return {
-            "source": settings.source,
-            "games": 0,
-            "inserted_games": 0,
-            "positions": 0,
-        }
+        return _empty_conversion_payload(settings)
 
-    game_ids = [str(row.get("game_id", "")) for row in raw_pgns if row.get("game_id")]
-    position_counts = fetch_position_counts(conn, game_ids, settings.source)
-    to_process = [
-        row
-        for row in raw_pgns
-        if position_counts.get(str(row.get("game_id")), ZERO_COUNT) == ZERO_COUNT
-    ]
-
-    positions: list[dict[str, object]] = []
-    side_to_move_filter = _resolve_side_to_move_filter(settings)
-    for row in to_process:
-        positions.extend(
-            extract_positions(
-                str(row.get("pgn", "")),
-                str(row.get("user") or settings.user),
-                str(row.get("source") or settings.source),
-                game_id=str(row.get("game_id", "")),
-                side_to_move_filter=side_to_move_filter,
-            )
-        )
-
+    to_process = _filter_positions_to_process(conn, raw_pgns, settings)
+    positions = _extract_positions_for_rows(to_process, settings)
     position_ids = insert_positions(conn, positions)
-    for pos, pos_id in zip(positions, position_ids, strict=False):
-        pos["position_id"] = pos_id
+    _attach_position_ids(positions, position_ids)
 
+    return _conversion_payload(settings, raw_pgns, to_process, positions)
+
+
+def _empty_conversion_payload(settings: Settings) -> dict[str, object]:
+    return {
+        "source": settings.source,
+        "games": 0,
+        "inserted_games": 0,
+        "positions": 0,
+    }
+
+
+def _filter_positions_to_process(
+    conn,
+    raw_pgns: list[dict[str, object]],
+    settings: Settings,
+) -> list[dict[str, object]]:
+    game_ids = _collect_game_ids(raw_pgns)
+    position_counts = fetch_position_counts(conn, game_ids, settings.source)
+    return _filter_unprocessed_games(raw_pgns, position_counts)
+
+
+def _conversion_payload(
+    settings: Settings,
+    raw_pgns: list[dict[str, object]],
+    to_process: list[dict[str, object]],
+    positions: list[dict[str, object]],
+) -> dict[str, object]:
     return {
         "source": settings.source,
         "games": len(raw_pgns),
@@ -1356,20 +1552,41 @@ def convert_raw_pgns_to_positions(
 def _extract_positions_for_new_games(
     conn, settings: Settings, raw_pgns: list[dict[str, object]]
 ) -> tuple[list[dict[str, object]], list[str]]:
-    game_ids = [str(row.get("game_id", "")) for row in raw_pgns if row.get("game_id")]
+    game_ids = _collect_game_ids(raw_pgns)
     if not game_ids:
         return [], []
     position_counts = fetch_position_counts(conn, game_ids, settings.source)
-    to_process = [
+    to_process = _filter_unprocessed_games(raw_pgns, position_counts)
+    if not to_process:
+        return [], []
+    positions = _extract_positions_for_rows(to_process, settings)
+    position_ids = insert_positions(conn, positions)
+    _attach_position_ids(positions, position_ids)
+    return positions, _collect_game_ids(to_process)
+
+
+def _collect_game_ids(rows: list[dict[str, object]]) -> list[str]:
+    return [str(row.get("game_id", "")) for row in rows if row.get("game_id")]
+
+
+def _filter_unprocessed_games(
+    raw_pgns: list[dict[str, object]],
+    position_counts: dict[str, int],
+) -> list[dict[str, object]]:
+    return [
         row
         for row in raw_pgns
         if position_counts.get(str(row.get("game_id")), ZERO_COUNT) == ZERO_COUNT
     ]
-    if not to_process:
-        return [], []
+
+
+def _extract_positions_for_rows(
+    rows: list[dict[str, object]],
+    settings: Settings,
+) -> list[dict[str, object]]:
     positions: list[dict[str, object]] = []
     side_to_move_filter = _resolve_side_to_move_filter(settings)
-    for row in to_process:
+    for row in rows:
         positions.extend(
             extract_positions(
                 str(row.get("pgn", "")),
@@ -1379,10 +1596,15 @@ def _extract_positions_for_new_games(
                 side_to_move_filter=side_to_move_filter,
             )
         )
-    position_ids = insert_positions(conn, positions)
+    return positions
+
+
+def _attach_position_ids(
+    positions: list[dict[str, object]],
+    position_ids: list[int],
+) -> None:
     for pos, pos_id in zip(positions, position_ids, strict=False):
         pos["position_id"] = pos_id
-    return positions, [str(row.get("game_id", "")) for row in to_process]
 
 
 def _collect_positions_for_monitor(
@@ -1413,10 +1635,8 @@ def _analyze_positions(
     if not positions:
         return 0, 0
     analysis_pg_enabled = postgres_analysis_enabled(settings)
-    postgres_synced = 0
     with postgres_connection(settings) as pg_conn:
-        if pg_conn is not None and analysis_pg_enabled:
-            init_analysis_schema(pg_conn)
+        _init_analysis_schema_if_needed(pg_conn, analysis_pg_enabled)
         tactics_detected, postgres_written = _run_analysis_loop(
             conn,
             settings,
@@ -1428,9 +1648,13 @@ def _analyze_positions(
             pg_conn,
             analysis_pg_enabled,
         )
-        if pg_conn is not None and analysis_pg_enabled and postgres_written == ZERO_COUNT:
-            postgres_synced = _sync_postgres_analysis_results(conn, pg_conn, settings)
-            postgres_written += postgres_synced
+        postgres_synced, postgres_written = _maybe_sync_analysis_results(
+            conn,
+            settings,
+            pg_conn,
+            analysis_pg_enabled,
+            postgres_written,
+        )
     positions_analyzed = len(positions)
     record_ops_event(
         settings,

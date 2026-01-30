@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from datetime import date, datetime
-from typing import Iterable, Mapping, cast
+from typing import cast
 
 from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
 
@@ -91,18 +92,39 @@ def _filter_rows(
             filtered.append(row)
             continue
         row_dict = cast(Mapping[str, object], row)
-        if not _matches_value(row_dict, "source", source):
-            continue
-        if not _matches_value(row_dict, "motif", motif):
-            continue
-        if not _matches_value(row_dict, "rating_bucket", rating_bucket):
-            continue
-        if not _matches_value(row_dict, "time_control", time_control):
-            continue
-        if not _matches_date_range(row_dict, start_date, end_date):
+        if not _row_matches_filters(
+            row_dict,
+            source=source,
+            motif=motif,
+            rating_bucket=rating_bucket,
+            time_control=time_control,
+            start_date=start_date,
+            end_date=end_date,
+        ):
             continue
         filtered.append(row)
     return filtered
+
+
+def _row_matches_filters(
+    row: Mapping[str, object],
+    *,
+    source: str | None,
+    motif: str | None,
+    rating_bucket: str | None,
+    time_control: str | None,
+    start_date: datetime | None,
+    end_date: datetime | None,
+) -> bool:
+    return all(
+        (
+            _matches_value(row, "source", source),
+            _matches_value(row, "motif", motif),
+            _matches_value(row, "rating_bucket", rating_bucket),
+            _matches_value(row, "time_control", time_control),
+            _matches_date_range(row, start_date, end_date),
+        )
+    )
 
 
 def _matches_value(row: Mapping[str, object], key: str, value: str | None) -> bool:
@@ -122,15 +144,27 @@ def _matches_date_range(
     if start_date is None and end_date is None:
         return True
     row_date = _extract_date(row)
+    return _date_in_range(row_date, start_date, end_date)
+
+
+def _date_in_range(
+    row_date: date | None,
+    start_date: datetime | None,
+    end_date: datetime | None,
+) -> bool:
     if row_date is None:
         return True
-    start_value = _coerce_date(start_date) if start_date is not None else None
-    if start_value is not None and row_date < start_value:
-        return False
-    end_value = _coerce_date(end_date) if end_date is not None else None
-    if end_value is not None and row_date > end_value:
-        return False
-    return True
+    start_value = _coerce_bound(start_date)
+    end_value = _coerce_bound(end_date)
+    return _within_bounds(row_date, start_value, end_value)
+
+
+def _coerce_bound(value: datetime | None) -> date | None:
+    return _coerce_date(value) if value else None
+
+
+def _within_bounds(value: date, start: date | None, end: date | None) -> bool:
+    return (start is None or value >= start) and (end is None or value <= end)
 
 
 def _extract_date(row: Mapping[str, object]) -> date | None:

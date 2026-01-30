@@ -14,6 +14,11 @@ MIN_FORK_CHECK_TARGETS = 1
 ORTHOGONAL_STEPS = (1, -1, 8, -8)
 DIAGONAL_STEPS = (7, -7, 9, -9)
 QUEEN_STEPS = ORTHOGONAL_STEPS + DIAGONAL_STEPS
+SLIDER_STEPS = {
+    chess.ROOK: ORTHOGONAL_STEPS,
+    chess.BISHOP: DIAGONAL_STEPS,
+    chess.QUEEN: QUEEN_STEPS,
+}
 HIGH_VALUE_PIECES = (
     chess.QUEEN,
     chess.ROOK,
@@ -85,14 +90,12 @@ class BaseTacticDetector(ABC):
         """Yield unchanged sliding pieces for the mover from before to after."""
         slider_types = {chess.ROOK, chess.BISHOP, chess.QUEEN}
         for square, piece in board_after.piece_map().items():
-            if piece.color != mover_color or piece.piece_type not in slider_types:
+            if not _is_slider_piece(piece, mover_color, slider_types):
                 continue
-            if exclude_square is not None and square == exclude_square:
+            if _is_excluded_square(square, exclude_square):
                 continue
             piece_before = board_before.piece_at(square)
-            if not piece_before or piece_before.color != mover_color:
-                continue
-            if piece_before.piece_type != piece.piece_type:
+            if not _matches_before_piece(piece_before, piece, mover_color):
                 continue
             yield square, piece
 
@@ -156,15 +159,113 @@ class BaseTacticDetector(ABC):
         mover_color: bool,
     ) -> bool:
         captured = board_before.piece_at(best_move.to_square)
-        if not captured or captured.piece_type not in HIGH_VALUE_PIECES:
+        if not _is_high_value_capture(captured):
             return False
         if board_after.is_checkmate():
             return True
         opponent = not mover_color
-        attackers = list(board_before.attackers(opponent, best_move.to_square))
+        attackers = _attackers_to_square(board_before, opponent, best_move.to_square)
         if not attackers:
             return True
-        return all(board_before.is_pinned(opponent, sq) for sq in attackers)
+        return _attackers_are_pinned(board_before, opponent, attackers)
+
+
+def _is_slider_piece(piece: chess.Piece, mover_color: bool, slider_types: set[int]) -> bool:
+    return piece.color == mover_color and piece.piece_type in slider_types
+
+
+def _is_excluded_square(square: chess.Square, exclude_square: chess.Square | None) -> bool:
+    return bool(exclude_square is not None and square == exclude_square)
+
+
+def _matches_before_piece(
+    piece_before: chess.Piece | None, piece: chess.Piece, mover_color: bool
+) -> bool:
+    if not piece_before or piece_before.color != mover_color:
+        return False
+    return piece_before.piece_type == piece.piece_type
+
+
+def _is_high_value_capture(captured: chess.Piece | None) -> bool:
+    return bool(captured and captured.piece_type in HIGH_VALUE_PIECES)
+
+
+def _attackers_to_square(
+    board: chess.Board, attacker_color: bool, square: chess.Square
+) -> list[chess.Square]:
+    return list(board.attackers(attacker_color, square))
+
+
+def _attackers_are_pinned(
+    board: chess.Board, attacker_color: bool, attackers: Iterable[chess.Square]
+) -> bool:
+    return all(board.is_pinned(attacker_color, sq) for sq in attackers)
+
+
+def _opponent_king_square(board: chess.Board, mover_color: bool) -> chess.Square | None:
+    opponent = not mover_color
+    return board.king(opponent)
+
+
+def _has_discovered_check(
+    detector: BaseTacticDetector,
+    board_before: chess.Board,
+    board_after: chess.Board,
+    mover_color: bool,
+    king_square: chess.Square,
+    exclude_square: chess.Square,
+) -> bool:
+    for square, _piece in detector.iter_unchanged_sliders(
+        board_before,
+        board_after,
+        mover_color,
+        exclude_square=exclude_square,
+    ):
+        if _is_discovered_check_slider(board_before, board_after, square, king_square):
+            return True
+    return False
+
+
+def _is_discovered_check_slider(
+    board_before: chess.Board,
+    board_after: chess.Board,
+    square: chess.Square,
+    king_square: chess.Square,
+) -> bool:
+    if king_square not in board_after.attacks(square):
+        return False
+    return king_square not in board_before.attacks(square)
+
+
+def _has_discovered_attack(
+    detector: BaseTacticDetector,
+    board_before: chess.Board,
+    board_after: chess.Board,
+    mover_color: bool,
+    opponent: bool,
+    exclude_square: chess.Square | None,
+) -> bool:
+    for square, _piece in detector.iter_unchanged_sliders(
+        board_before,
+        board_after,
+        mover_color,
+        exclude_square=exclude_square,
+    ):
+        if _has_new_target(detector, board_before, board_after, square, opponent):
+            return True
+    return False
+
+
+def _has_new_target(
+    detector: BaseTacticDetector,
+    board_before: chess.Board,
+    board_after: chess.Board,
+    square: chess.Square,
+    opponent: bool,
+) -> bool:
+    before_targets = detector.attacked_high_value_targets(board_before, square, opponent)
+    after_targets = detector.attacked_high_value_targets(board_after, square, opponent)
+    return bool(after_targets - before_targets)
 
 
 class DiscoveredCheckDetector(BaseTacticDetector):
@@ -173,22 +274,17 @@ class DiscoveredCheckDetector(BaseTacticDetector):
     def detect(self, context: TacticContext) -> bool:
         if not context.board_after.is_check():
             return False
-        opponent = not context.mover_color
-        king_square = context.board_after.king(opponent)
+        king_square = _opponent_king_square(context.board_after, context.mover_color)
         if king_square is None:
             return False
-        for square, _piece in self.iter_unchanged_sliders(
+        return _has_discovered_check(
+            self,
             context.board_before,
             context.board_after,
             context.mover_color,
-            exclude_square=context.best_move.to_square,
-        ):
-            if king_square not in context.board_after.attacks(square):
-                continue
-            if king_square in context.board_before.attacks(square):
-                continue
-            return True
-        return False
+            king_square,
+            context.best_move.to_square,
+        )
 
 
 class DiscoveredAttackDetector(BaseTacticDetector):
@@ -204,19 +300,14 @@ class DiscoveredAttackDetector(BaseTacticDetector):
             chess.QUEEN,
         }:
             exclude_square = context.best_move.to_square
-        for square, _piece in self.iter_unchanged_sliders(
+        return _has_discovered_attack(
+            self,
             context.board_before,
             context.board_after,
             context.mover_color,
-            exclude_square=exclude_square,
-        ):
-            before_targets = self.attacked_high_value_targets(
-                context.board_before, square, opponent
-            )
-            after_targets = self.attacked_high_value_targets(context.board_after, square, opponent)
-            if after_targets - before_targets:
-                return True
-        return False
+            opponent,
+            exclude_square,
+        )
 
 
 class SkewerDetector(BaseTacticDetector):
@@ -224,30 +315,20 @@ class SkewerDetector(BaseTacticDetector):
 
     def detect(self, context: TacticContext) -> bool:
         opponent = not context.mover_color
-        slider_steps = {
-            chess.ROOK: ORTHOGONAL_STEPS,
-            chess.BISHOP: DIAGONAL_STEPS,
-            chess.QUEEN: QUEEN_STEPS,
-        }
-        for square, piece in context.board_after.piece_map().items():
-            if piece.color != context.mover_color or piece.piece_type not in slider_steps:
-                continue
-            for step in slider_steps[piece.piece_type]:
-                first = self.first_piece_in_direction(context.board_after, square, step)
-                if first is None:
-                    continue
-                target = context.board_after.piece_at(first)
-                if not target or target.color != opponent:
-                    continue
-                second = self.first_piece_in_direction(context.board_after, first, step)
-                if second is None:
-                    continue
-                behind = context.board_after.piece_at(second)
-                if not behind or behind.color != opponent:
-                    continue
-                if self.piece_value(target.piece_type) > self.piece_value(behind.piece_type):
-                    return True
-        return False
+        return any(
+            _has_skewer_in_steps(self, context.board_after, square, steps, opponent)
+            for square, steps in _skewer_sources(context.board_after, context.mover_color)
+        )
+
+
+def _skewer_sources(
+    board: chess.Board, mover_color: bool
+) -> Iterable[tuple[chess.Square, Iterable[int]]]:
+    for square, piece in board.piece_map().items():
+        steps = SLIDER_STEPS.get(piece.piece_type)
+        if piece.color != mover_color or not steps:
+            continue
+        yield square, steps
 
 
 class HangingPieceDetector(BaseTacticDetector):
@@ -271,32 +352,92 @@ class PinDetector(BaseTacticDetector):
         moved_piece = context.board_before.piece_at(context.best_move.from_square)
         if not moved_piece or moved_piece.color != context.mover_color:
             return False
-        slider_steps = {
-            chess.ROOK: ORTHOGONAL_STEPS,
-            chess.BISHOP: DIAGONAL_STEPS,
-            chess.QUEEN: QUEEN_STEPS,
-        }
-        steps = slider_steps.get(moved_piece.piece_type)
+        steps = SLIDER_STEPS.get(moved_piece.piece_type)
         if not steps:
             return False
         opponent = not context.mover_color
-        start = context.best_move.to_square
-        for step in steps:
-            first = self.first_piece_in_direction(context.board_after, start, step)
-            if first is None:
-                continue
-            target = context.board_after.piece_at(first)
-            if not target or target.color != opponent:
-                continue
-            second = self.first_piece_in_direction(context.board_after, first, step)
-            if second is None:
-                continue
-            behind = context.board_after.piece_at(second)
-            if not behind or behind.color != opponent:
-                continue
-            if self.piece_value(behind.piece_type) > self.piece_value(target.piece_type):
-                return True
+        return _has_pin_in_steps(
+            self,
+            context.board_after,
+            context.best_move.to_square,
+            steps,
+            opponent,
+        )
+
+
+def _has_skewer_in_steps(
+    detector: BaseTacticDetector,
+    board: chess.Board,
+    start: chess.Square,
+    steps: Iterable[int],
+    opponent: bool,
+) -> bool:
+    return any(_is_skewer_in_step(detector, board, start, step, opponent) for step in steps)
+
+
+def _is_skewer_in_step(
+    detector: BaseTacticDetector,
+    board: chess.Board,
+    start: chess.Square,
+    step: int,
+    opponent: bool,
+) -> bool:
+    pieces = _two_pieces_in_line(detector, board, start, step)
+    if pieces is None:
         return False
+    target, behind = pieces
+    if not _is_opponent_piece(target, opponent) or not _is_opponent_piece(behind, opponent):
+        return False
+    return detector.piece_value(target.piece_type) > detector.piece_value(behind.piece_type)
+
+
+def _has_pin_in_steps(
+    detector: BaseTacticDetector,
+    board: chess.Board,
+    start: chess.Square,
+    steps: Iterable[int],
+    opponent: bool,
+) -> bool:
+    return any(_is_pin_in_step(detector, board, start, step, opponent) for step in steps)
+
+
+def _is_pin_in_step(
+    detector: BaseTacticDetector,
+    board: chess.Board,
+    start: chess.Square,
+    step: int,
+    opponent: bool,
+) -> bool:
+    pieces = _two_pieces_in_line(detector, board, start, step)
+    if pieces is None:
+        return False
+    target, behind = pieces
+    if not _is_opponent_piece(target, opponent) or not _is_opponent_piece(behind, opponent):
+        return False
+    return detector.piece_value(behind.piece_type) > detector.piece_value(target.piece_type)
+
+
+def _is_opponent_piece(piece: chess.Piece | None, opponent: bool) -> bool:
+    return bool(piece) and piece.color == opponent
+
+
+def _two_pieces_in_line(
+    detector: BaseTacticDetector,
+    board: chess.Board,
+    start: chess.Square,
+    step: int,
+) -> tuple[chess.Piece, chess.Piece] | None:
+    first = detector.first_piece_in_direction(board, start, step)
+    if first is None:
+        return None
+    second = detector.first_piece_in_direction(board, first, step)
+    if second is None:
+        return None
+    target = board.piece_at(first)
+    behind = board.piece_at(second)
+    if target is None or behind is None:
+        return None
+    return target, behind
 
 
 class ForkDetector(BaseTacticDetector):
@@ -304,14 +445,22 @@ class ForkDetector(BaseTacticDetector):
 
     def detect(self, context: TacticContext) -> bool:
         piece = context.board_before.piece_at(context.best_move.from_square)
-        if not piece or piece.piece_type not in HIGH_VALUE_PIECES:
+        if not _is_fork_piece(piece):
             return False
         forks = self.count_high_value_targets(
             context.board_after, context.best_move.to_square, context.mover_color
         )
-        if forks >= MIN_FORK_TARGETS:
-            return True
-        return forks >= MIN_FORK_CHECK_TARGETS and context.board_after.is_check()
+        return _forks_meet_threshold(forks, context.board_after)
+
+
+def _is_fork_piece(piece: chess.Piece | None) -> bool:
+    return bool(piece) and piece.piece_type in HIGH_VALUE_PIECES
+
+
+def _forks_meet_threshold(forks: int, board_after: chess.Board) -> bool:
+    if forks >= MIN_FORK_TARGETS:
+        return True
+    return forks >= MIN_FORK_CHECK_TARGETS and board_after.is_check()
 
 
 class CaptureDetector(BaseTacticDetector):

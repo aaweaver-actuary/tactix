@@ -8,17 +8,15 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run --coverage",
+    "dup": "jscpd --format python,typescript,tsx,javascript,jsx ../src ./src --min-lines 8 --min-tokens 70 --threshold 1 --reporters console --ignore \"**/dist/**\" --ignore \"**/coverage/**\" --ignore \"**/node_modules/**\" --ignore \"**/.venv/**\" --ignore \"**/tests/**\"",
     "pg:smoke": "tsx verification/pg_smoke.ts"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
     "@tanstack/react-table": "^8.21.3",
     "@testing-library/react": "^16.3.2",
-    "@types/jest": "^30.0.0",
-    "@types/mocha": "^10.0.10",
     "axios": "^1.7.7",
     "chess.js": "^1.4.0",
-    "jest": "^30.2.0",
     "react": "^18.3.1",
     "react-chessboard": "^4.7.0",
     "react-dom": "^18.3.1",

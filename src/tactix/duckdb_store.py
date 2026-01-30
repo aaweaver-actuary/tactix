@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import os
+from collections.abc import Iterable, Mapping
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable, List, Mapping, cast
+from typing import cast
 
 import duckdb
-from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
-from tactix.logging_utils import get_logger
+
+from tactix.base_db_store import BaseDbStore, BaseDbStoreContext, PgnUpsertPlan
 from tactix.tactics_explanation import format_tactic_explanation
+from tactix.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -133,9 +135,7 @@ SCHEMA_VERSION = 6
 class DuckDbStore(BaseDbStore):
     """DuckDB-backed store implementation."""
 
-    def __init__(
-        self, context: BaseDbStoreContext, db_path: Path | None = None
-    ) -> None:
+    def __init__(self, context: BaseDbStoreContext, db_path: Path | None = None) -> None:
         super().__init__(context)
         self._db_path = db_path or context.settings.duckdb_path
 
@@ -229,18 +229,31 @@ def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
 def migrate_schema(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute(SCHEMA_VERSION_SCHEMA)
     current_version = _get_schema_version(conn)
-    max_target_version = SCHEMA_VERSION
+    max_target_version = _max_target_schema_version(conn, current_version)
+    _apply_schema_migrations(conn, current_version, max_target_version)
+
+
+def _max_target_schema_version(conn: duckdb.DuckDBPyConnection, current_version: int) -> int:
     if current_version == 0 and _is_legacy_raw_pgns(conn):
         # Legacy databases created before training_attempt latency tracking
         # should remain at v3 unless explicitly upgraded.
-        max_target_version = 3
+        return 3
+    return SCHEMA_VERSION
+
+
+def _apply_schema_migrations(
+    conn: duckdb.DuckDBPyConnection,
+    current_version: int,
+    max_target_version: int,
+) -> None:
+    version = current_version
     for target_version, migration in _SCHEMA_MIGRATIONS:
-        if target_version > max_target_version or current_version >= target_version:
+        if target_version > max_target_version or version >= target_version:
             continue
         logger.info("Applying DuckDB schema migration v%s", target_version)
         migration(conn)
         _set_schema_version(conn, target_version)
-        current_version = target_version
+        version = target_version
 
 
 def _should_attempt_wal_recovery(exc: Exception) -> bool:
@@ -258,9 +271,7 @@ def _should_attempt_wal_recovery(exc: Exception) -> bool:
 
 def _is_legacy_raw_pgns(conn: duckdb.DuckDBPyConnection) -> bool:
     try:
-        columns = {
-            row[1] for row in conn.execute("PRAGMA table_info('raw_pgns')").fetchall()
-        }
+        columns = {row[1] for row in conn.execute("PRAGMA table_info('raw_pgns')").fetchall()}
     except Exception:
         return False
     return bool(columns) and "raw_pgn_id" not in columns
@@ -340,144 +351,75 @@ _SCHEMA_MIGRATIONS = [
 
 
 def hash_pgn(pgn: str) -> str:
-    return BaseDbStore.hash_pgn_text(pgn)
+    return BaseDbStore.hash_pgn(pgn)
 
 
 def _ensure_raw_pgns_versioned(conn: duckdb.DuckDBPyConnection) -> None:
-    columns = {
-        row[1] for row in conn.execute("PRAGMA table_info('raw_pgns')").fetchall()
-    }
+    columns = {row[1] for row in conn.execute("PRAGMA table_info('raw_pgns')").fetchall()}
     if "raw_pgn_id" not in columns:
-        conn.execute("BEGIN TRANSACTION")
-        try:
-            existing_tables = {row[0] for row in conn.execute("SHOW TABLES").fetchall()}
-            if "raw_pgns_legacy" in existing_tables:
-                conn.execute("DROP TABLE raw_pgns_legacy")
-            conn.execute("ALTER TABLE raw_pgns RENAME TO raw_pgns_legacy")
-            conn.execute(RAW_PGNS_SCHEMA)
-            legacy_rows = conn.execute(
-                "SELECT game_id, user, source, fetched_at, pgn, last_timestamp_ms, cursor FROM raw_pgns_legacy"
-            ).fetchall()
-            next_id = 0
-            inserts = []
-            for row in legacy_rows:
-                next_id += 1
-                pgn_text = row[4] or ""
-                metadata = BaseDbStore.extract_pgn_metadata(pgn_text, str(row[1]))
-                inserts.append(
-                    (
-                        next_id,
-                        row[0],
-                        row[1],
-                        row[2],
-                        row[3],
-                        pgn_text,
-                        hash_pgn(pgn_text),
-                        1,
-                        metadata.get("user_rating"),
-                        metadata.get("time_control"),
-                        datetime.now(timezone.utc),
-                        row[5],
-                        row[6],
-                    )
-                )
-            if inserts:
-                conn.executemany(
-                    """
-                    INSERT INTO raw_pgns (
-                        raw_pgn_id,
-                        game_id,
-                        user,
-                        source,
-                        fetched_at,
-                        pgn,
-                        pgn_hash,
-                        pgn_version,
-                        user_rating,
-                        time_control,
-                        ingested_at,
-                        last_timestamp_ms,
-                        cursor
-                    )
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    inserts,
-                )
-            conn.execute("DROP TABLE raw_pgns_legacy")
-            conn.execute("COMMIT")
-        except Exception:  # noqa: BLE001
-            conn.execute("ROLLBACK")
-            raise
-    else:
-        _ensure_column(conn, "raw_pgns", "pgn_hash", "TEXT")
-        _ensure_column(conn, "raw_pgns", "pgn_version", "INTEGER")
-        _ensure_column(conn, "raw_pgns", "user_rating", "INTEGER")
-        _ensure_column(conn, "raw_pgns", "time_control", "TEXT")
-        _ensure_column(conn, "raw_pgns", "ingested_at", "TIMESTAMP")
-        _ensure_column(conn, "raw_pgns", "cursor", "TEXT")
+        _migrate_raw_pgns_legacy(conn)
+        return
+    _ensure_raw_pgns_columns(conn)
 
 
-def _ensure_column(
-    conn: duckdb.DuckDBPyConnection, table: str, column: str, definition: str
-) -> None:
-    columns = {
-        row[1] for row in conn.execute(f"PRAGMA table_info('{table}')").fetchall()
-    }
-    if column not in columns:
-        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+def _ensure_raw_pgns_columns(conn: duckdb.DuckDBPyConnection) -> None:
+    _ensure_column(conn, "raw_pgns", "pgn_hash", "TEXT")
+    _ensure_column(conn, "raw_pgns", "pgn_version", "INTEGER")
+    _ensure_column(conn, "raw_pgns", "user_rating", "INTEGER")
+    _ensure_column(conn, "raw_pgns", "time_control", "TEXT")
+    _ensure_column(conn, "raw_pgns", "ingested_at", "TIMESTAMP")
+    _ensure_column(conn, "raw_pgns", "cursor", "TEXT")
 
 
-def upsert_raw_pgns(
-    conn: duckdb.DuckDBPyConnection,
-    rows: Iterable[Mapping[str, object]],
-) -> int:
-    rows_list = list(rows)
-    if not rows_list:
-        return 0
+def _drop_table_if_exists(conn: duckdb.DuckDBPyConnection, table_name: str) -> None:
+    existing_tables = {row[0] for row in conn.execute("SHOW TABLES").fetchall()}
+    if table_name in existing_tables:
+        conn.execute(f"DROP TABLE {table_name}")
+
+
+# TODO: Deprecate this ASAP. What are these row indices referring to??
+def _build_legacy_raw_pgn_inserts(
+    legacy_rows: list[tuple[object, ...]],
+) -> list[tuple[object, ...]]:
+    inserts: list[tuple[object, ...]] = []
+    for next_id, row in enumerate(legacy_rows, start=1):
+        pgn_text = str(row[4] or "")
+        metadata = BaseDbStore.extract_pgn_metadata(pgn_text, str(row[1]))
+        inserts.append(
+            (
+                next_id,
+                row[0],
+                row[1],
+                row[2],
+                row[3],
+                pgn_text,
+                hash_pgn(pgn_text),
+                1,
+                metadata.get("user_rating"),
+                metadata.get("time_control"),
+                datetime.now(UTC),
+                row[5],
+                row[6],
+            )
+        )
+    return inserts
+
+
+def _migrate_raw_pgns_legacy(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute("BEGIN TRANSACTION")
     try:
-        next_row = conn.execute(
-            "SELECT COALESCE(MAX(raw_pgn_id), 0) FROM raw_pgns"
-        ).fetchone()
-        next_id = int(next_row[0]) if next_row else 0
-        latest_cache: dict[tuple[str, str], tuple[str | None, int]] = {}
-        inserted = 0
-        for row in rows_list:
-            game_id = str(row["game_id"])
-            source = str(row["source"])
-            pgn_text = str(row["pgn"])
-            key = (game_id, source)
-            if key in latest_cache:
-                latest_hash, latest_version = latest_cache[key]
-            else:
-                existing = conn.execute(
-                    """
-                    SELECT pgn_hash, pgn_version
-                    FROM raw_pgns
-                    WHERE game_id = ? AND source = ?
-                    ORDER BY pgn_version DESC
-                    LIMIT 1
-                    """,
-                    [game_id, source],
-                ).fetchone()
-                if existing:
-                    latest_hash, latest_version = existing[0], int(existing[1] or 0)
-                else:
-                    latest_hash, latest_version = None, 0
-            plan = BaseDbStore.build_pgn_upsert_plan(
-                pgn_text=pgn_text,
-                user=str(row["user"]),
-                latest_hash=latest_hash,
-                latest_version=latest_version,
-                fetched_at=cast(datetime | None, row.get("fetched_at")),
-                last_timestamp_ms=cast(int, row.get("last_timestamp_ms", 0)),
-                cursor=row.get("cursor"),
-            )
-            if plan is None:
-                latest_cache[key] = (latest_hash, latest_version)
-                continue
-            next_id += 1
-            conn.execute(
+        _drop_table_if_exists(conn, "raw_pgns_legacy")
+        conn.execute("ALTER TABLE raw_pgns RENAME TO raw_pgns_legacy")
+        conn.execute(RAW_PGNS_SCHEMA)
+        legacy_rows = conn.execute(
+            """
+            SELECT game_id, user, source, fetched_at, pgn, last_timestamp_ms, cursor
+            FROM raw_pgns_legacy
+            """
+        ).fetchall()
+        inserts = _build_legacy_raw_pgn_inserts(legacy_rows)
+        if inserts:
+            conn.executemany(
                 """
                 INSERT INTO raw_pgns (
                     raw_pgn_id,
@@ -494,31 +436,162 @@ def upsert_raw_pgns(
                     last_timestamp_ms,
                     cursor
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (
-                    next_id,
-                    game_id,
-                    row["user"],
-                    source,
-                    plan.fetched_at,
-                    plan.pgn_text,
-                    plan.pgn_hash,
-                    plan.pgn_version,
-                    plan.metadata.get("user_rating"),
-                    plan.metadata.get("time_control"),
-                    plan.ingested_at,
-                    plan.last_timestamp_ms,
-                    plan.cursor,
-                ),
+                inserts,
             )
-            latest_cache[key] = (plan.pgn_hash, plan.pgn_version)
-            inserted += 1
+        conn.execute("DROP TABLE raw_pgns_legacy")
         conn.execute("COMMIT")
-    except Exception:  # noqa: BLE001
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
+
+
+def _ensure_column(
+    conn: duckdb.DuckDBPyConnection, table: str, column: str, definition: str
+) -> None:
+    columns = {row[1] for row in conn.execute(f"PRAGMA table_info('{table}')").fetchall()}
+    if column not in columns:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+
+def upsert_raw_pgns(
+    conn: duckdb.DuckDBPyConnection,
+    rows: Iterable[Mapping[str, object]],
+) -> int:
+    rows_list = list(rows)
+    if not rows_list:
+        return 0
+    conn.execute("BEGIN TRANSACTION")
+    try:
+        inserted = _upsert_raw_pgn_rows(conn, rows_list)
+        conn.execute("COMMIT")
+    except Exception:
         conn.execute("ROLLBACK")
         raise
     return inserted
+
+
+def _upsert_raw_pgn_rows(
+    conn: duckdb.DuckDBPyConnection,
+    rows_list: list[Mapping[str, object]],
+) -> int:
+    next_id = _fetch_next_raw_pgn_id(conn)
+    latest_cache: dict[tuple[str, str], tuple[str | None, int]] = {}
+    inserted = 0
+    for row in rows_list:
+        game_id = str(row["game_id"])
+        source = str(row["source"])
+        plan = _build_raw_pgn_upsert_plan(conn, row, game_id, source, latest_cache)
+        if plan is None:
+            continue
+        next_id += 1
+        _insert_raw_pgn_plan(conn, next_id, game_id, source, row, plan)
+        latest_cache[(game_id, source)] = (plan.pgn_hash, plan.pgn_version)
+        inserted += 1
+    return inserted
+
+
+def _fetch_next_raw_pgn_id(conn: duckdb.DuckDBPyConnection) -> int:
+    next_row = conn.execute("SELECT COALESCE(MAX(raw_pgn_id), 0) FROM raw_pgns").fetchone()
+    return int(next_row[0]) if next_row else 0
+
+
+def _fetch_latest_hash_version(
+    conn: duckdb.DuckDBPyConnection,
+    game_id: str,
+    source: str,
+    latest_cache: dict[tuple[str, str], tuple[str | None, int]],
+) -> tuple[str | None, int]:
+    key = (game_id, source)
+    if key in latest_cache:
+        return latest_cache[key]
+    existing = conn.execute(
+        """
+        SELECT pgn_hash, pgn_version
+        FROM raw_pgns
+        WHERE game_id = ? AND source = ?
+        ORDER BY pgn_version DESC
+        LIMIT 1
+        """,
+        [game_id, source],
+    ).fetchone()
+    latest = (existing[0], int(existing[1] or 0)) if existing else (None, 0)
+    latest_cache[key] = latest
+    return latest
+
+
+def _build_raw_pgn_upsert_plan(
+    conn: duckdb.DuckDBPyConnection,
+    row: Mapping[str, object],
+    game_id: str,
+    source: str,
+    latest_cache: dict[tuple[str, str], tuple[str | None, int]],
+) -> PgnUpsertPlan | None:
+    pgn_text = str(row["pgn"])
+    latest_hash, latest_version = _fetch_latest_hash_version(
+        conn,
+        game_id,
+        source,
+        latest_cache,
+    )
+    plan = BaseDbStore.build_pgn_upsert_plan(
+        pgn_text=pgn_text,
+        user=str(row["user"]),
+        latest_hash=latest_hash,
+        latest_version=latest_version,
+        fetched_at=cast(datetime | None, row.get("fetched_at")),
+        last_timestamp_ms=cast(int, row.get("last_timestamp_ms", 0)),
+        cursor=row.get("cursor"),
+    )
+    if plan is None:
+        latest_cache[(game_id, source)] = (latest_hash, latest_version)
+    return plan
+
+
+def _insert_raw_pgn_plan(
+    conn: duckdb.DuckDBPyConnection,
+    raw_pgn_id: int,
+    game_id: str,
+    source: str,
+    row: Mapping[str, object],
+    plan: PgnUpsertPlan,
+) -> None:
+    conn.execute(
+        """
+        INSERT INTO raw_pgns (
+            raw_pgn_id,
+            game_id,
+            user,
+            source,
+            fetched_at,
+            pgn,
+            pgn_hash,
+            pgn_version,
+            user_rating,
+            time_control,
+            ingested_at,
+            last_timestamp_ms,
+            cursor
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            raw_pgn_id,
+            game_id,
+            row["user"],
+            source,
+            plan.fetched_at,
+            plan.pgn_text,
+            plan.pgn_hash,
+            plan.pgn_version,
+            plan.metadata.get("user_rating"),
+            plan.metadata.get("time_control"),
+            plan.ingested_at,
+            plan.last_timestamp_ms,
+            plan.cursor,
+        ),
+    )
 
 
 def fetch_latest_pgn_hashes(
@@ -638,13 +711,16 @@ def delete_game_rows(conn: duckdb.DuckDBPyConnection, game_ids: list[str]) -> No
     try:
         for game_id in game_ids:
             conn.execute(
-                "DELETE FROM tactic_outcomes WHERE tactic_id IN (SELECT tactic_id FROM tactics WHERE game_id = ?)",
+                """
+                DELETE FROM tactic_outcomes
+                WHERE tactic_id IN (SELECT tactic_id FROM tactics WHERE game_id = ?)
+                """,
                 [game_id],
             )
             conn.execute("DELETE FROM tactics WHERE game_id = ?", [game_id])
             conn.execute("DELETE FROM positions WHERE game_id = ?", [game_id])
         conn.execute("COMMIT")
-    except Exception:  # noqa: BLE001
+    except Exception:
         conn.execute("ROLLBACK")
         raise
 
@@ -652,22 +728,33 @@ def delete_game_rows(conn: duckdb.DuckDBPyConnection, game_ids: list[str]) -> No
 def insert_positions(
     conn: duckdb.DuckDBPyConnection,
     rows: Iterable[Mapping[str, object]],
-) -> List[int]:
+) -> list[int]:
     rows_list = list(rows)
     if not rows_list:
         return []
-    start_row = conn.execute(
-        "SELECT COALESCE(MAX(position_id), 0) FROM positions"
-    ).fetchone()
+    start_row = conn.execute("SELECT COALESCE(MAX(position_id), 0) FROM positions").fetchone()
     start_id = int(start_row[0]) if start_row else 0
     conn.execute("BEGIN TRANSACTION")
-    position_ids: List[int] = []
+    position_ids: list[int] = []
     try:
         for idx, row in enumerate(rows_list, start=1):
             position_id = start_id + idx
             conn.execute(
                 """
-                INSERT INTO positions (position_id, game_id, user, source, fen, ply, move_number, side_to_move, uci, san, clock_seconds, is_legal)
+                INSERT INTO positions (
+                    position_id,
+                    game_id,
+                    user,
+                    source,
+                    fen,
+                    ply,
+                    move_number,
+                    side_to_move,
+                    uci,
+                    san,
+                    clock_seconds,
+                    is_legal
+                )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
@@ -687,7 +774,7 @@ def insert_positions(
             )
             position_ids.append(position_id)
         conn.execute("COMMIT")
-    except Exception:  # noqa: BLE001
+    except Exception:
         conn.execute("ROLLBACK")
         raise
     return position_ids
@@ -744,16 +831,14 @@ def fetch_unanalyzed_positions(
 def insert_tactics(
     conn: duckdb.DuckDBPyConnection,
     rows: Iterable[Mapping[str, object]],
-) -> List[int]:
+) -> list[int]:
     rows_list = list(rows)
     if not rows_list:
         return []
-    start_row = conn.execute(
-        "SELECT COALESCE(MAX(tactic_id), 0) FROM tactics"
-    ).fetchone()
+    start_row = conn.execute("SELECT COALESCE(MAX(tactic_id), 0) FROM tactics").fetchone()
     start_id = int(start_row[0]) if start_row else 0
     conn.execute("BEGIN TRANSACTION")
-    tactic_ids: List[int] = []
+    tactic_ids: list[int] = []
     try:
         for idx, row in enumerate(rows_list, start=1):
             tactic_id = start_id + idx
@@ -786,7 +871,7 @@ def insert_tactics(
             )
             tactic_ids.append(tactic_id)
         conn.execute("COMMIT")
-    except Exception:  # noqa: BLE001
+    except Exception:
         conn.execute("ROLLBACK")
         raise
     return tactic_ids
@@ -799,9 +884,7 @@ def insert_tactic_outcomes(
     rows_list = list(rows)
     if not rows_list:
         return
-    start_row = conn.execute(
-        "SELECT COALESCE(MAX(outcome_id), 0) FROM tactic_outcomes"
-    ).fetchone()
+    start_row = conn.execute("SELECT COALESCE(MAX(outcome_id), 0) FROM tactic_outcomes").fetchone()
     start_id = int(start_row[0]) if start_row else 0
     conn.execute("BEGIN TRANSACTION")
     try:
@@ -822,7 +905,7 @@ def insert_tactic_outcomes(
             ],
         )
         conn.execute("COMMIT")
-    except Exception:  # noqa: BLE001
+    except Exception:
         conn.execute("ROLLBACK")
         raise
 
@@ -871,7 +954,7 @@ def record_training_attempt(
             ),
         )
         conn.execute("COMMIT")
-    except Exception:  # noqa: BLE001
+    except Exception:
         conn.execute("ROLLBACK")
         raise
     return attempt_id
@@ -895,14 +978,15 @@ def upsert_tactic_with_outcome(
     conn.execute("BEGIN TRANSACTION")
     try:
         conn.execute(
-            "DELETE FROM tactic_outcomes WHERE tactic_id IN (SELECT tactic_id FROM tactics WHERE position_id = ?)",
+            """
+            DELETE FROM tactic_outcomes
+            WHERE tactic_id IN (SELECT tactic_id FROM tactics WHERE position_id = ?)
+            """,
             [position_id],
         )
         conn.execute("DELETE FROM tactics WHERE position_id = ?", [position_id])
 
-        tactic_row_id = conn.execute(
-            "SELECT COALESCE(MAX(tactic_id), 0) FROM tactics"
-        ).fetchone()
+        tactic_row_id = conn.execute("SELECT COALESCE(MAX(tactic_id), 0) FROM tactics").fetchone()
         tactic_id = (int(tactic_row_id[0]) if tactic_row_id else 0) + 1
         conn.execute(
             """
@@ -949,16 +1033,14 @@ def upsert_tactic_with_outcome(
             ),
         )
         conn.execute("COMMIT")
-    except Exception:  # noqa: BLE001
+    except Exception:
         conn.execute("ROLLBACK")
         raise
     return tactic_id
 
 
 def write_metrics_version(conn: duckdb.DuckDBPyConnection) -> int:
-    conn.execute(
-        "UPDATE metrics_version SET version = version + 1, updated_at = CURRENT_TIMESTAMP"
-    )
+    conn.execute("UPDATE metrics_version SET version = version + 1, updated_at = CURRENT_TIMESTAMP")
     version_row = conn.execute("SELECT version FROM metrics_version").fetchone()
     return int(version_row[0]) if version_row else 0
 
@@ -1021,7 +1103,10 @@ def update_metrics_summary(conn: duckdb.DuckDBPyConnection) -> None:
                 END AS rating_bucket,
                 p.game_id AS game_id,
                 r.last_timestamp_ms AS last_timestamp_ms,
-                CAST(date_trunc('day', to_timestamp(r.last_timestamp_ms / 1000)) AS DATE) AS trend_date
+                CAST(
+                    date_trunc('day', to_timestamp(r.last_timestamp_ms / 1000))
+                    AS DATE
+                ) AS trend_date
             FROM tactics t
             LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
             LEFT JOIN positions p ON p.position_id = t.position_id
@@ -1325,7 +1410,7 @@ def _rows_to_dicts(
     result: duckdb.DuckDBPyConnection | duckdb.DuckDBPyRelation,
 ) -> list[dict[str, object]]:
     columns = [desc[0] for desc in result.description]
-    return [dict(zip(columns, row)) for row in result.fetchall()]
+    return [dict(zip(columns, row, strict=True)) for row in result.fetchall()]
 
 
 def _normalize_filter(value: str | None) -> str | None:
@@ -1346,9 +1431,7 @@ def _append_date_range_filters(
 ) -> None:
     """Append start/end date filters for a timestamp column using DATE casting."""
     if start_date:
-        start_date_value = (
-            start_date.date() if isinstance(start_date, datetime) else start_date
-        )
+        start_date_value = start_date.date() if isinstance(start_date, datetime) else start_date
         conditions.append(f"CAST({column} AS DATE) >= ?")
         params.append(start_date_value)
     if end_date:
@@ -1357,20 +1440,79 @@ def _append_date_range_filters(
         params.append(end_date_value)
 
 
+def _append_optional_filter(
+    conditions: list[str],
+    params: list[object],
+    clause: str,
+    value: object | None,
+) -> None:
+    if value is None:
+        return
+    conditions.append(clause)
+    params.append(value)
+
+
+def _build_trend_date_filters(
+    start_date: datetime | None,
+    end_date: datetime | None,
+    params: list[object],
+) -> list[str]:
+    date_filters: list[str] = []
+    if start_date:
+        date_filters.append("trend_date >= ?")
+        params.append(start_date)
+    if end_date:
+        date_filters.append("trend_date <= ?")
+        params.append(end_date)
+    return date_filters
+
+
+def _build_metrics_filters(
+    source: str | None,
+    motif: str | None,
+    rating_bucket: str | None,
+    time_control: str | None,
+    start_date: datetime | None,
+    end_date: datetime | None,
+) -> tuple[str, list[object]]:
+    normalized_motif = _normalize_filter(motif)
+    normalized_rating = _normalize_filter(rating_bucket)
+    normalized_time = _normalize_filter(time_control)
+    params: list[object] = []
+    conditions: list[str] = []
+    _append_optional_filter(conditions, params, "source = ?", source)
+    _append_optional_filter(conditions, params, "motif = ?", normalized_motif)
+    _append_optional_filter(
+        conditions,
+        params,
+        "rating_bucket = ?",
+        normalized_rating,
+    )
+    _append_optional_filter(
+        conditions,
+        params,
+        "COALESCE(time_control, 'unknown') = ?",
+        normalized_time,
+    )
+    date_filters = _build_trend_date_filters(start_date, end_date, params)
+    if date_filters:
+        conditions.append(f"(metric_type != 'trend' OR ({' AND '.join(date_filters)}))")
+    where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
+    return where_clause, params
+
+
+_RATING_BUCKET_CLAUSES = {
+    "unknown": "r.user_rating IS NULL",
+    "<1200": "r.user_rating IS NOT NULL AND r.user_rating < 1200",
+    "1200-1399": "r.user_rating >= 1200 AND r.user_rating < 1400",
+    "1400-1599": "r.user_rating >= 1400 AND r.user_rating < 1600",
+    "1600-1799": "r.user_rating >= 1600 AND r.user_rating < 1800",
+    "1800+": "r.user_rating >= 1800",
+}
+
+
 def _rating_bucket_clause(bucket: str) -> str:
-    if bucket == "unknown":
-        return "r.user_rating IS NULL"
-    if bucket == "<1200":
-        return "r.user_rating IS NOT NULL AND r.user_rating < 1200"
-    if bucket == "1200-1399":
-        return "r.user_rating >= 1200 AND r.user_rating < 1400"
-    if bucket == "1400-1599":
-        return "r.user_rating >= 1400 AND r.user_rating < 1600"
-    if bucket == "1600-1799":
-        return "r.user_rating >= 1600 AND r.user_rating < 1800"
-    if bucket == "1800+":
-        return "r.user_rating >= 1800"
-    return "1 = 1"
+    return _RATING_BUCKET_CLAUSES.get(bucket, "1 = 1")
 
 
 def fetch_metrics(
@@ -1382,38 +1524,16 @@ def fetch_metrics(
     start_date: datetime | None = None,
     end_date: datetime | None = None,
 ) -> list[dict[str, object]]:
-    normalized_motif = _normalize_filter(motif)
-    normalized_rating = _normalize_filter(rating_bucket)
-    normalized_time = _normalize_filter(time_control)
-
-    query = "SELECT * FROM metrics_summary"
-    params: list[object] = []
-    conditions: list[str] = []
-    if source:
-        conditions.append("source = ?")
-        params.append(source)
-    if normalized_motif:
-        conditions.append("motif = ?")
-        params.append(normalized_motif)
-    if normalized_rating:
-        conditions.append("rating_bucket = ?")
-        params.append(normalized_rating)
-    if normalized_time:
-        conditions.append("COALESCE(time_control, 'unknown') = ?")
-        params.append(normalized_time)
-    date_filters: list[str] = []
-    if start_date:
-        date_filters.append("trend_date >= ?")
-        params.append(start_date)
-    if end_date:
-        date_filters.append("trend_date <= ?")
-        params.append(end_date)
-    if date_filters:
-        conditions.append(f"(metric_type != 'trend' OR ({' AND '.join(date_filters)}))")
-    if conditions:
-        query += " WHERE " + " AND ".join(conditions)
-    result = conn.execute(query, params)
-    return _rows_to_dicts(result)
+    where_clause, params = _build_metrics_filters(
+        source,
+        motif,
+        rating_bucket,
+        time_control,
+        start_date,
+        end_date,
+    )
+    query = "SELECT * FROM metrics_summary" + where_clause
+    return _rows_to_dicts(conn.execute(query, params))
 
 
 def fetch_recent_games(
@@ -1426,6 +1546,26 @@ def fetch_recent_games(
     end_date: datetime | None = None,
     user: str | None = None,
 ) -> list[dict[str, object]]:
+    final_query, params = _build_recent_games_query(
+        limit,
+        source,
+        rating_bucket,
+        time_control,
+        start_date,
+        end_date,
+    )
+    rows = _rows_to_dicts(conn.execute(final_query, params))
+    return [_format_recent_game_row(row, user) for row in rows]
+
+
+def _build_recent_games_query(
+    limit: int,
+    source: str | None,
+    rating_bucket: str | None,
+    time_control: str | None,
+    start_date: datetime | None,
+    end_date: datetime | None,
+) -> tuple[str, list[object]]:
     normalized_rating = _normalize_filter(rating_bucket)
     normalized_time = _normalize_filter(time_control)
     query = """
@@ -1470,74 +1610,102 @@ def fetch_recent_games(
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
     query += "\n        )\n    "
-
     if source:
-        filtered_conditions = " WHERE source = ?"
         params.append(source)
         final_query = (
             query
-            + f"SELECT * FROM filtered{filtered_conditions} ORDER BY last_timestamp_ms DESC, game_id LIMIT ?"
+            + "SELECT * FROM filtered WHERE source = ? "
+            + "ORDER BY last_timestamp_ms DESC, game_id LIMIT ?"
         )
         params.append(limit)
-    else:
-        final_query = (
-            query
-            + """
-            , ranked AS (
-                SELECT
-                    *,
-                    ROW_NUMBER() OVER (
-                        PARTITION BY source
-                        ORDER BY last_timestamp_ms DESC
-                    ) AS source_rank
-                FROM filtered
-            )
-            SELECT * EXCLUDE (source_rank)
-            FROM ranked
-            WHERE source_rank <= ?
-            ORDER BY last_timestamp_ms DESC, game_id
-            """
+        return final_query, params
+    final_query = (
+        query
+        + """
+        , ranked AS (
+            SELECT
+                *,
+                ROW_NUMBER() OVER (
+                    PARTITION BY source
+                    ORDER BY last_timestamp_ms DESC
+                ) AS source_rank
+            FROM filtered
         )
-        params.append(limit)
+        SELECT * EXCLUDE (source_rank)
+        FROM ranked
+        WHERE source_rank <= ?
+        ORDER BY last_timestamp_ms DESC, game_id
+        """
+    )
+    params.append(limit)
+    return final_query, params
 
-    rows = _rows_to_dicts(conn.execute(final_query, params))
-    return [_format_recent_game_row(row, user) for row in rows]
+
+def _resolve_opponent_and_color(
+    user_lower: str,
+    white: object | None,
+    black: object | None,
+) -> tuple[object | None, str | None]:
+    white_lower = _normalize_player_name(white)
+    black_lower = _normalize_player_name(black)
+    if _is_user_player(white_lower, user_lower):
+        return black, "white"
+    if _is_user_player(black_lower, user_lower):
+        return white, "black"
+    return _fallback_opponent(white, black), None
 
 
-def _format_recent_game_row(
-    row: Mapping[str, object], user: str | None
-) -> dict[str, object]:
-    raw_user = user or str(row.get("user") or "")
+def _normalize_player_name(value: object | None) -> str:
+    return str(value or "").lower()
+
+
+def _is_user_player(player: str, user_lower: str) -> bool:
+    return bool(player) and player == user_lower
+
+
+def _fallback_opponent(white: object | None, black: object | None) -> object | None:
+    return black or white
+
+
+def _timestamp_ms_to_iso(value: object) -> str | None:
+    if isinstance(value, (int, float)) and int(value) > 0:
+        return datetime.fromtimestamp(int(value) / 1000, tz=UTC).isoformat()
+    return None
+
+
+def _resolve_played_at(
+    metadata: Mapping[str, object],
+    row: Mapping[str, object],
+) -> str | None:
+    played_at = _timestamp_ms_to_iso(metadata.get("start_timestamp_ms"))
+    if played_at:
+        return played_at
+    return _timestamp_ms_to_iso(row.get("last_timestamp_ms"))
+
+
+def _format_recent_game_row(row: Mapping[str, object], user: str | None) -> dict[str, object]:
+    raw_user = _resolve_recent_game_user(row, user)
     metadata = BaseDbStore.extract_pgn_metadata(str(row.get("pgn") or ""), raw_user)
-    user_lower = raw_user.lower()
-    white = metadata.get("white_player")
-    black = metadata.get("black_player")
-    white_lower = str(white or "").lower()
-    black_lower = str(black or "").lower()
-    opponent = None
-    user_color: str | None = None
-    if white_lower and white_lower == user_lower:
-        opponent = black
-        user_color = "white"
-    elif black_lower and black_lower == user_lower:
-        opponent = white
-        user_color = "black"
-    else:
-        opponent = black or white
+    opponent, user_color = _resolve_opponent_and_color(
+        raw_user.lower(),
+        metadata.get("white_player"),
+        metadata.get("black_player"),
+    )
+    played_at = _resolve_played_at(metadata, row)
+    return _recent_game_payload(row, metadata, opponent, user_color, played_at)
 
-    timestamp_ms = metadata.get("start_timestamp_ms")
-    played_at = None
-    if isinstance(timestamp_ms, (int, float)) and int(timestamp_ms) > 0:
-        played_at = datetime.fromtimestamp(
-            int(timestamp_ms) / 1000, tz=timezone.utc
-        ).isoformat()
-    else:
-        fallback_ms = row.get("last_timestamp_ms")
-        if isinstance(fallback_ms, (int, float)) and int(fallback_ms) > 0:
-            played_at = datetime.fromtimestamp(
-                int(fallback_ms) / 1000, tz=timezone.utc
-            ).isoformat()
 
+def _resolve_recent_game_user(row: Mapping[str, object], user: str | None) -> str:
+    return user or str(row.get("user") or "")
+
+
+def _recent_game_payload(
+    row: Mapping[str, object],
+    metadata: Mapping[str, object],
+    opponent: object | None,
+    user_color: str | None,
+    played_at: str | None,
+) -> dict[str, object]:
     return {
         "game_id": str(row.get("game_id") or ""),
         "source": row.get("source"),
@@ -1613,6 +1781,27 @@ def fetch_recent_tactics(
     start_date: datetime | None = None,
     end_date: datetime | None = None,
 ) -> list[dict[str, object]]:
+    query, params = _build_recent_tactics_query(
+        limit,
+        source,
+        motif,
+        rating_bucket,
+        time_control,
+        start_date,
+        end_date,
+    )
+    return _rows_to_dicts(conn.execute(query, params))
+
+
+def _build_recent_tactics_query(
+    limit: int,
+    source: str | None,
+    motif: str | None,
+    rating_bucket: str | None,
+    time_control: str | None,
+    start_date: datetime | None,
+    end_date: datetime | None,
+) -> tuple[str, list[object]]:
     normalized_motif = _normalize_filter(motif)
     normalized_rating = _normalize_filter(rating_bucket)
     normalized_time = _normalize_filter(time_control)
@@ -1638,15 +1827,41 @@ def fetch_recent_tactics(
     """
     params: list[object] = []
     conditions: list[str] = []
-    if source:
-        conditions.append("p.source = ?")
-        params.append(source)
-    if normalized_motif:
-        conditions.append("t.motif = ?")
-        params.append(normalized_motif)
-    if normalized_time:
-        conditions.append("COALESCE(r.time_control, 'unknown') = ?")
-        params.append(normalized_time)
+    _append_recent_tactics_filters(
+        conditions,
+        params,
+        source,
+        normalized_motif,
+        normalized_time,
+        normalized_rating,
+        start_date,
+        end_date,
+    )
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    query += " ORDER BY t.created_at DESC LIMIT ?"
+    params.append(limit)
+    return query, params
+
+
+def _append_recent_tactics_filters(
+    conditions: list[str],
+    params: list[object],
+    source: str | None,
+    normalized_motif: str | None,
+    normalized_time: str | None,
+    normalized_rating: str | None,
+    start_date: datetime | None,
+    end_date: datetime | None,
+) -> None:
+    _append_optional_filter(conditions, params, "p.source = ?", source)
+    _append_optional_filter(conditions, params, "t.motif = ?", normalized_motif)
+    _append_optional_filter(
+        conditions,
+        params,
+        "COALESCE(r.time_control, 'unknown') = ?",
+        normalized_time,
+    )
     if normalized_rating:
         conditions.append(_rating_bucket_clause(normalized_rating))
     _append_date_range_filters(
@@ -1656,21 +1871,10 @@ def fetch_recent_tactics(
         end_date,
         "t.created_at",
     )
-    if conditions:
-        query += " WHERE " + " AND ".join(conditions)
-    query += " ORDER BY t.created_at DESC LIMIT ?"
-    params.append(limit)
-    result = conn.execute(query, params)
-    return _rows_to_dicts(result)
 
 
-def fetch_game_detail(
-    conn: duckdb.DuckDBPyConnection,
-    game_id: str,
-    user: str,
-    source: str | None = None,
-) -> dict[str, object]:
-    query = """
+def _latest_pgns_query() -> str:
+    return """
         WITH latest_pgns AS (
             SELECT * EXCLUDE (rn)
             FROM (
@@ -1688,49 +1892,39 @@ def fetch_game_detail(
         FROM latest_pgns
         WHERE game_id = ?
     """
+
+
+def _row_to_dict(
+    result: duckdb.DuckDBPyConnection | duckdb.DuckDBPyRelation,
+    row: tuple[object, ...],
+) -> dict[str, object]:
+    columns = [desc[0] for desc in result.description]
+    return dict(zip(columns, row, strict=True))
+
+
+def _fetch_latest_pgn_row(
+    conn: duckdb.DuckDBPyConnection,
+    game_id: str,
+    source: str | None,
+) -> tuple[tuple[object, ...] | None, duckdb.DuckDBPyConnection]:
+    query = _latest_pgns_query()
     params: list[object] = [game_id]
     if source:
         query += " AND source = ?"
         params.append(source)
     result = conn.execute(query, params)
     row = result.fetchone()
-    if not row and source:
-        fallback_result = conn.execute(
-            """
-            WITH latest_pgns AS (
-                SELECT * EXCLUDE (rn)
-                FROM (
-                    SELECT
-                        *,
-                        ROW_NUMBER() OVER (
-                            PARTITION BY game_id, source
-                            ORDER BY pgn_version DESC
-                        ) AS rn
-                    FROM raw_pgns
-                )
-                WHERE rn = 1
-            )
-            SELECT *
-            FROM latest_pgns
-            WHERE game_id = ?
-            """,
-            [game_id],
-        )
-        row = fallback_result.fetchone()
-        if row:
-            result = fallback_result
-    if not row:
-        return {
-            "game_id": game_id,
-            "source": source,
-            "pgn": None,
-            "metadata": {},
-            "analysis": [],
-        }
-    columns = [desc[0] for desc in result.description]
-    pgn_row = dict(zip(columns, row))
-    pgn = pgn_row.get("pgn")
-    metadata = BaseDbStore.extract_pgn_metadata(pgn or "", user)
+    if row or not source:
+        return row, result
+    fallback_result = conn.execute(_latest_pgns_query(), [game_id])
+    return fallback_result.fetchone(), fallback_result
+
+
+def _fetch_game_analysis_rows(
+    conn: duckdb.DuckDBPyConnection,
+    game_id: str,
+    source: str | None,
+) -> list[dict[str, object]]:
     analysis_query = """
         SELECT
             t.tactic_id,
@@ -1762,7 +1956,29 @@ def fetch_game_detail(
         analysis_query += " AND p.source = ?"
         analysis_params.append(source)
     analysis_query += " ORDER BY p.ply ASC, t.created_at ASC"
-    analysis_rows = _rows_to_dicts(conn.execute(analysis_query, analysis_params))
+    return _rows_to_dicts(conn.execute(analysis_query, analysis_params))
+
+
+def fetch_game_detail(
+    conn: duckdb.DuckDBPyConnection,
+    game_id: str,
+    user: str,
+    source: str | None = None,
+) -> dict[str, object]:
+    row, result = _fetch_latest_pgn_row(conn, game_id, source)
+    if not row:
+        return {
+            "game_id": game_id,
+            "source": source,
+            "pgn": None,
+            "metadata": {},
+            "analysis": [],
+        }
+    pgn_row = _row_to_dict(result, row)
+    pgn_value = pgn_row.get("pgn")
+    pgn = str(pgn_value) if pgn_value is not None else None
+    metadata = BaseDbStore.extract_pgn_metadata(pgn or "", user)
+    analysis_rows = _fetch_game_analysis_rows(conn, game_id, source)
     return {
         "game_id": game_id,
         "source": pgn_row.get("source") or source,
@@ -1809,6 +2025,95 @@ def fetch_practice_tactic(
     return rows[0] if rows else None
 
 
+def _require_practice_tactic(
+    conn: duckdb.DuckDBPyConnection,
+    tactic_id: int,
+    position_id: int,
+) -> dict[str, object]:
+    tactic = fetch_practice_tactic(conn, tactic_id)
+    if not tactic or tactic.get("position_id") != position_id:
+        raise ValueError("Tactic not found for position")
+    return tactic
+
+
+def _normalize_attempted_uci(attempted_uci: str) -> str:
+    trimmed = attempted_uci.strip()
+    if not trimmed:
+        raise ValueError("attempted_uci is required")
+    return trimmed
+
+
+def _normalize_best_uci(tactic: Mapping[str, object]) -> str:
+    best_uci_raw = tactic.get("best_uci")
+    return str(best_uci_raw).strip() if best_uci_raw is not None else ""
+
+
+def _resolve_practice_explanation(
+    tactic: Mapping[str, object],
+    best_uci: str,
+) -> tuple[str | None, str | None]:
+    fen = _string_or_none(tactic.get("fen"))
+    motif = _string_or_none(tactic.get("motif"))
+    best_san = _string_or_none(tactic.get("best_san"))
+    explanation = _string_or_none(tactic.get("explanation"))
+    generated_san, generated_explanation = format_tactic_explanation(fen, best_uci, motif)
+    return _resolve_explanation(best_san, explanation, generated_san, generated_explanation)
+
+
+def _string_or_none(value: object) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _resolve_explanation(
+    best_san: str | None,
+    explanation: str | None,
+    generated_san: str | None,
+    generated_explanation: str | None,
+) -> tuple[str | None, str | None]:
+    if not best_san:
+        best_san = generated_san or None
+    if not explanation:
+        explanation = generated_explanation or None
+    return best_san, explanation
+
+
+def _build_practice_attempt_payload(
+    tactic: Mapping[str, object],
+    tactic_id: int,
+    position_id: int,
+    attempted_uci: str,
+    best_uci: str,
+    correct: bool,
+    latency_ms: int | None,
+) -> dict[str, object]:
+    return {
+        "tactic_id": tactic_id,
+        "position_id": position_id,
+        "source": tactic.get("source"),
+        "attempted_uci": attempted_uci,
+        "correct": correct,
+        "success": correct,
+        "best_uci": best_uci,
+        "motif": tactic.get("motif", "unknown"),
+        "severity": tactic.get("severity", 0.0),
+        "eval_delta": tactic.get("eval_delta", 0) or 0,
+        "latency_ms": latency_ms,
+    }
+
+
+def _build_practice_message(
+    correct: bool,
+    tactic: Mapping[str, object],
+    best_uci: str,
+) -> str:
+    if correct:
+        return f"Correct! {tactic.get('motif', 'tactic')} found."
+    return f"Missed it. Best move was {best_uci or '--'}."
+
+
 def grade_practice_attempt(
     conn: duckdb.DuckDBPyConnection,
     tactic_id: int,
@@ -1816,49 +2121,22 @@ def grade_practice_attempt(
     attempted_uci: str,
     latency_ms: int | None = None,
 ) -> dict[str, object]:
-    tactic = fetch_practice_tactic(conn, tactic_id)
-    if not tactic or tactic.get("position_id") != position_id:
-        raise ValueError("Tactic not found for position")
-    trimmed_attempt = attempted_uci.strip()
-    if not trimmed_attempt:
-        raise ValueError("attempted_uci is required")
-    best_uci_raw = tactic.get("best_uci")
-    best_uci = str(best_uci_raw).strip() if best_uci_raw is not None else ""
+    tactic = _require_practice_tactic(conn, tactic_id, position_id)
+    trimmed_attempt = _normalize_attempted_uci(attempted_uci)
+    best_uci = _normalize_best_uci(tactic)
     correct = bool(best_uci) and trimmed_attempt.lower() == best_uci.lower()
-    fen_value = tactic.get("fen")
-    fen = str(fen_value) if fen_value is not None else None
-    motif_value = tactic.get("motif")
-    motif = str(motif_value) if motif_value is not None else None
-    best_san = tactic.get("best_san")
-    explanation = tactic.get("explanation")
-    generated_san, generated_explanation = format_tactic_explanation(
-        fen, best_uci, motif
+    best_san, explanation = _resolve_practice_explanation(tactic, best_uci)
+    attempt_payload = _build_practice_attempt_payload(
+        tactic,
+        tactic_id,
+        position_id,
+        trimmed_attempt,
+        best_uci,
+        correct,
+        latency_ms,
     )
-    if not best_san:
-        best_san = generated_san
-    if not explanation:
-        explanation = generated_explanation
-    attempt_id = record_training_attempt(
-        conn,
-        {
-            "tactic_id": tactic_id,
-            "position_id": position_id,
-            "source": tactic.get("source"),
-            "attempted_uci": trimmed_attempt,
-            "correct": correct,
-            "success": correct,
-            "best_uci": best_uci,
-            "motif": tactic.get("motif", "unknown"),
-            "severity": tactic.get("severity", 0.0),
-            "eval_delta": tactic.get("eval_delta", 0) or 0,
-            "latency_ms": latency_ms,
-        },
-    )
-    message = (
-        f"Correct! {tactic.get('motif', 'tactic')} found."
-        if correct
-        else f"Missed it. Best move was {best_uci or '--'}."
-    )
+    attempt_id = record_training_attempt(conn, attempt_payload)
+    message = _build_practice_message(correct, tactic, best_uci)
     return {
         "attempt_id": attempt_id,
         "tactic_id": tactic_id,

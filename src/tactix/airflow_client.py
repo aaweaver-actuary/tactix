@@ -8,10 +8,31 @@ from tactix.config import Settings
 
 
 def _airflow_base_url(settings: Settings) -> str:
+    """Return the Airflow base URL without any trailing slash.
+
+    Args:
+        settings: Application settings containing `airflow_base_url`.
+
+    Returns:
+        The base URL string with trailing "/" characters removed.
+    """
     return settings.airflow_base_url.rstrip("/")
 
 
 def _airflow_auth(settings: Settings) -> tuple[str, str] | None:
+    """
+    Retrieve Airflow authentication credentials from the provided settings.
+
+    Parameters
+    ----------
+    settings : Settings
+        Application settings containing Airflow credentials.
+
+    Returns
+    -------
+    tuple[str, str] | None
+        A tuple of (username, password) if both are set; otherwise, None.
+    """
     if not settings.airflow_username or not settings.airflow_password:
         return None
     return (settings.airflow_username, settings.airflow_password)
@@ -20,9 +41,8 @@ def _airflow_auth(settings: Settings) -> tuple[str, str] | None:
 def _raise_for_status(response: requests.Response, context: str) -> None:
     if response.ok:
         return
-    raise RuntimeError(
-        f"{context}: {response.status_code} {response.text.strip()}".strip()
-    )
+    message = f"{context}: {response.status_code} {response.text.strip()}"
+    raise RuntimeError(message.strip())
 
 
 def _request_json(

@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import logging
 import re
-import time
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from io import StringIO
 from pathlib import Path
 
 import chess.pgn
+
+from tactix.utils import now
 
 SITE_PATTERNS = [
     re.compile(r"lichess\.org/([A-Za-z0-9]{8})"),
@@ -21,10 +22,6 @@ FIXTURE_SPLIT_RE = re.compile(r"\n{2,}(?=\[Event )")
 
 def split_pgn_chunks(text: str) -> list[str]:
     return [chunk.strip() for chunk in FIXTURE_SPLIT_RE.split(text) if chunk.strip()]
-
-
-def _now_ms() -> int:
-    return int(time.time() * 1000)
 
 
 def _should_include_fixture(
@@ -69,27 +66,38 @@ def load_fixture_games(
     if not path.exists():
         active_logger.warning(missing_message, path)
         return []
-
     chunks = split_pgn_chunks(path.read_text())
+    games = _filter_fixture_games(chunks, user, source, since_ms, until_ms)
+    active_logger.info(loaded_message, len(games), path)
+    return games
+
+
+def _filter_fixture_games(
+    chunks: list[str],
+    user: str,
+    source: str,
+    since_ms: int,
+    until_ms: int | None,
+) -> list[dict[str, object]]:
     games: list[dict[str, object]] = []
     for raw in chunks:
         last_ts = extract_last_timestamp_ms(raw)
         if not _should_include_fixture(last_ts, since_ms, until_ms):
             continue
         games.append(_fixture_payload(raw, user, source, last_ts))
-
-    active_logger.info(loaded_message, len(games), path)
     return games
 
 
 def extract_game_id(pgn: str) -> str:
     game = chess.pgn.read_game(StringIO(pgn))
-    if game:
-        site = game.headers.get("Site", "")
-        match = _match_site_id(site)
-        if match:
-            return match
-    return str(abs(hash(pgn)))
+    return _extract_site_id(game) or str(abs(hash(pgn)))
+
+
+def _extract_site_id(game: chess.pgn.Game | None) -> str | None:
+    if not game:
+        return None
+    site = game.headers.get("Site", "")
+    return _match_site_id(site)
 
 
 def _match_site_id(site: str) -> str | None:
@@ -107,13 +115,10 @@ def _match_site_id(site: str) -> str | None:
 def extract_last_timestamp_ms(pgn: str) -> int:
     game = chess.pgn.read_game(StringIO(pgn))
     if not game:
-        return _now_ms()
+        return now()
     utc_date = game.headers.get("UTCDate")
     utc_time = game.headers.get("UTCTime")
-    parsed = _parse_utc_start_ms(utc_date, utc_time)
-    if parsed is None:
-        return _now_ms()
-    return parsed
+    return _parse_utc_start_ms(utc_date, utc_time) or now()
 
 
 def _parse_elo(raw: str | None) -> int | None:
@@ -195,7 +200,13 @@ def extract_pgn_metadata(pgn: str, user: str) -> dict[str, object]:
     game = chess.pgn.read_game(StringIO(pgn))
     if not game or getattr(game, "errors", None):
         return _empty_pgn_metadata()
-    headers = game.headers
+    return _extract_metadata_from_headers(game.headers, user)
+
+
+def _extract_metadata_from_headers(
+    headers: Mapping[str, str],
+    user: str,
+) -> dict[str, object]:
     time_control = _normalize_header_value(headers.get("TimeControl"))
     white = _normalize_header_value(headers.get("White", ""))
     black = _normalize_header_value(headers.get("Black", ""))

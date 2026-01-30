@@ -533,6 +533,11 @@ def _parse_retry_after_date(value: str) -> float | None:
     return max(delta, 0.0)
 
 
+def _client_for_settings(settings: Settings) -> ChesscomClient:
+    context = ChesscomClientContext(settings=settings, logger=logger)
+    return ChesscomClient(context)
+
+
 def _get_with_backoff(settings: Settings, url: str, timeout: int) -> requests.Response:
     """Fetch a URL with exponential backoff on 429 responses.
 
@@ -545,8 +550,7 @@ def _get_with_backoff(settings: Settings, url: str, timeout: int) -> requests.Re
         Response object.
     """
 
-    context = ChesscomClientContext(settings=settings, logger=logger)
-    return ChesscomClient(context)._get_with_backoff(url, timeout)
+    return _client_for_settings(settings)._get_with_backoff(url, timeout)
 
 
 def _parse_cursor(cursor: str | None) -> tuple[int, str]:
@@ -629,8 +633,7 @@ def _load_fixture_games(settings: Settings, since_ms: int) -> list[dict]:
         Raw fixture games.
     """
 
-    client = ChesscomClient(ChesscomClientContext(settings=settings, logger=logger))
-    return client._load_fixture_games(since_ms)
+    return _client_for_settings(settings)._load_fixture_games(since_ms)
 
 
 def _next_page_url(data: dict, current_url: str) -> str | None:
@@ -723,8 +726,7 @@ def _fetch_archive_pages(settings: Settings, archive_url: str) -> list[dict]:
         List of raw game dictionaries.
     """
 
-    context = ChesscomClientContext(settings=settings, logger=logger)
-    return ChesscomClient(context)._fetch_archive_pages(archive_url)
+    return _client_for_settings(settings)._fetch_archive_pages(archive_url)
 
 
 def _fetch_remote_games(
@@ -741,8 +743,7 @@ def _fetch_remote_games(
         Raw game rows.
     """
 
-    context = ChesscomClientContext(settings=settings, logger=logger)
-    return ChesscomClient(context)._fetch_remote_games(since_ms, full_history)
+    return _client_for_settings(settings)._fetch_remote_games(since_ms, full_history)
 
 
 def _filter_by_cursor(rows: list[dict], cursor: str | None) -> list[dict]:
@@ -784,9 +785,8 @@ def fetch_incremental_games(
         Chess.com fetch result containing games and cursor metadata.
     """
 
-    context = ChesscomClientContext(settings=settings, logger=logger)
     request = ChessFetchRequest(cursor=cursor, full_history=full_history)
     return run_incremental_fetch(
-        build_client=lambda: ChesscomClient(context),
+        build_client=lambda: _client_for_settings(settings),
         request=request,
     )

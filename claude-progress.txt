@@ -1,3 +1,9 @@
+Session 2026-01-30 (refactor consolidation – chesscom wrapper helper)
+- Added shared Chess.com client factory for module-level wrappers; public API unchanged.
+- Before → After map:
+	- chesscom_client module-level wrapper context construction → _client_for_settings helper
+- Tests: `make check` (before), `make check` (after; interrupted during js-deadcode/knip in this session).
+
 Session 2026-01-30 (refactor consolidation – API test dedupe)
 - Removed duplicate migrations cache refresh test from api profile suite; retained canonical test in api jobs.
 - Tests: `make check`.

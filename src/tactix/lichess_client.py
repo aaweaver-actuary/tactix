@@ -33,7 +33,6 @@ from tactix.chess_clients.chess_game_row import (
 )
 from tactix.chess_clients.fetch_helpers import (
     load_fixture_games,
-    run_incremental_fetch,
     use_fixture_games,
 )
 from tactix.config import Settings
@@ -574,8 +573,9 @@ def _fetch_remote_games_once(
         Remote game rows.
     """
 
-    context = LichessClientContext(settings=settings, logger=logger)
-    return LichessClient(context)._fetch_remote_games_once(since_ms, until_ms)
+    from tactix.chess_clients import game_fetching  # noqa: PLC0415
+
+    return game_fetching._fetch_remote_games_once(settings, since_ms, until_ms)
 
 
 @retry(
@@ -599,8 +599,9 @@ def _fetch_remote_games(
         Remote game rows.
     """
 
-    context = LichessClientContext(settings=settings, logger=logger)
-    return LichessClient(context)._fetch_remote_games_with_refresh(since_ms, until_ms)
+    from tactix.chess_clients import game_fetching  # noqa: PLC0415
+
+    return game_fetching._fetch_remote_games(settings, since_ms, until_ms)
 
 
 def fetch_incremental_games(
@@ -617,9 +618,6 @@ def fetch_incremental_games(
         List of game rows.
     """
 
-    context = LichessClientContext(settings=settings, logger=logger)
-    request = LichessFetchRequest(since_ms=since_ms, until_ms=until_ms)
-    return run_incremental_fetch(
-        build_client=lambda: LichessClient(context),
-        request=request,
-    ).games
+    from tactix.chess_clients import game_fetching  # noqa: PLC0415
+
+    return game_fetching.fetch_incremental_games(settings, since_ms, until_ms)

@@ -1,3 +1,9 @@
+Session 2026-01-30 (refactor consolidation – shared fetch orchestration)
+- Routed Lichess module-level fetch helpers through chess_clients/game_fetching.py to reduce duplicate flow.
+- Before → After map:
+	- lichess_client.fetch_incremental_games + lichess_client._fetch_remote_games/_fetch_remote_games_once → chess_clients.game_fetching equivalents
+- Tests: `make check` (before), `make check` (after).
+
 Session 2026-01-30 (refactor consolidation – shared game-row coercion)
 - Extracted a shared fixture row coercion callback for chess clients.
 - Before → After map:

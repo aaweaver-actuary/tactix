@@ -1,3 +1,7 @@
+Session 2026-01-30 (refactor consolidation – API test dedupe)
+- Removed duplicate migrations cache refresh test from api profile suite; retained canonical test in api jobs.
+- Tests: `make check`.
+
 Session 2026-01-30 (refactor consolidation – normalized source helper)
 - Added shared normalized source helper and removed duplicate implementations in pipeline/analyzer.
 - Tests: `make check`.

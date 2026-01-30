@@ -5,6 +5,12 @@ Session 2026-01-29 (regression fix – failed_attempt outcomes)
 - Tests (targeted): `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_discovered_attack_classical.py::DiscoveredAttackClassicalTests::test_classical_discovered_attack_records_failed_attempt_outcome tests/test_discovered_check_blitz_low.py::DiscoveredCheckBlitzTests::test_blitz_discovered_check_records_failed_attempt_outcome tests/test_skewer_correspondence.py::SkewerCorrespondenceTests::test_correspondence_skewer_records_failed_attempt_outcome -q`.
 - Tests (full): `make check` (warnings: FastAPI on_event deprecation + pyo3 deprecation).
 
+Session 2026-01-29 (regression verification – features 001/016/028)
+- Feature 001 regression check failed: UI 500 errors loading BaseTable; `[data-testid="filter-source"]` missing. Failure screenshot: `verification/failed-regression-001-lichess-2026-01-25.png`.
+- Feature 016 regression check failed: same 500/BaseTable error and missing filter selector. Failure screenshot: `verification/failed-regression-016-auth-2026-01-29.png`.
+- Feature 028 regression check failed: same 500/BaseTable error and missing `h1` selector. Failure screenshot: `verification/failed-regression-028-practice-next-unseen-2026-01-29.png`.
+- Updated feature_list.json: features 001/016/028 set to passes=false.
+
 Session 2026-01-24:
 - Added initial backend skeleton (config, DuckDB schema helpers, Lichess fetcher, PGN position extractor, Stockfish wrapper, tactics analyzer, pipeline runner, FastAPI API, Airflow DAG stub).
 - Scaffolded React/Vite/Tailwind dashboard with live refresh + pipeline trigger and cache-bust indicator.

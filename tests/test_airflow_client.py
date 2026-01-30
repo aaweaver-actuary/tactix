@@ -57,13 +57,16 @@ def test_request_json_calls_requests() -> None:
 
 def test_trigger_and_fetch_dag_run_use_request_json() -> None:
     settings = _make_settings()
-    with patch(
-        "tactix.orchestrate_dag_run__airflow_trigger.fetch_json__airflow_api",
-        return_value={"ok": True},
-    ) as trigger_request, patch(
-        "tactix.fetch_dag_run__airflow_api.fetch_json__airflow_api",
-        return_value={"ok": True},
-    ) as fetch_request:
+    with (
+        patch(
+            "tactix.orchestrate_dag_run__airflow_trigger.fetch_json__airflow_api",
+            return_value={"ok": True},
+        ) as trigger_request,
+        patch(
+            "tactix.fetch_dag_run__airflow_api.fetch_json__airflow_api",
+            return_value={"ok": True},
+        ) as fetch_request,
+    ):
         orchestrate_dag_run__airflow_trigger(
             settings, "daily_game_sync", conf={"source": "lichess"}
         )

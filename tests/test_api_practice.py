@@ -12,9 +12,9 @@ def test_practice_queue_returns_items() -> None:
     sample = [{"tactic_id": 1, "position_id": 2, "source": "lichess"}]
 
     with (
-        patch("tactix.api.get_connection", return_value=MagicMock()),
-        patch("tactix.api.init_schema"),
-        patch("tactix.api.fetch_practice_queue", return_value=sample),
+        patch("tactix.get_practice_queue__api.get_connection", return_value=MagicMock()),
+        patch("tactix.get_practice_queue__api.init_schema"),
+        patch("tactix.get_practice_queue__api.fetch_practice_queue", return_value=sample),
     ):
         response = client.get(
             "/api/practice/queue?source=lichess&include_failed_attempt=1&limit=5",
@@ -33,9 +33,9 @@ def test_practice_next_returns_single_item() -> None:
     sample = [{"tactic_id": 9, "position_id": 10, "source": "lichess"}]
 
     with (
-        patch("tactix.api.get_connection", return_value=MagicMock()),
-        patch("tactix.api.init_schema"),
-        patch("tactix.api.fetch_practice_queue", return_value=sample),
+        patch("tactix.get_practice_next__api.get_connection", return_value=MagicMock()),
+        patch("tactix.get_practice_next__api.init_schema"),
+        patch("tactix.get_practice_next__api.fetch_practice_queue", return_value=sample),
     ):
         response = client.get(
             "/api/practice/next?source=lichess&include_failed_attempt=0",
@@ -58,10 +58,10 @@ def test_practice_attempt_includes_latency_and_errors() -> None:
     }
 
     with (
-        patch("tactix.api.get_connection", return_value=MagicMock()),
-        patch("tactix.api.init_schema"),
-        patch("tactix.api.time_module.time", return_value=10.0),
-        patch("tactix.api.grade_practice_attempt", return_value={"status": "ok"}) as grade,
+        patch("tactix.post_practice_attempt__api.get_connection", return_value=MagicMock()),
+        patch("tactix.post_practice_attempt__api.init_schema"),
+        patch("tactix.post_practice_attempt__api.time_module.time", return_value=10.0),
+        patch("tactix.post_practice_attempt__api.grade_practice_attempt", return_value={"status": "ok"}) as grade,
     ):
         response = client.post(
             "/api/practice/attempt",
@@ -74,9 +74,9 @@ def test_practice_attempt_includes_latency_and_errors() -> None:
     assert kwargs["latency_ms"] == 5000
 
     with (
-        patch("tactix.api.get_connection", return_value=MagicMock()),
-        patch("tactix.api.init_schema"),
-        patch("tactix.api.grade_practice_attempt", side_effect=ValueError("bad")),
+        patch("tactix.post_practice_attempt__api.get_connection", return_value=MagicMock()),
+        patch("tactix.post_practice_attempt__api.init_schema"),
+        patch("tactix.post_practice_attempt__api.grade_practice_attempt", side_effect=ValueError("bad")),
     ):
         error_response = client.post(
             "/api/practice/attempt",
@@ -92,9 +92,9 @@ def test_game_detail_missing_pgn_raises_404() -> None:
     token = get_settings().api_token
 
     with (
-        patch("tactix.api.get_connection", return_value=MagicMock()),
-        patch("tactix.api.init_schema"),
-        patch("tactix.api.fetch_game_detail", return_value={"pgn": ""}),
+        patch("tactix.get_game_detail__api.get_connection", return_value=MagicMock()),
+        patch("tactix.get_game_detail__api.init_schema"),
+        patch("tactix.get_game_detail__api.fetch_game_detail", return_value={"pgn": ""}),
     ):
         response = client.get(
             "/api/games/game-123?source=lichess",
@@ -110,9 +110,9 @@ def test_game_detail_returns_payload() -> None:
     payload = {"pgn": "1. e4 *", "game_id": "game-123"}
 
     with (
-        patch("tactix.api.get_connection", return_value=MagicMock()),
-        patch("tactix.api.init_schema"),
-        patch("tactix.api.fetch_game_detail", return_value=payload),
+        patch("tactix.get_game_detail__api.get_connection", return_value=MagicMock()),
+        patch("tactix.get_game_detail__api.init_schema"),
+        patch("tactix.get_game_detail__api.fetch_game_detail", return_value=payload),
     ):
         response = client.get(
             "/api/games/game-123?source=lichess",

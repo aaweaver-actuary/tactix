@@ -106,16 +106,19 @@ class ApiHelperTests(unittest.TestCase):
         queue: Queue[object] = Queue()
 
         with (
-            patch("tactix.api._airflow_state", side_effect=["running", "success"]),
-            patch("tactix.api.time_module.sleep"),
+            patch(
+                "tactix.wait_for_airflow_run__job_stream._airflow_state",
+                side_effect=["running", "success"],
+            ),
+            patch("tactix.wait_for_airflow_run__job_stream.time_module.sleep"),
         ):
             state = api._wait_for_airflow_run(settings, queue, "job", "run-1")
         self.assertEqual(state, "success")
 
         with (
-            patch("tactix.api._airflow_state", return_value="running"),
-            patch("tactix.api.time_module.time", side_effect=[0, 0, 2]),
-            patch("tactix.api.time_module.sleep"),
+            patch("tactix.wait_for_airflow_run__job_stream._airflow_state", return_value="running"),
+            patch("tactix.wait_for_airflow_run__job_stream.time_module.time", side_effect=[0, 0, 2]),
+            patch("tactix.wait_for_airflow_run__job_stream.time_module.sleep"),
         ):
             with self.assertRaises(TimeoutError):
                 api._wait_for_airflow_run(settings, Queue(), "job", "run-2")
@@ -132,20 +135,23 @@ class ApiHelperTests(unittest.TestCase):
             datetime(2024, 1, 2),
             None,
         )
-        with patch("tactix.api.time_module.time", return_value=0):
+        with (
+            patch("tactix.set_dashboard_cache__api_cache.time_module.time", return_value=0),
+            patch("tactix.get_cached_dashboard_payload__api_cache.time_module.time", return_value=0),
+        ):
             api._set_dashboard_cache(key, {"status": "ok"})
             cached = api._get_cached_dashboard_payload(key)
         self.assertEqual(cached, {"status": "ok"})
 
         with patch(
-            "tactix.api.time_module.time",
+            "tactix.get_cached_dashboard_payload__api_cache.time_module.time",
             return_value=api._DASHBOARD_CACHE_TTL_S + 1,
         ):
             expired = api._get_cached_dashboard_payload(key)
         self.assertIsNone(expired)
 
         api._clear_dashboard_cache()
-        with patch("tactix.api.time_module.time", return_value=0):
+        with patch("tactix.set_dashboard_cache__api_cache.time_module.time", return_value=0):
             for index in range(api._DASHBOARD_CACHE_MAX_ENTRIES + 1):
                 api._set_dashboard_cache(("key", index), {"index": index})
         self.assertEqual(len(api._DASHBOARD_CACHE), api._DASHBOARD_CACHE_MAX_ENTRIES)
@@ -171,7 +177,7 @@ class ApiHelperTests(unittest.TestCase):
     def test_trigger_airflow_daily_sync_and_state(self) -> None:
         settings = Settings()
         with patch(
-            "tactix.api.orchestrate_dag_run__airflow_trigger",
+            "tactix.trigger_airflow_daily_sync__airflow_jobs.orchestrate_dag_run__airflow_trigger",
             return_value={"dag_run_id": "run-9"},
         ) as trigger:
             run_id = api._trigger_airflow_daily_sync(settings, "lichess", "rapid")
@@ -179,7 +185,8 @@ class ApiHelperTests(unittest.TestCase):
         trigger.assert_called_once()
 
         with patch(
-            "tactix.api.fetch_dag_run__airflow_api", return_value={"state": "success"}
+            "tactix.get_airflow_state__airflow_jobs.fetch_dag_run__airflow_api",
+            return_value={"state": "success"},
         ):
             state = api._airflow_state(settings, "run-9")
         self.assertEqual(state, "success")
@@ -208,7 +215,10 @@ class ApiHelperTests(unittest.TestCase):
         settings.airflow_enabled = False
         queue: Queue[object] = Queue()
 
-        with patch("tactix.api.run_daily_game_sync", return_value={"status": "ok"}) as run_sync:
+        with patch(
+            "tactix.run_stream_job__job_stream.run_daily_game_sync",
+            return_value={"status": "ok"},
+        ) as run_sync:
             result = api._run_stream_job(
                 settings,
                 queue,
@@ -237,7 +247,7 @@ class ApiHelperTests(unittest.TestCase):
             )
 
     def test_lifespan_primes_cache_on_startup(self) -> None:
-        with patch("tactix.api._refresh_dashboard_cache_async") as refresh:
+        with patch("tactix.manage_lifespan__fastapi._refresh_dashboard_cache_async") as refresh:
             with TestClient(app) as client:
                 response = client.get("/api/health")
 

@@ -1,3 +1,11 @@
+Session 2026-01-30 (refactor split – api module)
+- Split FastAPI endpoints/helpers into single-purpose modules and rebuilt the api.py facade to re-export old names.
+- Before → After map:
+	- src/tactix/api.py endpoints/helpers → src/tactix/extract_api_token__request_auth.py, require_api_token__request_auth.py, manage_lifespan__fastapi.py, get_health__api.py, get_postgres_status__api.py, get_postgres_analysis__api.py, get_postgres_raw_pgns__api.py, trigger_daily_sync__api_jobs.py, trigger_refresh_metrics__api_jobs.py, trigger_migrations__api_jobs.py, get_dashboard__api.py, get_practice_queue__api.py, get_practice_next__api.py, get_raw_pgns_summary__api.py, get_game_detail__api.py, post_practice_attempt__api.py, format_sse__api_streaming.py, check_airflow_enabled__airflow_settings.py, apply_airflow_optional_conf__airflow_jobs.py, build_airflow_conf__airflow_jobs.py, get_airflow_run_id__airflow_response.py, trigger_airflow_daily_sync__airflow_jobs.py, get_airflow_state__airflow_jobs.py, queue_progress__job_stream.py, wait_for_airflow_run__job_stream.py, coerce_date_to_datetime__datetime.py, normalize_source__source.py, dashboard_cache_state__api_cache.py, build_dashboard_cache_key__api_cache.py, coerce_cache_value__api_cache.py, coerce_date_cache_value__api_cache.py, get_cached_dashboard_payload__api_cache.py, set_dashboard_cache__api_cache.py, clear_dashboard_cache__api_cache.py, prime_dashboard_cache__api_cache.py, refresh_dashboard_cache_async__api_cache.py, list_sources_for_cache_refresh__api_cache.py, resolve_backfill_end_ms__airflow_jobs.py, coerce_backfill_end_ms__airflow_jobs.py, validate_backfill_window__airflow_jobs.py, ensure_airflow_success__airflow_jobs.py, raise_unsupported_job__api_jobs.py, queue_backfill_window__job_stream.py, run_airflow_daily_sync_job__job_stream.py, run_stream_job__job_stream.py, stream_job_worker__job_stream.py, event_stream__job_stream.py, stream_jobs__api.py
+	- src/tactix/api.py logger/cache → src/tactix/api_logger__tactix.py + src/tactix/dashboard_cache_state__api_cache.py
+	- tests/* tactix.api patches → updated to new module paths
+- Tests: `make check`.
+
 Session 2026-01-30 (refactor split – airflow client module)
 - Split Airflow client helpers into single-purpose modules and updated API + tests to new verb/object naming.
 - Before → After map:

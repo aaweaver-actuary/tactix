@@ -34,7 +34,10 @@ class ApiDashboardCacheTests(unittest.TestCase):
         )
         payload = {"source": "all", "metrics_version": 5}
 
-        with patch("tactix.api.time_module.time", return_value=1000.0):
+        with (
+            patch("tactix.set_dashboard_cache__api_cache.time_module.time", return_value=1000.0),
+            patch("tactix.get_cached_dashboard_payload__api_cache.time_module.time", return_value=1000.0),
+        ):
             _set_dashboard_cache(key, payload)
             cached = _get_cached_dashboard_payload(key)
 
@@ -53,10 +56,13 @@ class ApiDashboardCacheTests(unittest.TestCase):
         )
         payload = {"source": "all", "metrics_version": 7}
 
-        with patch("tactix.api.time_module.time", return_value=0.0):
+        with patch("tactix.set_dashboard_cache__api_cache.time_module.time", return_value=0.0):
             _set_dashboard_cache(key, payload)
 
-        with patch("tactix.api.time_module.time", return_value=float(_DASHBOARD_CACHE_TTL_S + 1)):
+        with patch(
+            "tactix.get_cached_dashboard_payload__api_cache.time_module.time",
+            return_value=float(_DASHBOARD_CACHE_TTL_S + 1),
+        ):
             cached = _get_cached_dashboard_payload(key)
 
         self.assertIsNone(cached)
@@ -67,8 +73,8 @@ class ApiDashboardCacheTests(unittest.TestCase):
         client = TestClient(app)
         token = get_settings().api_token
         with (
-            patch("tactix.api._get_cached_dashboard_payload", return_value=payload),
-            patch("tactix.api.get_dashboard_payload") as get_payload,
+            patch("tactix.get_dashboard__api._get_cached_dashboard_payload", return_value=payload),
+            patch("tactix.get_dashboard__api.get_dashboard_payload") as get_payload,
         ):
             response = client.get(
                 "/api/dashboard",

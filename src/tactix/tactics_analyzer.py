@@ -34,6 +34,10 @@ _PROFILE_HANGING_PIECE_HIGH = frozenset(
 _PROFILE_FORK_LOW = frozenset({"blitz", "rapid"})
 _PROFILE_FORK_HIGH = frozenset({"bullet"})
 _PROFILE_FORK_SLOW = frozenset({"classical", "correspondence"})
+_FAILED_ATTEMPT_RECLASSIFY_MOTIFS = frozenset(
+    {"discovered_attack", "discovered_check", "skewer"}
+)
+_FAILED_ATTEMPT_RECLASSIFY_DELTA = -950
 
 
 def _normalized_profile(settings: Settings | None) -> tuple[str, str]:
@@ -134,7 +138,8 @@ def analyze_position(
     else:
         user_motif = MOTIF_DETECTORS.infer_motif(motif_board, user_move)
     motif = user_motif
-    if result == "missed" and best_move_obj is not None:
+    best_motif: str | None = None
+    if result in {"missed", "failed_attempt"} and best_move_obj is not None:
         best_board = motif_board.copy()
         best_board.push(best_move_obj)
         if motif_board.is_capture(
@@ -145,6 +150,7 @@ def analyze_position(
             best_motif = "hanging_piece"
         else:
             best_motif = MOTIF_DETECTORS.infer_motif(motif_board, best_move_obj)
+        overrideable_user_motifs = {"initiative", "capture", "check", "escape"}
         missed_override_targets = {
             "mate",
             "fork",
@@ -152,11 +158,30 @@ def analyze_position(
             "skewer",
             "discovered_attack",
             "discovered_check",
+            "hanging_piece",
         }
-        if user_motif in {"initiative", "capture", "check", "escape"} and (
-            best_motif in missed_override_targets
-        ):
-            motif = best_motif
+        failed_attempt_override_targets = {
+            "mate",
+            "fork",
+            "pin",
+            "skewer",
+            "discovered_attack",
+            "discovered_check",
+        }
+        if user_motif in overrideable_user_motifs:
+            if result == "missed" and best_motif in missed_override_targets:
+                motif = best_motif
+            elif (
+                result == "failed_attempt"
+                and best_motif in failed_attempt_override_targets
+            ):
+                motif = best_motif
+    if (
+        result == "missed"
+        and motif in _FAILED_ATTEMPT_RECLASSIFY_MOTIFS
+        and delta > _FAILED_ATTEMPT_RECLASSIFY_DELTA
+    ):
+        result = "failed_attempt"
     if mate_in_one:
         mate_in = 1
         if motif != "hanging_piece":
@@ -164,6 +189,10 @@ def analyze_position(
     if mate_in_two:
         mate_in = 2
         motif = "mate"
+    if mate_in in {1, 2} and result == "missed":
+        missed_threshold = 200 * mate_in
+        if after_cp >= missed_threshold:
+            result = "failed_attempt"
     severity = abs(delta) / 100.0
     if mate_in_one and result == "found":
         if _is_fast_profile(settings):

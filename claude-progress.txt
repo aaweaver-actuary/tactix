@@ -1,3 +1,10 @@
+Session 2026-01-29 (regression fix – failed_attempt outcomes)
+- Root cause: missed outcomes for discovered attack/check/skewer were never reclassified to failed_attempt when eval drops were large but still within a tactical-attempt band, leaving some fixtures with no failed_attempt entries.
+- Fix: added motif-based missed→failed_attempt reclassification in tactics analyzer for discovered attack/check/skewer when eval delta > -950.
+- Tests (pre-work verification): `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_dashboard_filters.py tests/test_pipeline_state.py tests/test_position_extractor.py tests/test_metrics_refresh.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_duckdb_store_helpers.py tests/test_job_stream.py tests/test_tactics_analyzer.py -q`.
+- Tests (targeted): `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_discovered_attack_classical.py::DiscoveredAttackClassicalTests::test_classical_discovered_attack_records_failed_attempt_outcome tests/test_discovered_check_blitz_low.py::DiscoveredCheckBlitzTests::test_blitz_discovered_check_records_failed_attempt_outcome tests/test_skewer_correspondence.py::SkewerCorrespondenceTests::test_correspondence_skewer_records_failed_attempt_outcome -q`.
+- Tests (full): `make check` (warnings: FastAPI on_event deprecation + pyo3 deprecation).
+
 Session 2026-01-24:
 - Added initial backend skeleton (config, DuckDB schema helpers, Lichess fetcher, PGN position extractor, Stockfish wrapper, tactics analyzer, pipeline runner, FastAPI API, Airflow DAG stub).
 - Scaffolded React/Vite/Tailwind dashboard with live refresh + pipeline trigger and cache-bust indicator.

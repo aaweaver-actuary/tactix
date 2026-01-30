@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 from pathlib import Path
 
-from tactix.duckdb_store import (
+from tactix.db.duckdb_store import (
     _should_attempt_wal_recovery,
     get_connection,
     get_schema_version,

@@ -7,7 +7,7 @@ import chess
 import chess.pgn
 
 from tactix.config import DEFAULT_BLITZ_STOCKFISH_DEPTH, Settings
-from tactix.duckdb_store import (
+from tactix.db.duckdb_store import (
     get_connection,
     init_schema,
     insert_positions,

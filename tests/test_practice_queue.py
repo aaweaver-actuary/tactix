@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tactix.duckdb_store import (
+from tactix.db.duckdb_store import (
     fetch_practice_queue,
     get_connection,
     init_schema,

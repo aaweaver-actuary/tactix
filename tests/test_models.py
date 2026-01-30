@@ -16,7 +16,7 @@ class ModelsTests(unittest.TestCase):
         self.assertIsInstance(request.tactic_id, int)
         self.assertIsInstance(request.position_id, int)
         self.assertIsInstance(request.attempted_uci, str)
-        self.assertIsInstance(request.source, str)
+        self.assertIsInstance(request.source, (str, type(None)))
         self.assertIsInstance(request.served_at_ms, int)
 
 

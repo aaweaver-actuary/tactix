@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from tactix.config import DEFAULT_CLASSICAL_STOCKFISH_DEPTH, Settings
-from tactix.duckdb_store import (
+from tactix.db.duckdb_store import (
     delete_game_rows,
     get_connection,
     init_schema,

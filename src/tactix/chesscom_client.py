@@ -20,16 +20,16 @@ from tactix.chess_clients.base_chess_client import (
 )
 from tactix.chess_clients.chess_game_row import ChessGameRow
 from tactix.config import Settings
+from tactix.errors import RateLimitError
 from tactix.pgn_utils import (
     extract_game_id,
     extract_last_timestamp_ms,
     latest_timestamp,
     load_fixture_games,
 )
-from tactix.utils import to_int
-from tactix.utils.logger import get_logger
+from tactix.utils import Logger, to_int
 
-logger = get_logger(__name__)
+logger = Logger(__name__)
 
 ARCHIVES_URL = "https://api.chess.com/pub/player/{username}/games/archives"
 HTTP_STATUS_TOO_MANY_REQUESTS = 429
@@ -38,9 +38,6 @@ __all__ = [
     "ARCHIVES_URL",
     "ChesscomClient",
     "ChesscomClientContext",
-    "ChesscomFetchRequest",
-    "ChesscomFetchResult",
-    "ChesscomGameRow",
     "_auth_headers",
     "_build_cursor",
     "_fetch_archive_pages",
@@ -56,26 +53,6 @@ __all__ = [
     "to_int",
     "write_cursor",
 ]
-
-
-class ChesscomRateLimitError(requests.HTTPError):
-    """Raised when the Chess.com API rate limit cannot be satisfied."""
-
-
-class ChesscomGameRow(ChessGameRow):
-    """Chess.com game row enriched with cursor metadata."""
-
-    cursor: str | None = None
-
-
-class ChesscomFetchRequest(ChessFetchRequest):
-    """Request parameters for Chess.com incremental fetches."""
-
-
-class ChesscomFetchResult(ChessFetchResult):
-    """Response payload for Chess.com incremental fetches."""
-
-    games: list[dict] = Field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -105,7 +82,7 @@ class ChesscomClient(BaseChessClient):
             Chess.com fetch result with games and cursor metadata.
 
         Example:
-            >>> client.fetch_incremental_games(ChesscomFetchRequest(cursor=None))
+            >>> client.fetch_incremental_games(ChessFetchRequest(cursor=None))
         """
 
         raw_games = self._fetch_raw_games(request)
@@ -113,7 +90,7 @@ class ChesscomClient(BaseChessClient):
         last_ts = self._resolve_last_timestamp(games, request.cursor)
         next_cursor = self._resolve_next_cursor(games, request.cursor)
         self._log_fetch_summary(request.cursor, next_cursor, len(games))
-        return ChesscomFetchResult(
+        return ChessFetchResult(
             games=games,
             next_cursor=next_cursor,
             last_timestamp_ms=last_ts,
@@ -284,9 +261,10 @@ class ChesscomClient(BaseChessClient):
         last_ts = extract_last_timestamp_ms(pgn)
         game_id = str(game.get("uuid") or extract_game_id(pgn))
         row = self._build_game_row(game_id, pgn, last_ts)
-        validated = ChesscomGameRow.model_validate(row.model_dump())
+        validated = ChessGameRow.model_validate(row.model_dump())
         return validated.model_dump(), last_ts
 
+    # TODO: Pass ChessGame instance instead of raw dict
     def _should_skip_game(
         self,
         row: dict,
@@ -344,7 +322,7 @@ class ChesscomClient(BaseChessClient):
             Response object.
 
         Raises:
-            ChesscomRateLimitError: When retries are exhausted.
+            RateLimitError: When retries are exhausted.
         """
 
         max_retries = max(self.settings.chesscom_max_retries, 0)
@@ -383,7 +361,7 @@ class ChesscomClient(BaseChessClient):
         retry_after = _parse_retry_after(response.headers.get("Retry-After"))
         if attempt >= max_retries:
             message = "Chess.com rate limit exceeded"
-            raise ChesscomRateLimitError(message, response=response)
+            raise RateLimitError(message, response=response)
         wait_seconds = max(base_backoff * (2**attempt), retry_after or 0.0)
         self.logger.warning(
             "Chess.com rate limited (429). Retrying in %.2fs (attempt %s/%s).",
@@ -474,7 +452,7 @@ class ChesscomClient(BaseChessClient):
             Validated game rows.
         """
 
-        return [ChesscomGameRow.model_validate(row).model_dump() for row in rows]
+        return [ChessGameRow.model_validate(row).model_dump() for row in rows]
 
 
 def _should_stop_archive_fetch(since_ms: int, archive_max_ts: int) -> bool:
@@ -790,7 +768,7 @@ def _cursor_allows_game(game: dict, since_ts: int, since_game: str) -> bool:
 
 def fetch_incremental_games(
     settings: Settings, cursor: str | None, *, full_history: bool = False
-) -> ChesscomFetchResult:
+) -> ChessFetchResult:
     """Fetch Chess.com games incrementally.
 
     Args:
@@ -803,5 +781,5 @@ def fetch_incremental_games(
     """
 
     context = ChesscomClientContext(settings=settings, logger=logger)
-    request = ChesscomFetchRequest(cursor=cursor, full_history=full_history)
-    return cast(ChesscomFetchResult, ChesscomClient(context).fetch_incremental_games(request))
+    request = ChessFetchRequest(cursor=cursor, full_history=full_history)
+    return cast(ChessFetchResult, ChesscomClient(context).fetch_incremental_games(request))

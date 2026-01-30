@@ -3,7 +3,7 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 
-from tactix.duckdb_store import (
+from tactix.db.duckdb_store import (
     fetch_metrics,
     fetch_recent_tactics,
     get_connection,

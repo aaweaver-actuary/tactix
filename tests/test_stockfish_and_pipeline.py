@@ -6,7 +6,7 @@ import unittest
 import chess
 
 from tactix.config import Settings
-from tactix.duckdb_store import (
+from tactix.db.duckdb_store import (
     get_connection,
     fetch_metrics,
     fetch_recent_positions,

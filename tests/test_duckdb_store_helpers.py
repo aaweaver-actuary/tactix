@@ -8,7 +8,7 @@ import duckdb
 
 from tactix.base_db_store import BaseDbStoreContext
 from tactix.config import Settings
-from tactix.duckdb_store import (
+from tactix.db.duckdb_store import (
     DuckDbStore,
     _append_date_range_filters,
     _ensure_raw_pgns_versioned,

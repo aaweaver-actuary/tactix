@@ -2,7 +2,7 @@ import tempfile
 from pathlib import Path
 import unittest
 
-from tactix.duckdb_store import get_connection, init_schema, upsert_raw_pgns
+from tactix.db.duckdb_store import get_connection, init_schema, upsert_raw_pgns
 from tactix.pgn_utils import extract_game_id, split_pgn_chunks
 
 

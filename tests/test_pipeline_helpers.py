@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from tactix.config import Settings
-from tactix.duckdb_store import (
+from tactix.db.duckdb_store import (
     fetch_unanalyzed_positions,
     get_connection,
     init_schema,

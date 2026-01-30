@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -38,6 +38,56 @@ def _read_fork_severity_floor() -> float | None:
 
 
 @dataclass(slots=True)
+class LichessSettings:
+    """Lichess-specific configuration."""
+
+    user: str = os.getenv("LICHESS_USERNAME", os.getenv("LICHESS_USER", "lichess"))
+    token: str | None = os.getenv("LICHESS_TOKEN")
+    oauth_client_id: str | None = os.getenv("LICHESS_OAUTH_CLIENT_ID")
+    oauth_client_secret: str | None = os.getenv("LICHESS_OAUTH_CLIENT_SECRET")
+    oauth_refresh_token: str | None = os.getenv("LICHESS_OAUTH_REFRESH_TOKEN")
+    oauth_token_url: str = os.getenv("LICHESS_OAUTH_TOKEN_URL", "https://lichess.org/api/token")
+
+
+@dataclass(slots=True)
+class ChesscomSettings:
+    """Chess.com-specific configuration."""
+
+    user: str = os.getenv("CHESSCOM_USERNAME", os.getenv("CHESSCOM_USER", "chesscom"))
+    token: str | None = os.getenv("CHESSCOM_TOKEN")
+    time_class: str = os.getenv("CHESSCOM_TIME_CLASS", "blitz")
+    profile: str = os.getenv("TACTIX_CHESSCOM_PROFILE", "")
+    max_retries: int = int(os.getenv("CHESSCOM_MAX_RETRIES", "3"))
+    retry_backoff_ms: int = int(os.getenv("CHESSCOM_RETRY_BACKOFF_MS", "500"))
+    checkpoint_path: Path = Path(
+        os.getenv("TACTIX_CHESSCOM_CHECKPOINT_PATH", DEFAULT_CHESSCOM_CHECKPOINT)
+    )
+
+
+@dataclass(slots=True)
+class StockfishSettings:
+    """Stockfish engine configuration."""
+
+    path: Path = Path(os.getenv("STOCKFISH_PATH", "stockfish"))
+    checksum: str | None = os.getenv("STOCKFISH_SHA256") or os.getenv("STOCKFISH_CHECKSUM")
+    checksum_mode: str = os.getenv("STOCKFISH_CHECKSUM_MODE", "warn")
+    threads: int = int(os.getenv("STOCKFISH_THREADS", "1"))
+    hash_mb: int = int(os.getenv("STOCKFISH_HASH", "256"))
+    movetime_ms: int = int(os.getenv("STOCKFISH_MOVETIME_MS", "150"))
+    depth: int | None = int(os.getenv("STOCKFISH_DEPTH", "0")) or None
+    multipv: int = int(os.getenv("STOCKFISH_MULTIPV", "3"))
+    skill_level: int = int(os.getenv("STOCKFISH_SKILL_LEVEL", "20"))
+    limit_strength: bool = os.getenv("STOCKFISH_LIMIT_STRENGTH", "0") == "1"
+    uci_elo: int | None = int(os.getenv("STOCKFISH_UCI_ELO", "0")) or None
+    uci_analyse_mode: bool = os.getenv("STOCKFISH_UCI_ANALYSE_MODE", "1") == "1"
+    use_nnue: bool = os.getenv("STOCKFISH_USE_NNUE", "1") == "1"
+    ponder: bool = os.getenv("STOCKFISH_PONDER", "0") == "1"
+    random_seed: int | None = int(os.getenv("STOCKFISH_RANDOM_SEED", "0")) or None
+    max_retries: int = int(os.getenv("STOCKFISH_MAX_RETRIES", "2"))
+    retry_backoff_ms: int = int(os.getenv("STOCKFISH_RETRY_BACKOFF_MS", "250"))
+
+
+@dataclass(slots=True)
 class Settings:
     """Central configuration for ingestion, analysis, and UI refresh."""
 
@@ -46,51 +96,21 @@ class Settings:
         "TACTIX_USER",
         os.getenv("LICHESS_USERNAME", os.getenv("LICHESS_USER", "lichess")),
     )
-    lichess_user: str = os.getenv("LICHESS_USERNAME", os.getenv("LICHESS_USER", "lichess"))
     source: str = os.getenv("TACTIX_SOURCE", "lichess")
-    lichess_token: str | None = os.getenv("LICHESS_TOKEN")
-    lichess_oauth_client_id: str | None = os.getenv("LICHESS_OAUTH_CLIENT_ID")
-    lichess_oauth_client_secret: str | None = os.getenv("LICHESS_OAUTH_CLIENT_SECRET")
-    lichess_oauth_refresh_token: str | None = os.getenv("LICHESS_OAUTH_REFRESH_TOKEN")
-    lichess_oauth_token_url: str = os.getenv(
-        "LICHESS_OAUTH_TOKEN_URL", "https://lichess.org/api/token"
-    )
-    chesscom_user: str = os.getenv("CHESSCOM_USERNAME", os.getenv("CHESSCOM_USER", "chesscom"))
-    chesscom_token: str | None = os.getenv("CHESSCOM_TOKEN")
-    chesscom_time_class: str = os.getenv("CHESSCOM_TIME_CLASS", "blitz")
-    chesscom_profile: str = os.getenv("TACTIX_CHESSCOM_PROFILE", "")
-    chesscom_max_retries: int = int(os.getenv("CHESSCOM_MAX_RETRIES", "3"))
-    chesscom_retry_backoff_ms: int = int(os.getenv("CHESSCOM_RETRY_BACKOFF_MS", "500"))
+
+    lichess: LichessSettings = field(default_factory=LichessSettings)
+    chesscom: ChesscomSettings = field(default_factory=ChesscomSettings)
+
+    stockfish: StockfishSettings = field(default_factory=StockfishSettings)
+
     duckdb_path: Path = Path(os.getenv("TACTIX_DUCKDB_PATH", DEFAULT_DATA_DIR / "tactix.duckdb"))
     checkpoint_path: Path = Path(os.getenv("TACTIX_CHECKPOINT_PATH", DEFAULT_LICHESS_CHECKPOINT))
-    chesscom_checkpoint_path: Path = Path(
-        os.getenv("TACTIX_CHESSCOM_CHECKPOINT_PATH", DEFAULT_CHESSCOM_CHECKPOINT)
-    )
     analysis_checkpoint_path: Path = Path(
         os.getenv(
             "TACTIX_ANALYSIS_CHECKPOINT_PATH",
             DEFAULT_LICHESS_ANALYSIS_CHECKPOINT,
         )
     )
-    stockfish_path: Path = Path(os.getenv("STOCKFISH_PATH", "stockfish"))
-    stockfish_checksum: str | None = os.getenv("STOCKFISH_SHA256") or os.getenv(
-        "STOCKFISH_CHECKSUM"
-    )
-    stockfish_checksum_mode: str = os.getenv("STOCKFISH_CHECKSUM_MODE", "warn")
-    stockfish_threads: int = int(os.getenv("STOCKFISH_THREADS", "1"))
-    stockfish_hash_mb: int = int(os.getenv("STOCKFISH_HASH", "256"))
-    stockfish_movetime_ms: int = int(os.getenv("STOCKFISH_MOVETIME_MS", "150"))
-    stockfish_depth: int | None = int(os.getenv("STOCKFISH_DEPTH", "0")) or None
-    stockfish_multipv: int = int(os.getenv("STOCKFISH_MULTIPV", "3"))
-    stockfish_skill_level: int = int(os.getenv("STOCKFISH_SKILL_LEVEL", "20"))
-    stockfish_limit_strength: bool = os.getenv("STOCKFISH_LIMIT_STRENGTH", "0") == "1"
-    stockfish_uci_elo: int | None = int(os.getenv("STOCKFISH_UCI_ELO", "0")) or None
-    stockfish_uci_analyse_mode: bool = os.getenv("STOCKFISH_UCI_ANALYSE_MODE", "1") == "1"
-    stockfish_use_nnue: bool = os.getenv("STOCKFISH_USE_NNUE", "1") == "1"
-    stockfish_ponder: bool = os.getenv("STOCKFISH_PONDER", "0") == "1"
-    stockfish_random_seed: int | None = int(os.getenv("STOCKFISH_RANDOM_SEED", "0")) or None
-    stockfish_max_retries: int = int(os.getenv("STOCKFISH_MAX_RETRIES", "2"))
-    stockfish_retry_backoff_ms: int = int(os.getenv("STOCKFISH_RETRY_BACKOFF_MS", "250"))
     fork_severity_floor: float | None = _read_fork_severity_floor()
     metrics_version_file: Path = Path(
         os.getenv("TACTIX_METRICS_VERSION_PATH", DEFAULT_DATA_DIR / "metrics_version.txt")

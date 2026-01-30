@@ -19,7 +19,7 @@ from starlette.middleware.cors import CORSMiddleware
 from tactix.airflow_client import fetch_dag_run, trigger_dag_run
 from tactix.base_db_store import BaseDbStoreContext
 from tactix.config import Settings, get_settings
-from tactix.duckdb_store import (
+from tactix.db.duckdb_store import (
     fetch_game_detail,
     fetch_practice_queue,
     fetch_raw_pgns_summary,

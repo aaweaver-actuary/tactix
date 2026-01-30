@@ -6,7 +6,7 @@ from pathlib import Path
 import chess
 
 from tactix.config import DEFAULT_RAPID_STOCKFISH_DEPTH, Settings
-from tactix.duckdb_store import (
+from tactix.db.duckdb_store import (
     get_connection,
     grade_practice_attempt,
     init_schema,

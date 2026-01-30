@@ -25,7 +25,7 @@ from tactix.chess_clients.chesscom_client import (
     write_cursor as write_chesscom_cursor,
 )
 from tactix.config import Settings, get_settings
-from tactix.duckdb_store import (
+from tactix.db.duckdb_store import (
     DuckDbStore,
     delete_game_rows,
     fetch_latest_pgn_hashes,

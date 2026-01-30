@@ -10,6 +10,7 @@ from tenacity import (
     wait_exponential,
 )
 
+from tactix.chess_clients.fetch_helpers import run_incremental_fetch
 from tactix.chess_clients.lichess_client import (
     LichessClient,
     LichessClientContext,
@@ -62,7 +63,10 @@ def fetch_incremental_games(
 
     context = LichessClientContext(settings=settings, logger=log)
     request = LichessFetchRequest(since_ms=since_ms, until_ms=until_ms)
-    return LichessClient(context).fetch_incremental_games(request).games
+    return run_incremental_fetch(
+        build_client=lambda: LichessClient(context),
+        request=request,
+    ).games
 
 
 def _fetch_remote_games_once(

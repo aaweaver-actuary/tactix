@@ -28,9 +28,10 @@ from tactix.chess_clients.base_chess_client import (
     ChessFetchResult,
 )
 from tactix.chess_clients.chess_game_row import ChessGameRow
-from tactix.chess_clients.fixture_helpers import (
-    load_fixture_games_for_client,
-    should_use_fixture_games,
+from tactix.chess_clients.fetch_helpers import (
+    load_fixture_games,
+    run_incremental_fetch,
+    should_use_fixture_data,
 )
 from tactix.config import Settings
 from tactix.pgn_utils import (
@@ -161,7 +162,7 @@ class LichessClient(BaseChessClient):
             True when fixtures should be used, otherwise False.
         """
 
-        return should_use_fixture_games(
+        return should_use_fixture_data(
             self.settings.lichess.token,
             self.settings.use_fixture_when_no_token,
         )
@@ -177,15 +178,15 @@ class LichessClient(BaseChessClient):
             Fixture game rows.
         """
 
-        games = load_fixture_games_for_client(
+        return load_fixture_games(
             fixture_path=self.settings.fixture_pgn_path,
             user=self.settings.user,
             source=self.settings.source,
             since_ms=since_ms,
             until_ms=until_ms,
             logger=self.logger,
+            coerce_rows=self._coerce_games,
         )
-        return self._coerce_games(games)
 
     @retry(
         retry=retry_if_exception_type(Exception),
@@ -636,4 +637,7 @@ def fetch_incremental_games(
 
     context = LichessClientContext(settings=settings, logger=logger)
     request = LichessFetchRequest(since_ms=since_ms, until_ms=until_ms)
-    return LichessClient(context).fetch_incremental_games(request).games
+    return run_incremental_fetch(
+        build_client=lambda: LichessClient(context),
+        request=request,
+    ).games

@@ -18,9 +18,10 @@ from tactix.chess_clients.base_chess_client import (
     ChessFetchResult,
 )
 from tactix.chess_clients.chess_game_row import ChessGameRow
-from tactix.chess_clients.fixture_helpers import (
-    load_fixture_games_for_client,
-    should_use_fixture_games,
+from tactix.chess_clients.fetch_helpers import (
+    load_fixture_games,
+    run_incremental_fetch,
+    should_use_fixture_data,
 )
 from tactix.config import Settings
 from tactix.errors import RateLimitError
@@ -119,7 +120,7 @@ class ChesscomClient(BaseChessClient):
             True when fixtures should be used, otherwise False.
         """
 
-        return should_use_fixture_games(
+        return should_use_fixture_data(
             self.settings.chesscom.token,
             self.settings.chesscom_use_fixture_when_no_token,
         )
@@ -134,7 +135,7 @@ class ChesscomClient(BaseChessClient):
             Fixture game rows.
         """
 
-        games = load_fixture_games_for_client(
+        return load_fixture_games(
             fixture_path=self.settings.chesscom_fixture_pgn_path,
             user=self.settings.user,
             source=self.settings.source,
@@ -142,8 +143,8 @@ class ChesscomClient(BaseChessClient):
             logger=self.logger,
             missing_message="Chess.com fixture PGN path missing: %s",
             loaded_message="Loaded %s Chess.com fixture PGNs from %s",
+            coerce_rows=self._coerce_games,
         )
-        return self._coerce_games(games)
 
     def _fetch_remote_games(self, since_ms: int, full_history: bool) -> list[dict]:
         """Fetch Chess.com games from the remote API.
@@ -785,4 +786,7 @@ def fetch_incremental_games(
 
     context = ChesscomClientContext(settings=settings, logger=logger)
     request = ChessFetchRequest(cursor=cursor, full_history=full_history)
-    return ChesscomClient(context).fetch_incremental_games(request)
+    return run_incremental_fetch(
+        build_client=lambda: ChesscomClient(context),
+        request=request,
+    )

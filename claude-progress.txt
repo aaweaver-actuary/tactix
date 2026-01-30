@@ -1,4 +1,8 @@
 Session 2026-01-30 (refactor consolidation – airflow/chess clients/tests)
+- Settings typing + init compatibility: added alias-aware Settings init helpers, added Settings alias properties for lichess/chesscom/stockfish fields, and exposed duckdb_store + ChessGame in package exports.
+- Typing cleanup: re-exported Chesscom fetch request/result aliases; relaxed ChessGame.headers to Mapping.
+- Added tests package marker [tests/__init__.py](tests/__init__.py) for import resolution during pytest.
+- Tests: `make check` (before; failed on ty errors), `make check` (after; warnings in ty redundant-cast only, full suite + build gates passed).
 - Airflow DAGs: centralized default_args/profile/backfill resolution and notify_dashboard task via [airflow/dags/_dag_helpers.py](airflow/dags/_dag_helpers.py).
 - Chess clients: shared fixture loading/usage decisions via [src/tactix/chess_clients/fixture_helpers.py](src/tactix/chess_clients/fixture_helpers.py) for Chess.com + Lichess.
 - Tests: shared fixture/outcome helpers in [tests/fixture_helpers.py](tests/fixture_helpers.py) for pin/skewer/hanging-piece and missed/failed helpers; cleaned duplicated Stockfish runner tests.

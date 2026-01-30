@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from io import StringIO
 
@@ -16,7 +17,7 @@ class ChessGame:
         return chess.pgn.read_game(StringIO(self._raw_pgn))
 
     @property
-    def headers(self) -> dict[str, str]:
+    def headers(self) -> Mapping[str, str]:
         game = self.game
         return game.headers if game else {}
 

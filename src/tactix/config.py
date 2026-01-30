@@ -1,10 +1,44 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import MISSING, dataclass, field
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+_MISSING = object()
+_SETTINGS_ALIAS_FIELDS = (
+    "lichess_user",
+    "lichess_token",
+    "lichess_oauth_client_id",
+    "lichess_oauth_client_secret",
+    "lichess_oauth_refresh_token",
+    "lichess_oauth_token_url",
+    "chesscom_user",
+    "chesscom_token",
+    "chesscom_time_class",
+    "chesscom_profile",
+    "chesscom_max_retries",
+    "chesscom_retry_backoff_ms",
+    "chesscom_checkpoint_path",
+    "stockfish_path",
+    "stockfish_checksum",
+    "stockfish_checksum_mode",
+    "stockfish_threads",
+    "stockfish_hash_mb",
+    "stockfish_movetime_ms",
+    "stockfish_depth",
+    "stockfish_multipv",
+    "stockfish_skill_level",
+    "stockfish_limit_strength",
+    "stockfish_uci_elo",
+    "stockfish_uci_analyse_mode",
+    "stockfish_use_nnue",
+    "stockfish_ponder",
+    "stockfish_random_seed",
+    "stockfish_max_retries",
+    "stockfish_retry_backoff_ms",
+)
 
 load_dotenv()
 
@@ -35,6 +69,32 @@ def _read_fork_severity_floor() -> float | None:
     if not value:
         return None
     return float(value)
+
+
+def _field_value(name: str, field_info: object, kwargs: dict[str, object]) -> object:
+    value = kwargs.pop(name, _MISSING)
+    if value is not _MISSING:
+        return value
+    default_factory = getattr(field_info, "default_factory", MISSING)
+    if default_factory is not MISSING:
+        return default_factory()
+    default = getattr(field_info, "default", MISSING)
+    if default is not MISSING:
+        return default
+    raise TypeError(f"Missing required argument: {name}")
+
+
+def _apply_settings_aliases(settings: Settings, kwargs: dict[str, object]) -> None:
+    for alias in _SETTINGS_ALIAS_FIELDS:
+        value = kwargs.pop(alias, _MISSING)
+        if value is not _MISSING:
+            setattr(settings, alias, value)
+
+
+def _raise_on_unexpected_kwargs(kwargs: dict[str, object]) -> None:
+    if kwargs:
+        unexpected = next(iter(kwargs))
+        raise TypeError(f"Settings.__init__() got an unexpected keyword argument '{unexpected}'")
 
 
 @dataclass(slots=True)
@@ -87,7 +147,7 @@ class StockfishSettings:
     retry_backoff_ms: int = int(os.getenv("STOCKFISH_RETRY_BACKOFF_MS", "250"))
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, init=False)
 class Settings:
     """Central configuration for ingestion, analysis, and UI refresh."""
 
@@ -147,6 +207,252 @@ class Settings:
     postgres_analysis_enabled: bool = os.getenv("TACTIX_POSTGRES_ANALYSIS_ENABLED", "1") == "1"
     postgres_pgns_enabled: bool = os.getenv("TACTIX_POSTGRES_PGNS_ENABLED", "1") == "1"
     run_context: str = os.getenv("TACTIX_RUN_CONTEXT", "app")
+
+    def __init__(self, **kwargs: object) -> None:
+        for name, field_info in self.__dataclass_fields__.items():
+            setattr(self, name, _field_value(name, field_info, kwargs))
+        _apply_settings_aliases(self, kwargs)
+        _raise_on_unexpected_kwargs(kwargs)
+
+    @property
+    def lichess_user(self) -> str:
+        return self.lichess.user
+
+    @lichess_user.setter
+    def lichess_user(self, value: str) -> None:
+        self.lichess.user = value
+
+    @property
+    def lichess_token(self) -> str | None:
+        return self.lichess.token
+
+    @lichess_token.setter
+    def lichess_token(self, value: str | None) -> None:
+        self.lichess.token = value
+
+    @property
+    def lichess_oauth_client_id(self) -> str | None:
+        return self.lichess.oauth_client_id
+
+    @lichess_oauth_client_id.setter
+    def lichess_oauth_client_id(self, value: str | None) -> None:
+        self.lichess.oauth_client_id = value
+
+    @property
+    def lichess_oauth_client_secret(self) -> str | None:
+        return self.lichess.oauth_client_secret
+
+    @lichess_oauth_client_secret.setter
+    def lichess_oauth_client_secret(self, value: str | None) -> None:
+        self.lichess.oauth_client_secret = value
+
+    @property
+    def lichess_oauth_refresh_token(self) -> str | None:
+        return self.lichess.oauth_refresh_token
+
+    @lichess_oauth_refresh_token.setter
+    def lichess_oauth_refresh_token(self, value: str | None) -> None:
+        self.lichess.oauth_refresh_token = value
+
+    @property
+    def lichess_oauth_token_url(self) -> str:
+        return self.lichess.oauth_token_url
+
+    @lichess_oauth_token_url.setter
+    def lichess_oauth_token_url(self, value: str) -> None:
+        self.lichess.oauth_token_url = value
+
+    @property
+    def chesscom_user(self) -> str:
+        return self.chesscom.user
+
+    @chesscom_user.setter
+    def chesscom_user(self, value: str) -> None:
+        self.chesscom.user = value
+
+    @property
+    def chesscom_token(self) -> str | None:
+        return self.chesscom.token
+
+    @chesscom_token.setter
+    def chesscom_token(self, value: str | None) -> None:
+        self.chesscom.token = value
+
+    @property
+    def chesscom_time_class(self) -> str:
+        return self.chesscom.time_class
+
+    @chesscom_time_class.setter
+    def chesscom_time_class(self, value: str) -> None:
+        self.chesscom.time_class = value
+
+    @property
+    def chesscom_profile(self) -> str:
+        return self.chesscom.profile
+
+    @chesscom_profile.setter
+    def chesscom_profile(self, value: str) -> None:
+        self.chesscom.profile = value
+
+    @property
+    def chesscom_max_retries(self) -> int:
+        return self.chesscom.max_retries
+
+    @chesscom_max_retries.setter
+    def chesscom_max_retries(self, value: int) -> None:
+        self.chesscom.max_retries = value
+
+    @property
+    def chesscom_retry_backoff_ms(self) -> int:
+        return self.chesscom.retry_backoff_ms
+
+    @chesscom_retry_backoff_ms.setter
+    def chesscom_retry_backoff_ms(self, value: int) -> None:
+        self.chesscom.retry_backoff_ms = value
+
+    @property
+    def chesscom_checkpoint_path(self) -> Path:
+        return self.chesscom.checkpoint_path
+
+    @chesscom_checkpoint_path.setter
+    def chesscom_checkpoint_path(self, value: Path) -> None:
+        self.chesscom.checkpoint_path = value
+
+    @property
+    def stockfish_path(self) -> Path:
+        return self.stockfish.path
+
+    @stockfish_path.setter
+    def stockfish_path(self, value: Path | str) -> None:
+        self.stockfish.path = Path(value)
+
+    @property
+    def stockfish_checksum(self) -> str | None:
+        return self.stockfish.checksum
+
+    @stockfish_checksum.setter
+    def stockfish_checksum(self, value: str | None) -> None:
+        self.stockfish.checksum = value
+
+    @property
+    def stockfish_checksum_mode(self) -> str:
+        return self.stockfish.checksum_mode
+
+    @stockfish_checksum_mode.setter
+    def stockfish_checksum_mode(self, value: str) -> None:
+        self.stockfish.checksum_mode = value
+
+    @property
+    def stockfish_threads(self) -> int:
+        return self.stockfish.threads
+
+    @stockfish_threads.setter
+    def stockfish_threads(self, value: int) -> None:
+        self.stockfish.threads = value
+
+    @property
+    def stockfish_hash_mb(self) -> int:
+        return self.stockfish.hash_mb
+
+    @stockfish_hash_mb.setter
+    def stockfish_hash_mb(self, value: int) -> None:
+        self.stockfish.hash_mb = value
+
+    @property
+    def stockfish_movetime_ms(self) -> int:
+        return self.stockfish.movetime_ms
+
+    @stockfish_movetime_ms.setter
+    def stockfish_movetime_ms(self, value: int) -> None:
+        self.stockfish.movetime_ms = value
+
+    @property
+    def stockfish_depth(self) -> int | None:
+        return self.stockfish.depth
+
+    @stockfish_depth.setter
+    def stockfish_depth(self, value: int | None) -> None:
+        self.stockfish.depth = value
+
+    @property
+    def stockfish_multipv(self) -> int:
+        return self.stockfish.multipv
+
+    @stockfish_multipv.setter
+    def stockfish_multipv(self, value: int) -> None:
+        self.stockfish.multipv = value
+
+    @property
+    def stockfish_skill_level(self) -> int:
+        return self.stockfish.skill_level
+
+    @stockfish_skill_level.setter
+    def stockfish_skill_level(self, value: int) -> None:
+        self.stockfish.skill_level = value
+
+    @property
+    def stockfish_limit_strength(self) -> bool:
+        return self.stockfish.limit_strength
+
+    @stockfish_limit_strength.setter
+    def stockfish_limit_strength(self, value: bool) -> None:
+        self.stockfish.limit_strength = value
+
+    @property
+    def stockfish_uci_elo(self) -> int | None:
+        return self.stockfish.uci_elo
+
+    @stockfish_uci_elo.setter
+    def stockfish_uci_elo(self, value: int | None) -> None:
+        self.stockfish.uci_elo = value
+
+    @property
+    def stockfish_uci_analyse_mode(self) -> bool:
+        return self.stockfish.uci_analyse_mode
+
+    @stockfish_uci_analyse_mode.setter
+    def stockfish_uci_analyse_mode(self, value: bool) -> None:
+        self.stockfish.uci_analyse_mode = value
+
+    @property
+    def stockfish_use_nnue(self) -> bool:
+        return self.stockfish.use_nnue
+
+    @stockfish_use_nnue.setter
+    def stockfish_use_nnue(self, value: bool) -> None:
+        self.stockfish.use_nnue = value
+
+    @property
+    def stockfish_ponder(self) -> bool:
+        return self.stockfish.ponder
+
+    @stockfish_ponder.setter
+    def stockfish_ponder(self, value: bool) -> None:
+        self.stockfish.ponder = value
+
+    @property
+    def stockfish_random_seed(self) -> int | None:
+        return self.stockfish.random_seed
+
+    @stockfish_random_seed.setter
+    def stockfish_random_seed(self, value: int | None) -> None:
+        self.stockfish.random_seed = value
+
+    @property
+    def stockfish_max_retries(self) -> int:
+        return self.stockfish.max_retries
+
+    @stockfish_max_retries.setter
+    def stockfish_max_retries(self, value: int) -> None:
+        self.stockfish.max_retries = value
+
+    @property
+    def stockfish_retry_backoff_ms(self) -> int:
+        return self.stockfish.retry_backoff_ms
+
+    @stockfish_retry_backoff_ms.setter
+    def stockfish_retry_backoff_ms(self, value: int) -> None:
+        self.stockfish.retry_backoff_ms = value
 
     def apply_stockfish_profile(self, profile: str | None = None) -> None:
         profile_value = (profile or "").strip().lower()

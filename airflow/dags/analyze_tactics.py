@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import timedelta
 import os
 
 from airflow.decorators import dag, task
@@ -9,25 +8,13 @@ from airflow.utils import timezone
 from dotenv import load_dotenv
 
 from tactix.config import get_settings
+from tactix.pipeline import run_daily_game_sync
 from tactix.utils.logger import get_logger
-from tactix.pipeline import get_dashboard_payload, run_daily_game_sync
+from airflow.dags._dag_helpers import default_args, make_notify_dashboard_task
 
 logger = get_logger(__name__)
 load_dotenv()
 CHESSCOM_USERNAME = os.getenv("CHESSCOM_USERNAME")
-
-
-def default_args():
-    return {
-        "owner": "tactix",
-        "depends_on_past": False,
-        "retries": 2,
-        "retry_delay": timedelta(minutes=5),
-        "retry_exponential_backoff": True,
-        "max_retry_delay": timedelta(minutes=20),
-    }
-
-
 @dag(
     dag_id="analyze_tactics",
     schedule="@daily",
@@ -56,15 +43,7 @@ def analyze_tactics_dag():
         result["execution_date"] = logical_date.isoformat() if logical_date else None
         return result
 
-    @task(task_id="notify_dashboard")
-    def notify_dashboard(_: dict[str, object]) -> dict[str, object]:
-        payload = get_dashboard_payload(settings, source="chesscom")
-        logger.info(
-            "Dashboard payload refreshed; metrics_version=%s",
-            payload.get("metrics_version"),
-        )
-        return payload
-
+    notify_dashboard = make_notify_dashboard_task(settings, source="chesscom")
     notify_dashboard(run_pipeline())
 
 

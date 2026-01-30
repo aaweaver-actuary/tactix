@@ -17,63 +17,7 @@ from tactix.pgn_utils import split_pgn_chunks
 from tactix.position_extractor import extract_positions
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
-
-
-def _find_missed_position(
-    position: dict[str, object],
-    engine: StockfishEngine,
-    settings: Settings,
-    expected_motif: str,
-) -> tuple[dict[str, object], tuple[dict[str, object], dict[str, object]]]:
-    board = chess.Board(str(position["fen"]))
-    best_move = engine.analyse(board).best_move
-    for move in board.legal_moves:
-        if best_move is not None and move == best_move:
-            continue
-        candidate = dict(position)
-        candidate["uci"] = move.uci()
-        try:
-            candidate["san"] = board.san(move)
-        except Exception:
-            pass
-        result = analyze_position(candidate, engine, settings=settings)
-        if result is None:
-            continue
-        tactic_row, outcome_row = result
-        if outcome_row["result"] == "missed" and tactic_row["motif"] == expected_motif:
-            return candidate, result
-    raise AssertionError("No missed outcome found for fixture position")
-
-
-def _find_failed_attempt_position(
-    position: dict[str, object],
-    engine: StockfishEngine,
-    settings: Settings,
-    expected_motif: str,
-) -> tuple[dict[str, object], tuple[dict[str, object], dict[str, object]]]:
-    board = chess.Board(str(position["fen"]))
-    best_move = engine.analyse(board).best_move
-    for move in board.legal_moves:
-        if best_move is not None and move == best_move:
-            continue
-        candidate = dict(position)
-        candidate["uci"] = move.uci()
-        try:
-            candidate["san"] = board.san(move)
-        except Exception:
-            pass
-        result = analyze_position(candidate, engine, settings=settings)
-        if result is None:
-            continue
-        tactic_row, outcome_row = result
-        if (
-            outcome_row["result"] == "failed_attempt"
-            and tactic_row["motif"] == expected_motif
-        ):
-            return candidate, result
-    raise AssertionError("No failed_attempt outcome found for fixture position")
-
-
+from tests.fixture_helpers import find_failed_attempt_position, find_missed_position
 class MateInTwoBlitzTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_blitz_mate_in_two_is_high_severity(self) -> None:
@@ -177,7 +121,7 @@ class MateInTwoBlitzTests(unittest.TestCase):
         init_schema(conn)
 
         with StockfishEngine(settings) as engine:
-            missed_position, result = _find_missed_position(
+            missed_position, result = find_missed_position(
                 mate_position, engine, settings, "mate"
             )
 
@@ -229,7 +173,7 @@ class MateInTwoBlitzTests(unittest.TestCase):
         init_schema(conn)
 
         with StockfishEngine(settings) as engine:
-            failed_position, result = _find_failed_attempt_position(
+            failed_position, result = find_failed_attempt_position(
                 mate_position, engine, settings, "mate"
             )
 

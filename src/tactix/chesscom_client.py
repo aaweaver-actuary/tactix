@@ -10,7 +10,6 @@ from typing import cast
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import requests
-from pydantic import Field
 
 from tactix.chess_clients.base_chess_client import (
     BaseChessClient,
@@ -19,13 +18,16 @@ from tactix.chess_clients.base_chess_client import (
     ChessFetchResult,
 )
 from tactix.chess_clients.chess_game_row import ChessGameRow
+from tactix.chess_clients.fixture_helpers import (
+    load_fixture_games_for_client,
+    should_use_fixture_games,
+)
 from tactix.config import Settings
 from tactix.errors import RateLimitError
 from tactix.pgn_utils import (
     extract_game_id,
     extract_last_timestamp_ms,
     latest_timestamp,
-    load_fixture_games,
 )
 from tactix.utils import Logger, to_int
 
@@ -117,8 +119,9 @@ class ChesscomClient(BaseChessClient):
             True when fixtures should be used, otherwise False.
         """
 
-        return bool(
-            not self.settings.chesscom_token and self.settings.chesscom_use_fixture_when_no_token
+        return should_use_fixture_games(
+            self.settings.chesscom_token,
+            self.settings.chesscom_use_fixture_when_no_token,
         )
 
     def _load_fixture_games(self, since_ms: int) -> list[dict]:
@@ -131,11 +134,11 @@ class ChesscomClient(BaseChessClient):
             Fixture game rows.
         """
 
-        games = load_fixture_games(
-            self.settings.chesscom_fixture_pgn_path,
-            self.settings.user,
-            self.settings.source,
-            since_ms,
+        games = load_fixture_games_for_client(
+            fixture_path=self.settings.chesscom_fixture_pgn_path,
+            user=self.settings.user,
+            source=self.settings.source,
+            since_ms=since_ms,
             logger=self.logger,
             missing_message="Chess.com fixture PGN path missing: %s",
             loaded_message="Loaded %s Chess.com fixture PGNs from %s",

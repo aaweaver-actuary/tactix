@@ -1,40 +1,19 @@
 from __future__ import annotations
 
-from datetime import timedelta
-
 from airflow.decorators import dag, task
 from airflow.operators.python import get_current_context
 from airflow.utils import timezone
 
 from tactix.config import get_settings
+from tactix.pipeline import run_monitor_new_positions
 from tactix.utils.logger import get_logger
-from tactix.pipeline import get_dashboard_payload, run_monitor_new_positions
+from airflow.dags._dag_helpers import (
+    default_args,
+    make_notify_dashboard_task,
+    resolve_profile,
+)
 
 logger = get_logger(__name__)
-
-
-def default_args():
-    return {
-        "owner": "tactix",
-        "depends_on_past": False,
-        "retries": 2,
-        "retry_delay": timedelta(minutes=5),
-        "retry_exponential_backoff": True,
-        "max_retry_delay": timedelta(minutes=20),
-    }
-
-
-def _resolve_profile(dag_run, source: str) -> str | None:
-    if not dag_run:
-        return None
-    conf = getattr(dag_run, "conf", None)
-    if not isinstance(conf, dict):
-        return None
-    if source == "chesscom":
-        return conf.get("chesscom_profile") or conf.get("profile")
-    return conf.get("profile") or conf.get("lichess_profile")
-
-
 @dag(
     dag_id="monitor_new_positions",
     schedule="*/10 * * * *",
@@ -45,11 +24,12 @@ def _resolve_profile(dag_run, source: str) -> str | None:
     description="Monitor new raw PGNs and run tactics analysis for newly extracted positions",
 )
 def monitor_new_positions_dag():
+    dag_defaults = default_args()
     retry_args = {
-        "retries": default_args()["retries"],
-        "retry_delay": default_args()["retry_delay"],
-        "retry_exponential_backoff": default_args()["retry_exponential_backoff"],
-        "max_retry_delay": default_args()["max_retry_delay"],
+        "retries": dag_defaults["retries"],
+        "retry_delay": dag_defaults["retry_delay"],
+        "retry_exponential_backoff": dag_defaults["retry_exponential_backoff"],
+        "max_retry_delay": dag_defaults["max_retry_delay"],
     }
 
     @task(task_id="monitor_lichess_positions", **retry_args)
@@ -57,7 +37,7 @@ def monitor_new_positions_dag():
         context = get_current_context()
         logical_date = context.get("logical_date") if context else None
         dag_run = context.get("dag_run") if context else None
-        profile = _resolve_profile(dag_run, "lichess")
+        profile = resolve_profile(dag_run, "lichess")
         settings = get_settings(source="lichess", profile=profile)
         logger.info(
             "Monitoring new positions: source=lichess logical_date=%s profile=%s",
@@ -83,7 +63,7 @@ def monitor_new_positions_dag():
         context = get_current_context()
         logical_date = context.get("logical_date") if context else None
         dag_run = context.get("dag_run") if context else None
-        profile = _resolve_profile(dag_run, "chesscom")
+        profile = resolve_profile(dag_run, "chesscom")
         settings = get_settings(source="chesscom", profile=profile)
         logger.info(
             "Monitoring new positions: source=chesscom logical_date=%s profile=%s",
@@ -115,17 +95,9 @@ def monitor_new_positions_dag():
             )
         return {"run_count": len(results)}
 
-    @task(task_id="notify_dashboard", **retry_args)
-    def notify_dashboard(_: dict[str, object]) -> dict[str, object]:
-        settings = get_settings()
-        payload = get_dashboard_payload(settings)
-        logger.info(
-            "Dashboard payload refreshed; metrics_version=%s",
-            payload.get("metrics_version"),
-        )
-        return payload
-
     results = [monitor_lichess_positions(), monitor_chesscom_positions()]
+    settings = get_settings()
+    notify_dashboard = make_notify_dashboard_task(settings)
     notify_dashboard(log_monitor_metrics(results))
 
 

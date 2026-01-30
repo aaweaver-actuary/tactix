@@ -1,35 +1,21 @@
 from __future__ import annotations
 
-from datetime import timedelta
-
 from airflow.decorators import dag, task
 from airflow.operators.python import get_current_context
 from airflow.utils import timezone
 
 from tactix.config import get_settings
-from tactix.utils.logger import get_logger
 from tactix.pipeline import run_migrations
+from tactix.utils.logger import get_logger
+from airflow.dags._dag_helpers import default_args
 
 logger = get_logger(__name__)
-
-
-def default_args():
-    return {
-        "owner": "tactix",
-        "depends_on_past": False,
-        "retries": 1,
-        "retry_delay": timedelta(minutes=5),
-        "retry_exponential_backoff": True,
-        "max_retry_delay": timedelta(minutes=20),
-    }
-
-
 @dag(
     dag_id="migrations",
     schedule=None,
     start_date=timezone.datetime(2024, 1, 1),
     catchup=False,
-    default_args=default_args(),
+    default_args=default_args(retries=1),
     tags=["migrations", "duckdb", "lichess", "chesscom", "tactix"],
     description="Run DuckDB schema migrations safely across versions",
 )

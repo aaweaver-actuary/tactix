@@ -14,96 +14,14 @@ from tactix.db.duckdb_store import (
     insert_positions,
     upsert_tactic_with_outcome,
 )
-from tactix.pgn_utils import extract_game_id, split_pgn_chunks
+from tactix.pgn_utils import split_pgn_chunks
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
-
-
-def _find_missed_position(
-    position: dict[str, object],
-    engine: StockfishEngine,
-    settings: Settings,
-    expected_motif: str,
-) -> tuple[dict[str, object], tuple[dict[str, object], dict[str, object]]]:
-    board = chess.Board(str(position["fen"]))
-    best_move = engine.analyse(board).best_move
-    for move in board.legal_moves:
-        if best_move is not None and move == best_move:
-            continue
-        candidate = dict(position)
-        candidate["uci"] = move.uci()
-        try:
-            candidate["san"] = board.san(move)
-        except Exception:
-            pass
-        result = analyze_position(candidate, engine, settings=settings)
-        if result is None:
-            continue
-        tactic_row, outcome_row = result
-        if outcome_row["result"] == "missed" and tactic_row["motif"] == expected_motif:
-            return candidate, result
-    raise AssertionError("No missed outcome found for fixture position")
-
-
-def _find_failed_attempt_position(
-    position: dict[str, object],
-    engine: StockfishEngine,
-    settings: Settings,
-    expected_motif: str,
-) -> tuple[dict[str, object], tuple[dict[str, object], dict[str, object]]]:
-    board = chess.Board(str(position["fen"]))
-    best_move = engine.analyse(board).best_move
-    for move in board.legal_moves:
-        if best_move is not None and move == best_move:
-            continue
-        candidate = dict(position)
-        candidate["uci"] = move.uci()
-        try:
-            candidate["san"] = board.san(move)
-        except Exception:
-            pass
-        result = analyze_position(candidate, engine, settings=settings)
-        if result is None:
-            continue
-        tactic_row, outcome_row = result
-        if (
-            outcome_row["result"] == "failed_attempt"
-            and tactic_row["motif"] == expected_motif
-        ):
-            return candidate, result
-    raise AssertionError("No failed_attempt outcome found for fixture position")
-
-
-def _skewer_fixture_position() -> dict[str, object]:
-    fixture_path = Path(__file__).resolve().parent / "fixtures" / "skewer.pgn"
-    chunks = split_pgn_chunks(fixture_path.read_text())
-    for chunk in chunks:
-        game = chess.pgn.read_game(StringIO(chunk))
-        if not game:
-            continue
-        fen = game.headers.get("FEN")
-        board = chess.Board(fen) if fen else game.board()
-        moves = list(game.mainline_moves())
-        if not moves:
-            continue
-        move = moves[0]
-        side_to_move = "white" if board.turn == chess.WHITE else "black"
-        return {
-            "game_id": extract_game_id(chunk),
-            "user": "chesscom",
-            "source": "chesscom",
-            "fen": board.fen(),
-            "ply": board.ply(),
-            "move_number": board.fullmove_number,
-            "side_to_move": side_to_move,
-            "uci": move.uci(),
-            "san": board.san(move),
-            "clock_seconds": None,
-            "is_legal": True,
-        }
-    raise AssertionError("No skewer fixture position found")
-
-
+from tests.fixture_helpers import (
+    find_failed_attempt_position,
+    find_missed_position,
+    skewer_fixture_position,
+)
 def _skewer_high_fixture_position() -> dict[str, object]:
     fixture_path = (
         Path(__file__).resolve().parent
@@ -156,7 +74,7 @@ class SkewerCorrespondenceTests(unittest.TestCase):
             settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH
         )
 
-        position = _skewer_fixture_position()
+        position = skewer_fixture_position()
 
         tmp_dir = Path(tempfile.mkdtemp())
         conn = get_connection(tmp_dir / "skewer_correspondence.duckdb")
@@ -238,14 +156,14 @@ class SkewerCorrespondenceTests(unittest.TestCase):
         )
         settings.apply_chesscom_profile("correspondence")
 
-        position = _skewer_fixture_position()
+        position = skewer_fixture_position()
 
         tmp_dir = Path(tempfile.mkdtemp())
         conn = get_connection(tmp_dir / "skewer_correspondence_missed.duckdb")
         init_schema(conn)
 
         with StockfishEngine(settings) as engine:
-            missed_position, result = _find_missed_position(
+            missed_position, result = find_missed_position(
                 position, engine, settings, "skewer"
             )
 
@@ -286,14 +204,14 @@ class SkewerCorrespondenceTests(unittest.TestCase):
         )
         settings.apply_chesscom_profile("correspondence")
 
-        position = _skewer_fixture_position()
+        position = skewer_fixture_position()
 
         tmp_dir = Path(tempfile.mkdtemp())
         conn = get_connection(tmp_dir / "skewer_correspondence_failed_attempt.duckdb")
         init_schema(conn)
 
         with StockfishEngine(settings) as engine:
-            failed_position, result = _find_failed_attempt_position(
+            failed_position, result = find_failed_attempt_position(
                 position, engine, settings, "skewer"
             )
 

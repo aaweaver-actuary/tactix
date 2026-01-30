@@ -1,68 +1,20 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
-
 from airflow.decorators import dag, task
 from airflow.operators.python import get_current_context
 from airflow.utils import timezone
 
 from tactix.config import get_settings
+from tactix.pipeline import run_daily_game_sync
 from tactix.utils.logger import get_logger
-from tactix.pipeline import get_dashboard_payload, run_daily_game_sync
+from airflow.dags._dag_helpers import (
+    default_args,
+    make_notify_dashboard_task,
+    resolve_backfill_window,
+    resolve_profile,
+)
 
 logger = get_logger(__name__)
-
-
-def default_args():
-    return {
-        "owner": "tactix",
-        "depends_on_past": False,
-        "retries": 2,
-        "retry_delay": timedelta(minutes=5),
-        "retry_exponential_backoff": True,
-        "max_retry_delay": timedelta(minutes=20),
-    }
-
-
-def _to_epoch_ms(value: datetime | None) -> int | None:
-    if value is None:
-        return None
-    if value.tzinfo is None:
-        value = value.replace(tzinfo=timezone.utc)
-    return int(value.timestamp() * 1000)
-
-
-def _resolve_profile(dag_run, source: str) -> str | None:
-    if not dag_run:
-        return None
-    conf = getattr(dag_run, "conf", None)
-    if not isinstance(conf, dict):
-        return None
-    if source == "chesscom":
-        return conf.get("chesscom_profile") or conf.get("profile")
-    return conf.get("profile") or conf.get("lichess_profile")
-
-
-def _resolve_backfill_window(
-    dag_run,
-    run_type: str,
-    data_interval_start: datetime | None,
-    data_interval_end: datetime | None,
-) -> tuple[int | None, int | None, int | None, bool]:
-    conf = getattr(dag_run, "conf", None) if dag_run else None
-    conf_dict = conf if isinstance(conf, dict) else {}
-    start_ms = conf_dict.get("backfill_start_ms")
-    end_ms = conf_dict.get("backfill_end_ms")
-    triggered_at_ms = conf_dict.get("triggered_at_ms")
-    if triggered_at_ms is not None and (end_ms is None or end_ms > triggered_at_ms):
-        end_ms = triggered_at_ms
-    is_backfill = start_ms is not None or end_ms is not None
-    if not is_backfill and run_type == "backfill":
-        start_ms = _to_epoch_ms(data_interval_start)
-        end_ms = _to_epoch_ms(data_interval_end)
-        is_backfill = start_ms is not None or end_ms is not None
-    return start_ms, end_ms, triggered_at_ms, is_backfill
-
 
 @dag(
     dag_id="daily_game_sync",
@@ -74,11 +26,12 @@ def _resolve_backfill_window(
     description="Fetch chess games (Lichess or Chess.com), extract positions, run tactics, refresh metrics",
 )
 def daily_game_sync_dag():
+    dag_defaults = default_args()
     retry_args = {
-        "retries": default_args()["retries"],
-        "retry_delay": default_args()["retry_delay"],
-        "retry_exponential_backoff": default_args()["retry_exponential_backoff"],
-        "max_retry_delay": default_args()["max_retry_delay"],
+        "retries": dag_defaults["retries"],
+        "retry_delay": dag_defaults["retry_delay"],
+        "retry_exponential_backoff": dag_defaults["retry_exponential_backoff"],
+        "max_retry_delay": dag_defaults["max_retry_delay"],
     }
 
     @task(task_id="run_lichess_pipeline", **retry_args)
@@ -94,10 +47,10 @@ def daily_game_sync_dag():
             backfill_end_ms,
             triggered_at_ms,
             is_backfill,
-        ) = _resolve_backfill_window(
+        ) = resolve_backfill_window(
             dag_run, run_type, data_interval_start, data_interval_end
         )
-        profile = _resolve_profile(dag_run, "lichess")
+        profile = resolve_profile(dag_run, "lichess")
         settings = get_settings(source="lichess", profile=profile)
         logger.info(
             "Starting end-to-end pipeline run for source=lichess logical_date=%s backfill=%s backfill_start_ms=%s backfill_end_ms=%s triggered_at_ms=%s",
@@ -144,10 +97,10 @@ def daily_game_sync_dag():
             backfill_end_ms,
             triggered_at_ms,
             is_backfill,
-        ) = _resolve_backfill_window(
+        ) = resolve_backfill_window(
             dag_run, run_type, data_interval_start, data_interval_end
         )
-        profile = _resolve_profile(dag_run, "chesscom")
+        profile = resolve_profile(dag_run, "chesscom")
         settings = get_settings(source="chesscom", profile=profile)
         logger.info(
             "Starting end-to-end pipeline run for source=chesscom logical_date=%s backfill=%s backfill_start_ms=%s backfill_end_ms=%s triggered_at_ms=%s",
@@ -197,17 +150,9 @@ def daily_game_sync_dag():
             )
         return {"run_count": len(results)}
 
-    @task(task_id="notify_dashboard", **retry_args)
-    def notify_dashboard(_: dict[str, object]) -> dict[str, object]:
-        settings = get_settings()
-        payload = get_dashboard_payload(settings)
-        logger.info(
-            "Dashboard payload refreshed; metrics_version=%s",
-            payload.get("metrics_version"),
-        )
-        return payload
-
     results = [run_lichess_pipeline(), run_chesscom_pipeline()]
+    settings = get_settings()
+    notify_dashboard = make_notify_dashboard_task(settings)
     notify_dashboard(log_hourly_metrics(results))
 
 

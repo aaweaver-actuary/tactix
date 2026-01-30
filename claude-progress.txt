@@ -1,3 +1,15 @@
+Session 2026-01-30 (refactor consolidation – airflow/chess clients/tests)
+- Airflow DAGs: centralized default_args/profile/backfill resolution and notify_dashboard task via [airflow/dags/_dag_helpers.py](airflow/dags/_dag_helpers.py).
+- Chess clients: shared fixture loading/usage decisions via [src/tactix/chess_clients/fixture_helpers.py](src/tactix/chess_clients/fixture_helpers.py) for Chess.com + Lichess.
+- Tests: shared fixture/outcome helpers in [tests/fixture_helpers.py](tests/fixture_helpers.py) for pin/skewer/hanging-piece and missed/failed helpers; cleaned duplicated Stockfish runner tests.
+- Before → After map:
+	- airflow/dags/* default_args/notify_dashboard/_resolve_profile → airflow/dags/_dag_helpers.py helpers
+	- chesscom_client/_use_fixture_games + _load_fixture_games + lichess_client/_use_fixture_games + _load_fixture_games → chess_clients/fixture_helpers.py
+	- tests/* _pin/_skewer/_hanging_piece fixture builders → tests/fixture_helpers.py
+	- tests/* _find_missed/_find_failed_attempt → tests/fixture_helpers.py
+	- tests/test_stockfish_checksum duplicate runner tests → tests/test_stockfish_runner (single copy)
+- Tests: `make check` (before), `make check` (after; fails in ty check due to pre-existing Settings attribute typing issues).
+
 Session 2026-01-30 (refactor cleanup – make check)
 - Restored chess_clients wrappers to re-export legacy helpers and error classes (including private Lichess helpers used in tests).
 - Added shared test utilities for table headers/rows; refactored RecentGamesTable/TacticsTable/Hero tests to remove duplication flagged by jscpd.

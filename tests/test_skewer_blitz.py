@@ -14,41 +14,10 @@ from tactix.db.duckdb_store import (
     insert_positions,
     upsert_tactic_with_outcome,
 )
-from tactix.pgn_utils import extract_game_id, split_pgn_chunks
+from tactix.pgn_utils import split_pgn_chunks
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
-
-
-def _skewer_fixture_position() -> dict[str, object]:
-    fixture_path = Path(__file__).resolve().parent / "fixtures" / "skewer.pgn"
-    chunks = split_pgn_chunks(fixture_path.read_text())
-    for chunk in chunks:
-        game = chess.pgn.read_game(StringIO(chunk))
-        if not game:
-            continue
-        fen = game.headers.get("FEN")
-        board = chess.Board(fen) if fen else game.board()
-        moves = list(game.mainline_moves())
-        if not moves:
-            continue
-        move = moves[0]
-        side_to_move = "white" if board.turn == chess.WHITE else "black"
-        return {
-            "game_id": extract_game_id(chunk),
-            "user": "chesscom",
-            "source": "chesscom",
-            "fen": board.fen(),
-            "ply": board.ply(),
-            "move_number": board.fullmove_number,
-            "side_to_move": side_to_move,
-            "uci": move.uci(),
-            "san": board.san(move),
-            "clock_seconds": None,
-            "is_legal": True,
-        }
-    raise AssertionError("No skewer fixture position found")
-
-
+from tests.fixture_helpers import skewer_fixture_position
 def _skewer_high_fixture_position() -> dict[str, object]:
     fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
     chunks = split_pgn_chunks(fixture_path.read_text())
@@ -93,7 +62,7 @@ class SkewerBlitzTests(unittest.TestCase):
         settings.apply_chesscom_profile("blitz")
         self.assertEqual(settings.stockfish_depth, DEFAULT_BLITZ_STOCKFISH_DEPTH)
 
-        position = _skewer_fixture_position()
+        position = skewer_fixture_position()
 
         tmp_dir = Path(tempfile.mkdtemp())
         conn = get_connection(tmp_dir / "skewer_blitz.duckdb")

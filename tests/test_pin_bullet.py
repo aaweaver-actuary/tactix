@@ -1,11 +1,7 @@
 import shutil
 import tempfile
 import unittest
-from io import StringIO
 from pathlib import Path
-
-import chess
-import chess.pgn
 
 from tactix.config import DEFAULT_BULLET_STOCKFISH_DEPTH, Settings
 from tactix.db.duckdb_store import (
@@ -14,41 +10,9 @@ from tactix.db.duckdb_store import (
     insert_positions,
     upsert_tactic_with_outcome,
 )
-from tactix.pgn_utils import extract_game_id, split_pgn_chunks
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
-
-
-def _pin_fixture_position() -> dict[str, object]:
-    fixture_path = Path(__file__).resolve().parent / "fixtures" / "pin.pgn"
-    chunks = split_pgn_chunks(fixture_path.read_text())
-    for chunk in chunks:
-        game = chess.pgn.read_game(StringIO(chunk))
-        if not game:
-            continue
-        fen = game.headers.get("FEN")
-        board = chess.Board(fen) if fen else game.board()
-        moves = list(game.mainline_moves())
-        if not moves:
-            continue
-        move = moves[0]
-        side_to_move = "white" if board.turn == chess.WHITE else "black"
-        return {
-            "game_id": extract_game_id(chunk),
-            "user": "chesscom",
-            "source": "chesscom",
-            "fen": board.fen(),
-            "ply": board.ply(),
-            "move_number": board.fullmove_number,
-            "side_to_move": side_to_move,
-            "uci": move.uci(),
-            "san": board.san(move),
-            "clock_seconds": None,
-            "is_legal": True,
-        }
-    raise AssertionError("No pin fixture position found")
-
-
+from tests.fixture_helpers import pin_fixture_position
 class PinBulletTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_bullet_pin_is_high_severity(self) -> None:
@@ -64,7 +28,7 @@ class PinBulletTests(unittest.TestCase):
         settings.apply_chesscom_profile("bullet")
         self.assertEqual(settings.stockfish_depth, DEFAULT_BULLET_STOCKFISH_DEPTH)
 
-        position = _pin_fixture_position()
+        position = pin_fixture_position()
 
         tmp_dir = Path(tempfile.mkdtemp())
         conn = get_connection(tmp_dir / "pin_bullet.duckdb")

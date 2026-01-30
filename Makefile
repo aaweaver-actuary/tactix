@@ -19,6 +19,16 @@ jstest:
 
 test: pytest jstest
 
+py-complexity:
+	uv run xenon --max-absolute B --max-modules B --max-average B src/
+
+complexity: py-complexity
+
+py-deadcode:
+	uv run vulture src/ tests/ --min-confidence 60
+
+deadcode: py-deadcode
+
 build:
 	uv run cargo build --release
 	cd client && npm run build
@@ -26,4 +36,4 @@ build:
 dev:
 	cd client && npm run dev --host --port 5178
 
-check: lint test
+check: lint test complexity deadcode build

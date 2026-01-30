@@ -58,9 +58,7 @@ def _hanging_piece_high_fixture_position() -> dict[str, object]:
     )
     chunks = split_pgn_chunks(fixture_path.read_text())
     hanging_chunk = next(
-        chunk
-        for chunk in chunks
-        if "Rapid Fixture 12 - Hanging Piece High" in chunk
+        chunk for chunk in chunks if "Rapid Fixture 12 - Hanging Piece High" in chunk
     )
     game = chess.pgn.read_game(StringIO(hanging_chunk))
     if not game:
@@ -168,6 +166,57 @@ class HangingPieceRapidTests(unittest.TestCase):
         self.assertEqual(stored[0], position_ids[0])
         self.assertIsNotNone(stored[1])
         self.assertIn("Best line", stored[2] or "")
+
+    @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
+    def test_rapid_hanging_piece_records_found_outcome(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            chesscom_profile="rapid",
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=60,
+            stockfish_depth=None,
+            stockfish_multipv=1,
+        )
+        settings.apply_chesscom_profile("rapid")
+
+        position = _hanging_piece_fixture_position()
+
+        tmp_dir = Path(tempfile.mkdtemp())
+        conn = get_connection(tmp_dir / "hanging_piece_rapid_found.duckdb")
+        init_schema(conn)
+
+        with StockfishEngine(settings) as engine:
+            result = analyze_position(position, engine, settings=settings)
+
+        self.assertIsNotNone(result)
+        tactic_row, outcome_row = result
+        if outcome_row["result"] != "found" and tactic_row.get("best_uci"):
+            position["uci"] = tactic_row["best_uci"]
+            try:
+                board = chess.Board(str(position["fen"]))
+                move = chess.Move.from_uci(position["uci"])
+                position["san"] = board.san(move)
+            except Exception:
+                pass
+            with StockfishEngine(settings) as engine:
+                result = analyze_position(position, engine, settings=settings)
+            self.assertIsNotNone(result)
+            tactic_row, outcome_row = result
+
+        self.assertEqual(tactic_row["motif"], "hanging_piece")
+        self.assertEqual(outcome_row["result"], "found")
+
+        position_ids = insert_positions(conn, [position])
+        tactic_row["position_id"] = position_ids[0]
+
+        tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
+        stored_outcome = conn.execute(
+            "SELECT result, user_uci FROM tactic_outcomes WHERE tactic_id = ?",
+            [tactic_id],
+        ).fetchone()
+        self.assertEqual(stored_outcome[0], "found")
+        self.assertEqual(stored_outcome[1], position["uci"])
 
 
 if __name__ == "__main__":

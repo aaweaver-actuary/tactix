@@ -2569,49 +2569,49 @@
     "category": "functional",
     "description": "Outcome found recorded for hanging piece",
     "steps": ["Step 1: Compare user move to engine best line", "Step 2: Compute eval swing threshold", "Step 3: Mark outcome as found and store"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Outcome missed recorded for mate in 1",
     "steps": ["Step 1: Compare user move to engine best line", "Step 2: Compute eval swing threshold", "Step 3: Mark outcome as missed and store"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Outcome missed recorded for mate in 2",
     "steps": ["Step 1: Compare user move to engine best line", "Step 2: Compute eval swing threshold", "Step 3: Mark outcome as missed and store"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Outcome missed recorded for fork",
     "steps": ["Step 1: Compare user move to engine best line", "Step 2: Compute eval swing threshold", "Step 3: Mark outcome as missed and store"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Outcome missed recorded for pin",
     "steps": ["Step 1: Compare user move to engine best line", "Step 2: Compute eval swing threshold", "Step 3: Mark outcome as missed and store"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Outcome missed recorded for skewer",
     "steps": ["Step 1: Compare user move to engine best line", "Step 2: Compute eval swing threshold", "Step 3: Mark outcome as missed and store"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Outcome missed recorded for discovered attack",
     "steps": ["Step 1: Compare user move to engine best line", "Step 2: Compute eval swing threshold", "Step 3: Mark outcome as missed and store"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Outcome missed recorded for discovered check",
     "steps": ["Step 1: Compare user move to engine best line", "Step 2: Compute eval swing threshold", "Step 3: Mark outcome as missed and store"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

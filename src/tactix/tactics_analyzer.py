@@ -130,9 +130,33 @@ def analyze_position(
     if motif_board.is_capture(user_move) and BaseTacticDetector.is_hanging_capture(
         motif_board, user_board, user_move, mover_color
     ):
-        motif = "hanging_piece"
+        user_motif = "hanging_piece"
     else:
-        motif = MOTIF_DETECTORS.infer_motif(motif_board, user_move)
+        user_motif = MOTIF_DETECTORS.infer_motif(motif_board, user_move)
+    motif = user_motif
+    if result == "missed" and best_move_obj is not None:
+        best_board = motif_board.copy()
+        best_board.push(best_move_obj)
+        if motif_board.is_capture(
+            best_move_obj
+        ) and BaseTacticDetector.is_hanging_capture(
+            motif_board, best_board, best_move_obj, mover_color
+        ):
+            best_motif = "hanging_piece"
+        else:
+            best_motif = MOTIF_DETECTORS.infer_motif(motif_board, best_move_obj)
+        missed_override_targets = {
+            "mate",
+            "fork",
+            "pin",
+            "skewer",
+            "discovered_attack",
+            "discovered_check",
+        }
+        if user_motif in {"initiative", "capture", "check", "escape"} and (
+            best_motif in missed_override_targets
+        ):
+            motif = best_motif
     if mate_in_one:
         mate_in = 1
         if motif != "hanging_piece":

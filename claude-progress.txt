@@ -1,3 +1,10 @@
+Session 2026-01-30 (features 001-003 regression check)
+- Ran UI automation for Airflow trigger/logs, raw PGN summaries, positions, and dashboards for Lichess rapid + Chess.com blitz + Lichess incremental since.
+- No regressions observed; feature_list.json unchanged.
+- Screenshots: `verification/feature-001-airflow-lichess-rapid-2026-01-30.png`, `verification/feature-001-lichess-rapid-log-2026-01-30.png`, `verification/feature-001-raw-pgn-summary-2026-01-30-lichess.png`, `verification/feature-001-raw-pgn-summary-2026-01-30-chesscom.png`, `verification/feature-001-positions-lichess-2026-01-30.png`, `verification/feature-001-dashboard-lichess-rapid-2026-01-30.png`.
+- Screenshots: `verification/feature-002-airflow-chesscom-blitz-2026-01-30.png`, `verification/feature-002-chesscom-blitz-log-2026-01-30.png`, `verification/feature-002-positions-chesscom-2026-01-30.png`, `verification/feature-002-dashboard-chesscom-blitz-2026-01-30.png`, `verification/feature-002-pin-blitz-2026-01-30.png`.
+- Screenshots: `verification/feature-003-airflow-lichess-incremental-2026-01-30.png`, `verification/feature-003-lichess-incremental-log-2026-01-30.png`, `verification/feature-003-dashboard-lichess-incremental-2026-01-30.png`.
+
 Session 2026-01-30 (Vite UI error fix + regression re-verify)
 - Root cause: tactix-client container was missing node_modules; Vite failed to resolve @tanstack/react-table, causing 500s on BaseTable and Puppeteer timeouts.
 - Fix: ran `docker exec tactix-client-1 npm ci` to repopulate /app/node_modules in the client container; verified BaseTable module resolves (HTTP 200).

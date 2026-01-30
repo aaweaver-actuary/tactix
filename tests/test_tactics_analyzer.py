@@ -1,12 +1,14 @@
 import unittest
+
 import chess
 
 from tactix.config import Settings
+from tactix.stockfish_runner import EngineResult
 from tactix.tactic_detectors import (
     BaseTacticDetector,
     build_default_motif_detector_suite,
 )
-from tactix.tactics_analyzer import _is_profile_in
+from tactix.tactics_analyzer import _is_profile_in, analyze_position
 
 
 class TacticsAnalyzerTests(unittest.TestCase):
@@ -75,6 +77,34 @@ class TacticsAnalyzerTests(unittest.TestCase):
         lichess_rapid = Settings(source="lichess", lichess_profile="Rapid")
         self.assertTrue(_is_profile_in(lichess_rapid, {"rapid"}))
         self.assertFalse(_is_profile_in(lichess_rapid, {"blitz"}))
+
+    def test_mate_in_two_unclear_reclassified_failed_attempt(self) -> None:
+        class StubEngine:
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def analyse(self, board: chess.Board) -> EngineResult:
+                self.calls += 1
+                score_cp = 100000 if board.turn == chess.WHITE else -100000
+                return EngineResult(
+                    best_move=chess.Move.from_uci("e2e4"),
+                    score_cp=score_cp,
+                    depth=12,
+                    mate_in=2,
+                )
+
+        position = {
+            "game_id": "unit-mate-in-two",
+            "fen": chess.STARTING_FEN,
+            "uci": "d2d4",
+        }
+
+        result = analyze_position(position, StubEngine())
+
+        self.assertIsNotNone(result)
+        tactic_row, outcome_row = result
+        self.assertEqual(tactic_row["motif"], "mate")
+        self.assertEqual(outcome_row["result"], "failed_attempt")
 
 
 if __name__ == "__main__":

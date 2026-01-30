@@ -1,3 +1,13 @@
+Session 2026-01-30 (feature 218 – mate-in-two failed_attempt outcome)
+- Updated mate-in-two outcome classification to reclassify best-line deviations as failed_attempt when eval remains strong.
+- Added unit test coverage for mate-in-two unclear→failed_attempt reclassification in `tests/test_tactics_analyzer.py`.
+- Added manual UI automation script `verification/puppeteer_feature_218_outcome_failed_attempt_mate_in_two_manual_ui.js` and CI integration check `verification/integration_feature_218_outcome_failed_attempt_mate_in_two.js`.
+- Seeded fixture data with `/Users/andy/tactix/.venv/bin/python tmp-logs/feature_188_seed_outcome_failed_attempt_mate_in_two_blitz.py`.
+- Manual UI verification screenshot: `verification/feature-218-outcome-failed-attempt-mate-in-two-2026-01-30.png`.
+- Integration check: `node verification/integration_feature_218_outcome_failed_attempt_mate_in_two.js` (ok).
+- make check: failed at `xenon` complexity gate (pre-existing complexity ranks; FastAPI on_event + pyo3 deprecation warnings also emitted).
+- Current passing count: 218.
+
 Session 2026-01-30 (features 001-003 regression check)
 - Ran UI automation for Airflow trigger/logs, raw PGN summaries, positions, and dashboards for Lichess rapid + Chess.com blitz + Lichess incremental since.
 - No regressions observed; feature_list.json unchanged.

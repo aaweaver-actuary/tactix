@@ -195,9 +195,17 @@ def analyze_position(
     if mate_in_two:
         mate_in = 2
         motif = "mate"
-    if mate_in in {1, 2} and result == "missed":
+    if mate_in in {1, 2}:
         missed_threshold = 200 * mate_in
-        if after_cp >= missed_threshold:
+        if result == "missed" and after_cp >= missed_threshold:
+            result = "failed_attempt"
+        elif (
+            mate_in == 2
+            and result == "unclear"
+            and best_move
+            and user_move_uci != best_move
+            and after_cp >= missed_threshold
+        ):
             result = "failed_attempt"
     severity = abs(delta) / 100.0
     if mate_in_one and result == "found":

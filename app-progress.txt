@@ -97,9 +97,3 @@ Session 2026-01-29 (BaseChessClient refactor + DI)
 	- src/tactix/pipeline.py: run_daily_game_sync now accepts injected BaseChessClient and uses client-based fetches.
 - Tests: added base client coverage + expanded chesscom/lichess unit coverage to 100% for both files.
 - Make check: Python/Rust tests pass; JS tests still fail on TacticsTable header arrow mismatch (existing).
-
-Session 2026-01-29 (regression verification – features 001/016/028)
-- Feature 001 regression check failed: UI returned 500 errors loading BaseTable; selector `[data-testid="filter-source"]` not found. Failure screenshot: `verification/failed-regression-001-lichess-2026-01-25.png`.
-- Feature 016 regression check failed: same 500/BaseTable error and missing filter selector. Failure screenshot: `verification/failed-regression-016-auth-2026-01-29.png`.
-- Feature 028 regression check failed: same 500/BaseTable error and missing `h1` selector. Failure screenshot: `verification/failed-regression-028-practice-next-unseen-2026-01-29.png`.
-- Updated feature_list.json: features 001, 016, 028 set to passes=false due to verified regression.

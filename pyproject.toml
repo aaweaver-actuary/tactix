@@ -54,3 +54,64 @@ dev=[
     "vulture>=2.14",
     "xenon>=0.9.3",
 ]
+
+[tool.ruff]
+extend-exclude=[".venv", "build", "client", "dist"]
+line-length   =100
+target-version="py312"
+
+    [tool.ruff.format]
+    indent-style             ="space"
+    line-ending              ="lf"
+    quote-style              ="double"
+    skip-magic-trailing-comma=false
+
+    [tool.ruff.lint]
+    # A “strict but practical” set.
+    select=[
+        "ARG",  # unused arguments
+        "B",    # bugbear
+        "C4",   # flake8-comprehensions
+        "DTZ",  # naive datetime traps
+        "E",
+        "F",    # pyflakes
+        "I",    # isort
+        "PERF", # performance pitfalls
+        "PIE",  # misc cleanups
+        "PL",   # pylint-derived rules (complexity-ish + code quality)
+        "RET",  # return-related cleanliness
+        "RUF",  # ruff-specific rules
+        "S",    # bandit (security-ish)
+        "SIM",  # flake8-simplify
+        "TRY",  # exception anti-patterns
+        "UP",   # pyupgrade
+        "W",    # pycodestyle
+    ]
+
+    ignore=[
+        "PLR0913", # "too many args" (enable later if you want)
+        "S101",    # allow assert (pytest uses it)
+        "TRY003",  # long exception messages (can be noisy)
+    ]
+
+    fixable  =["ALL"]
+    unfixable=["F401"] # avoid auto-removing imports in ambiguous cases
+
+        [tool.ruff.lint.mccabe]
+        max-complexity=10
+
+        [tool.ruff.lint.pylint]
+        # These hit the “giant function” problem agents create.
+        max-branches  =12
+        max-returns   =8
+        max-statements=50
+
+        [tool.ruff.lint.per-file-ignores]
+        "src/**/__init__.py"=["F401"] # re-exports
+        "tests/**"=[
+            "PLR2004", # magic values in tests are fine
+            "S101",    # asserts in tests
+        ]
+
+        [tool.ruff.lint.isort]
+        known-first-party=["src"]

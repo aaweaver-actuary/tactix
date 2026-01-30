@@ -46,7 +46,10 @@ js-dup:
 		--ignore "**/*.test.*","**/dist/**"\
 		.
 
-dedup: js-dup
+py-dup:
+	uv run pylint src tests -d all -e duplicate-code
+
+dedup: js-dup py-dup
 
 build:
 	uv run cargo build --release
@@ -55,4 +58,4 @@ build:
 dev:
 	cd client && npm run dev --host --port 5178
 
-check: lint test complexity deadcode build
+check: lint test complexity dedup deadcode build

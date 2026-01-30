@@ -3,11 +3,10 @@ from __future__ import annotations
 import logging
 import re
 import time
-from datetime import datetime, timezone
+from collections.abc import Iterable, Mapping
+from datetime import UTC, datetime
 from io import StringIO
 from pathlib import Path
-from typing import Iterable
-from collections.abc import Mapping
 
 import chess.pgn
 
@@ -22,6 +21,36 @@ FIXTURE_SPLIT_RE = re.compile(r"\n{2,}(?=\[Event )")
 
 def split_pgn_chunks(text: str) -> list[str]:
     return [chunk.strip() for chunk in FIXTURE_SPLIT_RE.split(text) if chunk.strip()]
+
+
+def _now_ms() -> int:
+    return int(time.time() * 1000)
+
+
+def _should_include_fixture(
+    last_ts: int,
+    since_ms: int,
+    until_ms: int | None,
+) -> bool:
+    if since_ms and last_ts <= since_ms:
+        return False
+    return not (until_ms is not None and last_ts >= until_ms)
+
+
+def _fixture_payload(
+    pgn: str,
+    user: str,
+    source: str,
+    last_ts: int,
+) -> dict[str, object]:
+    return {
+        "game_id": extract_game_id(pgn),
+        "user": user,
+        "source": source,
+        "fetched_at": datetime.now(UTC),
+        "pgn": pgn,
+        "last_timestamp_ms": last_ts,
+    }
 
 
 def load_fixture_games(
@@ -45,20 +74,9 @@ def load_fixture_games(
     games: list[dict[str, object]] = []
     for raw in chunks:
         last_ts = extract_last_timestamp_ms(raw)
-        if since_ms and last_ts <= since_ms:
+        if not _should_include_fixture(last_ts, since_ms, until_ms):
             continue
-        if until_ms is not None and last_ts >= until_ms:
-            continue
-        games.append(
-            {
-                "game_id": extract_game_id(raw),
-                "user": user,
-                "source": source,
-                "fetched_at": datetime.now(timezone.utc),
-                "pgn": raw,
-                "last_timestamp_ms": last_ts,
-            }
-        )
+        games.append(_fixture_payload(raw, user, source, last_ts))
 
     active_logger.info(loaded_message, len(games), path)
     return games
@@ -68,33 +86,34 @@ def extract_game_id(pgn: str) -> str:
     game = chess.pgn.read_game(StringIO(pgn))
     if game:
         site = game.headers.get("Site", "")
-        for pattern in SITE_PATTERNS:
-            match = pattern.search(site)
-            if match:
-                return match.group(1)
-        if site:
-            sanitized = re.sub(r"[^A-Za-z0-9]+", "", site)
-            if sanitized:
-                return sanitized[-16:]
+        match = _match_site_id(site)
+        if match:
+            return match
     return str(abs(hash(pgn)))
+
+
+def _match_site_id(site: str) -> str | None:
+    for pattern in SITE_PATTERNS:
+        match = pattern.search(site)
+        if match:
+            return match.group(1)
+    if site:
+        sanitized = re.sub(r"[^A-Za-z0-9]+", "", site)
+        if sanitized:
+            return sanitized[-16:]
+    return None
 
 
 def extract_last_timestamp_ms(pgn: str) -> int:
     game = chess.pgn.read_game(StringIO(pgn))
     if not game:
-        return int(time.time() * 1000)
+        return _now_ms()
     utc_date = game.headers.get("UTCDate")
     utc_time = game.headers.get("UTCTime")
-    if utc_date and utc_time:
-        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y.%m.%d %H:%M:%S"):
-            try:
-                dt = datetime.strptime(f"{utc_date} {utc_time}", fmt).replace(
-                    tzinfo=timezone.utc
-                )
-                return int(dt.timestamp() * 1000)
-            except ValueError:
-                continue
-    return int(time.time() * 1000)
+    parsed = _parse_utc_start_ms(utc_date, utc_time)
+    if parsed is None:
+        return _now_ms()
+    return parsed
 
 
 def _parse_elo(raw: str | None) -> int | None:
@@ -118,9 +137,7 @@ def normalize_pgn(pgn: str) -> str:
     game = chess.pgn.read_game(StringIO(pgn))
     if not game:
         return pgn.strip()
-    exporter = chess.pgn.StringExporter(
-        headers=True, variations=True, comments=True, columns=80
-    )
+    exporter = chess.pgn.StringExporter(headers=True, variations=True, comments=True, columns=80)
     normalized = game.accept(exporter)
     return normalized.strip()
 
@@ -130,63 +147,61 @@ def _parse_utc_start_ms(utc_date: str | None, utc_time: str | None) -> int | Non
         return None
     for fmt in ("%Y-%m-%d %H:%M:%S", "%Y.%m.%d %H:%M:%S"):
         try:
-            dt = datetime.strptime(f"{utc_date} {utc_time}", fmt).replace(
-                tzinfo=timezone.utc
-            )
+            dt = datetime.strptime(f"{utc_date} {utc_time}", fmt).replace(tzinfo=UTC)
             return int(dt.timestamp() * 1000)
         except ValueError:
             continue
     return None
 
 
+def _empty_pgn_metadata() -> dict[str, object]:
+    return {
+        "user_rating": None,
+        "time_control": None,
+        "white_player": None,
+        "black_player": None,
+        "white_elo": None,
+        "black_elo": None,
+        "result": None,
+        "event": None,
+        "site": None,
+        "utc_date": None,
+        "utc_time": None,
+        "termination": None,
+        "start_timestamp_ms": None,
+    }
+
+
+def _resolve_user_rating(
+    user: str,
+    white: str | None,
+    black: str | None,
+    white_elo: int | None,
+    black_elo: int | None,
+) -> int | None:
+    user_lower = user.lower()
+    white_lower = (white or "").lower()
+    black_lower = (black or "").lower()
+    if white_lower == user_lower:
+        return white_elo
+    if black_lower == user_lower:
+        return black_elo
+    return None
+
+
 def extract_pgn_metadata(pgn: str, user: str) -> dict[str, object]:
     if not pgn.strip().startswith("["):
-        return {
-            "user_rating": None,
-            "time_control": None,
-            "white_player": None,
-            "black_player": None,
-            "white_elo": None,
-            "black_elo": None,
-            "result": None,
-            "event": None,
-            "site": None,
-            "utc_date": None,
-            "utc_time": None,
-            "termination": None,
-            "start_timestamp_ms": None,
-        }
+        return _empty_pgn_metadata()
     game = chess.pgn.read_game(StringIO(pgn))
     if not game or getattr(game, "errors", None):
-        return {
-            "user_rating": None,
-            "time_control": None,
-            "white_player": None,
-            "black_player": None,
-            "white_elo": None,
-            "black_elo": None,
-            "result": None,
-            "event": None,
-            "site": None,
-            "utc_date": None,
-            "utc_time": None,
-            "termination": None,
-            "start_timestamp_ms": None,
-        }
+        return _empty_pgn_metadata()
     headers = game.headers
     time_control = _normalize_header_value(headers.get("TimeControl"))
     white = _normalize_header_value(headers.get("White", ""))
     black = _normalize_header_value(headers.get("Black", ""))
     white_elo = _parse_elo(headers.get("WhiteElo"))
     black_elo = _parse_elo(headers.get("BlackElo"))
-    user_lower = user.lower()
-    white_lower = (white or "").lower()
-    black_lower = (black or "").lower()
-    rating = None
-    if white_lower == user_lower:
-        rating = white_elo
-    elif black_lower == user_lower:
-        rating = black_elo
+    rating = _resolve_user_rating(user, white, black, white_elo, black_elo)
     utc_date = _normalize_header_value(headers.get("UTCDate"))
     utc_time = _normalize_header_value(headers.get("UTCTime"))
     return {

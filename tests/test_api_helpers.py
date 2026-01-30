@@ -7,8 +7,33 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from starlette.requests import Request
 
-import tactix.api as api
-from tactix.api import _coerce_date_to_datetime, _extract_api_token, _format_sse, app
+from tactix.api import app
+from tactix.build_airflow_conf__airflow_jobs import _airflow_conf
+from tactix.build_dashboard_cache_key__api_cache import _dashboard_cache_key
+from tactix.clear_dashboard_cache__api_cache import _clear_dashboard_cache
+from tactix.coerce_backfill_end_ms__airflow_jobs import _coerce_backfill_end_ms
+from tactix.coerce_date_to_datetime__datetime import _coerce_date_to_datetime
+from tactix.dashboard_cache_state__api_cache import (
+    _DASHBOARD_CACHE,
+    _DASHBOARD_CACHE_MAX_ENTRIES,
+    _DASHBOARD_CACHE_TTL_S,
+)
+from tactix.ensure_airflow_success__airflow_jobs import _ensure_airflow_success
+from tactix.event_stream__job_stream import _event_stream
+from tactix.extract_api_token__request_auth import _extract_api_token
+from tactix.format_sse__api_streaming import _format_sse
+from tactix.get_airflow_run_id__airflow_response import _airflow_run_id
+from tactix.get_airflow_state__airflow_jobs import _airflow_state
+from tactix.get_cached_dashboard_payload__api_cache import _get_cached_dashboard_payload
+from tactix.normalize_source__source import _normalize_source
+from tactix.queue_backfill_window__job_stream import _queue_backfill_window
+from tactix.queue_progress__job_stream import _queue_progress
+from tactix.resolve_backfill_end_ms__airflow_jobs import _resolve_backfill_end_ms
+from tactix.run_stream_job__job_stream import _run_stream_job
+from tactix.set_dashboard_cache__api_cache import _set_dashboard_cache
+from tactix.trigger_airflow_daily_sync__airflow_jobs import _trigger_airflow_daily_sync
+from tactix.validate_backfill_window__airflow_jobs import _validate_backfill_window
+from tactix.wait_for_airflow_run__job_stream import _wait_for_airflow_run
 from tactix.config import Settings
 
 
@@ -56,7 +81,7 @@ class ApiHelperTests(unittest.TestCase):
         self.assertIn(b'data: {"status": "ok"}', data)
 
     def test_airflow_conf_and_run_id_helpers(self) -> None:
-        conf = api._airflow_conf(
+        conf = _airflow_conf(
             "chesscom",
             "blitz",
             backfill_start_ms=10,
@@ -69,17 +94,17 @@ class ApiHelperTests(unittest.TestCase):
         self.assertNotIn("backfill_end_ms", conf)
         self.assertEqual(conf["triggered_at_ms"], 20)
 
-        lichess_conf = api._airflow_conf("lichess", "rapid")
+        lichess_conf = _airflow_conf("lichess", "rapid")
         self.assertEqual(lichess_conf["lichess_profile"], "rapid")
 
-        self.assertEqual(api._airflow_run_id({"dag_run_id": "abc"}), "abc")
-        self.assertEqual(api._airflow_run_id({"run_id": 123}), "123")
+        self.assertEqual(_airflow_run_id({"dag_run_id": "abc"}), "abc")
+        self.assertEqual(_airflow_run_id({"run_id": 123}), "123")
         with self.assertRaises(ValueError):
-            api._airflow_run_id({})
+            _airflow_run_id({})
 
     def test_queue_progress_and_backfill_window(self) -> None:
         queue: Queue[object] = Queue()
-        api._queue_progress(
+        _queue_progress(
             queue,
             "daily_game_sync",
             "start",
@@ -91,10 +116,10 @@ class ApiHelperTests(unittest.TestCase):
         self.assertEqual(payload["message"], "starting")
         self.assertEqual(payload["source"], "lichess")
 
-        api._queue_backfill_window(queue, "daily_game_sync", None, None, 10)
+        _queue_backfill_window(queue, "daily_game_sync", None, None, 10)
         self.assertTrue(queue.empty())
 
-        api._queue_backfill_window(queue, "daily_game_sync", 1, 2, 10)
+        _queue_backfill_window(queue, "daily_game_sync", 1, 2, 10)
         event, payload = queue.get_nowait()
         self.assertEqual(event, "progress")
         self.assertEqual(payload["step"], "backfill_window")
@@ -112,7 +137,7 @@ class ApiHelperTests(unittest.TestCase):
             ),
             patch("tactix.wait_for_airflow_run__job_stream.time_module.sleep"),
         ):
-            state = api._wait_for_airflow_run(settings, queue, "job", "run-1")
+            state = _wait_for_airflow_run(settings, queue, "job", "run-1")
         self.assertEqual(state, "success")
 
         with (
@@ -121,12 +146,12 @@ class ApiHelperTests(unittest.TestCase):
             patch("tactix.wait_for_airflow_run__job_stream.time_module.sleep"),
         ):
             with self.assertRaises(TimeoutError):
-                api._wait_for_airflow_run(settings, Queue(), "job", "run-2")
+                _wait_for_airflow_run(settings, Queue(), "job", "run-2")
 
     def test_cache_helpers_and_normalize_source(self) -> None:
-        api._clear_dashboard_cache()
+        _clear_dashboard_cache()
         settings = Settings()
-        key = api._dashboard_cache_key(
+        key = _dashboard_cache_key(
             settings,
             "lichess",
             None,
@@ -139,40 +164,40 @@ class ApiHelperTests(unittest.TestCase):
             patch("tactix.set_dashboard_cache__api_cache.time_module.time", return_value=0),
             patch("tactix.get_cached_dashboard_payload__api_cache.time_module.time", return_value=0),
         ):
-            api._set_dashboard_cache(key, {"status": "ok"})
-            cached = api._get_cached_dashboard_payload(key)
+            _set_dashboard_cache(key, {"status": "ok"})
+            cached = _get_cached_dashboard_payload(key)
         self.assertEqual(cached, {"status": "ok"})
 
         with patch(
             "tactix.get_cached_dashboard_payload__api_cache.time_module.time",
-            return_value=api._DASHBOARD_CACHE_TTL_S + 1,
+            return_value=_DASHBOARD_CACHE_TTL_S + 1,
         ):
-            expired = api._get_cached_dashboard_payload(key)
+            expired = _get_cached_dashboard_payload(key)
         self.assertIsNone(expired)
 
-        api._clear_dashboard_cache()
+        _clear_dashboard_cache()
         with patch("tactix.set_dashboard_cache__api_cache.time_module.time", return_value=0):
-            for index in range(api._DASHBOARD_CACHE_MAX_ENTRIES + 1):
-                api._set_dashboard_cache(("key", index), {"index": index})
-        self.assertEqual(len(api._DASHBOARD_CACHE), api._DASHBOARD_CACHE_MAX_ENTRIES)
-        self.assertNotIn(("key", 0), api._DASHBOARD_CACHE)
+            for index in range(_DASHBOARD_CACHE_MAX_ENTRIES + 1):
+                _set_dashboard_cache(("key", index), {"index": index})
+        self.assertEqual(len(_DASHBOARD_CACHE), _DASHBOARD_CACHE_MAX_ENTRIES)
+        self.assertNotIn(("key", 0), _DASHBOARD_CACHE)
 
-        self.assertIsNone(api._normalize_source(" ALL "))
-        self.assertEqual(api._normalize_source(" ChessCom "), "chesscom")
+        self.assertIsNone(_normalize_source(" ALL "))
+        self.assertEqual(_normalize_source(" ChessCom "), "chesscom")
 
     def test_backfill_helpers(self) -> None:
-        self.assertIsNone(api._resolve_backfill_end_ms(None, None, 50))
-        self.assertEqual(api._coerce_backfill_end_ms(None, 50), 50)
-        self.assertEqual(api._coerce_backfill_end_ms(99, 50), 50)
-        self.assertEqual(api._coerce_backfill_end_ms(30, 50), 30)
-        self.assertEqual(api._resolve_backfill_end_ms(10, 99, 50), 50)
+        self.assertIsNone(_resolve_backfill_end_ms(None, None, 50))
+        self.assertEqual(_coerce_backfill_end_ms(None, 50), 50)
+        self.assertEqual(_coerce_backfill_end_ms(99, 50), 50)
+        self.assertEqual(_coerce_backfill_end_ms(30, 50), 30)
+        self.assertEqual(_resolve_backfill_end_ms(10, 99, 50), 50)
 
-        api._validate_backfill_window(None, None)
+        _validate_backfill_window(None, None)
         with self.assertRaises(HTTPException):
-            api._validate_backfill_window(10, 10)
+            _validate_backfill_window(10, 10)
 
         with self.assertRaises(RuntimeError):
-            api._ensure_airflow_success("failed")
+            _ensure_airflow_success("failed")
 
     def test_trigger_airflow_daily_sync_and_state(self) -> None:
         settings = Settings()
@@ -180,7 +205,7 @@ class ApiHelperTests(unittest.TestCase):
             "tactix.trigger_airflow_daily_sync__airflow_jobs.orchestrate_dag_run__airflow_trigger",
             return_value={"dag_run_id": "run-9"},
         ) as trigger:
-            run_id = api._trigger_airflow_daily_sync(settings, "lichess", "rapid")
+            run_id = _trigger_airflow_daily_sync(settings, "lichess", "rapid")
         self.assertEqual(run_id, "run-9")
         trigger.assert_called_once()
 
@@ -188,7 +213,7 @@ class ApiHelperTests(unittest.TestCase):
             "tactix.get_airflow_state__airflow_jobs.fetch_dag_run__airflow_api",
             return_value={"state": "success"},
         ):
-            state = api._airflow_state(settings, "run-9")
+            state = _airflow_state(settings, "run-9")
         self.assertEqual(state, "success")
 
     def test_event_stream_keep_alive(self) -> None:
@@ -204,7 +229,7 @@ class ApiHelperTests(unittest.TestCase):
                     raise Empty
                 return sentinel
 
-        stream = api._event_stream(DummyQueue(), sentinel)
+        stream = _event_stream(DummyQueue(), sentinel)
         self.assertEqual(next(stream), b"retry: 1000\n\n")
         self.assertEqual(next(stream), b": keep-alive\n\n")
         with self.assertRaises(StopIteration):
@@ -219,7 +244,7 @@ class ApiHelperTests(unittest.TestCase):
             "tactix.run_stream_job__job_stream.run_daily_game_sync",
             return_value={"status": "ok"},
         ) as run_sync:
-            result = api._run_stream_job(
+            result = _run_stream_job(
                 settings,
                 queue,
                 "daily_game_sync",
@@ -234,7 +259,7 @@ class ApiHelperTests(unittest.TestCase):
         run_sync.assert_called_once()
 
         with self.assertRaises(ValueError):
-            api._run_stream_job(
+            _run_stream_job(
                 settings,
                 queue,
                 "unknown",

@@ -1,3 +1,7 @@
+Session 2026-01-30 (refactor split – api module follow-up)
+- Updated API helper tests to import single-function modules directly instead of routing through tactix.api, preserving behavior.
+- Tests: `make check`.
+
 Session 2026-01-30 (refactor split – api module)
 - Split FastAPI endpoints/helpers into single-purpose modules and rebuilt the api.py facade to re-export old names.
 - Before → After map:

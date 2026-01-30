@@ -3,14 +3,12 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from tactix.api import (
-    _DASHBOARD_CACHE_TTL_S,
-    _clear_dashboard_cache,
-    _dashboard_cache_key,
-    _get_cached_dashboard_payload,
-    _set_dashboard_cache,
-    app,
-)
+from tactix.api import app
+from tactix.build_dashboard_cache_key__api_cache import _dashboard_cache_key
+from tactix.clear_dashboard_cache__api_cache import _clear_dashboard_cache
+from tactix.dashboard_cache_state__api_cache import _DASHBOARD_CACHE_TTL_S
+from tactix.get_cached_dashboard_payload__api_cache import _get_cached_dashboard_payload
+from tactix.set_dashboard_cache__api_cache import _set_dashboard_cache
 from tactix.config import get_settings
 
 

@@ -14,6 +14,8 @@ from airflow.dags._dag_helpers import (
 )
 
 logger = get_logger(__name__)
+
+
 @dag(
     dag_id="monitor_new_positions",
     schedule="*/10 * * * *",

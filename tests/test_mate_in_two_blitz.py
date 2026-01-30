@@ -18,12 +18,12 @@ from tactix.position_extractor import extract_positions
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 from tests.fixture_helpers import find_failed_attempt_position, find_missed_position
+
+
 class MateInTwoBlitzTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_blitz_mate_in_two_is_high_severity(self) -> None:
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
         chunks = split_pgn_chunks(fixture_path.read_text())
         mate_pgn = next(chunk for chunk in chunks if "Blitz Fixture 4" in chunk)
 
@@ -90,9 +90,7 @@ class MateInTwoBlitzTests(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_blitz_mate_in_two_records_missed_outcome(self) -> None:
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
         chunks = split_pgn_chunks(fixture_path.read_text())
         mate_pgn = next(chunk for chunk in chunks if "Blitz Fixture 4" in chunk)
 
@@ -121,9 +119,7 @@ class MateInTwoBlitzTests(unittest.TestCase):
         init_schema(conn)
 
         with StockfishEngine(settings) as engine:
-            missed_position, result = find_missed_position(
-                mate_position, engine, settings, "mate"
-            )
+            missed_position, result = find_missed_position(mate_position, engine, settings, "mate")
 
         tactic_row, outcome_row = result
         self.assertEqual(tactic_row["motif"], "mate")
@@ -142,9 +138,7 @@ class MateInTwoBlitzTests(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_blitz_mate_in_two_records_failed_attempt_outcome(self) -> None:
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
         chunks = split_pgn_chunks(fixture_path.read_text())
         mate_pgn = next(chunk for chunk in chunks if "Blitz Fixture 4" in chunk)
 

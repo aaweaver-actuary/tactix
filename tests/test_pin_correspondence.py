@@ -17,6 +17,8 @@ from tests.fixture_helpers import (
     find_missed_position,
     pin_fixture_position,
 )
+
+
 class PinCorrespondenceTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_correspondence_pin_is_high_severity(self) -> None:
@@ -30,9 +32,7 @@ class PinCorrespondenceTests(unittest.TestCase):
             stockfish_multipv=1,
         )
         settings.apply_chesscom_profile("correspondence")
-        self.assertEqual(
-            settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH
-        )
+        self.assertEqual(settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH)
 
         position = pin_fixture_position()
 
@@ -88,9 +88,7 @@ class PinCorrespondenceTests(unittest.TestCase):
         init_schema(conn)
 
         with StockfishEngine(settings) as engine:
-            missed_position, result = find_missed_position(
-                position, engine, settings, "pin"
-            )
+            missed_position, result = find_missed_position(position, engine, settings, "pin")
 
         tactic_row, outcome_row = result
         self.assertEqual(tactic_row["motif"], "pin")

@@ -16,6 +16,8 @@ from tests.fixture_helpers import (
     hanging_piece_fixture_position,
     hanging_piece_high_fixture_position,
 )
+
+
 class HangingPieceCorrespondenceTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_correspondence_hanging_piece_is_low_severity(self) -> None:
@@ -29,9 +31,7 @@ class HangingPieceCorrespondenceTests(unittest.TestCase):
             stockfish_multipv=1,
         )
         settings.apply_chesscom_profile("correspondence")
-        self.assertEqual(
-            settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH
-        )
+        self.assertEqual(settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH)
 
         position = hanging_piece_fixture_position(
             fixture_filename="chesscom_correspondence_sample.pgn",
@@ -76,9 +76,7 @@ class HangingPieceCorrespondenceTests(unittest.TestCase):
             stockfish_multipv=1,
         )
         settings.apply_chesscom_profile("correspondence")
-        self.assertEqual(
-            settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH
-        )
+        self.assertEqual(settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH)
 
         position = hanging_piece_high_fixture_position(
             fixture_filename="chesscom_correspondence_sample.pgn",

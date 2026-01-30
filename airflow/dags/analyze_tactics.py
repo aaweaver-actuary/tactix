@@ -15,6 +15,8 @@ from airflow.dags._dag_helpers import default_args, make_notify_dashboard_task
 logger = get_logger(__name__)
 load_dotenv()
 CHESSCOM_USERNAME = os.getenv("CHESSCOM_USERNAME")
+
+
 @dag(
     dag_id="analyze_tactics",
     schedule="@daily",

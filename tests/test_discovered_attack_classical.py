@@ -22,10 +22,10 @@ from tactix.pgn_utils import extract_game_id, split_pgn_chunks
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 from tests.fixture_helpers import find_failed_attempt_position, find_missed_position
+
+
 def _discovered_attack_fixture_position() -> dict[str, object]:
-    fixture_path = (
-        Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
-    )
+    fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
     chunks = split_pgn_chunks(fixture_path.read_text())
     for chunk in chunks:
         game = chess.pgn.read_game(StringIO(chunk))
@@ -58,13 +58,9 @@ def _discovered_attack_fixture_position() -> dict[str, object]:
 
 
 def _discovered_attack_high_fixture_position() -> dict[str, object]:
-    fixture_path = (
-        Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
-    )
+    fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
     chunks = split_pgn_chunks(fixture_path.read_text())
-    discovered_chunk = next(
-        chunk for chunk in chunks if "Discovered Attack High" in chunk
-    )
+    discovered_chunk = next(chunk for chunk in chunks if "Discovered Attack High" in chunk)
     game = chess.pgn.read_game(StringIO(discovered_chunk))
     if not game:
         raise AssertionError("No discovered attack high fixture game found")
@@ -92,9 +88,7 @@ def _discovered_attack_high_fixture_position() -> dict[str, object]:
 
 def _discovered_attack_correspondence_fixture_position() -> dict[str, object]:
     fixture_path = (
-        Path(__file__).resolve().parent
-        / "fixtures"
-        / "chesscom_correspondence_sample.pgn"
+        Path(__file__).resolve().parent / "fixtures" / "chesscom_correspondence_sample.pgn"
     )
     chunks = split_pgn_chunks(fixture_path.read_text())
     for chunk in chunks:
@@ -273,9 +267,7 @@ class DiscoveredAttackClassicalTests(unittest.TestCase):
         position = _discovered_attack_fixture_position()
 
         tmp_dir = Path(tempfile.mkdtemp())
-        conn = get_connection(
-            tmp_dir / "discovered_attack_classical_failed_attempt.duckdb"
-        )
+        conn = get_connection(tmp_dir / "discovered_attack_classical_failed_attempt.duckdb")
         init_schema(conn)
 
         with StockfishEngine(settings) as engine:
@@ -312,9 +304,7 @@ class TestDiscoveredAttackCorrespondence(unittest.TestCase):
             stockfish_multipv=1,
         )
         settings.apply_chesscom_profile("correspondence")
-        self.assertEqual(
-            settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH
-        )
+        self.assertEqual(settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH)
 
         position = _discovered_attack_correspondence_fixture_position()
 

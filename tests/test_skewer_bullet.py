@@ -13,6 +13,8 @@ from tactix.db.duckdb_store import (
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 from tests.fixture_helpers import skewer_fixture_position
+
+
 class SkewerBulletTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_bullet_skewer_is_low_severity(self) -> None:

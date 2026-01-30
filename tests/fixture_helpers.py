@@ -13,9 +13,7 @@ from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 
 
-def _first_move_position(
-    chunk: str, *, game_id: str | None = None
-) -> dict[str, object] | None:
+def _first_move_position(chunk: str, *, game_id: str | None = None) -> dict[str, object] | None:
     game = chess.pgn.read_game(StringIO(chunk))
     if not game:
         return None
@@ -134,9 +132,6 @@ def find_failed_attempt_position(
         if result is None:
             continue
         tactic_row, outcome_row = result
-        if (
-            outcome_row["result"] == "failed_attempt"
-            and tactic_row["motif"] == expected_motif
-        ):
+        if outcome_row["result"] == "failed_attempt" and tactic_row["motif"] == expected_motif:
             return candidate, result
     raise AssertionError("No failed_attempt outcome found for fixture position")

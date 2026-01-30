@@ -18,6 +18,8 @@ from tactix.pgn_utils import split_pgn_chunks
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 from tests.fixture_helpers import skewer_fixture_position
+
+
 def _skewer_high_fixture_position() -> dict[str, object]:
     fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
     chunks = split_pgn_chunks(fixture_path.read_text())

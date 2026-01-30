@@ -17,6 +17,8 @@ from tests.fixture_helpers import (
     hanging_piece_fixture_position,
     hanging_piece_high_fixture_position,
 )
+
+
 class HangingPieceRapidTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_rapid_hanging_piece_is_low_severity(self) -> None:

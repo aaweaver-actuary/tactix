@@ -24,10 +24,10 @@ from tactix.pgn_utils import extract_game_id, split_pgn_chunks
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 from tests.fixture_helpers import find_failed_attempt_position, find_missed_position
+
+
 def _discovered_check_fixture_position() -> dict[str, object]:
-    fixture_path = (
-        Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
-    )
+    fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
     chunks = split_pgn_chunks(fixture_path.read_text())
     for chunk in chunks:
         game = chess.pgn.read_game(StringIO(chunk))
@@ -60,13 +60,9 @@ def _discovered_check_fixture_position() -> dict[str, object]:
 
 
 def _discovered_check_high_fixture_position() -> dict[str, object]:
-    fixture_path = (
-        Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
-    )
+    fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
     chunks = split_pgn_chunks(fixture_path.read_text())
-    discovered_chunk = next(
-        chunk for chunk in chunks if "Discovered Check High" in chunk
-    )
+    discovered_chunk = next(chunk for chunk in chunks if "Discovered Check High" in chunk)
     game = chess.pgn.read_game(StringIO(discovered_chunk))
     if not game:
         raise AssertionError("No discovered check high fixture game found")
@@ -93,9 +89,7 @@ def _discovered_check_high_fixture_position() -> dict[str, object]:
 
 
 def _discovered_check_rapid_fixture_position() -> dict[str, object]:
-    fixture_path = (
-        Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
-    )
+    fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
     chunks = split_pgn_chunks(fixture_path.read_text())
     for chunk in chunks:
         game = chess.pgn.read_game(StringIO(chunk))
@@ -128,13 +122,9 @@ def _discovered_check_rapid_fixture_position() -> dict[str, object]:
 
 
 def _discovered_check_rapid_high_fixture_position() -> dict[str, object]:
-    fixture_path = (
-        Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
-    )
+    fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
     chunks = split_pgn_chunks(fixture_path.read_text())
-    discovered_chunk = next(
-        chunk for chunk in chunks if "Discovered Check High" in chunk
-    )
+    discovered_chunk = next(chunk for chunk in chunks if "Discovered Check High" in chunk)
     game = chess.pgn.read_game(StringIO(discovered_chunk))
     if not game:
         raise AssertionError("No discovered check rapid high fixture game found")
@@ -161,9 +151,7 @@ def _discovered_check_rapid_high_fixture_position() -> dict[str, object]:
 
 
 def _discovered_check_classical_fixture_position() -> dict[str, object]:
-    fixture_path = (
-        Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
-    )
+    fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
     chunks = split_pgn_chunks(fixture_path.read_text())
     for chunk in chunks:
         game = chess.pgn.read_game(StringIO(chunk))
@@ -196,13 +184,9 @@ def _discovered_check_classical_fixture_position() -> dict[str, object]:
 
 
 def _discovered_check_classical_high_fixture_position() -> dict[str, object]:
-    fixture_path = (
-        Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
-    )
+    fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
     chunks = split_pgn_chunks(fixture_path.read_text())
-    discovered_chunk = next(
-        chunk for chunk in chunks if "Discovered Check High" in chunk
-    )
+    discovered_chunk = next(chunk for chunk in chunks if "Discovered Check High" in chunk)
     game = chess.pgn.read_game(StringIO(discovered_chunk))
     if not game:
         raise AssertionError("No discovered check classical high fixture game found")
@@ -230,9 +214,7 @@ def _discovered_check_classical_high_fixture_position() -> dict[str, object]:
 
 def _discovered_check_correspondence_fixture_position() -> dict[str, object]:
     fixture_path = (
-        Path(__file__).resolve().parent
-        / "fixtures"
-        / "chesscom_correspondence_sample.pgn"
+        Path(__file__).resolve().parent / "fixtures" / "chesscom_correspondence_sample.pgn"
     )
     chunks = split_pgn_chunks(fixture_path.read_text())
     for chunk in chunks:
@@ -267,19 +249,13 @@ def _discovered_check_correspondence_fixture_position() -> dict[str, object]:
 
 def _discovered_check_correspondence_high_fixture_position() -> dict[str, object]:
     fixture_path = (
-        Path(__file__).resolve().parent
-        / "fixtures"
-        / "chesscom_correspondence_sample.pgn"
+        Path(__file__).resolve().parent / "fixtures" / "chesscom_correspondence_sample.pgn"
     )
     chunks = split_pgn_chunks(fixture_path.read_text())
-    discovered_chunk = next(
-        chunk for chunk in chunks if "Discovered Check High" in chunk
-    )
+    discovered_chunk = next(chunk for chunk in chunks if "Discovered Check High" in chunk)
     game = chess.pgn.read_game(StringIO(discovered_chunk))
     if not game:
-        raise AssertionError(
-            "No discovered check correspondence high fixture game found"
-        )
+        raise AssertionError("No discovered check correspondence high fixture game found")
     fen = game.headers.get("FEN")
     board = chess.Board(fen) if fen else game.board()
     moves = list(game.mainline_moves())
@@ -718,9 +694,7 @@ class DiscoveredCheckBlitzTests(unittest.TestCase):
             stockfish_multipv=1,
         )
         settings.apply_chesscom_profile("correspondence")
-        self.assertEqual(
-            settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH
-        )
+        self.assertEqual(settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH)
 
         position = _discovered_check_correspondence_fixture_position()
 
@@ -761,9 +735,7 @@ class DiscoveredCheckBlitzTests(unittest.TestCase):
             stockfish_multipv=1,
         )
         settings.apply_chesscom_profile("correspondence")
-        self.assertEqual(
-            settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH
-        )
+        self.assertEqual(settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH)
 
         position = _discovered_check_correspondence_high_fixture_position()
 

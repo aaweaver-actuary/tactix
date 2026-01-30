@@ -16,6 +16,7 @@ from airflow.dags._dag_helpers import (
 
 logger = get_logger(__name__)
 
+
 @dag(
     dag_id="daily_game_sync",
     schedule="@hourly",
@@ -47,9 +48,7 @@ def daily_game_sync_dag():
             backfill_end_ms,
             triggered_at_ms,
             is_backfill,
-        ) = resolve_backfill_window(
-            dag_run, run_type, data_interval_start, data_interval_end
-        )
+        ) = resolve_backfill_window(dag_run, run_type, data_interval_start, data_interval_end)
         profile = resolve_profile(dag_run, "lichess")
         settings = get_settings(source="lichess", profile=profile)
         logger.info(
@@ -97,9 +96,7 @@ def daily_game_sync_dag():
             backfill_end_ms,
             triggered_at_ms,
             is_backfill,
-        ) = resolve_backfill_window(
-            dag_run, run_type, data_interval_start, data_interval_end
-        )
+        ) = resolve_backfill_window(dag_run, run_type, data_interval_start, data_interval_end)
         profile = resolve_profile(dag_run, "chesscom")
         settings = get_settings(source="chesscom", profile=profile)
         logger.info(

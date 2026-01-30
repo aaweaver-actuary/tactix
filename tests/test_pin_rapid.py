@@ -13,6 +13,8 @@ from tactix.db.duckdb_store import (
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 from tests.fixture_helpers import pin_fixture_position
+
+
 class PinRapidTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_rapid_pin_is_high_severity(self) -> None:

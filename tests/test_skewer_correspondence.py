@@ -22,16 +22,14 @@ from tests.fixture_helpers import (
     find_missed_position,
     skewer_fixture_position,
 )
+
+
 def _skewer_high_fixture_position() -> dict[str, object]:
     fixture_path = (
-        Path(__file__).resolve().parent
-        / "fixtures"
-        / "chesscom_correspondence_sample.pgn"
+        Path(__file__).resolve().parent / "fixtures" / "chesscom_correspondence_sample.pgn"
     )
     chunks = split_pgn_chunks(fixture_path.read_text())
-    skewer_chunk = next(
-        chunk for chunk in chunks if "Correspondence Fixture 6" in chunk
-    )
+    skewer_chunk = next(chunk for chunk in chunks if "Correspondence Fixture 6" in chunk)
     game = chess.pgn.read_game(StringIO(skewer_chunk))
     if not game:
         raise AssertionError("No skewer high fixture game found")
@@ -70,9 +68,7 @@ class SkewerCorrespondenceTests(unittest.TestCase):
             stockfish_multipv=1,
         )
         settings.apply_chesscom_profile("correspondence")
-        self.assertEqual(
-            settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH
-        )
+        self.assertEqual(settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH)
 
         position = skewer_fixture_position()
 
@@ -120,9 +116,7 @@ class SkewerCorrespondenceTests(unittest.TestCase):
             stockfish_multipv=1,
         )
         settings.apply_chesscom_profile("correspondence")
-        self.assertEqual(
-            settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH
-        )
+        self.assertEqual(settings.stockfish_depth, DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH)
 
         skewer_position = _skewer_high_fixture_position()
 
@@ -163,9 +157,7 @@ class SkewerCorrespondenceTests(unittest.TestCase):
         init_schema(conn)
 
         with StockfishEngine(settings) as engine:
-            missed_position, result = find_missed_position(
-                position, engine, settings, "skewer"
-            )
+            missed_position, result = find_missed_position(position, engine, settings, "skewer")
 
         tactic_row, outcome_row = result
         self.assertEqual(tactic_row["motif"], "skewer")

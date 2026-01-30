@@ -10,6 +10,8 @@ from tactix.utils.logger import get_logger
 from airflow.dags._dag_helpers import default_args
 
 logger = get_logger(__name__)
+
+
 @dag(
     dag_id="migrations",
     schedule=None,

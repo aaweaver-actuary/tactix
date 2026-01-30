@@ -18,12 +18,12 @@ from tactix.position_extractor import extract_positions
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 from tests.fixture_helpers import find_failed_attempt_position, find_missed_position
+
+
 class MateInOneRapidTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_rapid_mate_in_one_is_high_severity(self) -> None:
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
         chunks = split_pgn_chunks(fixture_path.read_text())
         mate_pgn = next(chunk for chunk in chunks if "Rapid Fixture 3" in chunk)
 
@@ -83,9 +83,7 @@ class MateInOneRapidTests(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_rapid_mate_in_one_records_missed_outcome(self) -> None:
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
         chunks = split_pgn_chunks(fixture_path.read_text())
         mate_pgn = next(chunk for chunk in chunks if "Rapid Fixture 3" in chunk)
 
@@ -114,9 +112,7 @@ class MateInOneRapidTests(unittest.TestCase):
         init_schema(conn)
 
         with StockfishEngine(settings) as engine:
-            missed_position, result = find_missed_position(
-                mate_position, engine, settings, "mate"
-            )
+            missed_position, result = find_missed_position(mate_position, engine, settings, "mate")
 
         tactic_row, outcome_row = result
         self.assertEqual(tactic_row["motif"], "mate")
@@ -135,9 +131,7 @@ class MateInOneRapidTests(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_rapid_mate_in_one_records_failed_attempt_outcome(self) -> None:
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
         chunks = split_pgn_chunks(fixture_path.read_text())
         mate_pgn = next(chunk for chunk in chunks if "Rapid Fixture 3" in chunk)
 
@@ -189,9 +183,7 @@ class MateInOneRapidTests(unittest.TestCase):
 class TestForkRapid(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_rapid_fork_is_low_severity(self) -> None:
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
         chunks = split_pgn_chunks(fixture_path.read_text())
         fork_pgn = next(chunk for chunk in chunks if "Rapid Fixture 5" in chunk)
 
@@ -254,9 +246,7 @@ class TestForkRapid(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_rapid_fork_records_missed_outcome(self) -> None:
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
         chunks = split_pgn_chunks(fixture_path.read_text())
         fork_pgn = next(chunk for chunk in chunks if "Rapid Fixture 5" in chunk)
 
@@ -285,9 +275,7 @@ class TestForkRapid(unittest.TestCase):
         init_schema(conn)
 
         with StockfishEngine(settings) as engine:
-            missed_position, result = find_missed_position(
-                fork_position, engine, settings, "fork"
-            )
+            missed_position, result = find_missed_position(fork_position, engine, settings, "fork")
 
         tactic_row, outcome_row = result
         self.assertEqual(tactic_row["motif"], "fork")
@@ -306,9 +294,7 @@ class TestForkRapid(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_rapid_fork_records_failed_attempt_outcome(self) -> None:
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
         chunks = split_pgn_chunks(fixture_path.read_text())
         fork_pgn = next(chunk for chunk in chunks if "Rapid Fixture 5" in chunk)
 

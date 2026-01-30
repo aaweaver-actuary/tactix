@@ -2054,3 +2054,8 @@ Session 2026-01-29 (feature 187 – outcome missed + hanging piece found)
 - Tests: `make check` (ty deprecation warning for FastAPI on_event; cargo deprecation warnings; pytest/vitest warnings only).
 - Updated feature_list.json: outcome found for hanging piece and outcome missed for mate in 1/2, fork, pin, skewer, discovered attack/check marked passes=true.
 - Pass count: 212.
+
+Session 2026-01-29 (regression fix – failed_attempt outcomes)
+- Fixed failed_attempt reclassification logic to use per-motif thresholds and avoid overriding missed outcomes for discovered motifs; added support for skewer reclassification via overridden motif.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_discovered_attack_classical.py tests/test_discovered_check_blitz_low.py tests/test_hanging_piece_rapid.py tests/test_mate_in_one_rapid.py tests/test_mate_in_two_blitz.py tests/test_pin_correspondence.py tests/test_skewer_correspondence.py`.
+- Commit: d05cda9.

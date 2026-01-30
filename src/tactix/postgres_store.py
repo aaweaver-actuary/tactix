@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from datetime import datetime
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Iterator, Mapping
+from typing import Any, Iterator, Mapping, cast
 import time
 
 import psycopg2
@@ -291,8 +291,8 @@ def upsert_postgres_raw_pgns(
                     latest_version=latest_version,
                     normalize_pgn=normalize_pgn,
                     hash_pgn=_hash_pgn_text,
-                    fetched_at=row.get("fetched_at"),
-                    last_timestamp_ms=row.get("last_timestamp_ms", 0),
+                    fetched_at=cast(datetime | None, row.get("fetched_at")),
+                    last_timestamp_ms=cast(int, row.get("last_timestamp_ms", 0)),
                     cursor=row.get("cursor"),
                 )
                 if plan is None:

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import logging
-from typing import Callable, Mapping
+from typing import Callable, Mapping, cast
 
 from tactix.config import Settings
 from tactix.pgn_utils import extract_pgn_metadata
@@ -153,7 +153,7 @@ class BaseDbStore:
         return TacticInsertPlan(
             game_id=game_id,
             position_id=position_id,
-            motif=tactic_row.get("motif", "unknown"),
+            motif=cast(str, tactic_row.get("motif", "unknown")),
             severity=tactic_row.get("severity", 0.0),
             best_uci=tactic_row.get("best_uci", ""),
             best_san=tactic_row.get("best_san"),
@@ -166,7 +166,7 @@ class BaseDbStore:
         outcome_row: Mapping[str, object],
     ) -> OutcomeInsertPlan:
         return OutcomeInsertPlan(
-            result=outcome_row.get("result", "unclear"),
+            result=cast(str, outcome_row.get("result", "unclear")),
             user_uci=outcome_row.get("user_uci", ""),
             eval_delta=outcome_row.get("eval_delta", 0),
         )

@@ -148,15 +148,56 @@ export default function GameDetailModal({
     if (!open) return;
     setCurrentMoveIndex(lastMoveIndex);
   }, [open, lastMoveIndex]);
-                  <BaseTable
-                    data={analysisRows}
-                    columns={analysisColumns}
-                    emptyMessage="No analysis rows found."
-                    enablePagination={false}
-                    tableClassName="text-xs"
-                    headerCellClassName="py-1"
-                    cellClassName="py-1"
-                  />
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!moveCount) return;
+      switch (event.key) {
+        case 'ArrowLeft':
+          event.preventDefault();
+          setCurrentMoveIndex((prev) => Math.max(0, prev - 1));
+          break;
+        case 'ArrowRight':
+          event.preventDefault();
+          setCurrentMoveIndex((prev) => Math.min(lastMoveIndex, prev + 1));
+          break;
+        case 'ArrowUp':
+          event.preventDefault();
+          setCurrentMoveIndex(0);
+          break;
+        case 'ArrowDown':
+          event.preventDefault();
+          setCurrentMoveIndex(lastMoveIndex);
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open, moveCount, lastMoveIndex]);
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div data-testid="game-detail-modal">
+      <div>
+        <div>
+          <BaseTable
+            data={analysisRows}
+            columns={analysisColumns}
+            emptyMessage="No analysis rows found."
+            enablePagination={false}
+            tableClassName="text-xs"
+            headerCellClassName="py-1"
+            cellClassName="py-1"
+          />
           <button
             type="button"
             onClick={onClose}

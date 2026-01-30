@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Iterable
+from typing import Iterable, Mapping, cast
 
 from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
 
@@ -90,21 +90,22 @@ def _filter_rows(
         if not isinstance(row, dict):
             filtered.append(row)
             continue
-        if not _matches_value(row, "source", source):
+        row_dict = cast(Mapping[str, object], row)
+        if not _matches_value(row_dict, "source", source):
             continue
-        if not _matches_value(row, "motif", motif):
+        if not _matches_value(row_dict, "motif", motif):
             continue
-        if not _matches_value(row, "rating_bucket", rating_bucket):
+        if not _matches_value(row_dict, "rating_bucket", rating_bucket):
             continue
-        if not _matches_value(row, "time_control", time_control):
+        if not _matches_value(row_dict, "time_control", time_control):
             continue
-        if not _matches_date_range(row, start_date, end_date):
+        if not _matches_date_range(row_dict, start_date, end_date):
             continue
         filtered.append(row)
     return filtered
 
 
-def _matches_value(row: dict[str, object], key: str, value: str | None) -> bool:
+def _matches_value(row: Mapping[str, object], key: str, value: str | None) -> bool:
     if value is None:
         return True
     row_value = row.get(key)
@@ -114,7 +115,7 @@ def _matches_value(row: dict[str, object], key: str, value: str | None) -> bool:
 
 
 def _matches_date_range(
-    row: dict[str, object],
+    row: Mapping[str, object],
     start_date: datetime | None,
     end_date: datetime | None,
 ) -> bool:
@@ -123,14 +124,16 @@ def _matches_date_range(
     row_date = _extract_date(row)
     if row_date is None:
         return True
-    if start_date is not None and row_date < _coerce_date(start_date):
+    start_value = _coerce_date(start_date) if start_date is not None else None
+    if start_value is not None and row_date < start_value:
         return False
-    if end_date is not None and row_date > _coerce_date(end_date):
+    end_value = _coerce_date(end_date) if end_date is not None else None
+    if end_value is not None and row_date > end_value:
         return False
     return True
 
 
-def _extract_date(row: dict[str, object]) -> date | None:
+def _extract_date(row: Mapping[str, object]) -> date | None:
     for key in ("created_at", "played_at", "trend_date"):
         value = row.get(key)
         date_value = _coerce_date(value)

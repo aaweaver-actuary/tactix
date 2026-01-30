@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import os
 from pathlib import Path
-from typing import Iterable, List, Mapping
+from typing import Iterable, List, Mapping, cast
 
 import duckdb
 from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
@@ -469,8 +469,8 @@ def upsert_raw_pgns(
                 user=str(row["user"]),
                 latest_hash=latest_hash,
                 latest_version=latest_version,
-                fetched_at=row.get("fetched_at"),
-                last_timestamp_ms=row.get("last_timestamp_ms", 0),
+                fetched_at=cast(datetime | None, row.get("fetched_at")),
+                last_timestamp_ms=cast(int, row.get("last_timestamp_ms", 0)),
                 cursor=row.get("cursor"),
             )
             if plan is None:

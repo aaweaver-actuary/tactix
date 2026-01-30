@@ -1,3 +1,9 @@
+Session 2026-01-30 (refactor consolidation – Stockfish test dedupe)
+- Removed redundant Stockfish checksum tests by converting the legacy module into a deprecated stub.
+- Before → After map:
+	- tests/test_stockfish_checksum.py → deprecated stub (canonical tests remain in tests/test_stockfish_runner.py)
+- Tests: `make check` (before), `make check` (after).
+
 Session 2026-01-30 (refactor consolidation – raw PGN summary mapping helper)
 - Added shared raw PGN summary payload + sources helpers and reused them in DuckDB/Postgres stores.
 - Before → After map:

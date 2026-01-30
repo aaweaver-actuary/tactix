@@ -1,3 +1,1 @@
-import pytest
-
-pytest.skip("Consolidated into test_stockfish_runner.py", allow_module_level=True)
+"""Deprecated stub (tests consolidated into test_stockfish_runner.py)."""

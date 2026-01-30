@@ -2,6 +2,8 @@
 
 This report was generated after reading all Python files in the repository and scanning for semantically similar functions, helpers, and test patterns that are likely to benefit from consolidation.
 
+Last updated: 2026-01-30 (post-consolidation scan)
+
 ## How this report was assembled
 
 - Scanned all Python files under the repository (excluding virtualenv, node_modules, build artifacts).
@@ -10,7 +12,90 @@ This report was generated after reading all Python files in the repository and s
 
 ---
 
-## High-priority consolidation candidates
+## High-priority consolidation candidates (remaining)
+
+The items below are still present after the latest consolidation passes and are recommended for the next refactor cycles.
+
+### A) Chess client fixture loader duplication across modules
+
+Examples:
+
+- load_fixture_games in [src/tactix/chess_clients/fetch_helpers.py](src/tactix/chess_clients/fetch_helpers.py)
+- load_fixture_games in [src/tactix/pgn_utils.py](src/tactix/pgn_utils.py)
+
+Reasoning: both are responsible for fixture PGN loading and filtering.
+
+Consolidation idea: keep a single load helper in chess_clients/fetch_helpers.py and import it into pgn_utils.py (or vice versa).
+
+---
+
+### B) Client fixture usage decision helper duplicated
+
+Examples:
+
+- \_use_fixture_games in [src/tactix/chesscom_client.py](src/tactix/chesscom_client.py)
+- \_use_fixture_games in [src/tactix/lichess_client.py](src/tactix/lichess_client.py)
+
+Reasoning: identical purpose and signature, used to decide fixture fallback.
+
+Consolidation idea: move to chess_clients/fetch_helpers.py and call from both clients.
+
+---
+
+### C) Game-row coercion helper duplicated
+
+Examples:
+
+- \_coerce_games in [src/tactix/chesscom_client.py](src/tactix/chesscom_client.py)
+- \_coerce_games in [src/tactix/lichess_client.py](src/tactix/lichess_client.py)
+
+Reasoning: both normalize raw rows into ChessGameRow models.
+
+Consolidation idea: shared coercion helper in chess_clients/chess_game_row.py or chess_clients/fetch_helpers.py.
+
+---
+
+### D) Incremental fetch orchestration still split across client modules
+
+Examples:
+
+- fetch_incremental_games in [src/tactix/chesscom_client.py](src/tactix/chesscom_client.py)
+- fetch_incremental_games in [src/tactix/lichess_client.py](src/tactix/lichess_client.py)
+- fetch_incremental_games in [src/tactix/chess_clients/game_fetching.py](src/tactix/chess_clients/game_fetching.py)
+
+Reasoning: similar orchestration flow still exists in multiple modules.
+
+Consolidation idea: unify orchestration in chess_clients/game_fetching.py with per-source hooks.
+
+---
+
+### E) Raw PGN summary mapping still duplicated
+
+Examples:
+
+- fetch_raw_pgns_summary in [src/tactix/db/duckdb_store.py](src/tactix/db/duckdb_store.py)
+- fetch_raw_pgns_summary in [src/tactix/postgres_store.py](src/tactix/postgres_store.py)
+
+Reasoning: same output mapping logic for two backends.
+
+Consolidation idea: shared mapper in src/tactix/db/raw_pgn_summary.py with light backend-specific wrappers.
+
+---
+
+### F) Duplicate test fixtures and HTTP fakes in tests
+
+Examples:
+
+- test_fixture_fetch_respects_since in [tests/test_chesscom_client.py](tests/test_chesscom_client.py) and [tests/test_lichess_client.py](tests/test_lichess_client.py)
+- fake_get/json/raise_for_status helpers repeated in [tests/test_chesscom_client.py](tests/test_chesscom_client.py)
+
+Reasoning: tests reimplement similar fake response patterns and shared assertions.
+
+Consolidation idea: shared test helper module (tests/http_fakes.py) and shared fixture assertions.
+
+---
+
+## Completed consolidation items (for reference)
 
 ### 1) Airflow DAG defaults duplicated across DAGs
 
@@ -220,4 +305,4 @@ Consolidation idea: create a shared seeding helper in tmp-logs/\_seed_helpers.py
 
 ## Suggested next refactor step
 
-If you want to proceed with refactoring, the highest impact and lowest-risk consolidation appears to be shared helpers for the chess client fetch/fixture logic plus shared test fixture builders. These would reduce repetition across core code and tests without changing external behavior.
+If you want to proceed with refactoring, the highest impact and lowest-risk consolidation appears to be shared helpers for the chess client fixture logic plus shared HTTP fake helpers in tests. These would reduce repetition across core code and tests without changing external behavior.

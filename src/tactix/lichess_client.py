@@ -27,7 +27,7 @@ from tactix.chess_clients.base_chess_client import (
     ChessFetchRequest,
     ChessFetchResult,
 )
-from tactix.chess_clients.chess_game_row import ChessGameRow
+from tactix.chess_clients.chess_game_row import ChessGameRow, coerce_game_rows
 from tactix.chess_clients.fetch_helpers import (
     load_fixture_games,
     run_incremental_fetch,
@@ -305,7 +305,7 @@ class LichessClient(BaseChessClient):
             Validated game rows.
         """
 
-        return [LichessGameRow.model_validate(row).model_dump() for row in rows]
+        return coerce_game_rows(rows, LichessGameRow)
 
 
 def _coerce_perf_type(value: str | None) -> PerfType | None:

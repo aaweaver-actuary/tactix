@@ -17,7 +17,7 @@ from tactix.chess_clients.base_chess_client import (
     ChessFetchRequest,
     ChessFetchResult,
 )
-from tactix.chess_clients.chess_game_row import ChessGameRow
+from tactix.chess_clients.chess_game_row import ChessGameRow, coerce_game_rows
 from tactix.chess_clients.fetch_helpers import (
     load_fixture_games,
     run_incremental_fetch,
@@ -456,7 +456,7 @@ class ChesscomClient(BaseChessClient):
             Validated game rows.
         """
 
-        return [ChessGameRow.model_validate(row).model_dump() for row in rows]
+        return coerce_game_rows(rows, ChessGameRow)
 
 
 def _should_stop_archive_fetch(since_ms: int, archive_max_ts: int) -> bool:

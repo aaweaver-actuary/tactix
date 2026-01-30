@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from datetime import datetime
 
 from pydantic import BaseModel
@@ -21,3 +22,10 @@ class ChessGameRow(BaseModel):
     fetched_at: datetime
     pgn: str
     last_timestamp_ms: int
+
+
+def coerce_game_rows[T: "ChessGameRow"](
+    rows: Iterable[dict],
+    model_cls: type[T],
+) -> list[dict]:
+    return [model_cls.model_validate(row).model_dump() for row in rows]

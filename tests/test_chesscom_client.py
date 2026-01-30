@@ -8,7 +8,6 @@ import unittest
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
 
-import requests
 import chess.pgn
 
 from tactix.config import Settings, get_settings
@@ -33,7 +32,12 @@ from tactix.chess_clients.chesscom_client import (
     read_cursor,
     write_cursor,
 )
-from tactix.pgn_utils import latest_timestamp, split_pgn_chunks
+from tactix.pgn_utils import split_pgn_chunks
+from tests.http_fakes import (
+    FakeResponse,
+    assert_fixture_games_have_timestamps,
+    make_fake_get,
+)
 
 
 class ChesscomClientTests(unittest.TestCase):
@@ -69,10 +73,7 @@ class ChesscomClientTests(unittest.TestCase):
 
         result = fetch_incremental_games(settings, cursor=None)
         games = result.games
-        self.assertGreaterEqual(len(games), 2)
-
-        last_ts = latest_timestamp(games)
-        self.assertGreater(last_ts, 0)
+        assert_fixture_games_have_timestamps(games, min_games=2)
         self.assertIsNotNone(result.next_cursor)
 
         newer = fetch_incremental_games(settings, cursor=result.next_cursor)
@@ -102,22 +103,9 @@ class ChesscomClientTests(unittest.TestCase):
         pgn_text = split_pgn_chunks(self.fixture_path.read_text())[0]
         archive_url = ARCHIVES_URL.format(username="envuser")
 
-        class DummyResponse:
-            def __init__(self, status_code, json_data=None, headers=None):
-                self.status_code = status_code
-                self._json = json_data or {}
-                self.headers = headers or {}
-
-            def json(self):
-                return self._json
-
-            def raise_for_status(self):
-                if self.status_code >= 400:
-                    raise requests.HTTPError(f"{self.status_code} Error")
-
         responses = [
-            DummyResponse(200, json_data={"archives": [archive_url]}),
-            DummyResponse(
+            FakeResponse(200, json_data={"archives": [archive_url]}),
+            FakeResponse(
                 200,
                 json_data={
                     "games": [
@@ -132,9 +120,7 @@ class ChesscomClientTests(unittest.TestCase):
         ]
         captured_urls: list[str] = []
 
-        def fake_get(url, *_args, **_kwargs):
-            captured_urls.append(url)
-            return responses.pop(0)
+        fake_get = make_fake_get(responses, captured_urls=captured_urls)
 
         with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
             result = fetch_incremental_games(settings, cursor=None)
@@ -160,22 +146,9 @@ class ChesscomClientTests(unittest.TestCase):
         pgn_text = split_pgn_chunks(self.bullet_fixture_path.read_text())[0]
         archive_url = "https://api.chess.com/pub/player/chesscom/games/2024/07"
 
-        class DummyResponse:
-            def __init__(self, status_code, json_data=None, headers=None):
-                self.status_code = status_code
-                self._json = json_data or {}
-                self.headers = headers or {}
-
-            def json(self):
-                return self._json
-
-            def raise_for_status(self):
-                if self.status_code >= 400:
-                    raise requests.HTTPError(f"{self.status_code} Error")
-
         responses = [
-            DummyResponse(200, json_data={"archives": [archive_url]}),
-            DummyResponse(
+            FakeResponse(200, json_data={"archives": [archive_url]}),
+            FakeResponse(
                 200,
                 json_data={
                     "games": [
@@ -194,8 +167,7 @@ class ChesscomClientTests(unittest.TestCase):
             ),
         ]
 
-        def fake_get(*_args, **_kwargs):
-            return responses.pop(0)
+        fake_get = make_fake_get(responses)
 
         with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
             result = fetch_incremental_games(settings, cursor=None)
@@ -221,22 +193,9 @@ class ChesscomClientTests(unittest.TestCase):
         pgn_text = split_pgn_chunks(self.fixture_path.read_text())[0]
         archive_url = "https://api.chess.com/pub/player/chesscom/games/2024/07"
 
-        class DummyResponse:
-            def __init__(self, status_code, json_data=None, headers=None):
-                self.status_code = status_code
-                self._json = json_data or {}
-                self.headers = headers or {}
-
-            def json(self):
-                return self._json
-
-            def raise_for_status(self):
-                if self.status_code >= 400:
-                    raise requests.HTTPError(f"{self.status_code} Error")
-
         responses = [
-            DummyResponse(200, json_data={"archives": [archive_url]}),
-            DummyResponse(
+            FakeResponse(200, json_data={"archives": [archive_url]}),
+            FakeResponse(
                 200,
                 json_data={
                     "games": [
@@ -255,8 +214,7 @@ class ChesscomClientTests(unittest.TestCase):
             ),
         ]
 
-        def fake_get(*_args, **_kwargs):
-            return responses.pop(0)
+        fake_get = make_fake_get(responses)
 
         with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
             result = fetch_incremental_games(settings, cursor=None)
@@ -282,22 +240,9 @@ class ChesscomClientTests(unittest.TestCase):
         pgn_text = split_pgn_chunks(self.rapid_fixture_path.read_text())[0]
         archive_url = "https://api.chess.com/pub/player/chesscom/games/2024/07"
 
-        class DummyResponse:
-            def __init__(self, status_code, json_data=None, headers=None):
-                self.status_code = status_code
-                self._json = json_data or {}
-                self.headers = headers or {}
-
-            def json(self):
-                return self._json
-
-            def raise_for_status(self):
-                if self.status_code >= 400:
-                    raise requests.HTTPError(f"{self.status_code} Error")
-
         responses = [
-            DummyResponse(200, json_data={"archives": [archive_url]}),
-            DummyResponse(
+            FakeResponse(200, json_data={"archives": [archive_url]}),
+            FakeResponse(
                 200,
                 json_data={
                     "games": [
@@ -316,8 +261,7 @@ class ChesscomClientTests(unittest.TestCase):
             ),
         ]
 
-        def fake_get(*_args, **_kwargs):
-            return responses.pop(0)
+        fake_get = make_fake_get(responses)
 
         with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
             result = fetch_incremental_games(settings, cursor=None)
@@ -348,22 +292,12 @@ class ChesscomClientTests(unittest.TestCase):
             chesscom_fixture_pgn_path=self.fixture_path,
         )
 
-        class DummyResponse:
-            def __init__(self, status_code, headers=None):
-                self.status_code = status_code
-                self.headers = headers or {}
-
-            def raise_for_status(self):
-                if self.status_code >= 400:
-                    raise requests.HTTPError(f"{self.status_code} Error")
-
         responses = [
-            DummyResponse(429, headers={"Retry-After": "0"}),
-            DummyResponse(200),
+            FakeResponse(429, headers={"Retry-After": "0"}),
+            FakeResponse(200),
         ]
 
-        def fake_get(*_args, **_kwargs):
-            return responses.pop(0)
+        fake_get = make_fake_get(responses)
 
         with (
             patch("tactix.chesscom_client.requests.get", side_effect=fake_get),
@@ -387,17 +321,7 @@ class ChesscomClientTests(unittest.TestCase):
             chesscom_fixture_pgn_path=self.fixture_path,
         )
 
-        class DummyResponse:
-            def __init__(self, status_code, headers=None):
-                self.status_code = status_code
-                self.headers = headers or {}
-
-            def raise_for_status(self):
-                if self.status_code >= 400:
-                    raise requests.HTTPError(f"{self.status_code} Error")
-
-        def fake_get(*_args, **_kwargs):
-            return DummyResponse(429, headers={"Retry-After": "0"})
+        fake_get = make_fake_get([FakeResponse(429, headers={"Retry-After": "0"})])
 
         with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
             with self.assertRaises(ChesscomRateLimitError):
@@ -546,15 +470,8 @@ class ChesscomClientTests(unittest.TestCase):
             chesscom_fixture_pgn_path=self.fixture_path,
         )
 
-        class DummyResponse:
-            def __init__(self, data):
-                self._data = data
-
-            def json(self):
-                return self._data
-
         def fake_get(*_args, **_kwargs):
-            return DummyResponse({"games": [], "next_page": "https://example.com/loop"})
+            return FakeResponse(json_data={"games": [], "next_page": "https://example.com/loop"})
 
         with patch(
             "tactix.chesscom_client.ChesscomClient._get_with_backoff",
@@ -584,16 +501,9 @@ class ChesscomClientTests(unittest.TestCase):
             fallback_games = _fetch_remote_games(settings, since_ms=0)
         self.assertGreaterEqual(len(fallback_games), 1)
 
-        class DummyResponse:
-            def __init__(self, data):
-                self._data = data
-
-            def json(self):
-                return self._data
-
         with patch(
             "tactix.chesscom_client.ChesscomClient._get_with_backoff",
-            return_value=DummyResponse({"archives": []}),
+            return_value=FakeResponse(json_data={"archives": []}),
         ):
             empty = _fetch_remote_games(settings, since_ms=0)
         self.assertEqual(empty, [])
@@ -646,22 +556,9 @@ class ChesscomClientTests(unittest.TestCase):
         pgn_text = split_pgn_chunks(self.classical_fixture_path.read_text())[0]
         archive_url = "https://api.chess.com/pub/player/chesscom/games/2024/07"
 
-        class DummyResponse:
-            def __init__(self, status_code, json_data=None, headers=None):
-                self.status_code = status_code
-                self._json = json_data or {}
-                self.headers = headers or {}
-
-            def json(self):
-                return self._json
-
-            def raise_for_status(self):
-                if self.status_code >= 400:
-                    raise requests.HTTPError(f"{self.status_code} Error")
-
         responses = [
-            DummyResponse(200, json_data={"archives": [archive_url]}),
-            DummyResponse(
+            FakeResponse(200, json_data={"archives": [archive_url]}),
+            FakeResponse(
                 200,
                 json_data={
                     "games": [
@@ -680,8 +577,7 @@ class ChesscomClientTests(unittest.TestCase):
             ),
         ]
 
-        def fake_get(*_args, **_kwargs):
-            return responses.pop(0)
+        fake_get = make_fake_get(responses)
 
         with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
             result = fetch_incremental_games(settings, cursor=None)
@@ -707,22 +603,9 @@ class ChesscomClientTests(unittest.TestCase):
         pgn_text = split_pgn_chunks(self.correspondence_fixture_path.read_text())[0]
         archive_url = "https://api.chess.com/pub/player/chesscom/games/2024/07"
 
-        class DummyResponse:
-            def __init__(self, status_code, json_data=None, headers=None):
-                self.status_code = status_code
-                self._json = json_data or {}
-                self.headers = headers or {}
-
-            def json(self):
-                return self._json
-
-            def raise_for_status(self):
-                if self.status_code >= 400:
-                    raise requests.HTTPError(f"{self.status_code} Error")
-
         responses = [
-            DummyResponse(200, json_data={"archives": [archive_url]}),
-            DummyResponse(
+            FakeResponse(200, json_data={"archives": [archive_url]}),
+            FakeResponse(
                 200,
                 json_data={
                     "games": [
@@ -741,8 +624,7 @@ class ChesscomClientTests(unittest.TestCase):
             ),
         ]
 
-        def fake_get(*_args, **_kwargs):
-            return responses.pop(0)
+        fake_get = make_fake_get(responses)
 
         with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
             result = fetch_incremental_games(settings, cursor=None)
@@ -773,26 +655,13 @@ class ChesscomClientTests(unittest.TestCase):
         ]
         captured_urls: list[str] = []
 
-        class DummyResponse:
-            def __init__(self, status_code, json_data=None, headers=None):
-                self.status_code = status_code
-                self._json = json_data or {}
-                self.headers = headers or {}
-
-            def json(self):
-                return self._json
-
-            def raise_for_status(self):
-                if self.status_code >= 400:
-                    raise requests.HTTPError(f"{self.status_code} Error")
-
         def fake_get(url, *_args, **_kwargs):
             captured_urls.append(url)
             if url == archives_url:
-                return DummyResponse(200, json_data={"archives": archive_urls})
+                return FakeResponse(200, json_data={"archives": archive_urls})
             if url in archive_urls:
                 index = archive_urls.index(url)
-                return DummyResponse(
+                return FakeResponse(
                     200,
                     json_data={
                         "games": [
@@ -854,23 +723,10 @@ class ChesscomClientTests(unittest.TestCase):
         pgn_text = split_pgn_chunks(self.fixture_path.read_text())[0]
         archive_url = "https://api.chess.com/pub/player/chesscom/games/2024/01"
 
-        class DummyResponse:
-            def __init__(self, status_code, json_data=None, headers=None):
-                self.status_code = status_code
-                self._json = json_data or {}
-                self.headers = headers or {}
-
-            def json(self):
-                return self._json
-
-            def raise_for_status(self):
-                if self.status_code >= 400:
-                    raise requests.HTTPError(f"{self.status_code} Error")
-
         responses = [
-            DummyResponse(429, headers={"Retry-After": "2"}),
-            DummyResponse(200, json_data={"archives": [archive_url]}),
-            DummyResponse(
+            FakeResponse(429, headers={"Retry-After": "2"}),
+            FakeResponse(200, json_data={"archives": [archive_url]}),
+            FakeResponse(
                 200,
                 json_data={
                     "games": [
@@ -884,8 +740,7 @@ class ChesscomClientTests(unittest.TestCase):
             ),
         ]
 
-        def fake_get(*_args, **_kwargs):
-            return responses.pop(0)
+        fake_get = make_fake_get(responses)
 
         with (
             patch("tactix.chesscom_client.requests.get", side_effect=fake_get),
@@ -913,22 +768,9 @@ class ChesscomClientTests(unittest.TestCase):
         archive_url = "https://api.chess.com/pub/player/chesscom/games/2024/01"
         page_two_url = f"{archive_url}?page=2"
 
-        class DummyResponse:
-            def __init__(self, status_code, json_data=None, headers=None):
-                self.status_code = status_code
-                self._json = json_data or {}
-                self.headers = headers or {}
-
-            def json(self):
-                return self._json
-
-            def raise_for_status(self):
-                if self.status_code >= 400:
-                    raise requests.HTTPError(f"{self.status_code} Error")
-
         responses = [
-            DummyResponse(200, json_data={"archives": [archive_url]}),
-            DummyResponse(
+            FakeResponse(200, json_data={"archives": [archive_url]}),
+            FakeResponse(
                 200,
                 json_data={
                     "games": [
@@ -941,7 +783,7 @@ class ChesscomClientTests(unittest.TestCase):
                     "next_page": page_two_url,
                 },
             ),
-            DummyResponse(
+            FakeResponse(
                 200,
                 json_data={
                     "games": [
@@ -955,8 +797,7 @@ class ChesscomClientTests(unittest.TestCase):
             ),
         ]
 
-        def fake_get(*_args, **_kwargs):
-            return responses.pop(0)
+        fake_get = make_fake_get(responses)
 
         with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
             result = fetch_incremental_games(settings, cursor=None)
@@ -981,19 +822,6 @@ class ChesscomClientTests(unittest.TestCase):
         archives_url = ARCHIVES_URL.format(username=settings.user)
         total_pages = 5
 
-        class DummyResponse:
-            def __init__(self, status_code, json_data=None, headers=None):
-                self.status_code = status_code
-                self._json = json_data or {}
-                self.headers = headers or {}
-
-            def json(self):
-                return self._json
-
-            def raise_for_status(self):
-                if self.status_code >= 400:
-                    raise requests.HTTPError(f"{self.status_code} Error")
-
         def page_payload(page: int) -> dict:
             games = []
             for index in range(50):
@@ -1012,12 +840,12 @@ class ChesscomClientTests(unittest.TestCase):
 
         def fake_get(url, *_args, **_kwargs):
             if url == archives_url:
-                return DummyResponse(200, json_data={"archives": [archive_url]})
+                return FakeResponse(200, json_data={"archives": [archive_url]})
 
             parsed = urlparse(url)
             if parsed.path.endswith("/games/2024/01"):
                 page_value = parse_qs(parsed.query).get("page", ["1"])[0]
-                return DummyResponse(200, json_data=page_payload(int(page_value)))
+                return FakeResponse(200, json_data=page_payload(int(page_value)))
 
             raise AssertionError(f"Unexpected URL: {url}")
 

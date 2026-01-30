@@ -28,11 +28,11 @@ from tactix.chess_clients.lichess_client import (
     _resolve_access_token,
     _write_cached_token,
     fetch_incremental_games,
-    latest_timestamp,
     read_checkpoint,
     write_checkpoint,
 )
 from tactix.pgn_utils import extract_last_timestamp_ms, split_pgn_chunks
+from tests.http_fakes import FakeResponse, assert_fixture_games_have_timestamps
 
 
 class LichessClientTests(unittest.TestCase):
@@ -42,9 +42,7 @@ class LichessClientTests(unittest.TestCase):
             Path(__file__).resolve().parent / "fixtures" / "lichess_rapid_sample.pgn"
         )
         self.correspondence_fixture_path = (
-            Path(__file__).resolve().parent
-            / "fixtures"
-            / "lichess_correspondence_sample.pgn"
+            Path(__file__).resolve().parent / "fixtures" / "lichess_correspondence_sample.pgn"
         )
 
     def test_checkpoint_roundtrip(self) -> None:
@@ -70,10 +68,7 @@ class LichessClientTests(unittest.TestCase):
         )
 
         games = fetch_incremental_games(settings, since_ms=0)
-        self.assertGreaterEqual(len(games), 2)
-
-        last_ts = latest_timestamp(games)
-        self.assertGreater(last_ts, 0)
+        last_ts = assert_fixture_games_have_timestamps(games, min_games=2)
 
         newer = fetch_incremental_games(settings, since_ms=last_ts)
         self.assertEqual(newer, [])
@@ -133,20 +128,14 @@ class LichessClientTests(unittest.TestCase):
         min_ts = min(timestamps)
         max_ts = max(timestamps)
 
-        filtered = fetch_incremental_games(
-            settings, since_ms=min_ts, until_ms=max_ts + 1
-        )
+        filtered = fetch_incremental_games(settings, since_ms=min_ts, until_ms=max_ts + 1)
 
         self.assertGreater(len(filtered), 0)
         self.assertLess(len(filtered), len(games))
-        self.assertTrue(
-            all(min_ts < row["last_timestamp_ms"] < max_ts + 1 for row in filtered)
-        )
+        self.assertTrue(all(min_ts < row["last_timestamp_ms"] < max_ts + 1 for row in filtered))
 
     def test_fixture_fetch_filters_blitz_window(self) -> None:
-        blitz_fixture = (
-            Path(__file__).resolve().parent / "fixtures" / "lichess_blitz_sample.pgn"
-        )
+        blitz_fixture = Path(__file__).resolve().parent / "fixtures" / "lichess_blitz_sample.pgn"
         settings = Settings(
             user="lichess",
             source="lichess",
@@ -167,21 +156,15 @@ class LichessClientTests(unittest.TestCase):
         min_ts = min(timestamps)
         max_ts = max(timestamps)
 
-        filtered = fetch_incremental_games(
-            settings, since_ms=min_ts, until_ms=max_ts + 1
-        )
+        filtered = fetch_incremental_games(settings, since_ms=min_ts, until_ms=max_ts + 1)
 
         self.assertGreater(len(filtered), 0)
         self.assertLess(len(filtered), len(games))
-        self.assertTrue(
-            all(min_ts < row["last_timestamp_ms"] < max_ts + 1 for row in filtered)
-        )
+        self.assertTrue(all(min_ts < row["last_timestamp_ms"] < max_ts + 1 for row in filtered))
 
     def test_fixture_fetch_filters_classical_window(self) -> None:
         classical_fixture = (
-            Path(__file__).resolve().parent
-            / "fixtures"
-            / "lichess_classical_sample.pgn"
+            Path(__file__).resolve().parent / "fixtures" / "lichess_classical_sample.pgn"
         )
         settings = Settings(
             user="lichess",
@@ -203,15 +186,11 @@ class LichessClientTests(unittest.TestCase):
         min_ts = min(timestamps)
         max_ts = max(timestamps)
 
-        filtered = fetch_incremental_games(
-            settings, since_ms=min_ts, until_ms=max_ts + 1
-        )
+        filtered = fetch_incremental_games(settings, since_ms=min_ts, until_ms=max_ts + 1)
 
         self.assertGreater(len(filtered), 0)
         self.assertLess(len(filtered), len(games))
-        self.assertTrue(
-            all(min_ts < row["last_timestamp_ms"] < max_ts + 1 for row in filtered)
-        )
+        self.assertTrue(all(min_ts < row["last_timestamp_ms"] < max_ts + 1 for row in filtered))
 
     def test_fixture_fetch_filters_correspondence_window(self) -> None:
         settings = Settings(
@@ -234,15 +213,11 @@ class LichessClientTests(unittest.TestCase):
         min_ts = min(timestamps)
         max_ts = max(timestamps)
 
-        filtered = fetch_incremental_games(
-            settings, since_ms=min_ts, until_ms=max_ts + 1
-        )
+        filtered = fetch_incremental_games(settings, since_ms=min_ts, until_ms=max_ts + 1)
 
         self.assertGreater(len(filtered), 0)
         self.assertLess(len(filtered), len(games))
-        self.assertTrue(
-            all(min_ts < row["last_timestamp_ms"] < max_ts + 1 for row in filtered)
-        )
+        self.assertTrue(all(min_ts < row["last_timestamp_ms"] < max_ts + 1 for row in filtered))
 
         empty = fetch_incremental_games(settings, since_ms=max_ts, until_ms=max_ts + 1)
 
@@ -271,9 +246,7 @@ class LichessClientTests(unittest.TestCase):
             target_settings.lichess_token = "new-token"
             return "new-token"
 
-        with patch(
-            "tactix.lichess_client.LichessClient._fetch_remote_games_once"
-        ) as fetch_once:
+        with patch("tactix.lichess_client.LichessClient._fetch_remote_games_once") as fetch_once:
             fetch_once.side_effect = [FakeAuthError(401), []]
             with patch(
                 "tactix.lichess_client._refresh_lichess_token",
@@ -449,14 +422,10 @@ class LichessClientTests(unittest.TestCase):
             lichess_oauth_token_url="https://lichess.org/api/token",
         )
 
-        class DummyResponse:
-            def raise_for_status(self) -> None:
-                return None
-
-            def json(self) -> dict:
-                return {"access_token": "new-token"}
-
-        with patch("tactix.lichess_client.requests.post", return_value=DummyResponse()):
+        with patch(
+            "tactix.lichess_client.requests.post",
+            return_value=FakeResponse(json_data={"access_token": "new-token"}),
+        ):
             token = _refresh_lichess_token(settings)
 
         self.assertEqual(token, "new-token")
@@ -487,14 +456,10 @@ class LichessClientTests(unittest.TestCase):
             lichess_oauth_token_url="https://lichess.org/api/token",
         )
 
-        class DummyResponse:
-            def raise_for_status(self) -> None:
-                return None
-
-            def json(self) -> dict:
-                return {}
-
-        with patch("tactix.lichess_client.requests.post", return_value=DummyResponse()):
+        with patch(
+            "tactix.lichess_client.requests.post",
+            return_value=FakeResponse(json_data={}),
+        ):
             with self.assertRaises(LichessTokenError):
                 _refresh_lichess_token(settings)
 
@@ -643,9 +608,7 @@ class LichessClientTests(unittest.TestCase):
             fixture_pgn_path=self.fixture_path,
             use_fixture_when_no_token=True,
         )
-        client = LichessClient(
-            LichessClientContext(settings=settings, logger=get_logger("test"))
-        )
+        client = LichessClient(LichessClientContext(settings=settings, logger=get_logger("test")))
         request = LichessFetchRequest(since_ms=0)
         result = client.fetch_incremental_games(request)
 
@@ -660,9 +623,7 @@ class LichessClientTests(unittest.TestCase):
             checkpoint_path=self.tmp_dir / "since_auth.txt",
             metrics_version_file=self.tmp_dir / "metrics_auth.txt",
         )
-        client = LichessClient(
-            LichessClientContext(settings=settings, logger=get_logger("test"))
-        )
+        client = LichessClient(LichessClientContext(settings=settings, logger=get_logger("test")))
         self.assertFalse(client._should_refresh_token(RuntimeError("boom")))
 
     def test_fetch_remote_games_passes_until(self) -> None:

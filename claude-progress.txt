@@ -1,3 +1,10 @@
+Session 2026-01-30 (refactor consolidation – test HTTP fakes)
+- Consolidated HTTP response fakes and fixture assertions for chess client tests.
+- Before → After map:
+	- tests/test_chesscom_client.py + tests/test_lichess_client.py fake response helpers → tests/http_fakes.py FakeResponse/make_fake_get
+	- fixture since assertions in chesscom/lichess tests → tests/http_fakes.assert_fixture_games_have_timestamps
+- Tests: `make check` (before), `make check` (after).
+
 Session 2026-01-30 (refactor consolidation – shared fetch orchestration)
 - Routed Lichess module-level fetch helpers through chess_clients/game_fetching.py to reduce duplicate flow.
 - Before → After map:

@@ -24,4 +24,9 @@ client/coverage/
 client/node_modules/
 tmp-logs/vite.log
 tmp-logs/uvicorn.log
+tmp-logs/vite-5173.log
+tmp-logs/debug_failed_attempts*.py
+tmp-logs/feature_188_seed_outcome_*.py
+tmp-logs/feature_189_seed_outcome_*.py
+verification/puppeteer_feature_189_*.js
 .serena/

@@ -45,6 +45,35 @@ def _find_missed_position(
     raise AssertionError("No missed outcome found for fixture position")
 
 
+def _find_failed_attempt_position(
+    position: dict[str, object],
+    engine: StockfishEngine,
+    settings: Settings,
+    expected_motif: str,
+) -> tuple[dict[str, object], tuple[dict[str, object], dict[str, object]]]:
+    board = chess.Board(str(position["fen"]))
+    best_move = engine.analyse(board).best_move
+    for move in board.legal_moves:
+        if best_move is not None and move == best_move:
+            continue
+        candidate = dict(position)
+        candidate["uci"] = move.uci()
+        try:
+            candidate["san"] = board.san(move)
+        except Exception:
+            pass
+        result = analyze_position(candidate, engine, settings=settings)
+        if result is None:
+            continue
+        tactic_row, outcome_row = result
+        if (
+            outcome_row["result"] == "failed_attempt"
+            and tactic_row["motif"] == expected_motif
+        ):
+            return candidate, result
+    raise AssertionError("No failed_attempt outcome found for fixture position")
+
+
 def _skewer_fixture_position() -> dict[str, object]:
     fixture_path = Path(__file__).resolve().parent / "fixtures" / "skewer.pgn"
     chunks = split_pgn_chunks(fixture_path.read_text())
@@ -243,6 +272,45 @@ class SkewerCorrespondenceTests(unittest.TestCase):
         self.assertEqual(stored[0], position_ids[0])
         self.assertIsNotNone(stored[1])
         self.assertIn("Best line", stored[2] or "")
+
+    @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
+    def test_correspondence_skewer_records_failed_attempt_outcome(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            chesscom_profile="correspondence",
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=60,
+            stockfish_depth=None,
+            stockfish_multipv=1,
+        )
+        settings.apply_chesscom_profile("correspondence")
+
+        position = _skewer_fixture_position()
+
+        tmp_dir = Path(tempfile.mkdtemp())
+        conn = get_connection(tmp_dir / "skewer_correspondence_failed_attempt.duckdb")
+        init_schema(conn)
+
+        with StockfishEngine(settings) as engine:
+            failed_position, result = _find_failed_attempt_position(
+                position, engine, settings, "skewer"
+            )
+
+        tactic_row, outcome_row = result
+        self.assertEqual(tactic_row["motif"], "skewer")
+        self.assertEqual(outcome_row["result"], "failed_attempt")
+
+        position_ids = insert_positions(conn, [failed_position])
+        tactic_row["position_id"] = position_ids[0]
+
+        tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
+        stored_outcome = conn.execute(
+            "SELECT result, user_uci FROM tactic_outcomes WHERE tactic_id = ?",
+            [tactic_id],
+        ).fetchone()
+        self.assertEqual(stored_outcome[0], "failed_attempt")
+        self.assertEqual(stored_outcome[1], failed_position["uci"])
 
 
 if __name__ == "__main__":

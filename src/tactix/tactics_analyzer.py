@@ -34,10 +34,11 @@ _PROFILE_HANGING_PIECE_HIGH = frozenset(
 _PROFILE_FORK_LOW = frozenset({"blitz", "rapid"})
 _PROFILE_FORK_HIGH = frozenset({"bullet"})
 _PROFILE_FORK_SLOW = frozenset({"classical", "correspondence"})
-_FAILED_ATTEMPT_RECLASSIFY_MOTIFS = frozenset(
-    {"discovered_attack", "discovered_check", "skewer"}
-)
-_FAILED_ATTEMPT_RECLASSIFY_DELTA = -950
+_FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS = {
+    "discovered_attack": -1200,
+    "discovered_check": -950,
+    "skewer": -700,
+}
 
 
 def _normalized_profile(settings: Settings | None) -> tuple[str, str]:
@@ -176,10 +177,15 @@ def analyze_position(
                 and best_motif in failed_attempt_override_targets
             ):
                 motif = best_motif
+    reclassify_motif = None
+    if user_motif in _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS:
+        reclassify_motif = user_motif
+    elif motif == "skewer" and motif in _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS:
+        reclassify_motif = motif
     if (
         result == "missed"
-        and motif in _FAILED_ATTEMPT_RECLASSIFY_MOTIFS
-        and delta > _FAILED_ATTEMPT_RECLASSIFY_DELTA
+        and reclassify_motif is not None
+        and delta > _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS[reclassify_motif]
     ):
         result = "failed_attempt"
     if mate_in_one:

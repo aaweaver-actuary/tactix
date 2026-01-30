@@ -51,6 +51,35 @@ def _find_missed_position(
     raise AssertionError("No missed outcome found for fixture position")
 
 
+def _find_failed_attempt_position(
+    position: dict[str, object],
+    engine: StockfishEngine,
+    settings: Settings,
+    expected_motif: str,
+) -> tuple[dict[str, object], tuple[dict[str, object], dict[str, object]]]:
+    board = chess.Board(str(position["fen"]))
+    best_move = engine.analyse(board).best_move
+    for move in board.legal_moves:
+        if best_move is not None and move == best_move:
+            continue
+        candidate = dict(position)
+        candidate["uci"] = move.uci()
+        try:
+            candidate["san"] = board.san(move)
+        except Exception:
+            pass
+        result = analyze_position(candidate, engine, settings=settings)
+        if result is None:
+            continue
+        tactic_row, outcome_row = result
+        if (
+            outcome_row["result"] == "failed_attempt"
+            and tactic_row["motif"] == expected_motif
+        ):
+            return candidate, result
+    raise AssertionError("No failed_attempt outcome found for fixture position")
+
+
 def _discovered_check_fixture_position() -> dict[str, object]:
     fixture_path = (
         Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
@@ -484,6 +513,46 @@ class DiscoveredCheckBlitzTests(unittest.TestCase):
         ).fetchone()
         self.assertEqual(stored_outcome[0], "missed")
         self.assertEqual(stored_outcome[1], missed_position["uci"])
+
+    @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
+    def test_blitz_discovered_check_records_failed_attempt_outcome(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            chesscom_profile="blitz",
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=60,
+            stockfish_depth=None,
+            stockfish_multipv=1,
+        )
+        settings.apply_chesscom_profile("blitz")
+        self.assertEqual(settings.stockfish_depth, DEFAULT_BLITZ_STOCKFISH_DEPTH)
+
+        position = _discovered_check_high_fixture_position()
+
+        tmp_dir = Path(tempfile.mkdtemp())
+        conn = get_connection(tmp_dir / "discovered_check_blitz_failed_attempt.duckdb")
+        init_schema(conn)
+
+        with StockfishEngine(settings) as engine:
+            failed_position, result = _find_failed_attempt_position(
+                position, engine, settings, "discovered_check"
+            )
+
+        tactic_row, outcome_row = result
+        self.assertEqual(tactic_row["motif"], "discovered_check")
+        self.assertEqual(outcome_row["result"], "failed_attempt")
+
+        position_ids = insert_positions(conn, [failed_position])
+        tactic_row["position_id"] = position_ids[0]
+
+        tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
+        stored_outcome = conn.execute(
+            "SELECT result, user_uci FROM tactic_outcomes WHERE tactic_id = ?",
+            [tactic_id],
+        ).fetchone()
+        self.assertEqual(stored_outcome[0], "failed_attempt")
+        self.assertEqual(stored_outcome[1], failed_position["uci"])
 
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_blitz_discovered_check_is_high_severity(self) -> None:

@@ -1,7 +1,9 @@
 pylint:
 	uv run ruff check --fix src/
 	uv run ruff format src/
-	uv run ty check src/
+	uv run ty check \
+		--error deprecated \
+		src/
 
 jslint:
 	cd client && npx eslint --fix . --ext .js,.jsx,.ts,.tsx
@@ -12,7 +14,11 @@ lint: pylint jslint
 pytest:
 	uv run cargo test
 	uv run cargo test --release
-	uv run pytest tests/ --cov=src/ --cov-config=./.coveragerc --cov-report=term-missing --cov-fail-under=90
+	uv run pytest tests/ \
+		--cov=src/ \
+		--cov-config=./.coveragerc \
+		--cov-report=term-missing \
+		--cov-fail-under=90
 
 jstest:
 	cd client && \
@@ -23,9 +29,9 @@ test: pytest jstest
 
 py-complexity:
 	uv run xenon \
-		--max-absolute B \
-		--max-modules B \
-		--max-average B \
+		--max-absolute A \
+		--max-modules A \
+		--max-average A \
 		src/
 
 complexity: py-complexity

@@ -48,6 +48,9 @@ export default function MetricsGrid({
     (row): row is DashboardPayload['metrics'][number] & { motif: string } =>
       typeof row.motif === 'string' && row.motif.length > 0,
   );
+  const uniqueMotifRows = Array.from(
+    new Map(motifRows.map((row) => [row.motif, row])).values(),
+  );
 
   return (
     <BaseCard
@@ -66,7 +69,7 @@ export default function MetricsGrid({
             {...dropProvided.droppableProps}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
           >
-            {motifRows.map((row, index) => (
+            {uniqueMotifRows.map((row, index) => (
               <div key={row.motif} className="contents">
                 {dropIndicatorIndex === index ? (
                   <div
@@ -109,7 +112,7 @@ export default function MetricsGrid({
                 </Draggable>
               </div>
             ))}
-            {dropIndicatorIndex === motifRows.length ? (
+            {dropIndicatorIndex === uniqueMotifRows.length ? (
               <div
                 className="col-span-full h-0.5 rounded-full bg-teal/60"
                 data-testid="motif-drop-indicator"

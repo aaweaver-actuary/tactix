@@ -1,3 +1,10 @@
+Session 2026-01-30 (Vite UI error fix + regression re-verify)
+- Root cause: tactix-client container was missing node_modules; Vite failed to resolve @tanstack/react-table, causing 500s on BaseTable and Puppeteer timeouts.
+- Fix: ran `docker exec tactix-client-1 npm ci` to repopulate /app/node_modules in the client container; verified BaseTable module resolves (HTTP 200).
+- UI regression verification: feature 001, 016, 028 re-ran via Puppeteer against http://localhost:5173.
+- Screenshots: `verification/regression-001-lichess-2026-01-25.png`, `verification/regression-016-auth-2026-01-25.png`, `verification/feature-028-practice-next-unseen.png`.
+- Follow-up: deduped motif rows in `client/src/_components/MetricsGrid.tsx` to avoid duplicate-key console warnings.
+
 Session 2026-01-29 (regression fix – failed_attempt outcomes)
 - Root cause: missed outcomes for discovered attack/check/skewer were never reclassified to failed_attempt when eval drops were large but still within a tactical-attempt band, leaving some fixtures with no failed_attempt entries.
 - Fix: added motif-based missed→failed_attempt reclassification in tactics analyzer for discovered attack/check/skewer when eval delta > -950.

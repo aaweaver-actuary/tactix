@@ -12,7 +12,12 @@
     "esModuleInterop": true,
     "noEmit": true,
     "strict": true,
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": true
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]

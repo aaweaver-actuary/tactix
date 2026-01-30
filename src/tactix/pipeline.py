@@ -3,37 +3,43 @@ from __future__ import annotations
 import hashlib
 import json
 import time
-from datetime import datetime
 from collections.abc import Callable, Mapping
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import TypedDict, cast
 
 import chess.engine
-from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
+
 from tactix.base_chess_client import BaseChessClient
+from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
 from tactix.chesscom_client import (
     ChesscomClient,
     ChesscomClientContext,
     ChesscomFetchRequest,
     ChesscomFetchResult,
+)
+from tactix.chesscom_client import (
     read_cursor as read_chesscom_cursor,
+)
+from tactix.chesscom_client import (
     write_cursor as write_chesscom_cursor,
 )
 from tactix.config import Settings, get_settings
 from tactix.duckdb_store import (
     DuckDbStore,
+    delete_game_rows,
     fetch_latest_pgn_hashes,
     fetch_latest_raw_pgns,
     fetch_metrics,
-    fetch_unanalyzed_positions,
-    fetch_positions_for_games,
     fetch_position_counts,
+    fetch_positions_for_games,
     fetch_recent_tactics,
-    get_schema_version,
+    fetch_unanalyzed_positions,
     get_connection,
+    get_schema_version,
     hash_pgn,
     init_schema,
     insert_positions,
-    delete_game_rows,
     migrate_schema,
     update_metrics_summary,
     upsert_raw_pgns,
@@ -59,8 +65,8 @@ from tactix.postgres_store import (
     init_analysis_schema,
     init_pgn_schema,
     postgres_analysis_enabled,
-    postgres_pgns_enabled,
     postgres_connection,
+    postgres_pgns_enabled,
     record_ops_event,
     upsert_analysis_tactic_with_outcome,
     upsert_postgres_raw_pgns,
@@ -69,6 +75,12 @@ from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 
 logger = get_logger(__name__)
+ANALYSIS_PROGRESS_BUCKETS = 20
+DEFAULT_SYNC_LIMIT = 50
+INDEX_OFFSET = 1
+RESUME_INDEX_START = 0
+SINGLE_PGN_CHUNK = 1
+ZERO_COUNT = 0
 
 
 class GameRow(TypedDict):
@@ -83,12 +95,41 @@ class GameRow(TypedDict):
 ProgressCallback = Callable[[dict[str, object]], None]
 
 
+@dataclass(slots=True)
+class FetchContext:
+    raw_games: list[Mapping[str, object]]
+    since_ms: int
+    cursor_before: str | None = None
+    cursor_value: str | None = None
+    next_cursor: str | None = None
+    chesscom_result: ChesscomFetchResult | None = None
+    last_timestamp_ms: int = 0
+
+
+@dataclass(slots=True)
+class AnalysisPrepResult:
+    positions: list[dict[str, object]]
+    resume_index: int
+    analysis_signature: str
+    raw_pgns_inserted: int
+    raw_pgns_hashed: int
+    raw_pgns_matched: int
+    postgres_raw_pgns_inserted: int
+
+
+@dataclass(slots=True)
+class DailyAnalysisResult:
+    total_positions: int
+    tactics_count: int
+    postgres_written: int
+    postgres_synced: int
+    metrics_version: int
+
+
 def _coerce_int(value: object) -> int:
     if isinstance(value, bool):
         return int(value)
-    if isinstance(value, int):
-        return value
-    if isinstance(value, float):
+    if isinstance(value, (int, float)):
         return int(value)
     if isinstance(value, str):
         try:
@@ -115,7 +156,7 @@ def _coerce_pgn(value: object) -> str:
 def _normalize_game_row(row: Mapping[str, object], settings: Settings) -> GameRow:
     fetched_at = row.get("fetched_at")
     if not isinstance(fetched_at, datetime):
-        fetched_at = datetime.now()
+        fetched_at = datetime.now(UTC)
     return {
         "game_id": _coerce_str(row.get("game_id")),
         "user": _coerce_str(row.get("user")) or settings.user,
@@ -131,38 +172,37 @@ def _expand_pgn_rows(rows: list[GameRow], settings: Settings) -> list[GameRow]:
     for row in rows:
         pgn_text = row.get("pgn", "")
         chunks = split_pgn_chunks(pgn_text)
-        if len(chunks) <= 1:
+        if len(chunks) <= SINGLE_PGN_CHUNK:
             expanded.append(row)
             continue
-        for chunk in chunks:
-            expanded.append(
-                {
-                    "game_id": extract_game_id(chunk),
-                    "user": row.get("user") or settings.user,
-                    "source": row.get("source") or settings.source,
-                    "fetched_at": row.get("fetched_at"),
-                    "pgn": chunk,
-                    "last_timestamp_ms": extract_last_timestamp_ms(chunk),
-                }
-            )
+        expanded.extend(
+            [
+                cast(
+                    GameRow,
+                    {
+                        "game_id": extract_game_id(chunk),
+                        "user": row.get("user") or settings.user,
+                        "source": row.get("source") or settings.source,
+                        "fetched_at": row.get("fetched_at"),
+                        "pgn": chunk,
+                        "last_timestamp_ms": extract_last_timestamp_ms(chunk),
+                    },
+                )
+                for chunk in chunks
+            ]
+        )
     return expanded
 
 
 def _resolve_side_to_move_filter(settings: Settings) -> str | None:
     source = (settings.source or "").strip().lower()
     if source == "lichess":
-        profile = (
-            (settings.lichess_profile or settings.rapid_perf or "").strip().lower()
-        )
+        profile = (settings.lichess_profile or settings.rapid_perf or "").strip().lower()
         if profile in {"bullet", "blitz", "rapid", "classical", "correspondence"}:
             return "black"
         return None
     if source == "chesscom":
-        profile = (
-            (settings.chesscom_profile or settings.chesscom_time_class or "")
-            .strip()
-            .lower()
-        )
+        profile = (settings.chesscom_profile or settings.chesscom_time_class or "").strip().lower()
         if profile in {"bullet", "blitz", "rapid", "classical"}:
             return "black"
         if profile in {"correspondence", "daily"}:
@@ -170,14 +210,970 @@ def _resolve_side_to_move_filter(settings: Settings) -> str | None:
     return None
 
 
-def _emit_progress(
-    progress: ProgressCallback | None, step: str, **fields: object
-) -> None:
+def _emit_progress(progress: ProgressCallback | None, step: str, **fields: object) -> None:
     if progress is None:
         return
     payload: dict[str, object] = {"step": step, "timestamp": time.time()}
     payload.update(fields)
     progress(payload)
+
+
+def _build_pipeline_settings(
+    settings: Settings | None,
+    source: str | None = None,
+    profile: str | None = None,
+) -> Settings:
+    settings = settings or get_settings(source=source, profile=profile)
+    if source:
+        settings.source = source
+    settings.apply_source_defaults()
+    if profile is not None:
+        settings.apply_lichess_profile(profile)
+        settings.apply_chesscom_profile(profile)
+    settings.ensure_dirs()
+    return settings
+
+
+def _build_chess_client(
+    settings: Settings,
+    client: BaseChessClient | None,
+) -> BaseChessClient:
+    if client is not None:
+        return client
+    if settings.source == "chesscom":
+        return ChesscomClient(ChesscomClientContext(settings=settings, logger=logger))
+    return LichessClient(LichessClientContext(settings=settings, logger=logger))
+
+
+def _fetch_incremental_games(
+    settings: Settings,
+    client: BaseChessClient,
+    backfill_mode: bool,
+    window_start_ms: int | None,
+    window_end_ms: int | None,
+) -> FetchContext:
+    if settings.source == "chesscom":
+        return _fetch_chesscom_games(settings, client, backfill_mode)
+    return _fetch_lichess_games(
+        settings,
+        client,
+        backfill_mode,
+        window_start_ms,
+        window_end_ms,
+    )
+
+
+def _fetch_chesscom_games(
+    settings: Settings,
+    client: BaseChessClient,
+    backfill_mode: bool,
+) -> FetchContext:
+    cursor_before = read_chesscom_cursor(settings.checkpoint_path)
+    cursor_value = None if backfill_mode else cursor_before
+    last_timestamp_value = 0
+    if cursor_value:
+        try:
+            last_timestamp_value = int(cursor_value.split(":", 1)[0])
+        except ValueError:
+            last_timestamp_value = 0
+    chesscom_result = cast(
+        ChesscomFetchResult,
+        client.fetch_incremental_games(
+            ChesscomFetchRequest(cursor=cursor_value, full_history=backfill_mode)
+        ),
+    )
+    raw_games = [cast(Mapping[str, object], row) for row in chesscom_result.games]
+    next_cursor = chesscom_result.next_cursor or cursor_value
+    last_timestamp_value = chesscom_result.last_timestamp_ms
+    return FetchContext(
+        raw_games=raw_games,
+        since_ms=ZERO_COUNT,
+        cursor_before=cursor_before,
+        cursor_value=cursor_value,
+        next_cursor=next_cursor,
+        chesscom_result=chesscom_result,
+        last_timestamp_ms=last_timestamp_value,
+    )
+
+
+def _fetch_lichess_games(
+    settings: Settings,
+    client: BaseChessClient,
+    backfill_mode: bool,
+    window_start_ms: int | None,
+    window_end_ms: int | None,
+) -> FetchContext:
+    checkpoint_before = read_checkpoint(settings.checkpoint_path)
+    since_ms = window_start_ms if backfill_mode else checkpoint_before
+    if since_ms is None:
+        since_ms = ZERO_COUNT
+    until_ms = window_end_ms if backfill_mode else None
+    raw_games = [
+        cast(Mapping[str, object], row)
+        for row in client.fetch_incremental_games(
+            LichessFetchRequest(since_ms=since_ms, until_ms=until_ms)
+        ).games
+    ]
+    return FetchContext(
+        raw_games=raw_games,
+        since_ms=since_ms,
+        cursor_before=None,
+        cursor_value=None,
+        next_cursor=None,
+        chesscom_result=None,
+        last_timestamp_ms=since_ms,
+    )
+
+
+def _emit_daily_sync_start(
+    settings: Settings,
+    progress: ProgressCallback | None,
+    profile: str | None,
+    backfill_mode: bool,
+    window_start_ms: int | None,
+    window_end_ms: int | None,
+) -> None:
+    _emit_progress(
+        progress,
+        "start",
+        source=settings.source,
+        message="Starting pipeline run",
+    )
+    record_ops_event(
+        settings,
+        component=settings.run_context,
+        event_type="daily_game_sync_start",
+        source=settings.source,
+        profile=profile,
+        metadata={
+            "backfill": backfill_mode,
+            "window_start_ms": window_start_ms,
+            "window_end_ms": window_end_ms,
+        },
+    )
+
+
+def _normalize_and_expand_games(
+    raw_games: list[Mapping[str, object]],
+    settings: Settings,
+) -> list[GameRow]:
+    games = [_normalize_game_row(game, settings) for game in raw_games]
+    games = _expand_pgn_rows(games, settings)
+    return _dedupe_games(games)
+
+
+def _emit_backfill_window_filtered(
+    settings: Settings,
+    progress: ProgressCallback | None,
+    filtered: int,
+    window_start_ms: int | None,
+    window_end_ms: int | None,
+) -> None:
+    if not filtered:
+        return
+    logger.info(
+        "Filtered %s games outside backfill window for source=%s",
+        filtered,
+        settings.source,
+    )
+    _emit_progress(
+        progress,
+        "backfill_window_filtered",
+        source=settings.source,
+        filtered=filtered,
+        backfill_start_ms=window_start_ms,
+        backfill_end_ms=window_end_ms,
+    )
+
+
+def _prepare_games_for_sync(
+    settings: Settings,
+    client: BaseChessClient,
+    backfill_mode: bool,
+    window_start_ms: int | None,
+    window_end_ms: int | None,
+    progress: ProgressCallback | None,
+) -> tuple[list[GameRow], FetchContext, int, int]:
+    fetch_context = _fetch_incremental_games(
+        settings,
+        client,
+        backfill_mode,
+        window_start_ms,
+        window_end_ms,
+    )
+    games = _normalize_and_expand_games(fetch_context.raw_games, settings)
+    pre_window_count = len(games)
+    games = _filter_games_by_window(games, window_start_ms, window_end_ms)
+    window_filtered = pre_window_count - len(games)
+    if backfill_mode and window_filtered:
+        _emit_backfill_window_filtered(
+            settings,
+            progress,
+            window_filtered,
+            window_start_ms,
+            window_end_ms,
+        )
+    last_timestamp_value = fetch_context.last_timestamp_ms
+    if games:
+        last_timestamp_value = latest_timestamp(games) or last_timestamp_value
+    _emit_progress(
+        progress,
+        "fetch_games",
+        source=settings.source,
+        fetched_games=len(games),
+        since_ms=fetch_context.since_ms,
+        cursor=fetch_context.next_cursor or fetch_context.cursor_value,
+        backfill=backfill_mode,
+        backfill_start_ms=window_start_ms,
+        backfill_end_ms=window_end_ms,
+    )
+    return games, fetch_context, window_filtered, last_timestamp_value
+
+
+def _build_no_games_payload(
+    settings: Settings,
+    conn,
+    backfill_mode: bool,
+    fetch_context: FetchContext,
+    last_timestamp_value: int,
+    window_filtered: int,
+) -> dict[str, object]:
+    metrics_version = _update_metrics_and_version(settings, conn)
+    return {
+        "source": settings.source,
+        "user": settings.user,
+        "fetched_games": 0,
+        "raw_pgns_inserted": 0,
+        "raw_pgns_hashed": 0,
+        "raw_pgns_matched": 0,
+        "positions": 0,
+        "tactics": 0,
+        "metrics_version": metrics_version,
+        "checkpoint_ms": None
+        if backfill_mode or settings.source == "chesscom"
+        else fetch_context.since_ms,
+        "cursor": fetch_context.cursor_before
+        if backfill_mode
+        else (fetch_context.next_cursor or fetch_context.cursor_value),
+        "last_timestamp_ms": last_timestamp_value or fetch_context.since_ms,
+        "since_ms": fetch_context.since_ms,
+        "window_filtered": window_filtered,
+    }
+
+
+def _handle_no_games(
+    settings: Settings,
+    conn,
+    progress: ProgressCallback | None,
+    backfill_mode: bool,
+    fetch_context: FetchContext,
+    last_timestamp_value: int,
+    window_filtered: int,
+) -> dict[str, object]:
+    logger.info(
+        "No new games for source=%s at checkpoint=%s",
+        settings.source,
+        fetch_context.since_ms,
+    )
+    _emit_progress(
+        progress,
+        "no_games",
+        source=settings.source,
+        message="No new games to process",
+    )
+    return _build_no_games_payload(
+        settings,
+        conn,
+        backfill_mode,
+        fetch_context,
+        last_timestamp_value,
+        window_filtered,
+    )
+
+
+def _apply_backfill_filter(
+    conn,
+    games: list[GameRow],
+    backfill_mode: bool,
+    source: str,
+) -> tuple[list[GameRow], list[GameRow]]:
+    if not backfill_mode:
+        return games, []
+    return _filter_backfill_games(conn, games, source)
+
+
+def _log_skipped_backfill(settings: Settings, skipped_games: list[GameRow]) -> None:
+    if skipped_games:
+        logger.info(
+            "Skipping %s historical games already processed for source=%s",
+            len(skipped_games),
+            settings.source,
+        )
+
+
+def _build_no_games_after_dedupe_payload(
+    settings: Settings,
+    conn,
+    backfill_mode: bool,
+    fetch_context: FetchContext,
+    last_timestamp_value: int,
+    games: list[GameRow],
+    window_filtered: int,
+) -> dict[str, object]:
+    metrics_version = _update_metrics_and_version(settings, conn)
+    if not backfill_mode:
+        if settings.source == "chesscom":
+            write_chesscom_cursor(settings.checkpoint_path, fetch_context.next_cursor)
+        else:
+            checkpoint_value = max(fetch_context.since_ms, last_timestamp_value)
+            write_checkpoint(settings.checkpoint_path, checkpoint_value)
+            last_timestamp_value = checkpoint_value
+    return {
+        "source": settings.source,
+        "user": settings.user,
+        "fetched_games": len(games),
+        "raw_pgns_inserted": 0,
+        "raw_pgns_hashed": 0,
+        "raw_pgns_matched": 0,
+        "postgres_raw_pgns_inserted": 0,
+        "positions": 0,
+        "tactics": 0,
+        "metrics_version": metrics_version,
+        "checkpoint_ms": None
+        if backfill_mode
+        else max(fetch_context.since_ms, last_timestamp_value),
+        "cursor": fetch_context.cursor_before
+        if backfill_mode
+        else (fetch_context.next_cursor or fetch_context.cursor_value),
+        "last_timestamp_ms": last_timestamp_value,
+        "since_ms": fetch_context.since_ms,
+        "window_filtered": window_filtered,
+    }
+
+
+def _handle_no_games_after_dedupe(
+    settings: Settings,
+    conn,
+    backfill_mode: bool,
+    fetch_context: FetchContext,
+    last_timestamp_value: int,
+    games: list[GameRow],
+    window_filtered: int,
+) -> dict[str, object]:
+    logger.info(
+        "No new games to process after backfill dedupe for source=%s",
+        settings.source,
+    )
+    return _build_no_games_after_dedupe_payload(
+        settings,
+        conn,
+        backfill_mode,
+        fetch_context,
+        last_timestamp_value,
+        games,
+        window_filtered,
+    )
+
+
+def _update_daily_checkpoint(
+    settings: Settings,
+    backfill_mode: bool,
+    fetch_context: FetchContext,
+    games: list[GameRow],
+    last_timestamp_value: int,
+) -> tuple[int | None, int]:
+    if backfill_mode:
+        return None, last_timestamp_value
+    if settings.source == "chesscom":
+        write_chesscom_cursor(settings.checkpoint_path, fetch_context.next_cursor)
+        if fetch_context.chesscom_result:
+            last_timestamp_value = fetch_context.chesscom_result.last_timestamp_ms
+        elif games:
+            last_timestamp_value = latest_timestamp(games) or last_timestamp_value
+        return None, last_timestamp_value
+    checkpoint_value = max(fetch_context.since_ms, latest_timestamp(games))
+    write_checkpoint(settings.checkpoint_path, checkpoint_value)
+    return checkpoint_value, checkpoint_value
+
+
+def _build_daily_sync_payload(
+    settings: Settings,
+    fetch_context: FetchContext,
+    games: list[GameRow],
+    raw_pgns_inserted: int,
+    raw_pgns_hashed: int,
+    raw_pgns_matched: int,
+    postgres_raw_pgns_inserted: int,
+    positions_count: int,
+    tactics_count: int,
+    metrics_version: int,
+    checkpoint_value: int | None,
+    last_timestamp_value: int,
+    backfill_mode: bool,
+) -> dict[str, object]:
+    return {
+        "source": settings.source,
+        "user": settings.user,
+        "fetched_games": len(games),
+        "raw_pgns_inserted": raw_pgns_inserted,
+        "raw_pgns_hashed": raw_pgns_hashed,
+        "raw_pgns_matched": raw_pgns_matched,
+        "postgres_raw_pgns_inserted": postgres_raw_pgns_inserted,
+        "positions": positions_count,
+        "tactics": tactics_count,
+        "metrics_version": metrics_version,
+        "checkpoint_ms": checkpoint_value,
+        "cursor": fetch_context.cursor_before
+        if backfill_mode
+        else (fetch_context.next_cursor or fetch_context.cursor_value),
+        "last_timestamp_ms": last_timestamp_value,
+        "since_ms": fetch_context.since_ms,
+    }
+
+
+def _is_backfill_mode(window_start_ms: int | None, window_end_ms: int | None) -> bool:
+    return window_start_ms is not None or window_end_ms is not None
+
+
+def _log_raw_pgns_persisted(
+    settings: Settings,
+    raw_pgns_inserted: int,
+    raw_pgns_hashed: int,
+    raw_pgns_matched: int,
+    games_to_process: list[GameRow],
+) -> None:
+    logger.info(
+        "Raw PGNs persisted: raw_pgns_inserted=%s raw_pgns_hashed=%s "
+        "raw_pgns_matched=%s source=%s total=%s",
+        raw_pgns_inserted,
+        raw_pgns_hashed,
+        raw_pgns_matched,
+        settings.source,
+        len(games_to_process),
+    )
+
+
+def _emit_positions_ready(
+    settings: Settings,
+    progress: ProgressCallback | None,
+    positions: list[dict[str, object]],
+) -> None:
+    _emit_progress(
+        progress,
+        "positions_ready",
+        source=settings.source,
+        positions=len(positions),
+    )
+
+
+def _run_analysis_and_metrics(
+    conn,
+    settings: Settings,
+    positions: list[dict[str, object]],
+    resume_index: int,
+    analysis_checkpoint_path,
+    analysis_signature: str,
+    progress: ProgressCallback | None,
+    profile: str | None,
+) -> DailyAnalysisResult:
+    total_positions = len(positions)
+    tactics_count, postgres_written, postgres_synced = _analyze_positions_with_progress(
+        conn,
+        settings,
+        positions,
+        resume_index,
+        analysis_checkpoint_path,
+        analysis_signature,
+        progress,
+    )
+    record_ops_event(
+        settings,
+        component="analysis",
+        event_type="analysis_complete",
+        source=settings.source,
+        profile=profile,
+        metadata={
+            "positions_analyzed": total_positions,
+            "tactics_detected": tactics_count,
+            "resume_index": resume_index,
+            "postgres_tactics_written": postgres_written,
+            "postgres_tactics_synced": postgres_synced,
+        },
+    )
+    metrics_version = _update_metrics_and_version(settings, conn)
+    _emit_progress(
+        progress,
+        "metrics_refreshed",
+        source=settings.source,
+        metrics_version=metrics_version,
+        message="Metrics refreshed",
+    )
+    return DailyAnalysisResult(
+        total_positions=total_positions,
+        tactics_count=tactics_count,
+        postgres_written=postgres_written,
+        postgres_synced=postgres_synced,
+        metrics_version=metrics_version,
+    )
+
+
+def _record_daily_sync_complete(
+    settings: Settings,
+    profile: str | None,
+    games: list[GameRow],
+    raw_pgns_inserted: int,
+    postgres_raw_pgns_inserted: int,
+    positions_count: int,
+    tactics_count: int,
+    postgres_written: int,
+    postgres_synced: int,
+    metrics_version: int,
+    backfill_mode: bool,
+) -> None:
+    record_ops_event(
+        settings,
+        component=settings.run_context,
+        event_type="daily_game_sync_complete",
+        source=settings.source,
+        profile=profile,
+        metadata={
+            "fetched_games": len(games),
+            "raw_pgns_inserted": raw_pgns_inserted,
+            "postgres_raw_pgns_inserted": postgres_raw_pgns_inserted,
+            "positions": positions_count,
+            "tactics": tactics_count,
+            "postgres_tactics_written": postgres_written,
+            "postgres_tactics_synced": postgres_synced,
+            "metrics_version": metrics_version,
+            "backfill": backfill_mode,
+        },
+    )
+
+
+def _update_metrics_and_version(settings: Settings, conn) -> int:
+    update_metrics_summary(conn)
+    metrics_version = write_metrics_version(conn)
+    settings.metrics_version_file.write_text(str(metrics_version))
+    return metrics_version
+
+
+def _persist_raw_pgns(
+    conn,
+    games_to_process: list[GameRow],
+    settings: Settings,
+    progress: ProgressCallback | None,
+    profile: str | None,
+    *,
+    delete_existing: bool,
+    emit_start: bool,
+) -> tuple[int, int, int]:
+    if emit_start:
+        _emit_progress(
+            progress,
+            "raw_pgns",
+            source=settings.source,
+            message="Persisting raw PGNs",
+        )
+    if delete_existing:
+        delete_game_rows(conn, [game["game_id"] for game in games_to_process])
+    raw_pgns_inserted = upsert_raw_pgns(conn, games_to_process)
+    hash_metrics = _validate_raw_pgn_hashes(conn, games_to_process, settings.source)
+    raw_pgns_hashed = hash_metrics["computed"]
+    raw_pgns_matched = hash_metrics["matched"]
+    _emit_progress(
+        progress,
+        "raw_pgns_persisted",
+        source=settings.source,
+        inserted=raw_pgns_inserted,
+        total=len(games_to_process),
+    )
+    _emit_progress(
+        progress,
+        "raw_pgns_hashed",
+        source=settings.source,
+        computed=raw_pgns_hashed,
+        matched=raw_pgns_matched,
+    )
+    record_ops_event(
+        settings,
+        component="ingestion",
+        event_type="raw_pgns_persisted",
+        source=settings.source,
+        profile=profile,
+        metadata={
+            "inserted": raw_pgns_inserted,
+            "computed": raw_pgns_hashed,
+            "matched": raw_pgns_matched,
+            "total": len(games_to_process),
+        },
+    )
+    return raw_pgns_inserted, raw_pgns_hashed, raw_pgns_matched
+
+
+def _upsert_postgres_raw_pgns_if_enabled(
+    settings: Settings,
+    games_to_process: list[GameRow],
+    progress: ProgressCallback | None,
+    profile: str | None,
+) -> int:
+    if not postgres_pgns_enabled(settings):
+        return 0
+    inserted = 0
+    with postgres_connection(settings) as pg_conn:
+        if pg_conn is None:
+            logger.warning("Postgres raw PGN mirror enabled but connection unavailable")
+        else:
+            init_pgn_schema(pg_conn)
+            try:
+                inserted = upsert_postgres_raw_pgns(
+                    pg_conn,
+                    cast(list[Mapping[str, object]], games_to_process),
+                )
+            except Exception as exc:
+                logger.warning("Postgres raw PGN upsert failed: %s", exc)
+    _emit_progress(
+        progress,
+        "postgres_raw_pgns_persisted",
+        source=settings.source,
+        inserted=inserted,
+        total=len(games_to_process),
+    )
+    record_ops_event(
+        settings,
+        component="ingestion",
+        event_type="postgres_raw_pgns_persisted",
+        source=settings.source,
+        profile=profile,
+        metadata={
+            "inserted": inserted,
+            "total": len(games_to_process),
+        },
+    )
+    return inserted
+
+
+def _persist_and_extract_positions(
+    conn,
+    settings: Settings,
+    games_to_process: list[GameRow],
+    progress: ProgressCallback | None,
+    profile: str | None,
+    game_ids: list[str],
+) -> tuple[list[dict[str, object]], str, tuple[int, int, int], int]:
+    raw_pgns_inserted, raw_pgns_hashed, raw_pgns_matched = _persist_raw_pgns(
+        conn,
+        games_to_process,
+        settings,
+        progress,
+        profile,
+        delete_existing=True,
+        emit_start=True,
+    )
+    postgres_raw_pgns_inserted = _upsert_postgres_raw_pgns_if_enabled(
+        settings,
+        games_to_process,
+        progress,
+        profile,
+    )
+    _emit_progress(
+        progress,
+        "extract_positions",
+        source=settings.source,
+        message="Extracting positions",
+    )
+    positions = _extract_positions_from_games(conn, games_to_process, settings)
+    analysis_signature = _analysis_signature(game_ids, len(positions), settings.source)
+    return (
+        positions,
+        analysis_signature,
+        (raw_pgns_inserted, raw_pgns_hashed, raw_pgns_matched),
+        postgres_raw_pgns_inserted,
+    )
+
+
+def _refresh_raw_pgns_for_existing_positions(
+    conn,
+    settings: Settings,
+    games_to_process: list[GameRow],
+    progress: ProgressCallback | None,
+    profile: str | None,
+) -> tuple[tuple[int, int, int], int]:
+    raw_pgns_inserted, raw_pgns_hashed, raw_pgns_matched = _persist_raw_pgns(
+        conn,
+        games_to_process,
+        settings,
+        progress,
+        profile,
+        delete_existing=False,
+        emit_start=False,
+    )
+    postgres_raw_pgns_inserted = _upsert_postgres_raw_pgns_if_enabled(
+        settings,
+        games_to_process,
+        progress,
+        profile,
+    )
+    return (raw_pgns_inserted, raw_pgns_hashed, raw_pgns_matched), postgres_raw_pgns_inserted
+
+
+def _prepare_analysis_inputs(
+    conn,
+    settings: Settings,
+    games_to_process: list[GameRow],
+    progress: ProgressCallback | None,
+    profile: str | None,
+) -> AnalysisPrepResult:
+    game_ids = [game["game_id"] for game in games_to_process]
+    analysis_checkpoint_path = settings.analysis_checkpoint_path
+    positions, resume_index, analysis_signature = _load_resume_positions(
+        conn, analysis_checkpoint_path, game_ids, settings.source
+    )
+    if positions:
+        (raw_pgns_inserted, raw_pgns_hashed, raw_pgns_matched), postgres_raw_pgns_inserted = (
+            _refresh_raw_pgns_for_existing_positions(
+                conn,
+                settings,
+                games_to_process,
+                progress,
+                profile,
+            )
+        )
+        return AnalysisPrepResult(
+            positions=positions,
+            resume_index=resume_index,
+            analysis_signature=analysis_signature,
+            raw_pgns_inserted=raw_pgns_inserted,
+            raw_pgns_hashed=raw_pgns_hashed,
+            raw_pgns_matched=raw_pgns_matched,
+            postgres_raw_pgns_inserted=postgres_raw_pgns_inserted,
+        )
+
+    positions, analysis_signature, raw_metrics, postgres_raw_pgns_inserted = (
+        _persist_and_extract_positions(
+            conn,
+            settings,
+            games_to_process,
+            progress,
+            profile,
+            game_ids,
+        )
+    )
+    raw_pgns_inserted, raw_pgns_hashed, raw_pgns_matched = raw_metrics
+    return AnalysisPrepResult(
+        positions=positions,
+        resume_index=resume_index,
+        analysis_signature=analysis_signature,
+        raw_pgns_inserted=raw_pgns_inserted,
+        raw_pgns_hashed=raw_pgns_hashed,
+        raw_pgns_matched=raw_pgns_matched,
+        postgres_raw_pgns_inserted=postgres_raw_pgns_inserted,
+    )
+
+
+def _extract_positions_from_games(
+    conn,
+    games_to_process: list[GameRow],
+    settings: Settings,
+) -> list[dict[str, object]]:
+    side_to_move_filter = _resolve_side_to_move_filter(settings)
+    positions: list[dict[str, object]] = []
+    for game in games_to_process:
+        positions.extend(
+            extract_positions(
+                game["pgn"],
+                settings.user,
+                settings.source,
+                game_id=game["game_id"],
+                side_to_move_filter=side_to_move_filter,
+            )
+        )
+    position_ids = insert_positions(conn, positions)
+    for pos, pos_id in zip(positions, position_ids, strict=False):
+        pos["position_id"] = pos_id
+    return positions
+
+
+def _load_resume_positions(
+    conn,
+    analysis_checkpoint_path,
+    game_ids: list[str],
+    source: str,
+) -> tuple[list[dict[str, object]], int, str]:
+    positions: list[dict[str, object]] = []
+    resume_index = -1
+    analysis_signature = ""
+    if analysis_checkpoint_path.exists():
+        existing_positions = fetch_positions_for_games(conn, game_ids)
+        if existing_positions:
+            analysis_signature = _analysis_signature(game_ids, len(existing_positions), source)
+            resume_index = _read_analysis_checkpoint(analysis_checkpoint_path, analysis_signature)
+            if resume_index >= RESUME_INDEX_START:
+                logger.info("Resuming analysis at index=%s for source=%s", resume_index, source)
+                positions = existing_positions
+            else:
+                _clear_analysis_checkpoint(analysis_checkpoint_path)
+        else:
+            _clear_analysis_checkpoint(analysis_checkpoint_path)
+    return positions, resume_index, analysis_signature
+
+
+def _maybe_upsert_postgres_analysis(
+    pg_conn,
+    analysis_pg_enabled: bool,
+    tactic_row: dict[str, object],
+    outcome_row: dict[str, object],
+) -> bool:
+    if pg_conn is None or not analysis_pg_enabled:
+        return False
+    try:
+        upsert_analysis_tactic_with_outcome(
+            pg_conn,
+            tactic_row,
+            outcome_row,
+        )
+    except Exception as exc:
+        logger.warning("Postgres analysis upsert failed: %s", exc)
+        return False
+    else:
+        return True
+
+
+def _analysis_progress_interval(total_positions: int) -> int:
+    if total_positions:
+        return max(1, total_positions // ANALYSIS_PROGRESS_BUCKETS)
+    return INDEX_OFFSET
+
+
+def _maybe_write_analysis_checkpoint(
+    analysis_checkpoint_path,
+    analysis_signature: str,
+    index: int,
+) -> None:
+    if analysis_checkpoint_path is None:
+        return
+    _write_analysis_checkpoint(analysis_checkpoint_path, analysis_signature, index)
+
+
+def _maybe_emit_analysis_progress(
+    progress: ProgressCallback | None,
+    settings: Settings,
+    idx: int,
+    total_positions: int,
+    progress_every: int,
+) -> None:
+    if not progress:
+        return
+    if idx == total_positions - INDEX_OFFSET or (idx + INDEX_OFFSET) % progress_every == ZERO_COUNT:
+        _emit_progress(
+            progress,
+            "analyze_positions",
+            source=settings.source,
+            analyzed=idx + INDEX_OFFSET,
+            total=total_positions,
+        )
+
+
+def _process_analysis_position(
+    conn,
+    settings: Settings,
+    engine: StockfishEngine,
+    pos: dict[str, object],
+    idx: int,
+    resume_index: int,
+    analysis_checkpoint_path,
+    analysis_signature: str,
+    progress: ProgressCallback | None,
+    total_positions: int,
+    progress_every: int,
+    pg_conn,
+    analysis_pg_enabled: bool,
+) -> tuple[int, int]:
+    if idx <= resume_index:
+        return 0, 0
+    result = _analyse_with_retries(engine, pos, settings)
+    if result is None:
+        _maybe_write_analysis_checkpoint(analysis_checkpoint_path, analysis_signature, idx)
+        return 0, 0
+    tactic_row, outcome_row = result
+    upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
+    postgres_delta = (
+        1
+        if _maybe_upsert_postgres_analysis(pg_conn, analysis_pg_enabled, tactic_row, outcome_row)
+        else 0
+    )
+    _maybe_write_analysis_checkpoint(analysis_checkpoint_path, analysis_signature, idx)
+    _maybe_emit_analysis_progress(progress, settings, idx, total_positions, progress_every)
+    return 1, postgres_delta
+
+
+def _run_analysis_loop(
+    conn,
+    settings: Settings,
+    positions: list[dict[str, object]],
+    resume_index: int,
+    analysis_checkpoint_path,
+    analysis_signature: str,
+    progress: ProgressCallback | None,
+    pg_conn,
+    analysis_pg_enabled: bool,
+) -> tuple[int, int]:
+    total_positions = len(positions)
+    progress_every = _analysis_progress_interval(total_positions)
+    tactics_count = 0
+    postgres_written = 0
+    with StockfishEngine(settings) as engine:
+        for idx, pos in enumerate(positions):
+            tactics_delta, postgres_delta = _process_analysis_position(
+                conn,
+                settings,
+                engine,
+                pos,
+                idx,
+                resume_index,
+                analysis_checkpoint_path,
+                analysis_signature,
+                progress,
+                total_positions,
+                progress_every,
+                pg_conn,
+                analysis_pg_enabled,
+            )
+            tactics_count += tactics_delta
+            postgres_written += postgres_delta
+    return tactics_count, postgres_written
+
+
+def _analyze_positions_with_progress(
+    conn,
+    settings: Settings,
+    positions: list[dict[str, object]],
+    resume_index: int,
+    analysis_checkpoint_path,
+    analysis_signature: str,
+    progress: ProgressCallback | None,
+) -> tuple[int, int, int]:
+    postgres_synced = 0
+    analysis_pg_enabled = postgres_analysis_enabled(settings)
+    with postgres_connection(settings) as pg_conn:
+        if pg_conn is not None and analysis_pg_enabled:
+            init_analysis_schema(pg_conn)
+        tactics_count, postgres_written = _run_analysis_loop(
+            conn,
+            settings,
+            positions,
+            resume_index,
+            analysis_checkpoint_path,
+            analysis_signature,
+            progress,
+            pg_conn,
+            analysis_pg_enabled,
+        )
+        if pg_conn is not None and analysis_pg_enabled and postgres_written == ZERO_COUNT:
+            postgres_synced = _sync_postgres_analysis_results(conn, pg_conn, settings)
+            postgres_written += postgres_synced
+    if analysis_checkpoint_path is not None:
+        _clear_analysis_checkpoint(analysis_checkpoint_path)
+    return tactics_count, postgres_written, postgres_synced
 
 
 def _dedupe_games(rows: list[GameRow]) -> list[GameRow]:
@@ -230,7 +1226,7 @@ def _filter_backfill_games(
         pgn_text = game["pgn"]
         current_hash = hash_pgn(pgn_text)
         existing_hash = latest_hashes.get(game_id)
-        if existing_hash == current_hash and position_counts.get(game_id, 0) > 0:
+        if existing_hash == current_hash and position_counts.get(game_id, ZERO_COUNT) > ZERO_COUNT:
             skipped.append(game)
             continue
         to_process.append(game)
@@ -242,9 +1238,7 @@ def _compute_pgn_hashes(rows: list[GameRow], source: str) -> dict[str, str]:
     for row in rows:
         game_id = row["game_id"]
         if game_id in hashes:
-            raise ValueError(
-                f"Duplicate game_id in raw PGN batch for source={source}: {game_id}"
-            )
+            raise ValueError(f"Duplicate game_id in raw PGN batch for source={source}: {game_id}")
         hashes[game_id] = hash_pgn(row["pgn"])
     return hashes
 
@@ -258,18 +1252,15 @@ def _validate_raw_pgn_hashes(
         return {"computed": 0, "matched": 0}
     computed = _compute_pgn_hashes(rows, source)
     stored = fetch_latest_pgn_hashes(conn, list(computed.keys()), source)
-    matched = sum(
-        1 for game_id, pgn_hash in computed.items() if stored.get(game_id) == pgn_hash
-    )
+    matched = sum(1 for game_id, pgn_hash in computed.items() if stored.get(game_id) == pgn_hash)
     if matched != len(computed):
         missing = [
-            game_id
-            for game_id, pgn_hash in computed.items()
-            if stored.get(game_id) != pgn_hash
+            game_id for game_id, pgn_hash in computed.items() if stored.get(game_id) != pgn_hash
         ]
+        missing_sorted = ", ".join(sorted(missing))
         raise ValueError(
-            "Raw PGN hash mismatch for source=%s expected=%s matched=%s missing=%s"
-            % (source, len(computed), matched, ", ".join(sorted(missing)))
+            f"Raw PGN hash mismatch for source={source} expected={len(computed)} "
+            f"matched={matched} missing={missing_sorted}"
         )
     return {"computed": len(computed), "matched": matched}
 
@@ -315,13 +1306,7 @@ def convert_raw_pgns_to_positions(
     profile: str | None = None,
     limit: int | None = None,
 ) -> dict[str, object]:
-    settings = settings or get_settings(source=source, profile=profile)
-    if source:
-        settings.source = source
-    settings.apply_source_defaults()
-    settings.apply_lichess_profile(profile)
-    settings.apply_chesscom_profile(profile)
-    settings.ensure_dirs()
+    settings = _build_pipeline_settings(settings, source=source, profile=profile)
 
     conn = get_connection(settings.duckdb_path)
     init_schema(conn)
@@ -338,7 +1323,9 @@ def convert_raw_pgns_to_positions(
     game_ids = [str(row.get("game_id", "")) for row in raw_pgns if row.get("game_id")]
     position_counts = fetch_position_counts(conn, game_ids, settings.source)
     to_process = [
-        row for row in raw_pgns if position_counts.get(str(row.get("game_id")), 0) == 0
+        row
+        for row in raw_pgns
+        if position_counts.get(str(row.get("game_id")), ZERO_COUNT) == ZERO_COUNT
     ]
 
     positions: list[dict[str, object]] = []
@@ -374,7 +1361,9 @@ def _extract_positions_for_new_games(
         return [], []
     position_counts = fetch_position_counts(conn, game_ids, settings.source)
     to_process = [
-        row for row in raw_pgns if position_counts.get(str(row.get("game_id")), 0) == 0
+        row
+        for row in raw_pgns
+        if position_counts.get(str(row.get("game_id")), ZERO_COUNT) == ZERO_COUNT
     ]
     if not to_process:
         return [], []
@@ -396,41 +1385,53 @@ def _extract_positions_for_new_games(
     return positions, [str(row.get("game_id", "")) for row in to_process]
 
 
+def _collect_positions_for_monitor(
+    conn,
+    settings: Settings,
+    raw_pgns: list[dict[str, object]],
+) -> tuple[int, list[str], list[dict[str, object]]]:
+    positions_extracted = 0
+    new_game_ids: list[str] = []
+    if raw_pgns:
+        extracted_positions, new_game_ids = _extract_positions_for_new_games(
+            conn, settings, raw_pgns
+        )
+        positions_extracted = len(extracted_positions)
+
+    positions_to_analyze: list[dict[str, object]] = []
+    if new_game_ids:
+        positions_to_analyze = fetch_unanalyzed_positions(
+            conn, game_ids=new_game_ids, source=settings.source
+        )
+
+    return positions_extracted, new_game_ids, positions_to_analyze
+
+
 def _analyze_positions(
     conn, settings: Settings, positions: list[dict[str, object]]
 ) -> tuple[int, int]:
     if not positions:
         return 0, 0
-    positions_analyzed = 0
-    tactics_detected = 0
-    postgres_written = 0
-    postgres_synced = 0
     analysis_pg_enabled = postgres_analysis_enabled(settings)
+    postgres_synced = 0
     with postgres_connection(settings) as pg_conn:
         if pg_conn is not None and analysis_pg_enabled:
             init_analysis_schema(pg_conn)
-        with StockfishEngine(settings) as engine:
-            for pos in positions:
-                positions_analyzed += 1
-                result = _analyse_with_retries(engine, pos, settings)
-                if result is None:
-                    continue
-                tactic_row, outcome_row = result
-                upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
-                if pg_conn is not None and analysis_pg_enabled:
-                    try:
-                        upsert_analysis_tactic_with_outcome(
-                            pg_conn,
-                            tactic_row,
-                            outcome_row,
-                        )
-                        postgres_written += 1
-                    except Exception as exc:  # noqa: BLE001
-                        logger.warning("Postgres analysis upsert failed: %s", exc)
-                tactics_detected += 1
-        if pg_conn is not None and analysis_pg_enabled and postgres_written == 0:
+        tactics_detected, postgres_written = _run_analysis_loop(
+            conn,
+            settings,
+            positions,
+            RESUME_INDEX_START - INDEX_OFFSET,
+            None,
+            "",
+            None,
+            pg_conn,
+            analysis_pg_enabled,
+        )
+        if pg_conn is not None and analysis_pg_enabled and postgres_written == ZERO_COUNT:
             postgres_synced = _sync_postgres_analysis_results(conn, pg_conn, settings)
             postgres_written += postgres_synced
+    positions_analyzed = len(positions)
     record_ops_event(
         settings,
         component="analysis",
@@ -451,7 +1452,7 @@ def _sync_postgres_analysis_results(
     conn,
     pg_conn,
     settings: Settings,
-    limit: int = 50,
+    limit: int = DEFAULT_SYNC_LIMIT,
 ) -> int:
     if pg_conn is None:
         return 0
@@ -480,7 +1481,7 @@ def _sync_postgres_analysis_results(
                 outcome_row,
             )
             synced += 1
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("Postgres analysis sync failed: %s", exc)
     return synced
 
@@ -491,42 +1492,23 @@ def run_monitor_new_positions(
     profile: str | None = None,
     limit: int | None = None,
 ) -> dict[str, object]:
-    settings = settings or get_settings(source=source, profile=profile)
-    if source:
-        settings.source = source
-    settings.apply_source_defaults()
-    settings.apply_lichess_profile(profile)
-    settings.apply_chesscom_profile(profile)
-    settings.ensure_dirs()
+    settings = _build_pipeline_settings(settings, source=source, profile=profile)
 
     conn = get_connection(settings.duckdb_path)
     init_schema(conn)
 
     raw_pgns = fetch_latest_raw_pgns(conn, settings.source, limit)
-    positions_extracted = 0
-    new_game_ids: list[str] = []
-    if raw_pgns:
-        extracted_positions, new_game_ids = _extract_positions_for_new_games(
-            conn, settings, raw_pgns
-        )
-        positions_extracted = len(extracted_positions)
-
-    positions_to_analyze: list[dict[str, object]] = []
-    if new_game_ids:
-        positions_to_analyze = fetch_unanalyzed_positions(
-            conn, game_ids=new_game_ids, source=settings.source
-        )
-
-    positions_analyzed, tactics_detected = _analyze_positions(
-        conn, settings, positions_to_analyze
+    positions_extracted, new_game_ids, positions_to_analyze = _collect_positions_for_monitor(
+        conn, settings, raw_pgns
     )
 
-    update_metrics_summary(conn)
-    metrics_version = write_metrics_version(conn)
-    settings.metrics_version_file.write_text(str(metrics_version))
+    positions_analyzed, tactics_detected = _analyze_positions(conn, settings, positions_to_analyze)
+
+    metrics_version = _update_metrics_and_version(settings, conn)
 
     logger.info(
-        "Monitor run complete: source=%s new_games=%s positions_extracted=%s positions_analyzed=%s tactics_detected=%s metrics_version=%s",
+        "Monitor run complete: source=%s new_games=%s positions_extracted=%s "
+        "positions_analyzed=%s tactics_detected=%s metrics_version=%s",
         settings.source,
         len(new_game_ids),
         positions_extracted,
@@ -623,6 +1605,120 @@ def _analyse_with_retries(
                 time.sleep(backoff_seconds * (2 ** (attempt - 1)))
 
 
+def _run_daily_game_sync(
+    settings: Settings,
+    client: BaseChessClient,
+    progress: ProgressCallback | None,
+    window_start_ms: int | None,
+    window_end_ms: int | None,
+    profile: str | None,
+) -> dict[str, object]:
+    backfill_mode = _is_backfill_mode(window_start_ms, window_end_ms)
+    _emit_daily_sync_start(
+        settings,
+        progress,
+        profile,
+        backfill_mode,
+        window_start_ms,
+        window_end_ms,
+    )
+    games, fetch_context, window_filtered, last_timestamp_value = _prepare_games_for_sync(
+        settings,
+        client,
+        backfill_mode,
+        window_start_ms,
+        window_end_ms,
+        progress,
+    )
+    conn = get_connection(settings.duckdb_path)
+    init_schema(conn)
+    if not games:
+        return _handle_no_games(
+            settings,
+            conn,
+            progress,
+            backfill_mode,
+            fetch_context,
+            last_timestamp_value,
+            window_filtered,
+        )
+    games_to_process, skipped_games = _apply_backfill_filter(
+        conn, games, backfill_mode, settings.source
+    )
+    _log_skipped_backfill(settings, skipped_games)
+    if not games_to_process:
+        return _handle_no_games_after_dedupe(
+            settings,
+            conn,
+            backfill_mode,
+            fetch_context,
+            last_timestamp_value,
+            games,
+            window_filtered,
+        )
+    analysis_prep = _prepare_analysis_inputs(
+        conn,
+        settings,
+        games_to_process,
+        progress,
+        profile,
+    )
+    analysis_checkpoint_path = settings.analysis_checkpoint_path
+    _log_raw_pgns_persisted(
+        settings,
+        analysis_prep.raw_pgns_inserted,
+        analysis_prep.raw_pgns_hashed,
+        analysis_prep.raw_pgns_matched,
+        games_to_process,
+    )
+    _emit_positions_ready(settings, progress, analysis_prep.positions)
+    analysis_result = _run_analysis_and_metrics(
+        conn,
+        settings,
+        analysis_prep.positions,
+        analysis_prep.resume_index,
+        analysis_checkpoint_path,
+        analysis_prep.analysis_signature,
+        progress,
+        profile,
+    )
+    checkpoint_value, last_timestamp_value = _update_daily_checkpoint(
+        settings,
+        backfill_mode,
+        fetch_context,
+        games,
+        last_timestamp_value,
+    )
+    _record_daily_sync_complete(
+        settings,
+        profile,
+        games,
+        analysis_prep.raw_pgns_inserted,
+        analysis_prep.postgres_raw_pgns_inserted,
+        analysis_result.total_positions,
+        analysis_result.tactics_count,
+        analysis_result.postgres_written,
+        analysis_result.postgres_synced,
+        analysis_result.metrics_version,
+        backfill_mode,
+    )
+    return _build_daily_sync_payload(
+        settings,
+        fetch_context,
+        games,
+        analysis_prep.raw_pgns_inserted,
+        analysis_prep.raw_pgns_hashed,
+        analysis_prep.raw_pgns_matched,
+        analysis_prep.postgres_raw_pgns_inserted,
+        analysis_result.total_positions,
+        analysis_result.tactics_count,
+        analysis_result.metrics_version,
+        checkpoint_value,
+        last_timestamp_value,
+        backfill_mode,
+    )
+
+
 def run_daily_game_sync(
     settings: Settings | None = None,
     source: str | None = None,
@@ -632,544 +1728,16 @@ def run_daily_game_sync(
     profile: str | None = None,
     client: BaseChessClient | None = None,
 ) -> dict[str, object]:
-    settings = settings or get_settings(source=source, profile=profile)
-    if source:
-        settings.source = source
-    settings.apply_source_defaults()
-    settings.apply_lichess_profile(profile)
-    settings.apply_chesscom_profile(profile)
-    settings.ensure_dirs()
-
-    if client is None:
-        if settings.source == "chesscom":
-            client = ChesscomClient(
-                ChesscomClientContext(settings=settings, logger=logger)
-            )
-        else:
-            client = LichessClient(
-                LichessClientContext(settings=settings, logger=logger)
-            )
-    assert client is not None
-
-    backfill_mode = window_start_ms is not None or window_end_ms is not None
-
-    _emit_progress(
-        progress,
-        "start",
-        source=settings.source,
-        message="Starting pipeline run",
-    )
-    record_ops_event(
+    settings = _build_pipeline_settings(settings, source=source, profile=profile)
+    client = _build_chess_client(settings, client)
+    return _run_daily_game_sync(
         settings,
-        component=settings.run_context,
-        event_type="daily_game_sync_start",
-        source=settings.source,
-        profile=profile,
-        metadata={
-            "backfill": backfill_mode,
-            "window_start_ms": window_start_ms,
-            "window_end_ms": window_end_ms,
-        },
-    )
-
-    since_ms = 0
-    cursor_value: str | None = None
-    next_cursor: str | None = None
-    chesscom_result: ChesscomFetchResult | None = None
-    last_timestamp_value = 0
-    checkpoint_before: int | None = None
-    cursor_before: str | None = None
-
-    raw_games: list[Mapping[str, object]]
-    if settings.source == "chesscom":
-        cursor_before = read_chesscom_cursor(settings.checkpoint_path)
-        cursor_value = None if backfill_mode else cursor_before
-        if cursor_value:
-            try:
-                last_timestamp_value = int(cursor_value.split(":", 1)[0])
-            except ValueError:
-                last_timestamp_value = 0
-        chesscom_result = cast(
-            ChesscomFetchResult,
-            client.fetch_incremental_games(
-                ChesscomFetchRequest(cursor=cursor_value, full_history=backfill_mode)
-            ),
-        )
-        raw_games = [cast(Mapping[str, object], row) for row in chesscom_result.games]
-        next_cursor = chesscom_result.next_cursor or cursor_value
-        last_timestamp_value = chesscom_result.last_timestamp_ms
-    else:
-        checkpoint_before = read_checkpoint(settings.checkpoint_path)
-        since_ms = window_start_ms if backfill_mode else checkpoint_before
-        if since_ms is None:
-            since_ms = 0
-        until_ms = window_end_ms if backfill_mode else None
-        raw_games = [
-            cast(Mapping[str, object], row)
-            for row in client.fetch_incremental_games(
-                LichessFetchRequest(since_ms=since_ms, until_ms=until_ms)
-            ).games
-        ]
-        last_timestamp_value = since_ms
-
-    games = [_normalize_game_row(game, settings) for game in raw_games]
-    games = _expand_pgn_rows(games, settings)
-
-    games = _dedupe_games(games)
-    pre_window_count = len(games)
-    games = _filter_games_by_window(games, window_start_ms, window_end_ms)
-    window_filtered = pre_window_count - len(games)
-    if backfill_mode and window_filtered:
-        logger.info(
-            "Filtered %s games outside backfill window for source=%s",
-            window_filtered,
-            settings.source,
-        )
-        _emit_progress(
-            progress,
-            "backfill_window_filtered",
-            source=settings.source,
-            filtered=window_filtered,
-            backfill_start_ms=window_start_ms,
-            backfill_end_ms=window_end_ms,
-        )
-    if games:
-        last_timestamp_value = latest_timestamp(games) or last_timestamp_value
-
-    _emit_progress(
+        client,
         progress,
-        "fetch_games",
-        source=settings.source,
-        fetched_games=len(games),
-        since_ms=since_ms,
-        cursor=next_cursor or cursor_value,
-        backfill=backfill_mode,
-        backfill_start_ms=window_start_ms,
-        backfill_end_ms=window_end_ms,
+        window_start_ms,
+        window_end_ms,
+        profile,
     )
-
-    conn = get_connection(settings.duckdb_path)
-    init_schema(conn)
-
-    if not games:
-        logger.info(
-            "No new games for source=%s at checkpoint=%s", settings.source, since_ms
-        )
-        _emit_progress(
-            progress,
-            "no_games",
-            source=settings.source,
-            message="No new games to process",
-        )
-        update_metrics_summary(conn)
-        metrics_version = write_metrics_version(conn)
-        settings.metrics_version_file.write_text(str(metrics_version))
-        return {
-            "source": settings.source,
-            "user": settings.user,
-            "fetched_games": 0,
-            "raw_pgns_inserted": 0,
-            "raw_pgns_hashed": 0,
-            "raw_pgns_matched": 0,
-            "positions": 0,
-            "tactics": 0,
-            "metrics_version": metrics_version,
-            "checkpoint_ms": None
-            if backfill_mode or settings.source == "chesscom"
-            else since_ms,
-            "cursor": cursor_before if backfill_mode else (next_cursor or cursor_value),
-            "last_timestamp_ms": last_timestamp_value or since_ms,
-            "since_ms": since_ms,
-            "window_filtered": window_filtered,
-        }
-
-    games_to_process = games
-    skipped_games: list[GameRow] = []
-    if backfill_mode:
-        games_to_process, skipped_games = _filter_backfill_games(
-            conn, games, settings.source
-        )
-        if skipped_games:
-            logger.info(
-                "Skipping %s historical games already processed for source=%s",
-                len(skipped_games),
-                settings.source,
-            )
-    if not games_to_process:
-        logger.info(
-            "No new games to process after backfill dedupe for source=%s",
-            settings.source,
-        )
-        update_metrics_summary(conn)
-        metrics_version = write_metrics_version(conn)
-        settings.metrics_version_file.write_text(str(metrics_version))
-        if not backfill_mode:
-            if settings.source == "chesscom":
-                write_chesscom_cursor(settings.checkpoint_path, next_cursor)
-            else:
-                checkpoint_value = max(since_ms, last_timestamp_value)
-                write_checkpoint(settings.checkpoint_path, checkpoint_value)
-                last_timestamp_value = checkpoint_value
-        return {
-            "source": settings.source,
-            "user": settings.user,
-            "fetched_games": len(games),
-            "raw_pgns_inserted": 0,
-            "raw_pgns_hashed": 0,
-            "raw_pgns_matched": 0,
-            "postgres_raw_pgns_inserted": 0,
-            "positions": 0,
-            "tactics": 0,
-            "metrics_version": metrics_version,
-            "checkpoint_ms": None
-            if backfill_mode
-            else max(since_ms, last_timestamp_value),
-            "cursor": cursor_before if backfill_mode else (next_cursor or cursor_value),
-            "last_timestamp_ms": last_timestamp_value,
-            "since_ms": since_ms,
-            "window_filtered": window_filtered,
-        }
-
-    game_ids = [game["game_id"] for game in games_to_process]
-    analysis_checkpoint_path = settings.analysis_checkpoint_path
-    positions: list[dict[str, object]] = []
-    resume_index = -1
-    analysis_signature = ""
-
-    if analysis_checkpoint_path.exists():
-        existing_positions = fetch_positions_for_games(conn, game_ids)
-        if existing_positions:
-            analysis_signature = _analysis_signature(
-                game_ids, len(existing_positions), settings.source
-            )
-            resume_index = _read_analysis_checkpoint(
-                analysis_checkpoint_path, analysis_signature
-            )
-            if resume_index >= 0:
-                logger.info(
-                    "Resuming analysis at index=%s for source=%s",
-                    resume_index,
-                    settings.source,
-                )
-                positions = existing_positions
-            else:
-                _clear_analysis_checkpoint(analysis_checkpoint_path)
-        else:
-            _clear_analysis_checkpoint(analysis_checkpoint_path)
-
-    raw_pgns_inserted = 0
-    raw_pgns_hashed = 0
-    raw_pgns_matched = 0
-    postgres_raw_pgns_inserted = 0
-    postgres_pgns_active = postgres_pgns_enabled(settings)
-    if not positions:
-        _emit_progress(
-            progress,
-            "raw_pgns",
-            source=settings.source,
-            message="Persisting raw PGNs",
-        )
-        delete_game_rows(conn, game_ids)
-        raw_pgns_inserted = upsert_raw_pgns(conn, games_to_process)
-        hash_metrics = _validate_raw_pgn_hashes(conn, games_to_process, settings.source)
-        raw_pgns_hashed = hash_metrics["computed"]
-        raw_pgns_matched = hash_metrics["matched"]
-        _emit_progress(
-            progress,
-            "raw_pgns_persisted",
-            source=settings.source,
-            inserted=raw_pgns_inserted,
-            total=len(games_to_process),
-        )
-        _emit_progress(
-            progress,
-            "raw_pgns_hashed",
-            source=settings.source,
-            computed=raw_pgns_hashed,
-            matched=raw_pgns_matched,
-        )
-        record_ops_event(
-            settings,
-            component="ingestion",
-            event_type="raw_pgns_persisted",
-            source=settings.source,
-            profile=profile,
-            metadata={
-                "inserted": raw_pgns_inserted,
-                "computed": raw_pgns_hashed,
-                "matched": raw_pgns_matched,
-                "total": len(games_to_process),
-            },
-        )
-        if postgres_pgns_active:
-            with postgres_connection(settings) as pg_conn:
-                if pg_conn is None:
-                    logger.warning(
-                        "Postgres raw PGN mirror enabled but connection unavailable"
-                    )
-                else:
-                    init_pgn_schema(pg_conn)
-                    try:
-                        postgres_raw_pgns_inserted = upsert_postgres_raw_pgns(
-                            pg_conn,
-                            cast(list[Mapping[str, object]], games_to_process),
-                        )
-                    except Exception as exc:  # noqa: BLE001
-                        logger.warning("Postgres raw PGN upsert failed: %s", exc)
-            _emit_progress(
-                progress,
-                "postgres_raw_pgns_persisted",
-                source=settings.source,
-                inserted=postgres_raw_pgns_inserted,
-                total=len(games_to_process),
-            )
-            record_ops_event(
-                settings,
-                component="ingestion",
-                event_type="postgres_raw_pgns_persisted",
-                source=settings.source,
-                profile=profile,
-                metadata={
-                    "inserted": postgres_raw_pgns_inserted,
-                    "total": len(games_to_process),
-                },
-            )
-
-        _emit_progress(
-            progress,
-            "extract_positions",
-            source=settings.source,
-            message="Extracting positions",
-        )
-
-        side_to_move_filter = _resolve_side_to_move_filter(settings)
-
-        for game in games_to_process:
-            positions.extend(
-                extract_positions(
-                    game["pgn"],
-                    settings.user,
-                    settings.source,
-                    game_id=game["game_id"],
-                    side_to_move_filter=side_to_move_filter,
-                )
-            )
-
-        position_ids = insert_positions(conn, positions)
-        for pos, pos_id in zip(positions, position_ids, strict=False):
-            pos["position_id"] = pos_id
-
-        analysis_signature = _analysis_signature(
-            game_ids, len(positions), settings.source
-        )
-    else:
-        raw_pgns_inserted = upsert_raw_pgns(conn, games_to_process)
-        hash_metrics = _validate_raw_pgn_hashes(conn, games_to_process, settings.source)
-        raw_pgns_hashed = hash_metrics["computed"]
-        raw_pgns_matched = hash_metrics["matched"]
-        _emit_progress(
-            progress,
-            "raw_pgns_persisted",
-            source=settings.source,
-            inserted=raw_pgns_inserted,
-            total=len(games_to_process),
-        )
-        _emit_progress(
-            progress,
-            "raw_pgns_hashed",
-            source=settings.source,
-            computed=raw_pgns_hashed,
-            matched=raw_pgns_matched,
-        )
-        record_ops_event(
-            settings,
-            component="ingestion",
-            event_type="raw_pgns_persisted",
-            source=settings.source,
-            profile=profile,
-            metadata={
-                "inserted": raw_pgns_inserted,
-                "computed": raw_pgns_hashed,
-                "matched": raw_pgns_matched,
-                "total": len(games_to_process),
-            },
-        )
-        if postgres_pgns_active:
-            with postgres_connection(settings) as pg_conn:
-                if pg_conn is None:
-                    logger.warning(
-                        "Postgres raw PGN mirror enabled but connection unavailable"
-                    )
-                else:
-                    init_pgn_schema(pg_conn)
-                    try:
-                        postgres_raw_pgns_inserted = upsert_postgres_raw_pgns(
-                            pg_conn,
-                            cast(list[Mapping[str, object]], games_to_process),
-                        )
-                    except Exception as exc:  # noqa: BLE001
-                        logger.warning("Postgres raw PGN upsert failed: %s", exc)
-            _emit_progress(
-                progress,
-                "postgres_raw_pgns_persisted",
-                source=settings.source,
-                inserted=postgres_raw_pgns_inserted,
-                total=len(games_to_process),
-            )
-            record_ops_event(
-                settings,
-                component="ingestion",
-                event_type="postgres_raw_pgns_persisted",
-                source=settings.source,
-                profile=profile,
-                metadata={
-                    "inserted": postgres_raw_pgns_inserted,
-                    "total": len(games_to_process),
-                },
-            )
-
-    logger.info(
-        "Raw PGNs persisted: raw_pgns_inserted=%s raw_pgns_hashed=%s raw_pgns_matched=%s source=%s total=%s",
-        raw_pgns_inserted,
-        raw_pgns_hashed,
-        raw_pgns_matched,
-        settings.source,
-        len(games_to_process),
-    )
-
-    _emit_progress(
-        progress,
-        "positions_ready",
-        source=settings.source,
-        positions=len(positions),
-    )
-
-    tactics_count = 0
-    postgres_written = 0
-    postgres_synced = 0
-    analysis_complete = False
-    total_positions = len(positions)
-    progress_every = max(1, total_positions // 20) if total_positions else 1
-    analysis_pg_enabled = postgres_analysis_enabled(settings)
-    with postgres_connection(settings) as pg_conn:
-        if pg_conn is not None and analysis_pg_enabled:
-            init_analysis_schema(pg_conn)
-        with StockfishEngine(settings) as engine:
-            for idx, pos in enumerate(positions):
-                if idx <= resume_index:
-                    continue
-                result = _analyse_with_retries(engine, pos, settings)
-                if result is None:
-                    _write_analysis_checkpoint(
-                        analysis_checkpoint_path, analysis_signature, idx
-                    )
-                    continue
-                tactic_row, outcome_row = result
-                upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
-                if pg_conn is not None and analysis_pg_enabled:
-                    try:
-                        upsert_analysis_tactic_with_outcome(
-                            pg_conn,
-                            tactic_row,
-                            outcome_row,
-                        )
-                        postgres_written += 1
-                    except Exception as exc:  # noqa: BLE001
-                        logger.warning("Postgres analysis upsert failed: %s", exc)
-                tactics_count += 1
-                _write_analysis_checkpoint(
-                    analysis_checkpoint_path, analysis_signature, idx
-                )
-                if progress and (
-                    idx == total_positions - 1 or (idx + 1) % progress_every == 0
-                ):
-                    _emit_progress(
-                        progress,
-                        "analyze_positions",
-                        source=settings.source,
-                        analyzed=idx + 1,
-                        total=total_positions,
-                    )
-        if pg_conn is not None and analysis_pg_enabled and postgres_written == 0:
-            postgres_synced = _sync_postgres_analysis_results(conn, pg_conn, settings)
-            postgres_written += postgres_synced
-    analysis_complete = True
-    if analysis_complete:
-        _clear_analysis_checkpoint(analysis_checkpoint_path)
-    record_ops_event(
-        settings,
-        component="analysis",
-        event_type="analysis_complete",
-        source=settings.source,
-        profile=profile,
-        metadata={
-            "positions_analyzed": total_positions,
-            "tactics_detected": tactics_count,
-            "resume_index": resume_index,
-            "postgres_tactics_written": postgres_written,
-            "postgres_tactics_synced": postgres_synced,
-        },
-    )
-    update_metrics_summary(conn)
-    metrics_version = write_metrics_version(conn)
-    settings.metrics_version_file.write_text(str(metrics_version))
-
-    _emit_progress(
-        progress,
-        "metrics_refreshed",
-        source=settings.source,
-        metrics_version=metrics_version,
-        message="Metrics refreshed",
-    )
-
-    checkpoint_value: int | None = None
-    if not backfill_mode:
-        if settings.source == "chesscom":
-            write_chesscom_cursor(settings.checkpoint_path, next_cursor)
-            if chesscom_result:
-                last_timestamp_value = chesscom_result.last_timestamp_ms
-            elif games:
-                last_timestamp_value = latest_timestamp(games)
-        else:
-            checkpoint_value = max(since_ms, latest_timestamp(games))
-            write_checkpoint(settings.checkpoint_path, checkpoint_value)
-            last_timestamp_value = checkpoint_value
-
-    record_ops_event(
-        settings,
-        component=settings.run_context,
-        event_type="daily_game_sync_complete",
-        source=settings.source,
-        profile=profile,
-        metadata={
-            "fetched_games": len(games),
-            "raw_pgns_inserted": raw_pgns_inserted,
-            "postgres_raw_pgns_inserted": postgres_raw_pgns_inserted,
-            "positions": len(positions),
-            "tactics": tactics_count,
-            "postgres_tactics_written": postgres_written,
-            "postgres_tactics_synced": postgres_synced,
-            "metrics_version": metrics_version,
-            "backfill": backfill_mode,
-        },
-    )
-
-    return {
-        "source": settings.source,
-        "user": settings.user,
-        "fetched_games": len(games),
-        "raw_pgns_inserted": raw_pgns_inserted,
-        "raw_pgns_hashed": raw_pgns_hashed,
-        "raw_pgns_matched": raw_pgns_matched,
-        "postgres_raw_pgns_inserted": postgres_raw_pgns_inserted,
-        "positions": len(positions),
-        "tactics": tactics_count,
-        "metrics_version": metrics_version,
-        "checkpoint_ms": checkpoint_value,
-        "cursor": cursor_before if backfill_mode else (next_cursor or cursor_value),
-        "last_timestamp_ms": last_timestamp_value,
-        "since_ms": since_ms,
-    }
 
 
 def run_refresh_metrics(

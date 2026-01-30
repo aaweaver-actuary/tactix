@@ -1,10 +1,40 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 import chess
+
+MISSED_DELTA_THRESHOLD = -300
+FAILED_ATTEMPT_THRESHOLD = -100
+BOARD_EDGE = 7
+MIN_FORK_TARGETS = 2
+MIN_FORK_CHECK_TARGETS = 1
+ORTHOGONAL_STEPS = (1, -1, 8, -8)
+DIAGONAL_STEPS = (7, -7, 9, -9)
+QUEEN_STEPS = ORTHOGONAL_STEPS + DIAGONAL_STEPS
+HIGH_VALUE_PIECES = (
+    chess.QUEEN,
+    chess.ROOK,
+    chess.BISHOP,
+    chess.KNIGHT,
+)
+KING_THREAT_PIECES = (
+    chess.KING,
+    chess.QUEEN,
+    chess.ROOK,
+    chess.BISHOP,
+    chess.KNIGHT,
+)
+PIECE_VALUES = {
+    chess.KING: 10000,
+    chess.QUEEN: 900,
+    chess.ROOK: 500,
+    chess.BISHOP: 300,
+    chess.KNIGHT: 300,
+    chess.PAWN: 100,
+}
 
 
 @dataclass(frozen=True)
@@ -29,9 +59,9 @@ class BaseTacticDetector(ABC):
         delta = after_cp - base_cp
         if best_move and user_move == best_move:
             return "found", delta
-        if delta <= -300:
+        if delta <= MISSED_DELTA_THRESHOLD:
             return "missed", delta
-        if delta <= -100:
+        if delta <= FAILED_ATTEMPT_THRESHOLD:
             return "failed_attempt", delta
         return "unclear", delta
 
@@ -43,14 +73,7 @@ class BaseTacticDetector(ABC):
 
     @staticmethod
     def piece_value(piece_type: int) -> int:
-        return {
-            chess.KING: 10000,
-            chess.QUEEN: 900,
-            chess.ROOK: 500,
-            chess.BISHOP: 300,
-            chess.KNIGHT: 300,
-            chess.PAWN: 100,
-        }.get(piece_type, 0)
+        return PIECE_VALUES.get(piece_type, 0)
 
     @staticmethod
     def iter_unchanged_sliders(
@@ -80,14 +103,14 @@ class BaseTacticDetector(ABC):
         file = chess.square_file(start)
         rank = chess.square_rank(start)
         deltas = {
-            1: (1, 0),
-            -1: (-1, 0),
-            8: (0, 1),
-            -8: (0, -1),
-            9: (1, 1),
-            -9: (-1, -1),
-            7: (-1, 1),
-            -7: (1, -1),
+            ORTHOGONAL_STEPS[0]: (1, 0),
+            ORTHOGONAL_STEPS[1]: (-1, 0),
+            ORTHOGONAL_STEPS[2]: (0, 1),
+            ORTHOGONAL_STEPS[3]: (0, -1),
+            DIAGONAL_STEPS[0]: (-1, 1),
+            DIAGONAL_STEPS[1]: (1, -1),
+            DIAGONAL_STEPS[2]: (1, 1),
+            DIAGONAL_STEPS[3]: (-1, -1),
         }
         delta = deltas.get(step)
         if delta is None:
@@ -95,7 +118,7 @@ class BaseTacticDetector(ABC):
         df, dr = delta
         file += df
         rank += dr
-        while 0 <= file <= 7 and 0 <= rank <= 7:
+        while 0 <= file <= BOARD_EDGE and 0 <= rank <= BOARD_EDGE:
             square = chess.square(file, rank)
             if board.piece_at(square):
                 return square
@@ -110,17 +133,7 @@ class BaseTacticDetector(ABC):
         targets = 0
         for sq in board_after.attacks(to_square):
             piece = board_after.piece_at(sq)
-            if (
-                piece
-                and piece.color != mover_color
-                and piece.piece_type
-                in (
-                    chess.QUEEN,
-                    chess.ROOK,
-                    chess.BISHOP,
-                    chess.KNIGHT,
-                )
-            ):
+            if piece and piece.color != mover_color and piece.piece_type in HIGH_VALUE_PIECES:
                 targets += 1
         return targets
 
@@ -131,18 +144,7 @@ class BaseTacticDetector(ABC):
         targets: set[chess.Square] = set()
         for target_sq in board.attacks(square):
             piece = board.piece_at(target_sq)
-            if (
-                piece
-                and piece.color == opponent
-                and piece.piece_type
-                in (
-                    chess.KING,
-                    chess.QUEEN,
-                    chess.ROOK,
-                    chess.BISHOP,
-                    chess.KNIGHT,
-                )
-            ):
+            if piece and piece.color == opponent and piece.piece_type in KING_THREAT_PIECES:
                 targets.add(target_sq)
         return targets
 
@@ -154,12 +156,7 @@ class BaseTacticDetector(ABC):
         mover_color: bool,
     ) -> bool:
         captured = board_before.piece_at(best_move.to_square)
-        if not captured or captured.piece_type not in (
-            chess.QUEEN,
-            chess.ROOK,
-            chess.BISHOP,
-            chess.KNIGHT,
-        ):
+        if not captured or captured.piece_type not in HIGH_VALUE_PIECES:
             return False
         if board_after.is_checkmate():
             return True
@@ -216,9 +213,7 @@ class DiscoveredAttackDetector(BaseTacticDetector):
             before_targets = self.attacked_high_value_targets(
                 context.board_before, square, opponent
             )
-            after_targets = self.attacked_high_value_targets(
-                context.board_after, square, opponent
-            )
+            after_targets = self.attacked_high_value_targets(context.board_after, square, opponent)
             if after_targets - before_targets:
                 return True
         return False
@@ -230,15 +225,12 @@ class SkewerDetector(BaseTacticDetector):
     def detect(self, context: TacticContext) -> bool:
         opponent = not context.mover_color
         slider_steps = {
-            chess.ROOK: (1, -1, 8, -8),
-            chess.BISHOP: (7, -7, 9, -9),
-            chess.QUEEN: (1, -1, 8, -8, 7, -7, 9, -9),
+            chess.ROOK: ORTHOGONAL_STEPS,
+            chess.BISHOP: DIAGONAL_STEPS,
+            chess.QUEEN: QUEEN_STEPS,
         }
         for square, piece in context.board_after.piece_map().items():
-            if (
-                piece.color != context.mover_color
-                or piece.piece_type not in slider_steps
-            ):
+            if piece.color != context.mover_color or piece.piece_type not in slider_steps:
                 continue
             for step in slider_steps[piece.piece_type]:
                 first = self.first_piece_in_direction(context.board_after, square, step)
@@ -253,9 +245,7 @@ class SkewerDetector(BaseTacticDetector):
                 behind = context.board_after.piece_at(second)
                 if not behind or behind.color != opponent:
                     continue
-                if self.piece_value(target.piece_type) > self.piece_value(
-                    behind.piece_type
-                ):
+                if self.piece_value(target.piece_type) > self.piece_value(behind.piece_type):
                     return True
         return False
 
@@ -282,9 +272,9 @@ class PinDetector(BaseTacticDetector):
         if not moved_piece or moved_piece.color != context.mover_color:
             return False
         slider_steps = {
-            chess.ROOK: (1, -1, 8, -8),
-            chess.BISHOP: (7, -7, 9, -9),
-            chess.QUEEN: (1, -1, 8, -8, 7, -7, 9, -9),
+            chess.ROOK: ORTHOGONAL_STEPS,
+            chess.BISHOP: DIAGONAL_STEPS,
+            chess.QUEEN: QUEEN_STEPS,
         }
         steps = slider_steps.get(moved_piece.piece_type)
         if not steps:
@@ -304,9 +294,7 @@ class PinDetector(BaseTacticDetector):
             behind = context.board_after.piece_at(second)
             if not behind or behind.color != opponent:
                 continue
-            if self.piece_value(behind.piece_type) > self.piece_value(
-                target.piece_type
-            ):
+            if self.piece_value(behind.piece_type) > self.piece_value(target.piece_type):
                 return True
         return False
 
@@ -316,19 +304,14 @@ class ForkDetector(BaseTacticDetector):
 
     def detect(self, context: TacticContext) -> bool:
         piece = context.board_before.piece_at(context.best_move.from_square)
-        if not piece or piece.piece_type not in (
-            chess.QUEEN,
-            chess.ROOK,
-            chess.BISHOP,
-            chess.KNIGHT,
-        ):
+        if not piece or piece.piece_type not in HIGH_VALUE_PIECES:
             return False
         forks = self.count_high_value_targets(
             context.board_after, context.best_move.to_square, context.mover_color
         )
-        if forks >= 2:
+        if forks >= MIN_FORK_TARGETS:
             return True
-        return forks >= 1 and context.board_after.is_check()
+        return forks >= MIN_FORK_CHECK_TARGETS and context.board_after.is_check()
 
 
 class CaptureDetector(BaseTacticDetector):

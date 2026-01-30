@@ -1,22 +1,28 @@
 from __future__ import annotations
 
+import hashlib
+import shutil
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
-import hashlib
 from pathlib import Path
-from typing import Optional
 
 import chess
 import chess.engine
-import shutil
 
 from tactix.config import Settings
 from tactix.logging_utils import get_logger
 
 logger = get_logger(__name__)
+_MATERIAL_VALUES = {
+    chess.PAWN: 100,
+    chess.KNIGHT: 300,
+    chess.BISHOP: 300,
+    chess.ROOK: 500,
+    chess.QUEEN: 900,
+}
 
 
-def _normalize_checksum(value: Optional[str]) -> Optional[str]:
+def _normalize_checksum(value: str | None) -> str | None:
     if not value:
         return None
     cleaned = value.strip().lower()
@@ -33,7 +39,7 @@ def _compute_sha256(path: Path) -> str:
 
 def verify_stockfish_checksum(
     binary_path: Path,
-    expected_checksum: Optional[str],
+    expected_checksum: str | None,
     mode: str = "warn",
 ) -> bool:
     normalized = _normalize_checksum(expected_checksum)
@@ -52,19 +58,19 @@ def verify_stockfish_checksum(
 
 @dataclass(slots=True)
 class EngineResult:
-    best_move: Optional[chess.Move]
+    best_move: chess.Move | None
     score_cp: int
     depth: int
-    mate_in: Optional[int] = None
+    mate_in: int | None = None
 
 
 class StockfishEngine(AbstractContextManager["StockfishEngine"]):
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.engine: Optional[chess.engine.SimpleEngine] = None
+        self.engine: chess.engine.SimpleEngine | None = None
         self.applied_options: dict[str, str | int | None] = {}
 
-    def __enter__(self) -> "StockfishEngine":
+    def __enter__(self) -> StockfishEngine:
         self._start_engine()
         return self
 
@@ -85,7 +91,7 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
         self.engine = None
         self._start_engine()
 
-    def _resolve_command(self) -> Optional[str]:
+    def _resolve_command(self) -> str | None:
         configured = str(Path(self.settings.stockfish_path))
         path = Path(configured)
         if path.exists():
@@ -110,6 +116,21 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
             "Seed": self.settings.stockfish_random_seed,
         }
 
+    @staticmethod
+    def _is_option_managed(option_meta: object) -> bool:
+        is_managed_attr = getattr(option_meta, "is_managed", None)
+        if is_managed_attr is not None:
+            return is_managed_attr() if callable(is_managed_attr) else bool(is_managed_attr)
+        return bool(getattr(option_meta, "managed", False))
+
+    @staticmethod
+    def _coerce_option_value(value: object) -> str | int | None:
+        if isinstance(value, bool):
+            return int(value)
+        if isinstance(value, (int, str)) or value is None:
+            return value
+        return None
+
     def _configure_engine(self) -> None:
         if not self.engine:
             return
@@ -121,22 +142,10 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
                 continue
             if name in options:
                 option_meta = options[name]
-                is_managed_attr = getattr(option_meta, "is_managed", None)
-                if is_managed_attr is not None:
-                    is_managed = (
-                        is_managed_attr()
-                        if callable(is_managed_attr)
-                        else bool(is_managed_attr)
-                    )
-                else:
-                    is_managed = bool(getattr(option_meta, "managed", False))
-                if is_managed:
+                if self._is_option_managed(option_meta):
                     continue
-                if isinstance(value, bool):
-                    coerced: str | int | None = int(value)
-                elif isinstance(value, (int, str)) or value is None:
-                    coerced = value
-                else:
+                coerced = self._coerce_option_value(value)
+                if coerced is None:
                     continue
                 applied[name] = coerced
         if applied:
@@ -159,10 +168,7 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
                 multipv=self.settings.stockfish_multipv,
                 options={"Clear Hash": True},
             )
-            if isinstance(info, list):
-                info_primary = info[0] if info else {}
-            else:
-                info_primary = info
+            info_primary = (info[0] if info else {}) if isinstance(info, list) else info
             pv = info_primary.get("pv")
             best_move = pv[0] if isinstance(pv, list) and pv else None
             score_obj = info_primary.get("score")
@@ -210,15 +216,8 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
 
     @staticmethod
     def _material_score(board: chess.Board) -> int:
-        values = {
-            chess.PAWN: 100,
-            chess.KNIGHT: 300,
-            chess.BISHOP: 300,
-            chess.ROOK: 500,
-            chess.QUEEN: 900,
-        }
         score = 0
-        for piece_type, val in values.items():
+        for piece_type, val in _MATERIAL_VALUES.items():
             score += len(board.pieces(piece_type, chess.WHITE)) * val
             score -= len(board.pieces(piece_type, chess.BLACK)) * val
         return score if board.turn == chess.WHITE else -score

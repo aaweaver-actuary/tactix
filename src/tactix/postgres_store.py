@@ -1,16 +1,23 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
-from datetime import datetime
-from dataclasses import dataclass
-from typing import Any, Iterator, Mapping, cast
 import time
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, cast
 
 import psycopg2
 from psycopg2.extensions import connection as PgConnection
 from psycopg2.extras import Json, RealDictCursor
 
-from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
+from tactix.base_db_store import (
+    BaseDbStore,
+    BaseDbStoreContext,
+    OutcomeInsertPlan,
+    PgnUpsertPlan,
+    TacticInsertPlan,
+)
 from tactix.config import Settings
 from tactix.logging_utils import get_logger
 from tactix.pgn_utils import normalize_pgn
@@ -108,7 +115,8 @@ def init_postgres_schema(conn: PgConnection) -> None:
             """
         )
         cur.execute(
-            "CREATE INDEX IF NOT EXISTS ops_events_created_at_idx ON tactix_ops.ops_events (created_at DESC)"
+            "CREATE INDEX IF NOT EXISTS ops_events_created_at_idx "
+            "ON tactix_ops.ops_events (created_at DESC)"
         )
 
 
@@ -123,16 +131,15 @@ def postgres_pgns_enabled(settings: Settings) -> bool:
 def init_analysis_schema(conn: PgConnection) -> None:
     with conn.cursor() as cur:
         cur.execute(f"CREATE SCHEMA IF NOT EXISTS {ANALYSIS_SCHEMA}")
-        cur.execute(
-            f"CREATE SEQUENCE IF NOT EXISTS {ANALYSIS_SCHEMA}.tactics_tactic_id_seq"
-        )
+        cur.execute(f"CREATE SEQUENCE IF NOT EXISTS {ANALYSIS_SCHEMA}.tactics_tactic_id_seq")
         cur.execute(
             f"CREATE SEQUENCE IF NOT EXISTS {ANALYSIS_SCHEMA}.tactic_outcomes_outcome_id_seq"
         )
         cur.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {ANALYSIS_SCHEMA}.tactics (
-                tactic_id BIGINT PRIMARY KEY DEFAULT nextval('{ANALYSIS_SCHEMA}.tactics_tactic_id_seq'),
+                tactic_id BIGINT PRIMARY KEY
+                    DEFAULT nextval('{ANALYSIS_SCHEMA}.tactics_tactic_id_seq'),
                 game_id TEXT,
                 position_id BIGINT NOT NULL,
                 motif TEXT,
@@ -146,16 +153,20 @@ def init_analysis_schema(conn: PgConnection) -> None:
             """
         )
         cur.execute(
-            f"CREATE INDEX IF NOT EXISTS tactics_position_idx ON {ANALYSIS_SCHEMA}.tactics (position_id)"
+            f"CREATE INDEX IF NOT EXISTS tactics_position_idx "
+            f"ON {ANALYSIS_SCHEMA}.tactics (position_id)"
         )
         cur.execute(
-            f"CREATE INDEX IF NOT EXISTS tactics_created_at_idx ON {ANALYSIS_SCHEMA}.tactics (created_at DESC)"
+            f"CREATE INDEX IF NOT EXISTS tactics_created_at_idx "
+            f"ON {ANALYSIS_SCHEMA}.tactics (created_at DESC)"
         )
         cur.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {ANALYSIS_SCHEMA}.tactic_outcomes (
-                outcome_id BIGINT PRIMARY KEY DEFAULT nextval('{ANALYSIS_SCHEMA}.tactic_outcomes_outcome_id_seq'),
-                tactic_id BIGINT NOT NULL REFERENCES {ANALYSIS_SCHEMA}.tactics(tactic_id) ON DELETE CASCADE,
+                outcome_id BIGINT PRIMARY KEY
+                    DEFAULT nextval('{ANALYSIS_SCHEMA}.tactic_outcomes_outcome_id_seq'),
+                tactic_id BIGINT NOT NULL
+                    REFERENCES {ANALYSIS_SCHEMA}.tactics(tactic_id) ON DELETE CASCADE,
                 result TEXT,
                 user_uci TEXT,
                 eval_delta INTEGER,
@@ -164,20 +175,20 @@ def init_analysis_schema(conn: PgConnection) -> None:
             """
         )
         cur.execute(
-            f"CREATE INDEX IF NOT EXISTS tactic_outcomes_created_at_idx ON {ANALYSIS_SCHEMA}.tactic_outcomes (created_at DESC)"
+            f"CREATE INDEX IF NOT EXISTS tactic_outcomes_created_at_idx "
+            f"ON {ANALYSIS_SCHEMA}.tactic_outcomes (created_at DESC)"
         )
 
 
 def init_pgn_schema(conn: PgConnection) -> None:
     with conn.cursor() as cur:
         cur.execute(f"CREATE SCHEMA IF NOT EXISTS {PGN_SCHEMA}")
-        cur.execute(
-            f"CREATE SEQUENCE IF NOT EXISTS {PGN_SCHEMA}.raw_pgns_raw_pgn_id_seq"
-        )
+        cur.execute(f"CREATE SEQUENCE IF NOT EXISTS {PGN_SCHEMA}.raw_pgns_raw_pgn_id_seq")
         cur.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {PGN_SCHEMA}.raw_pgns (
-                raw_pgn_id BIGINT PRIMARY KEY DEFAULT nextval('{PGN_SCHEMA}.raw_pgns_raw_pgn_id_seq'),
+                raw_pgn_id BIGINT PRIMARY KEY
+                    DEFAULT nextval('{PGN_SCHEMA}.raw_pgns_raw_pgn_id_seq'),
                 game_id TEXT NOT NULL,
                 source TEXT NOT NULL,
                 player_username TEXT,
@@ -247,6 +258,149 @@ def _hash_pgn_text(pgn: str) -> str:
     return BaseDbStore.hash_pgn_text(pgn)
 
 
+def _fetch_latest_pgn_metadata(
+    cur,
+    game_id: str,
+    source: str,
+) -> tuple[str | None, int]:
+    cur.execute(
+        f"""
+        SELECT pgn_hash, pgn_version
+        FROM {PGN_SCHEMA}.raw_pgns
+        WHERE game_id = %s AND source = %s
+        ORDER BY pgn_version DESC
+        LIMIT 1
+        """,
+        (game_id, source),
+    )
+    existing = cur.fetchone()
+    if existing:
+        return existing[0], int(existing[1] or 0)
+    return None, 0
+
+
+def _insert_raw_pgn_row(
+    cur,
+    game_id: str,
+    source: str,
+    row: Mapping[str, object],
+    plan: PgnUpsertPlan,
+) -> None:
+    cur.execute(
+        f"""
+        INSERT INTO {PGN_SCHEMA}.raw_pgns (
+            game_id,
+            source,
+            player_username,
+            fetched_at,
+            pgn_raw,
+            pgn_normalized,
+            pgn_hash,
+            pgn_version,
+            user_rating,
+            time_control,
+            ingested_at,
+            last_timestamp_ms,
+            cursor,
+            white_player,
+            black_player,
+            white_elo,
+            black_elo,
+            result,
+            event,
+            site,
+            utc_date,
+            utc_time,
+            termination,
+            start_timestamp_ms
+        )
+        VALUES (
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+        )
+        ON CONFLICT DO NOTHING
+        """,
+        (
+            game_id,
+            source,
+            row.get("user"),
+            plan.fetched_at,
+            plan.pgn_text,
+            plan.normalized_pgn,
+            plan.pgn_hash,
+            plan.pgn_version,
+            plan.metadata.get("user_rating"),
+            plan.metadata.get("time_control"),
+            plan.ingested_at,
+            plan.last_timestamp_ms,
+            plan.cursor,
+            plan.metadata.get("white_player"),
+            plan.metadata.get("black_player"),
+            plan.metadata.get("white_elo"),
+            plan.metadata.get("black_elo"),
+            plan.metadata.get("result"),
+            plan.metadata.get("event"),
+            plan.metadata.get("site"),
+            plan.metadata.get("utc_date"),
+            plan.metadata.get("utc_time"),
+            plan.metadata.get("termination"),
+            plan.metadata.get("start_timestamp_ms"),
+        ),
+    )
+
+
+def _parse_game_source(row: Mapping[str, object]) -> tuple[str, str]:
+    game_id = str(row.get("game_id") or "")
+    source = str(row.get("source") or "")
+    return game_id, source
+
+
+def _maybe_upsert_raw_pgn_row(
+    cur,
+    row: Mapping[str, object],
+    latest_cache: dict[tuple[str, str], tuple[str | None, int]],
+) -> int:
+    game_id, source = _parse_game_source(row)
+    if not game_id or not source:
+        return 0
+    pgn_text = str(row.get("pgn") or "")
+    key = (game_id, source)
+    if key in latest_cache:
+        latest_hash, latest_version = latest_cache[key]
+    else:
+        latest_hash, latest_version = _fetch_latest_pgn_metadata(cur, game_id, source)
+    plan = BaseDbStore.build_pgn_upsert_plan(
+        pgn_text=pgn_text,
+        user=str(row.get("user") or ""),
+        latest_hash=latest_hash,
+        latest_version=latest_version,
+        normalize_pgn=normalize_pgn,
+        hash_pgn=_hash_pgn_text,
+        fetched_at=cast(datetime | None, row.get("fetched_at")),
+        last_timestamp_ms=cast(int, row.get("last_timestamp_ms", 0)),
+        cursor=row.get("cursor"),
+    )
+    if plan is None:
+        latest_cache[key] = (latest_hash, latest_version)
+        return 0
+    _insert_raw_pgn_row(cur, game_id, source, row, plan)
+    if cur.rowcount:
+        latest_cache[key] = (plan.pgn_hash, plan.pgn_version)
+        return 1
+    return 0
+
+
+def _upsert_postgres_raw_pgn_rows(
+    cur,
+    rows: list[Mapping[str, object]],
+) -> int:
+    latest_cache: dict[tuple[str, str], tuple[str | None, int]] = {}
+    inserted = 0
+    for row in rows:
+        inserted += _maybe_upsert_raw_pgn_row(cur, row, latest_cache)
+    return inserted
+
+
 def upsert_postgres_raw_pgns(
     conn: PgConnection,
     rows: list[Mapping[str, object]],
@@ -255,118 +409,15 @@ def upsert_postgres_raw_pgns(
         return 0
     autocommit_state = conn.autocommit
     conn.autocommit = False
-    inserted = 0
     try:
         with conn.cursor() as cur:
-            latest_cache: dict[tuple[str, str], tuple[str | None, int]] = {}
-            for row in rows:
-                game_id = str(row.get("game_id") or "")
-                source = str(row.get("source") or "")
-                if not game_id or not source:
-                    continue
-                pgn_text = str(row.get("pgn") or "")
-                key = (game_id, source)
-                if key in latest_cache:
-                    latest_hash, latest_version = latest_cache[key]
-                else:
-                    cur.execute(
-                        f"""
-                        SELECT pgn_hash, pgn_version
-                        FROM {PGN_SCHEMA}.raw_pgns
-                        WHERE game_id = %s AND source = %s
-                        ORDER BY pgn_version DESC
-                        LIMIT 1
-                        """,
-                        (game_id, source),
-                    )
-                    existing = cur.fetchone()
-                    if existing:
-                        latest_hash, latest_version = existing[0], int(existing[1] or 0)
-                    else:
-                        latest_hash, latest_version = None, 0
-                plan = BaseDbStore.build_pgn_upsert_plan(
-                    pgn_text=pgn_text,
-                    user=str(row.get("user") or ""),
-                    latest_hash=latest_hash,
-                    latest_version=latest_version,
-                    normalize_pgn=normalize_pgn,
-                    hash_pgn=_hash_pgn_text,
-                    fetched_at=cast(datetime | None, row.get("fetched_at")),
-                    last_timestamp_ms=cast(int, row.get("last_timestamp_ms", 0)),
-                    cursor=row.get("cursor"),
-                )
-                if plan is None:
-                    latest_cache[key] = (latest_hash, latest_version)
-                    continue
-                cur.execute(
-                    f"""
-                    INSERT INTO {PGN_SCHEMA}.raw_pgns (
-                        game_id,
-                        source,
-                        player_username,
-                        fetched_at,
-                        pgn_raw,
-                        pgn_normalized,
-                        pgn_hash,
-                        pgn_version,
-                        user_rating,
-                        time_control,
-                        ingested_at,
-                        last_timestamp_ms,
-                        cursor,
-                        white_player,
-                        black_player,
-                        white_elo,
-                        black_elo,
-                        result,
-                        event,
-                        site,
-                        utc_date,
-                        utc_time,
-                        termination,
-                        start_timestamp_ms
-                    )
-                    VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-                    )
-                    ON CONFLICT DO NOTHING
-                    """,
-                    (
-                        game_id,
-                        source,
-                        row.get("user"),
-                        plan.fetched_at,
-                        plan.pgn_text,
-                        plan.normalized_pgn,
-                        plan.pgn_hash,
-                        plan.pgn_version,
-                        plan.metadata.get("user_rating"),
-                        plan.metadata.get("time_control"),
-                        plan.ingested_at,
-                        plan.last_timestamp_ms,
-                        plan.cursor,
-                        plan.metadata.get("white_player"),
-                        plan.metadata.get("black_player"),
-                        plan.metadata.get("white_elo"),
-                        plan.metadata.get("black_elo"),
-                        plan.metadata.get("result"),
-                        plan.metadata.get("event"),
-                        plan.metadata.get("site"),
-                        plan.metadata.get("utc_date"),
-                        plan.metadata.get("utc_time"),
-                        plan.metadata.get("termination"),
-                        plan.metadata.get("start_timestamp_ms"),
-                    ),
-                )
-                if cur.rowcount:
-                    inserted += 1
-                    latest_cache[key] = (plan.pgn_hash, plan.pgn_version)
-        conn.commit()
-        return inserted
-    except Exception:  # noqa: BLE001
+            inserted = _upsert_postgres_raw_pgn_rows(cur, rows)
+    except Exception:
         conn.rollback()
         raise
+    else:
+        conn.commit()
+        return inserted
     finally:
         conn.autocommit = autocommit_state
 
@@ -408,12 +459,8 @@ def fetch_postgres_raw_pgns_summary(settings: Settings) -> dict[str, Any]:
             totals = cur.fetchone() or {}
         return {
             "status": "ok",
-            "total_rows": totals.get("total_rows", 0)
-            if isinstance(totals, Mapping)
-            else 0,
-            "distinct_games": totals.get("distinct_games", 0)
-            if isinstance(totals, Mapping)
-            else 0,
+            "total_rows": totals.get("total_rows", 0) if isinstance(totals, Mapping) else 0,
+            "distinct_games": totals.get("distinct_games", 0) if isinstance(totals, Mapping) else 0,
             "latest_ingested_at": totals.get("latest_ingested_at")
             if isinstance(totals, Mapping)
             else None,
@@ -421,14 +468,88 @@ def fetch_postgres_raw_pgns_summary(settings: Settings) -> dict[str, Any]:
         }
 
 
+def _delete_existing_analysis(cur, position_id: int) -> None:
+    cur.execute(
+        f"""
+        DELETE FROM {ANALYSIS_SCHEMA}.tactic_outcomes
+        WHERE tactic_id IN (
+            SELECT tactic_id FROM {ANALYSIS_SCHEMA}.tactics WHERE position_id = %s
+        )
+        """,
+        (position_id,),
+    )
+    cur.execute(
+        f"DELETE FROM {ANALYSIS_SCHEMA}.tactics WHERE position_id = %s",
+        (position_id,),
+    )
+
+
+def _insert_analysis_tactic(cur, tactic_plan: TacticInsertPlan) -> int:
+    cur.execute(
+        f"""
+        INSERT INTO {ANALYSIS_SCHEMA}.tactics (
+            game_id,
+            position_id,
+            motif,
+            severity,
+            best_uci,
+            best_san,
+            explanation,
+            eval_cp
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING tactic_id
+        """,
+        (
+            tactic_plan.game_id,
+            tactic_plan.position_id,
+            tactic_plan.motif,
+            tactic_plan.severity,
+            tactic_plan.best_uci,
+            tactic_plan.best_san,
+            tactic_plan.explanation,
+            tactic_plan.eval_cp,
+        ),
+    )
+    tactic_id_row = cur.fetchone()
+    return int(tactic_id_row[0]) if tactic_id_row else 0
+
+
+def _insert_analysis_outcome(
+    cur,
+    tactic_id: int,
+    outcome_plan: OutcomeInsertPlan,
+) -> None:
+    cur.execute(
+        f"""
+        INSERT INTO {ANALYSIS_SCHEMA}.tactic_outcomes (
+            tactic_id,
+            result,
+            user_uci,
+            eval_delta
+        )
+        VALUES (%s, %s, %s, %s)
+        """,
+        (
+            tactic_id,
+            outcome_plan.result,
+            outcome_plan.user_uci,
+            outcome_plan.eval_delta,
+        ),
+    )
+
+
 def upsert_analysis_tactic_with_outcome(
     conn: PgConnection,
     tactic_row: Mapping[str, object],
     outcome_row: Mapping[str, object],
 ) -> int:
-    position_id = BaseDbStore.require_position_id(
-        tactic_row,
-        "position_id is required for Postgres analysis upsert",
+    position_id = cast(
+        int,
+        BaseDbStore.require_position_id(
+            tactic_row,
+            "position_id is required for Postgres analysis upsert",
+        ),
     )
     tactic_plan = BaseDbStore.build_tactic_insert_plan(
         game_id=tactic_row.get("game_id"),
@@ -440,69 +561,15 @@ def upsert_analysis_tactic_with_outcome(
     conn.autocommit = False
     try:
         with conn.cursor() as cur:
-            cur.execute(
-                f"""
-                DELETE FROM {ANALYSIS_SCHEMA}.tactic_outcomes
-                WHERE tactic_id IN (
-                    SELECT tactic_id FROM {ANALYSIS_SCHEMA}.tactics WHERE position_id = %s
-                )
-                """,
-                (position_id,),
-            )
-            cur.execute(
-                f"DELETE FROM {ANALYSIS_SCHEMA}.tactics WHERE position_id = %s",
-                (position_id,),
-            )
-            cur.execute(
-                f"""
-                INSERT INTO {ANALYSIS_SCHEMA}.tactics (
-                    game_id,
-                    position_id,
-                    motif,
-                    severity,
-                    best_uci,
-                    best_san,
-                    explanation,
-                    eval_cp
-                )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING tactic_id
-                """,
-                (
-                    tactic_plan.game_id,
-                    tactic_plan.position_id,
-                    tactic_plan.motif,
-                    tactic_plan.severity,
-                    tactic_plan.best_uci,
-                    tactic_plan.best_san,
-                    tactic_plan.explanation,
-                    tactic_plan.eval_cp,
-                ),
-            )
-            tactic_id_row = cur.fetchone()
-            tactic_id = int(tactic_id_row[0]) if tactic_id_row else 0
-            cur.execute(
-                f"""
-                INSERT INTO {ANALYSIS_SCHEMA}.tactic_outcomes (
-                    tactic_id,
-                    result,
-                    user_uci,
-                    eval_delta
-                )
-                VALUES (%s, %s, %s, %s)
-                """,
-                (
-                    tactic_id,
-                    outcome_plan.result,
-                    outcome_plan.user_uci,
-                    outcome_plan.eval_delta,
-                ),
-            )
-        conn.commit()
-        return tactic_id
-    except Exception:  # noqa: BLE001
+            _delete_existing_analysis(cur, position_id)
+            tactic_id = _insert_analysis_tactic(cur, tactic_plan)
+            _insert_analysis_outcome(cur, tactic_id, outcome_plan)
+    except Exception:
         conn.rollback()
         raise
+    else:
+        conn.commit()
+        return tactic_id
     finally:
         conn.autocommit = autocommit_state
 
@@ -605,6 +672,27 @@ def _list_tables(conn: PgConnection, schema: str) -> list[str]:
         return [row[0] for row in cur.fetchall()]
 
 
+def _build_schema_label(settings: Settings) -> str:
+    schema_label = "tactix_ops"
+    if settings.postgres_analysis_enabled:
+        schema_label = f"{schema_label},{ANALYSIS_SCHEMA}"
+    if settings.postgres_pgns_enabled:
+        schema_label = f"{schema_label},{PGN_SCHEMA}"
+    return schema_label
+
+
+def _collect_tables(conn: PgConnection, settings: Settings) -> list[str]:
+    tables: list[str] = []
+    tables.extend([f"tactix_ops.{name}" for name in _list_tables(conn, "tactix_ops")])
+    if settings.postgres_analysis_enabled:
+        init_analysis_schema(conn)
+        tables.extend([f"{ANALYSIS_SCHEMA}.{name}" for name in _list_tables(conn, ANALYSIS_SCHEMA)])
+    if settings.postgres_pgns_enabled:
+        init_pgn_schema(conn)
+        tables.extend([f"{PGN_SCHEMA}.{name}" for name in _list_tables(conn, PGN_SCHEMA)])
+    return tables
+
+
 def get_postgres_status(settings: Settings) -> PostgresStatus:
     if not postgres_enabled(settings):
         return PostgresStatus(enabled=False, status="disabled")
@@ -624,28 +712,8 @@ def get_postgres_status(settings: Settings) -> PostgresStatus:
     try:
         conn.autocommit = True
         init_postgres_schema(conn)
-        tables: list[str] = []
-        tables.extend(
-            [f"tactix_ops.{name}" for name in _list_tables(conn, "tactix_ops")]
-        )
-        if settings.postgres_analysis_enabled:
-            init_analysis_schema(conn)
-            tables.extend(
-                [
-                    f"{ANALYSIS_SCHEMA}.{name}"
-                    for name in _list_tables(conn, ANALYSIS_SCHEMA)
-                ]
-            )
-        if settings.postgres_pgns_enabled:
-            init_pgn_schema(conn)
-            tables.extend(
-                [f"{PGN_SCHEMA}.{name}" for name in _list_tables(conn, PGN_SCHEMA)]
-            )
-        schema_label = "tactix_ops"
-        if settings.postgres_analysis_enabled:
-            schema_label = f"{schema_label},{ANALYSIS_SCHEMA}"
-        if settings.postgres_pgns_enabled:
-            schema_label = f"{schema_label},{PGN_SCHEMA}"
+        tables = _collect_tables(conn, settings)
+        schema_label = _build_schema_label(settings)
         return PostgresStatus(
             enabled=True,
             status="ok",

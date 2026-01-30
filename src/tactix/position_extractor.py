@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import re
-from io import StringIO
 import os
-from typing import Dict, List, Optional, Generator
-from dataclasses import dataclass, asdict
+import re
+from collections.abc import Generator
+from dataclasses import asdict, dataclass
+from io import StringIO
 
 import chess
 import chess.pgn
@@ -14,6 +14,8 @@ from tactix.logging_utils import get_logger
 logger = get_logger(__name__)
 
 CLK_PATTERN = re.compile(r"%clk\s+([0-9:.]+)")
+CLOCK_PARTS_FULL = 3
+CLOCK_PARTS_SHORT = 2
 
 
 @dataclass
@@ -27,7 +29,7 @@ class PositionContext:
     side_to_move: str
     uci: str
     san: str
-    clock_seconds: Optional[float]
+    clock_seconds: float | None
     is_legal: bool
 
 
@@ -36,10 +38,10 @@ class PgnContext:
     pgn: str
     user: str
     source: str
-    game_id: Optional[str] = None
-    side_to_move_filter: Optional[str] = None
-    _game: Optional[chess.pgn.Game] = None
-    _board: Optional[chess.Board] = None
+    game_id: str | None = None
+    side_to_move_filter: str | None = None
+    _game: chess.pgn.Game | None = None
+    _board: chess.Board | None = None
 
     def __post_init__(self):
         self.user = self.user.lower()
@@ -51,26 +53,26 @@ class PgnContext:
             self._game = chess.pgn.read_game(StringIO(self.pgn))
 
     @property
-    def game(self) -> Optional[chess.pgn.Game]:
+    def game(self) -> chess.pgn.Game | None:
         self._get_game()
         return self._game
 
     @property
-    def headers(self) -> Dict[str, str]:
+    def headers(self) -> dict[str, str]:
         self._get_game()
         if self._game is None:
             return {}
         return dict(self._game.headers)
 
     @property
-    def fen(self) -> Optional[str]:
+    def fen(self) -> str | None:
         board = self.board
         if board is None:
             return None
         return board.fen()
 
     @property
-    def board(self) -> Optional[chess.Board]:
+    def board(self) -> chess.Board | None:
         if self._game is None:
             self._get_game()
         if self._game is None:
@@ -108,7 +110,7 @@ class PgnContext:
         return board.fullmove_number
 
     @property
-    def side_to_move(self) -> Optional[str]:
+    def side_to_move(self) -> str | None:
         board = self.board
         if board is None:
             return None
@@ -118,20 +120,19 @@ class PgnContext:
         game = self.game
         if game is None:
             return
-        for node in game.mainline():
-            yield node
+        yield from game.mainline()
 
 
-def _clock_from_comment(comment: str) -> Optional[float]:
+def _clock_from_comment(comment: str) -> float | None:
     match = CLK_PATTERN.search(comment or "")
     if not match:
         return None
     token = match.group(1)
     parts = token.split(":")
     try:
-        if len(parts) == 3:
+        if len(parts) == CLOCK_PARTS_FULL:
             hours, minutes, seconds = parts
-        elif len(parts) == 2:
+        elif len(parts) == CLOCK_PARTS_SHORT:
             hours = "0"
             minutes, seconds = parts
         else:
@@ -171,38 +172,30 @@ def _build_pgn_context(
     )
 
 
-def _extract_positions_python(
-    pgn: str | PgnContext,
-    user: str | None = None,
-    source: str | None = None,
-    game_id: str | None = None,
-    side_to_move_filter: str | None = None,
-) -> List[Dict[str, object]]:
-    ctx = _build_pgn_context(
-        pgn,
-        user=user,
-        source=source,
-        game_id=game_id,
-        side_to_move_filter=side_to_move_filter,
-    )
+def _resolve_game_context(ctx: PgnContext) -> tuple[chess.pgn.Game, chess.Board, bool] | None:
     game = ctx.game
     if not game:
         logger.warning("Unable to parse PGN")
-        return []
-
+        return None
     if ctx.user not in {ctx.white, ctx.black}:
         logger.info("User %s not present in game headers; skipping", ctx.user)
-        return []
-
-    user_color = _get_user_color(ctx.white, ctx.user)
-
-    positions: list[dict[str, object]] = []
-    normalized_side_filter = _normalize_side_filter(ctx.side_to_move_filter)
+        return None
     board = ctx.board
     if board is None:
         logger.warning("Unable to build board for PGN")
-        return []
+        return None
+    user_color = _get_user_color(ctx.white, ctx.user)
+    return game, board, user_color
 
+
+def _iter_position_contexts(
+    ctx: PgnContext,
+    game: chess.pgn.Game,
+    board: chess.Board,
+    user_color: bool,
+    side_filter: str | None,
+) -> list[dict[str, object]]:
+    positions: list[dict[str, object]] = []
     for node in game.mainline():
         move = node.move
         if move is None:
@@ -213,7 +206,7 @@ def _extract_positions_python(
             continue
 
         side_to_move = "white" if board.turn == chess.WHITE else "black"
-        if normalized_side_filter and side_to_move != normalized_side_filter:
+        if side_filter and side_to_move != side_filter:
             board.push(move)
             continue
 
@@ -240,6 +233,36 @@ def _extract_positions_python(
             )
         )
         board.push(move)
+    return positions
+
+
+def _extract_positions_python(
+    pgn: str | PgnContext,
+    user: str | None = None,
+    source: str | None = None,
+    game_id: str | None = None,
+    side_to_move_filter: str | None = None,
+) -> list[dict[str, object]]:
+    ctx = _build_pgn_context(
+        pgn,
+        user=user,
+        source=source,
+        game_id=game_id,
+        side_to_move_filter=side_to_move_filter,
+    )
+    resolved = _resolve_game_context(ctx)
+    if resolved is None:
+        return []
+
+    game, board, user_color = resolved
+    normalized_side_filter = _normalize_side_filter(ctx.side_to_move_filter)
+    positions = _iter_position_contexts(
+        ctx,
+        game,
+        board,
+        user_color,
+        normalized_side_filter,
+    )
 
     logger.info("Extracted %s positions for user", len(positions))
     return positions
@@ -263,7 +286,7 @@ def extract_positions(
     source: str,
     game_id: str | None = None,
     side_to_move_filter: str | None = None,
-) -> List[Dict[str, object]]:
+) -> list[dict[str, object]]:
     if os.getenv("PYTEST_CURRENT_TEST"):
         return _extract_positions_python(
             pgn,
@@ -273,7 +296,7 @@ def extract_positions(
             side_to_move_filter=side_to_move_filter,
         )
     try:
-        from tactix import _core
+        from tactix import _core  # noqa: PLC0415
     except Exception:  # pragma: no cover - optional Rust extension
         return _extract_positions_python(
             pgn,

@@ -102,9 +102,9 @@ target-version="py312"
 
         [tool.ruff.lint.pylint]
         # These hit the “giant function” problem agents create.
-        max-branches  =12
-        max-returns   =8
-        max-statements=50
+        max-branches  =10
+        max-returns   =5
+        max-statements=20
 
         [tool.ruff.lint.per-file-ignores]
         "src/**/__init__.py"=["F401"] # re-exports

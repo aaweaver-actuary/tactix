@@ -39,20 +39,15 @@ js-deadcode:
 
 deadcode: py-deadcode js-deadcode
 
-js-dup:
+dup:
 	cd client && npx jscpd \
-		--min-lines 8 \
-		--min-tokens 70 \
-		--threshold 1 \
+		--format python,typescript,tsx,javascript,jsx \
+		--path .. \
+		--min-lines 8 --min-tokens 70 --threshold 1 \
 		--reporters console \
-		--format typescript,tsx,javascript,jsx \
-		--ignore "**/*.test.*","**/dist/**"\
-		.
+		--ignore "**/dist/**,**/coverage/**,**/node_modules/**,**/.venv/**"
 
-py-dup:
-	uv run pylint src tests -d all -e duplicate-code
-
-dedup: js-dup py-dup
+dedup: dup
 
 build:
 	uv run cargo build --release

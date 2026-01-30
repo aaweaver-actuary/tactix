@@ -1,3 +1,9 @@
+Session 2026-01-30 (refactor consolidation – tmp-logs _ensure_position)
+- Consolidated tmp-logs seed helpers to share a single _ensure_position implementation.
+- Before → After map:
+	- tmp-logs seed script local _ensure_position helpers → tmp-logs/_seed_helpers.py
+- Tests: `make check` (before), `make check` (after).
+
 Session 2026-01-30 (refactor consolidation – Stockfish tests)
 - Consolidated Stockfish checksum tests into the runner test module.
 - Before → After map:

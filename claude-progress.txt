@@ -1,3 +1,7 @@
+Session 2026-01-30 (refactor consolidation – normalized source helper)
+- Added shared normalized source helper and removed duplicate implementations in pipeline/analyzer.
+- Tests: `make check`.
+
 Session 2026-01-30 (refactor consolidation – extract_pgn_metadata)
 - Consolidated PGN metadata usage to the shared helper while preserving BaseDbStore API compatibility.
 - Tests: `make check`.

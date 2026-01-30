@@ -14,6 +14,7 @@ from tactix.tactic_detectors import (
 )
 from tactix.tactics_explanation import format_tactic_explanation
 from tactix.utils.logger import get_logger
+from tactix.utils.source import normalized_source
 
 logger = get_logger(__name__)
 MOTIF_DETECTORS: MotifDetectorSuite = build_default_motif_detector_suite()
@@ -51,13 +52,9 @@ MATE_IN_TWO = 2
 def _normalized_profile(settings: Settings | None) -> tuple[str, str]:
     if settings is None:
         return "", ""
-    source = _normalized_source(settings.source)
+    source = normalized_source(settings.source)
     profile = _normalized_profile_name(settings, source)
     return source, profile
-
-
-def _normalized_source(value: str | None) -> str:
-    return (value or "").strip().lower()
 
 
 def _normalized_profile_name(settings: Settings, source: str) -> str:

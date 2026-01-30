@@ -73,6 +73,7 @@ from tactix.postgres_store import (
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 from tactix.utils.logger import get_logger
+from tactix.utils.source import normalized_source
 
 logger = get_logger(__name__)
 ANALYSIS_PROGRESS_BUCKETS = 20
@@ -206,16 +207,12 @@ def _build_chunk_row(row: GameRow, chunk: str, settings: Settings) -> GameRow:
 
 
 def _resolve_side_to_move_filter(settings: Settings) -> str | None:
-    source = _normalized_source(settings.source)
+    source = normalized_source(settings.source)
     profile = _normalized_profile_for_source(settings, source)
     black_profiles = _black_profiles_for_source(source)
     if not profile or black_profiles is None:
         return None
     return _side_filter_for_profile(profile, black_profiles)
-
-
-def _normalized_source(source: str | None) -> str:
-    return (source or "").strip().lower()
 
 
 def _normalized_profile_for_source(settings: Settings, source: str) -> str:

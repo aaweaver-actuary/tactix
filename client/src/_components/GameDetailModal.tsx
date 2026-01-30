@@ -1,9 +1,21 @@
+import { ColumnDef } from '@tanstack/react-table';
 import { useEffect, useMemo, useState } from 'react';
 import { GameDetailResponse } from '../api';
+import BaseTable from './BaseTable';
 import Badge from './Badge';
 import Text from './Text';
 
 const BLUNDER_EVAL_DELTA = -200;
+
+type AnalysisRow = {
+  key: string | number;
+  moveLabel: string;
+  moveSan: string;
+  motif: string;
+  evalCp: number | null;
+  evalDelta: number | null;
+  blunder: boolean;
+};
 
 interface GameDetailModalProps {
   open: boolean;
@@ -42,8 +54,6 @@ export default function GameDetailModal({
         moveLabel,
         moveSan,
         motif: row.motif || '--',
-        result: row.result || '--',
-        best: row.best_uci || '--',
         evalCp:
           row.eval_cp !== null && row.eval_cp !== undefined
             ? row.eval_cp
@@ -53,6 +63,59 @@ export default function GameDetailModal({
       };
     });
   }, [game]);
+
+  const analysisColumns = useMemo<ColumnDef<AnalysisRow>[]>(
+    () => [
+      {
+        header: 'Move',
+        accessorKey: 'moveLabel',
+        cell: ({ row }) => (
+          <div>
+            <div className="text-sand/70">{row.original.moveLabel}</div>
+            <div className="font-mono text-xs">{row.original.moveSan}</div>
+          </div>
+        ),
+      },
+      {
+        header: 'Motif',
+        accessorKey: 'motif',
+        cell: ({ row }) => (
+          <span className="uppercase tracking-wide">{row.original.motif}</span>
+        ),
+      },
+      {
+        header: 'Eval (cp)',
+        accessorKey: 'evalCp',
+        cell: ({ row }) => (
+          <span className="font-mono">
+            {row.original.evalCp !== null ? row.original.evalCp : '--'}
+          </span>
+        ),
+      },
+      {
+        header: 'Delta',
+        accessorKey: 'evalDelta',
+        cell: ({ row }) => (
+          <span className="font-mono">
+            {row.original.evalDelta !== null ? row.original.evalDelta : '--'}
+          </span>
+        ),
+      },
+      {
+        header: 'Flags',
+        id: 'flags',
+        cell: ({ row }) =>
+          row.original.blunder ? (
+            <Badge label="Blunder" />
+          ) : row.original.evalDelta !== null ? (
+            <span className="text-sand/60">OK</span>
+          ) : (
+            <span className="text-sand/40">--</span>
+          ),
+      },
+    ],
+    [],
+  );
 
   const moveCount = moves.length;
   const lastMoveIndex = moveCount > 0 ? moveCount - 1 : 0;
@@ -85,53 +148,15 @@ export default function GameDetailModal({
     if (!open) return;
     setCurrentMoveIndex(lastMoveIndex);
   }, [open, lastMoveIndex]);
-
-  useEffect(() => {
-    if (!open) return;
-    const handleKey = (event: KeyboardEvent) => {
-      if (!moveCount) return;
-      if (
-        event.key === 'ArrowLeft' ||
-        event.key === 'ArrowRight' ||
-        event.key === 'ArrowUp' ||
-        event.key === 'ArrowDown'
-      ) {
-        event.preventDefault();
-      }
-      if (event.key === 'ArrowLeft') {
-        setCurrentMoveIndex((prev) => Math.max(0, prev - 1));
-      } else if (event.key === 'ArrowRight') {
-        setCurrentMoveIndex((prev) => Math.min(lastMoveIndex, prev + 1));
-      } else if (event.key === 'ArrowUp') {
-        setCurrentMoveIndex(0);
-      } else if (event.key === 'ArrowDown') {
-        setCurrentMoveIndex(lastMoveIndex);
-      }
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [open, lastMoveIndex, moveCount]);
-
-  if (!open) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-night/80 px-4"
-      role="dialog"
-      aria-modal="true"
-      onClick={onClose}
-      data-testid="game-detail-overlay"
-    >
-      <div
-        className="w-full max-w-4xl rounded-xl border border-white/10 bg-night p-6 shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-        data-testid="game-detail-modal"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h3 className="text-xl font-display text-sand">Game details</h3>
-            <Text value="Move list and analysis" size="sm" />
-          </div>
+                  <BaseTable
+                    data={analysisRows}
+                    columns={analysisColumns}
+                    emptyMessage="No analysis rows found."
+                    enablePagination={false}
+                    tableClassName="text-xs"
+                    headerCellClassName="py-1"
+                    cellClassName="py-1"
+                  />
           <button
             type="button"
             onClick={onClose}

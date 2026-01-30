@@ -446,8 +446,6 @@ def upsert_raw_pgns(
             game_id = str(row["game_id"])
             source = str(row["source"])
             pgn_text = str(row["pgn"])
-            metadata = BaseDbStore.extract_pgn_metadata(pgn_text, str(row["user"]))
-            pgn_hash = hash_pgn(pgn_text)
             key = (game_id, source)
             if key in latest_cache:
                 latest_hash, latest_version = latest_cache[key]
@@ -466,11 +464,19 @@ def upsert_raw_pgns(
                     latest_hash, latest_version = existing[0], int(existing[1] or 0)
                 else:
                     latest_hash, latest_version = None, 0
-            if latest_hash == pgn_hash:
+            plan = BaseDbStore.build_pgn_upsert_plan(
+                pgn_text=pgn_text,
+                user=str(row["user"]),
+                latest_hash=latest_hash,
+                latest_version=latest_version,
+                fetched_at=row.get("fetched_at"),
+                last_timestamp_ms=row.get("last_timestamp_ms", 0),
+                cursor=row.get("cursor"),
+            )
+            if plan is None:
                 latest_cache[key] = (latest_hash, latest_version)
                 continue
             next_id += 1
-            new_version = latest_version + 1
             conn.execute(
                 """
                 INSERT INTO raw_pgns (
@@ -495,18 +501,18 @@ def upsert_raw_pgns(
                     game_id,
                     row["user"],
                     source,
-                    row.get("fetched_at", datetime.now(timezone.utc)),
-                    pgn_text,
-                    pgn_hash,
-                    new_version,
-                    metadata.get("user_rating"),
-                    metadata.get("time_control"),
-                    datetime.now(timezone.utc),
-                    row.get("last_timestamp_ms", 0),
-                    row.get("cursor"),
+                    plan.fetched_at,
+                    plan.pgn_text,
+                    plan.pgn_hash,
+                    plan.pgn_version,
+                    plan.metadata.get("user_rating"),
+                    plan.metadata.get("time_control"),
+                    plan.ingested_at,
+                    plan.last_timestamp_ms,
+                    plan.cursor,
                 ),
             )
-            latest_cache[key] = (pgn_hash, new_version)
+            latest_cache[key] = (plan.pgn_hash, plan.pgn_version)
             inserted += 1
         conn.execute("COMMIT")
     except Exception:  # noqa: BLE001
@@ -876,9 +882,16 @@ def upsert_tactic_with_outcome(
     tactic_row: Mapping[str, object],
     outcome_row: Mapping[str, object],
 ) -> int:
-    position_id = tactic_row.get("position_id")
-    if position_id is None:
-        raise ValueError("position_id is required for tactic upsert")
+    position_id = BaseDbStore.require_position_id(
+        tactic_row,
+        "position_id is required for tactic upsert",
+    )
+    tactic_plan = BaseDbStore.build_tactic_insert_plan(
+        game_id=tactic_row["game_id"],
+        position_id=position_id,
+        tactic_row=tactic_row,
+    )
+    outcome_plan = BaseDbStore.build_outcome_insert_plan(outcome_row)
     conn.execute("BEGIN TRANSACTION")
     try:
         conn.execute(
@@ -908,14 +921,14 @@ def upsert_tactic_with_outcome(
             """,
             (
                 tactic_id,
-                tactic_row["game_id"],
-                position_id,
-                tactic_row.get("motif", "unknown"),
-                tactic_row.get("severity", 0.0),
-                tactic_row.get("best_uci", ""),
-                tactic_row.get("best_san"),
-                tactic_row.get("explanation"),
-                tactic_row.get("eval_cp", 0),
+                tactic_plan.game_id,
+                tactic_plan.position_id,
+                tactic_plan.motif,
+                tactic_plan.severity,
+                tactic_plan.best_uci,
+                tactic_plan.best_san,
+                tactic_plan.explanation,
+                tactic_plan.eval_cp,
             ),
         )
         outcome_row_id = conn.execute(
@@ -930,9 +943,9 @@ def upsert_tactic_with_outcome(
             (
                 outcome_id,
                 tactic_id,
-                outcome_row.get("result", "unclear"),
-                outcome_row.get("user_uci", ""),
-                outcome_row.get("eval_delta", 0),
+                outcome_plan.result,
+                outcome_plan.user_uci,
+                outcome_plan.eval_delta,
             ),
         )
         conn.execute("COMMIT")

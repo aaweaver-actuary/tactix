@@ -2066,3 +2066,38 @@ Session 2026-01-29 (regression fix – failed_attempt outcomes)
 - Fixed failed_attempt reclassification logic to use per-motif thresholds and avoid overriding missed outcomes for discovered motifs; added support for skewer reclassification via overridden motif.
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_discovered_attack_classical.py tests/test_discovered_check_blitz_low.py tests/test_hanging_piece_rapid.py tests/test_mate_in_one_rapid.py tests/test_mate_in_two_blitz.py tests/test_pin_correspondence.py tests/test_skewer_correspondence.py`.
 - Commit: d05cda9.
+
+Session 2026-01-30 (feature 189 – BaseDbStore refactor)
+- Expanded `BaseDbStore` with shared PGN upsert planning + tactic/outcome insert helpers and dataclasses.
+- Refactored `upsert_raw_pgns` (DuckDB) and `upsert_postgres_raw_pgns` (Postgres) to use shared plan helpers; kept hash override for Postgres tests.
+- Refactored `upsert_tactic_with_outcome` (DuckDB) and `upsert_analysis_tactic_with_outcome` (Postgres) to use shared tactic/outcome plan helpers.
+- Added unit tests in `tests/test_base_db_store.py` for each new helper.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_base_db_store.py tests/test_postgres_store.py tests/test_duckdb_store_helpers.py -q`.
+- Updated feature_list.json: feature 189 marked passes=true.
+- Pass count: 213.
+
+Session 2026-01-30 (feature 191 – mock client/store stress tests)
+- Enhanced `MockChessClient` with window filtering and cursor pagination.
+- Enhanced `MockDbStore` with filter-aware payload slicing (source/motif/time control/rating bucket/date range).
+- Added unit tests for mock filtering and pagination in `tests/test_mock_clients.py`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mock_clients.py -q`.
+- Updated feature_list.json: feature 191 marked passes=true.
+- Pass count: 214.
+
+Session 2026-01-30 (feature 215 – BaseTable usage in GameDetailModal)
+- Added BaseTable customization props (pagination toggle + table/header/cell class overrides).
+- Replaced GameDetailModal analysis table with BaseTable using compact styling and no pagination.
+- Updated feature_list.json: feature 215 marked passes=true.
+- Pass count: 215.
+
+Session 2026-01-30 (feature 216 – hanging piece missed outcome)
+- Verified missed outcome handling for hanging piece via `tests/test_hanging_piece_rapid.py`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_hanging_piece_rapid.py -q`.
+- Updated feature_list.json: feature 216 marked passes=true.
+- Pass count: 216.
+
+Session 2026-01-30 (feature 217 – mate in 1 failed_attempt outcome)
+- Verified failed_attempt handling for mate-in-one via `tests/test_mate_in_one_rapid.py`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_one_rapid.py -q`.
+- Updated feature_list.json: feature 217 marked passes=true.
+- Pass count: 217.

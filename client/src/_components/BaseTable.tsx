@@ -19,6 +19,10 @@ type BaseTableProps<TData> = {
   emptyMessage?: string;
   loadingMessage?: string;
   className?: string;
+  tableClassName?: string;
+  headerCellClassName?: string;
+  cellClassName?: string;
+  enablePagination?: boolean;
   onRowClick?: (row: TData) => void;
   rowTestId?: (row: TData, index: number) => string;
 };
@@ -31,6 +35,10 @@ export default function BaseTable<TData>({
   emptyMessage = 'No rows to display.',
   loadingMessage = 'Loading…',
   className,
+  tableClassName,
+  headerCellClassName,
+  cellClassName,
+  enablePagination = true,
   onRowClick,
   rowTestId,
 }: BaseTableProps<TData>) {
@@ -44,15 +52,14 @@ export default function BaseTable<TData>({
   const table = useReactTable({
     data: safeData,
     columns,
-    state: {
-      sorting,
-      pagination,
-    },
+    state: enablePagination ? { sorting, pagination } : { sorting },
     onSortingChange: setSorting,
-    onPaginationChange: setPagination,
+    onPaginationChange: enablePagination ? setPagination : undefined,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    ...(enablePagination
+      ? { getPaginationRowModel: getPaginationRowModel() }
+      : {}),
     manualPagination: false,
   });
 
@@ -60,13 +67,20 @@ export default function BaseTable<TData>({
   const visibleRows = table.getRowModel().rows;
   const pageCount = table.getPageCount();
   const hasRows = visibleRows.length > 0;
-  const showPagination = !isLoading && pageCount > 1;
+  const showPagination = enablePagination && !isLoading && pageCount > 1;
   const wrapperClassName = ['space-y-3', className].filter(Boolean).join(' ');
+  const tableClassNames = ['min-w-full text-sm', tableClassName]
+    .filter(Boolean)
+    .join(' ');
+  const headerClassNames = ['text-left py-2', headerCellClassName]
+    .filter(Boolean)
+    .join(' ');
+  const cellClassNames = ['py-2', cellClassName].filter(Boolean).join(' ');
 
   return (
     <div className={wrapperClassName}>
       <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
+        <table className={tableClassNames}>
           <thead className="text-sand/60">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
@@ -85,7 +99,7 @@ export default function BaseTable<TData>({
                         : 'Not sorted';
 
                   return (
-                    <th key={header.id} className="text-left py-2">
+                    <th key={header.id} className={headerClassNames}>
                       <button
                         type="button"
                         onClick={
@@ -151,7 +165,7 @@ export default function BaseTable<TData>({
                   }
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="py-2">
+                    <td key={cell.id} className={cellClassNames}>
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),

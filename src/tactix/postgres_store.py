@@ -265,8 +265,6 @@ def upsert_postgres_raw_pgns(
                 if not game_id or not source:
                     continue
                 pgn_text = str(row.get("pgn") or "")
-                normalized = normalize_pgn(pgn_text)
-                pgn_hash = _hash_pgn_text(normalized or pgn_text)
                 key = (game_id, source)
                 if key in latest_cache:
                     latest_hash, latest_version = latest_cache[key]
@@ -286,13 +284,20 @@ def upsert_postgres_raw_pgns(
                         latest_hash, latest_version = existing[0], int(existing[1] or 0)
                     else:
                         latest_hash, latest_version = None, 0
-                if latest_hash == pgn_hash:
+                plan = BaseDbStore.build_pgn_upsert_plan(
+                    pgn_text=pgn_text,
+                    user=str(row.get("user") or ""),
+                    latest_hash=latest_hash,
+                    latest_version=latest_version,
+                    normalize_pgn=normalize_pgn,
+                    hash_pgn=_hash_pgn_text,
+                    fetched_at=row.get("fetched_at"),
+                    last_timestamp_ms=row.get("last_timestamp_ms", 0),
+                    cursor=row.get("cursor"),
+                )
+                if plan is None:
                     latest_cache[key] = (latest_hash, latest_version)
                     continue
-                metadata = BaseDbStore.extract_pgn_metadata(
-                    pgn_text, str(row.get("user") or "")
-                )
-                new_version = latest_version + 1
                 cur.execute(
                     f"""
                     INSERT INTO {PGN_SCHEMA}.raw_pgns (
@@ -331,32 +336,32 @@ def upsert_postgres_raw_pgns(
                         game_id,
                         source,
                         row.get("user"),
-                        row.get("fetched_at", datetime.now(timezone.utc)),
-                        pgn_text,
-                        normalized,
-                        pgn_hash,
-                        new_version,
-                        metadata.get("user_rating"),
-                        metadata.get("time_control"),
-                        datetime.now(timezone.utc),
-                        row.get("last_timestamp_ms", 0),
-                        row.get("cursor"),
-                        metadata.get("white_player"),
-                        metadata.get("black_player"),
-                        metadata.get("white_elo"),
-                        metadata.get("black_elo"),
-                        metadata.get("result"),
-                        metadata.get("event"),
-                        metadata.get("site"),
-                        metadata.get("utc_date"),
-                        metadata.get("utc_time"),
-                        metadata.get("termination"),
-                        metadata.get("start_timestamp_ms"),
+                        plan.fetched_at,
+                        plan.pgn_text,
+                        plan.normalized_pgn,
+                        plan.pgn_hash,
+                        plan.pgn_version,
+                        plan.metadata.get("user_rating"),
+                        plan.metadata.get("time_control"),
+                        plan.ingested_at,
+                        plan.last_timestamp_ms,
+                        plan.cursor,
+                        plan.metadata.get("white_player"),
+                        plan.metadata.get("black_player"),
+                        plan.metadata.get("white_elo"),
+                        plan.metadata.get("black_elo"),
+                        plan.metadata.get("result"),
+                        plan.metadata.get("event"),
+                        plan.metadata.get("site"),
+                        plan.metadata.get("utc_date"),
+                        plan.metadata.get("utc_time"),
+                        plan.metadata.get("termination"),
+                        plan.metadata.get("start_timestamp_ms"),
                     ),
                 )
                 if cur.rowcount:
                     inserted += 1
-                    latest_cache[key] = (pgn_hash, new_version)
+                    latest_cache[key] = (plan.pgn_hash, plan.pgn_version)
         conn.commit()
         return inserted
     except Exception:  # noqa: BLE001
@@ -421,9 +426,16 @@ def upsert_analysis_tactic_with_outcome(
     tactic_row: Mapping[str, object],
     outcome_row: Mapping[str, object],
 ) -> int:
-    position_id = tactic_row.get("position_id")
-    if position_id is None:
-        raise ValueError("position_id is required for Postgres analysis upsert")
+    position_id = BaseDbStore.require_position_id(
+        tactic_row,
+        "position_id is required for Postgres analysis upsert",
+    )
+    tactic_plan = BaseDbStore.build_tactic_insert_plan(
+        game_id=tactic_row.get("game_id"),
+        position_id=position_id,
+        tactic_row=tactic_row,
+    )
+    outcome_plan = BaseDbStore.build_outcome_insert_plan(outcome_row)
     autocommit_state = conn.autocommit
     conn.autocommit = False
     try:
@@ -457,14 +469,14 @@ def upsert_analysis_tactic_with_outcome(
                 RETURNING tactic_id
                 """,
                 (
-                    tactic_row.get("game_id"),
-                    position_id,
-                    tactic_row.get("motif", "unknown"),
-                    tactic_row.get("severity", 0.0),
-                    tactic_row.get("best_uci", ""),
-                    tactic_row.get("best_san"),
-                    tactic_row.get("explanation"),
-                    tactic_row.get("eval_cp", 0),
+                    tactic_plan.game_id,
+                    tactic_plan.position_id,
+                    tactic_plan.motif,
+                    tactic_plan.severity,
+                    tactic_plan.best_uci,
+                    tactic_plan.best_san,
+                    tactic_plan.explanation,
+                    tactic_plan.eval_cp,
                 ),
             )
             tactic_id_row = cur.fetchone()
@@ -481,9 +493,9 @@ def upsert_analysis_tactic_with_outcome(
                 """,
                 (
                     tactic_id,
-                    outcome_row.get("result", "unclear"),
-                    outcome_row.get("user_uci", ""),
-                    outcome_row.get("eval_delta", 0),
+                    outcome_plan.result,
+                    outcome_plan.user_uci,
+                    outcome_plan.eval_delta,
                 ),
             )
         conn.commit()

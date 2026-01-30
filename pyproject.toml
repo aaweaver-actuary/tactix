@@ -91,7 +91,7 @@ target-version="py312"
     ignore=[
         "PLR0913", # "too many args" (enable later if you want)
         "S101",    # allow assert (pytest uses it)
-        "S608",   # pickle is ok in our use cases
+        "S608",    # pickle is ok in our use cases
         "TRY003",  # long exception messages (can be noisy)
     ]
 

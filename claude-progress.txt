@@ -1,3 +1,9 @@
+Session 2026-01-30 (refactor consolidation – shared game-row coercion helper)
+- Added shared game-row builder for Chess.com + Lichess PGN coercion.
+- Before → After map:
+	- chesscom_client._coerce_game + lichess_client._pgn_to_game_row → chess_clients/chess_game_row.build_game_row_dict
+- Tests: `make check` (before), `make check` (after; interrupted by KeyboardInterrupt during pytest run).
+
 Session 2026-01-30 (refactor consolidation – chesscom wrapper helper follow-up)
 - Added shared Chess.com module-level wrapper helper to reduce client method duplication; public API unchanged.
 - Before → After map:

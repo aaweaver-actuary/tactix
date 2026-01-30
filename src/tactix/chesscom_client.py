@@ -17,7 +17,11 @@ from tactix.chess_clients.base_chess_client import (
     ChessFetchRequest,
     ChessFetchResult,
 )
-from tactix.chess_clients.chess_game_row import ChessGameRow, coerce_game_rows
+from tactix.chess_clients.chess_game_row import (
+    ChessGameRow,
+    coerce_game_row_dict,
+    coerce_game_rows,
+)
 from tactix.chess_clients.fetch_helpers import (
     load_fixture_games,
     run_incremental_fetch,
@@ -265,8 +269,7 @@ class ChesscomClient(BaseChessClient):
         last_ts = extract_last_timestamp_ms(pgn)
         game_id = str(game.get("uuid") or extract_game_id(pgn))
         row = self._build_game_row(game_id, pgn, last_ts)
-        validated = ChessGameRow.model_validate(row.model_dump())
-        return validated.model_dump(), last_ts
+        return coerce_game_row_dict(row, model_cls=ChessGameRow), last_ts
 
     # TODO: Pass ChessGame instance instead of raw dict
     def _should_skip_game(

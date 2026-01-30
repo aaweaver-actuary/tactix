@@ -27,7 +27,11 @@ from tactix.chess_clients.base_chess_client import (
     ChessFetchRequest,
     ChessFetchResult,
 )
-from tactix.chess_clients.chess_game_row import ChessGameRow, coerce_game_rows
+from tactix.chess_clients.chess_game_row import (
+    ChessGameRow,
+    build_game_row_dict,
+    coerce_game_rows,
+)
 from tactix.chess_clients.fetch_helpers import (
     load_fixture_games,
     run_incremental_fetch,
@@ -354,15 +358,15 @@ def _pgn_to_game_row(pgn: object, settings: Settings) -> dict | None:
     pgn_text = _coerce_pgn_text(pgn)
     game_id = extract_game_id(pgn_text)
     last_ts = extract_last_timestamp_ms(pgn_text)
-    row = ChessGameRow(
+    return build_game_row_dict(
         game_id=game_id,
+        pgn=pgn_text,
+        last_timestamp_ms=last_ts,
         user=settings.user,
         source=settings.source,
         fetched_at=datetime.now(UTC),
-        pgn=pgn_text,
-        last_timestamp_ms=last_ts,
+        model_cls=LichessGameRow,
     )
-    return LichessGameRow.model_validate(row.model_dump()).model_dump()
 
 
 def _coerce_pgn_text(pgn: object) -> str:

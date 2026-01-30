@@ -16,7 +16,6 @@ from pydantic import BaseModel
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 
-from tactix.airflow_client import fetch_dag_run, trigger_dag_run
 from tactix.base_db_store import BaseDbStoreContext
 from tactix.config import Settings, get_settings
 from tactix.db.duckdb_store import (
@@ -26,6 +25,10 @@ from tactix.db.duckdb_store import (
     get_connection,
     grade_practice_attempt,
     init_schema,
+)
+from tactix.fetch_dag_run__airflow_api import fetch_dag_run__airflow_api
+from tactix.orchestrate_dag_run__airflow_trigger import (
+    orchestrate_dag_run__airflow_trigger,
 )
 from tactix.pipeline import (
     get_dashboard_payload,
@@ -350,7 +353,7 @@ def _trigger_airflow_daily_sync(
     backfill_end_ms: int | None = None,
     triggered_at_ms: int | None = None,
 ) -> str:
-    payload = trigger_dag_run(
+    payload = orchestrate_dag_run__airflow_trigger(
         settings,
         "daily_game_sync",
         _airflow_conf(
@@ -365,7 +368,7 @@ def _trigger_airflow_daily_sync(
 
 
 def _airflow_state(settings, run_id: str) -> str:
-    payload = fetch_dag_run(settings, "daily_game_sync", run_id)
+    payload = fetch_dag_run__airflow_api(settings, "daily_game_sync", run_id)
     return str(payload.get("state") or "unknown")
 
 

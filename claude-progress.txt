@@ -1,3 +1,10 @@
+Session 2026-01-30 (refactor split – airflow client module)
+- Split Airflow client helpers into single-purpose modules and updated API + tests to new verb/object naming.
+- Before → After map:
+	- src/tactix/airflow_client.py functions → src/tactix/gather_url__airflow_base.py, src/tactix/gather_auth__airflow_credentials.py, src/tactix/prepare_error__http_status.py, src/tactix/fetch_json__airflow_api.py, src/tactix/orchestrate_dag_run__airflow_trigger.py, src/tactix/fetch_dag_run__airflow_api.py
+	- tactix.api trigger/fetch DAG calls → orchestrate_dag_run__airflow_trigger / fetch_dag_run__airflow_api
+- Tests: `make check`.
+
 Session 2026-01-30 (refactor consolidation – test HTTP fakes)
 - Consolidated HTTP response fakes and fixture assertions for chess client tests.
 - Before → After map:

@@ -61,6 +61,32 @@ Look for:
 - Extract helpers for parsing, validation, and transformation.
 - Prefer many small modules over monoliths.
 
+## Naming Convention (Verb/Object/Details)
+
+Use the pattern:
+
+```
+<verb>_<object>__<details>
+```
+
+Examples:
+
+- `fetch_games__chesscom_archive`
+- `prepare_payload__refresh_metrics`
+- `orchestrate_pipeline__daily_game_sync`
+- `gather_positions__recent`
+- `import_settings__from_env`
+
+Verb definitions:
+
+- `import`: reading from another module or local source
+- `gather`: collecting data for a later step
+- `fetch`: network request (HTTP, API)
+- `prepare`: building or shaping data for another task (payloads, filters)
+- `orchestrate`: coordinating multiple steps or helpers
+
+If a function cannot be named with this pattern, it is too complex and must be split into smaller helpers plus an orchestrator.
+
 ## Testing Requirements
 
 - **100% unit test coverage for core/services**.

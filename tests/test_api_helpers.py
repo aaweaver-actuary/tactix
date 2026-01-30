@@ -170,12 +170,17 @@ class ApiHelperTests(unittest.TestCase):
 
     def test_trigger_airflow_daily_sync_and_state(self) -> None:
         settings = Settings()
-        with patch("tactix.api.trigger_dag_run", return_value={"dag_run_id": "run-9"}) as trigger:
+        with patch(
+            "tactix.api.orchestrate_dag_run__airflow_trigger",
+            return_value={"dag_run_id": "run-9"},
+        ) as trigger:
             run_id = api._trigger_airflow_daily_sync(settings, "lichess", "rapid")
         self.assertEqual(run_id, "run-9")
         trigger.assert_called_once()
 
-        with patch("tactix.api.fetch_dag_run", return_value={"state": "success"}):
+        with patch(
+            "tactix.api.fetch_dag_run__airflow_api", return_value={"state": "success"}
+        ):
             state = api._airflow_state(settings, "run-9")
         self.assertEqual(state, "success")
 

@@ -1,72 +1,17 @@
-from __future__ import annotations
+from tactix.fetch_dag_run__airflow_api import fetch_dag_run__airflow_api
+from tactix.fetch_json__airflow_api import fetch_json__airflow_api
+from tactix.gather_auth__airflow_credentials import gather_auth__airflow_credentials
+from tactix.gather_url__airflow_base import gather_url__airflow_base
+from tactix.orchestrate_dag_run__airflow_trigger import (
+    orchestrate_dag_run__airflow_trigger,
+)
+from tactix.prepare_error__http_status import prepare_error__http_status
 
-from typing import Any
-
-import requests
-
-from tactix.config import Settings
-
-
-def _airflow_base_url(settings: Settings) -> str:
-    """Return the Airflow base URL without any trailing slash.
-
-    Args:
-        settings: Application settings containing `airflow_base_url`.
-
-    Returns:
-        The base URL string with trailing "/" characters removed.
-    """
-    return settings.airflow_base_url.rstrip("/")
-
-
-def _airflow_auth(settings: Settings) -> tuple[str, str] | None:
-    """
-    Retrieve Airflow authentication credentials from the provided settings.
-
-    Parameters
-    ----------
-    settings : Settings
-        Application settings containing Airflow credentials.
-
-    Returns
-    -------
-    tuple[str, str] | None
-        A tuple of (username, password) if both are set; otherwise, None.
-    """
-    if not settings.airflow_username or not settings.airflow_password:
-        return None
-    return (settings.airflow_username, settings.airflow_password)
-
-
-def _raise_for_status(response: requests.Response, context: str) -> None:
-    if response.ok:
-        return
-    message = f"{context}: {response.status_code} {response.text.strip()}"
-    raise RuntimeError(message.strip())
-
-
-def _request_json(
-    settings: Settings, method: str, path: str, payload: dict[str, Any] | None = None
-) -> dict[str, Any]:
-    url = f"{_airflow_base_url(settings)}{path}"
-    response = requests.request(
-        method,
-        url,
-        json=payload,
-        auth=_airflow_auth(settings),
-        headers={"Accept": "application/json"},
-        timeout=settings.airflow_api_timeout_s,
-    )
-    _raise_for_status(response, f"Airflow API {method.upper()} {path}")
-    return response.json()
-
-
-def trigger_dag_run(
-    settings: Settings, dag_id: str, conf: dict[str, Any] | None = None
-) -> dict[str, Any]:
-    payload = {"conf": conf or {}}
-    return _request_json(settings, "post", f"/api/v1/dags/{dag_id}/dagRuns", payload)
-
-
-def fetch_dag_run(settings: Settings, dag_id: str, run_id: str) -> dict[str, Any]:
-    return _request_json(settings, "get", f"/api/v1/dags/{dag_id}/dagRuns/{run_id}")
+__all__ = [
+    "fetch_dag_run__airflow_api",
+    "fetch_json__airflow_api",
+    "gather_auth__airflow_credentials",
+    "gather_url__airflow_base",
+    "orchestrate_dag_run__airflow_trigger",
+    "prepare_error__http_status",
+]

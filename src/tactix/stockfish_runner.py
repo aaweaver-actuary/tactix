@@ -94,28 +94,28 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
         self._start_engine()
 
     def _resolve_command(self) -> str | None:
-        configured = str(Path(self.settings.stockfish_path))
+        configured = str(Path(self.settings.stockfish.path))
         path = Path(configured)
         if path.exists():
             return str(path)
         resolved = shutil.which(configured)
         if resolved:
-            self.settings.stockfish_path = Path(resolved)
+            self.settings.stockfish.path = Path(resolved)
             return resolved
         return None
 
     def _build_engine_options(self) -> dict[str, object]:
         return {
-            "Threads": self.settings.stockfish_threads,
-            "Hash": self.settings.stockfish_hash_mb,
-            "Skill Level": self.settings.stockfish_skill_level,
-            "UCI_AnalyseMode": self.settings.stockfish_uci_analyse_mode,
-            "UCI_LimitStrength": self.settings.stockfish_limit_strength,
-            "UCI_Elo": self.settings.stockfish_uci_elo,
-            "Use NNUE": self.settings.stockfish_use_nnue,
-            "MultiPV": self.settings.stockfish_multipv,
-            "Random Seed": self.settings.stockfish_random_seed,
-            "Seed": self.settings.stockfish_random_seed,
+            "Threads": self.settings.stockfish.threads,
+            "Hash": self.settings.stockfish.hash_mb,
+            "Skill Level": self.settings.stockfish.skill_level,
+            "UCI_AnalyseMode": self.settings.stockfish.uci_analyse_mode,
+            "UCI_LimitStrength": self.settings.stockfish.limit_strength,
+            "UCI_Elo": self.settings.stockfish.uci_elo,
+            "Use NNUE": self.settings.stockfish.use_nnue,
+            "MultiPV": self.settings.stockfish.multipv,
+            "Random Seed": self.settings.stockfish.random_seed,
+            "Seed": self.settings.stockfish.random_seed,
         }
 
     @staticmethod
@@ -215,7 +215,7 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
         return engine.analyse(
             board,
             limit=limit,
-            multipv=self.settings.stockfish_multipv,
+            multipv=self.settings.stockfish.multipv,
             options={"Clear Hash": True},
         )
 
@@ -258,22 +258,22 @@ class StockfishEngine(AbstractContextManager["StockfishEngine"]):
             logger.info("Starting Stockfish via %s", command)
             verify_stockfish_checksum(
                 Path(command),
-                self.settings.stockfish_checksum,
-                self.settings.stockfish_checksum_mode,
+                self.settings.stockfish.checksum,
+                self.settings.stockfish.checksum_mode,
             )
             self.engine = chess.engine.SimpleEngine.popen_uci(command)
             self._configure_engine()
         else:
             logger.warning(
                 "Stockfish binary not found (configured=%s); using material heuristic",
-                self.settings.stockfish_path,
+                self.settings.stockfish.path,
             )
             self.engine = None
 
     def _build_limit(self) -> chess.engine.Limit:
-        if self.settings.stockfish_depth:
-            return chess.engine.Limit(depth=self.settings.stockfish_depth)
-        return chess.engine.Limit(time=self.settings.stockfish_movetime_ms / 1000)
+        if self.settings.stockfish.depth:
+            return chess.engine.Limit(depth=self.settings.stockfish.depth)
+        return chess.engine.Limit(time=self.settings.stockfish.movetime_ms / 1000)
 
     @staticmethod
     def _material_score(board: chess.Board) -> int:

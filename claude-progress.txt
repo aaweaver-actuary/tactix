@@ -1,3 +1,8 @@
+Session 2026-01-30 (ty fixes – settings aliases)
+- Settings typing: declared lichess/chesscom alias attributes for static typing in Settings; updated chesscom/lichess clients, pipeline, and stockfish runner to rely on nested settings fields; removed redundant Chess.com result casts.
+- Typing cleanup: stabilized ChessGame.headers with a typed empty Mapping fallback.
+- Tests: `make check` (before), `make check` (after).
+
 Session 2026-01-30 (refactor consolidation – airflow/chess clients/tests)
 - Settings typing + init compatibility: added alias-aware Settings init helpers, added Settings alias properties for lichess/chesscom/stockfish fields, and exposed duckdb_store + ChessGame in package exports.
 - Typing cleanup: re-exported Chesscom fetch request/result aliases; relaxed ChessGame.headers to Mapping.

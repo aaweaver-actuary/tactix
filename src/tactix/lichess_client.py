@@ -162,7 +162,7 @@ class LichessClient(BaseChessClient):
         """
 
         return should_use_fixture_games(
-            self.settings.lichess_token,
+            self.settings.lichess.token,
             self.settings.use_fixture_when_no_token,
         )
 
@@ -237,7 +237,7 @@ class LichessClient(BaseChessClient):
             True when a token refresh should be attempted.
         """
 
-        return bool(_is_auth_error(exc) and self.settings.lichess_oauth_refresh_token)
+        return bool(_is_auth_error(exc) and self.settings.lichess.oauth_refresh_token)
 
     def _fetch_remote_games_once(self, since_ms: int, until_ms: int | None) -> list[dict]:
         """Fetch games from the remote API once.
@@ -483,8 +483,8 @@ def _resolve_access_token(settings: Settings) -> str:
         Access token string (empty if missing).
     """
 
-    if settings.lichess_token:
-        return settings.lichess_token
+    if settings.lichess.token:
+        return settings.lichess.token
     cached = _read_cached_token(settings.lichess_token_cache_path)
     return cached or ""
 
@@ -536,11 +536,11 @@ def _refresh_lichess_token(settings: Settings) -> str:
     """
 
     refresh_token, client_id, client_secret = (
-        settings.lichess_oauth_refresh_token,
-        settings.lichess_oauth_client_id,
-        settings.lichess_oauth_client_secret,
+        settings.lichess.oauth_refresh_token,
+        settings.lichess.oauth_client_id,
+        settings.lichess.oauth_client_secret,
     )
-    token_url = settings.lichess_oauth_token_url
+    token_url = settings.lichess.oauth_token_url
     if not all([refresh_token, client_id, client_secret]):
         raise LichessTokenError("Missing Lichess OAuth refresh token configuration")
     response = requests.post(
@@ -557,7 +557,7 @@ def _refresh_lichess_token(settings: Settings) -> str:
     access_token = response.json().get("access_token")
     if not access_token:
         raise LichessTokenError("Missing access_token in Lichess OAuth response")
-    settings.lichess_token = access_token
+    settings.lichess.token = access_token
     _write_cached_token(settings.lichess_token_cache_path, access_token)
     return access_token
 

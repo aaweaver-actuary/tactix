@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from dataclasses import MISSING, dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from dotenv import load_dotenv
 
@@ -150,6 +151,21 @@ class StockfishSettings:
 @dataclass(slots=True, init=False)
 class Settings:
     """Central configuration for ingestion, analysis, and UI refresh."""
+
+    if TYPE_CHECKING:
+        lichess_user: str
+        lichess_token: str | None
+        lichess_oauth_client_id: str | None
+        lichess_oauth_client_secret: str | None
+        lichess_oauth_refresh_token: str | None
+        lichess_oauth_token_url: str
+        chesscom_user: str
+        chesscom_token: str | None
+        chesscom_time_class: str
+        chesscom_profile: str
+        chesscom_max_retries: int
+        chesscom_retry_backoff_ms: int
+        chesscom_checkpoint_path: Path
 
     api_token: str = os.getenv("TACTIX_API_TOKEN", "local-dev-token")
     user: str = os.getenv(

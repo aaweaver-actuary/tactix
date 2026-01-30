@@ -120,7 +120,7 @@ class ChesscomClient(BaseChessClient):
         """
 
         return should_use_fixture_games(
-            self.settings.chesscom_token,
+            self.settings.chesscom.token,
             self.settings.chesscom_use_fixture_when_no_token,
         )
 
@@ -256,7 +256,7 @@ class ChesscomClient(BaseChessClient):
             Tuple of model and last timestamp.
         """
 
-        if game.get("time_class") != self.settings.chesscom_time_class:
+        if game.get("time_class") != self.settings.chesscom.time_class:
             return None, 0
         pgn = game.get("pgn")
         if not pgn:
@@ -328,13 +328,13 @@ class ChesscomClient(BaseChessClient):
             RateLimitError: When retries are exhausted.
         """
 
-        max_retries = max(self.settings.chesscom_max_retries, 0)
-        base_backoff = max(self.settings.chesscom_retry_backoff_ms, 0) / 1000.0
+        max_retries = max(self.settings.chesscom.max_retries, 0)
+        base_backoff = max(self.settings.chesscom.retry_backoff_ms, 0) / 1000.0
         attempt = 0
         while True:
             response = requests.get(
                 url,
-                headers=_auth_headers(self.settings.chesscom_token),
+                headers=_auth_headers(self.settings.chesscom.token),
                 timeout=timeout,
             )
             if response.status_code != HTTP_STATUS_TOO_MANY_REQUESTS:
@@ -785,4 +785,4 @@ def fetch_incremental_games(
 
     context = ChesscomClientContext(settings=settings, logger=logger)
     request = ChessFetchRequest(cursor=cursor, full_history=full_history)
-    return cast(ChessFetchResult, ChesscomClient(context).fetch_incremental_games(request))
+    return ChesscomClient(context).fetch_incremental_games(request)

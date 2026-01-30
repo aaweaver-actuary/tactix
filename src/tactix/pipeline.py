@@ -221,7 +221,7 @@ def _normalized_source(source: str | None) -> str:
 def _normalized_profile_for_source(settings: Settings, source: str) -> str:
     profiles = {
         "lichess": settings.lichess_profile or settings.rapid_perf,
-        "chesscom": settings.chesscom_profile or settings.chesscom_time_class,
+        "chesscom": settings.chesscom.profile or settings.chesscom.time_class,
     }
     raw_profile = profiles.get(source)
     return (raw_profile or "").strip().lower()
@@ -327,11 +327,8 @@ def _cursor_last_timestamp(cursor_value: str | None) -> int:
 def _request_chesscom_games(
     client: BaseChessClient, cursor_value: str | None, backfill_mode: bool
 ) -> ChesscomFetchResult:
-    return cast(
-        ChesscomFetchResult,
-        client.fetch_incremental_games(
-            ChesscomFetchRequest(cursor=cursor_value, full_history=backfill_mode)
-        ),
+    return client.fetch_incremental_games(
+        ChesscomFetchRequest(cursor=cursor_value, full_history=backfill_mode)
     )
 
 
@@ -1661,7 +1658,7 @@ def _analyze_positions(
         component="analysis",
         event_type="analysis_complete",
         source=settings.source,
-        profile=settings.lichess_profile or settings.chesscom_profile,
+        profile=settings.lichess_profile or settings.chesscom.profile,
         metadata={
             "positions_analyzed": positions_analyzed,
             "tactics_detected": tactics_detected,

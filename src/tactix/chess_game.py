@@ -6,6 +6,8 @@ import chess.pgn
 
 from tactix.utils import generate_id
 
+_EMPTY_HEADERS: Mapping[str, str] = {}
+
 
 @dataclass(slots=True)
 class ChessGame:
@@ -19,7 +21,7 @@ class ChessGame:
     @property
     def headers(self) -> Mapping[str, str]:
         game = self.game
-        return game.headers if game else {}
+        return game.headers if game else _EMPTY_HEADERS
 
     @property
     def timestamp(self) -> str | None:

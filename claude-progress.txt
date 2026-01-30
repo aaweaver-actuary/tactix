@@ -1,3 +1,9 @@
+Session 2026-01-30 (refactor consolidation – Stockfish tests)
+- Consolidated Stockfish checksum tests into the runner test module.
+- Before → After map:
+	- tests/test_stockfish_checksum.py + tests/test_stockfish_runner.py → tests/test_stockfish_runner.py
+- Tests: `make check` (before), `make check` (after).
+
 Session 2026-01-30 (refactor consolidation – raw PGN summary helper)
 - Added shared raw PGN summary row coercion helper and reused it in DuckDB/Postgres stores.
 - Before → After map:

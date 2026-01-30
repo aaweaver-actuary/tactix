@@ -138,7 +138,7 @@ class BaseDbStore:
         normalized, pgn_hash = _resolve_pgn_hash(pgn_text, normalize_pgn, hash_pgn)
         if _is_latest_hash(latest_hash, pgn_hash):
             return None
-        metadata = BaseDbStore.extract_pgn_metadata(pgn_text, user)
+        metadata = extract_pgn_metadata(pgn_text, user)
         return PgnUpsertPlan(
             pgn_text=pgn_text,
             pgn_hash=pgn_hash,

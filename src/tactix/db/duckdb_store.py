@@ -9,6 +9,7 @@ from typing import cast
 import duckdb
 
 from tactix.base_db_store import BaseDbStore, BaseDbStoreContext, PgnUpsertPlan
+from tactix.pgn_utils import extract_pgn_metadata
 from tactix.tactics_explanation import format_tactic_explanation
 from tactix.utils.logger import get_logger
 
@@ -384,7 +385,7 @@ def _build_legacy_raw_pgn_inserts(
     inserts: list[tuple[object, ...]] = []
     for next_id, row in enumerate(legacy_rows, start=1):
         pgn_text = str(row[4] or "")
-        metadata = BaseDbStore.extract_pgn_metadata(pgn_text, str(row[1]))
+        metadata = extract_pgn_metadata(pgn_text, str(row[1]))
         inserts.append(
             (
                 next_id,
@@ -1685,7 +1686,7 @@ def _resolve_played_at(
 
 def _format_recent_game_row(row: Mapping[str, object], user: str | None) -> dict[str, object]:
     raw_user = _resolve_recent_game_user(row, user)
-    metadata = BaseDbStore.extract_pgn_metadata(str(row.get("pgn") or ""), raw_user)
+    metadata = extract_pgn_metadata(str(row.get("pgn") or ""), raw_user)
     opponent, user_color = _resolve_opponent_and_color(
         raw_user.lower(),
         metadata.get("white_player"),
@@ -1977,7 +1978,7 @@ def fetch_game_detail(
     pgn_row = _row_to_dict(result, row)
     pgn_value = pgn_row.get("pgn")
     pgn = str(pgn_value) if pgn_value is not None else None
-    metadata = BaseDbStore.extract_pgn_metadata(pgn or "", user)
+    metadata = extract_pgn_metadata(pgn or "", user)
     analysis_rows = _fetch_game_analysis_rows(conn, game_id, source)
     return {
         "game_id": game_id,

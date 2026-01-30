@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import re
 import time
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
 from io import StringIO
 from pathlib import Path
@@ -55,26 +55,50 @@ def _fixture_payload(
     }
 
 
+def _resolve_fixture_message(message: str | None, default: str) -> str:
+    if message is None:
+        return default
+    return message
+
+
+def _coerce_fixture_rows(
+    games: list[dict[str, object]],
+    coerce_rows: Callable[[Iterable[dict[str, object]]], list[dict]] | None,
+) -> list[dict[str, object]]:
+    if coerce_rows is None:
+        return games
+    return coerce_rows(games)
+
+
 def load_fixture_games(
-    path: Path,
+    fixture_path: Path,
     user: str,
     source: str,
     since_ms: int,
     *,
     until_ms: int | None = None,
     logger: logging.Logger | None = None,
-    missing_message: str = "Fixture PGN path missing: %s",
-    loaded_message: str = "Loaded %s fixture PGNs from %s",
+    missing_message: str | None = None,
+    loaded_message: str | None = None,
+    coerce_rows: Callable[[Iterable[dict[str, object]]], list[dict]] | None = None,
 ) -> list[dict[str, object]]:
     """Load fixture PGNs from disk and apply since/until timestamp filters."""
     active_logger = logger or get_logger(__name__)
-    if not path.exists():
-        active_logger.warning(missing_message, path)
+    resolved_missing_message = _resolve_fixture_message(
+        missing_message,
+        "Fixture PGN path missing: %s",
+    )
+    resolved_loaded_message = _resolve_fixture_message(
+        loaded_message,
+        "Loaded %s fixture PGNs from %s",
+    )
+    if not fixture_path.exists():
+        active_logger.warning(resolved_missing_message, fixture_path)
         return []
-    chunks = split_pgn_chunks(path.read_text())
+    chunks = split_pgn_chunks(fixture_path.read_text())
     games = _filter_fixture_games(chunks, user, source, since_ms, until_ms)
-    active_logger.info(loaded_message, len(games), path)
-    return games
+    active_logger.info(resolved_loaded_message, len(games), fixture_path)
+    return _coerce_fixture_rows(games, coerce_rows)
 
 
 def _filter_fixture_games(

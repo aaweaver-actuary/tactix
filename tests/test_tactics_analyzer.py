@@ -31,15 +31,9 @@ class TacticsAnalyzerTests(unittest.TestCase):
         )
 
     def test_score_from_pov(self) -> None:
-        self.assertEqual(
-            BaseTacticDetector.score_from_pov(120, chess.WHITE, chess.WHITE), 120
-        )
-        self.assertEqual(
-            BaseTacticDetector.score_from_pov(120, chess.WHITE, chess.BLACK), -120
-        )
-        self.assertEqual(
-            BaseTacticDetector.score_from_pov(-80, chess.BLACK, chess.WHITE), 80
-        )
+        self.assertEqual(BaseTacticDetector.score_from_pov(120, chess.WHITE, chess.WHITE), 120)
+        self.assertEqual(BaseTacticDetector.score_from_pov(120, chess.WHITE, chess.BLACK), -120)
+        self.assertEqual(BaseTacticDetector.score_from_pov(-80, chess.BLACK, chess.WHITE), 80)
 
     def test_infer_motif_fork_detection(self) -> None:
         suite = build_default_motif_detector_suite()
@@ -104,6 +98,42 @@ class TacticsAnalyzerTests(unittest.TestCase):
         self.assertIsNotNone(result)
         tactic_row, outcome_row = result
         self.assertEqual(tactic_row["motif"], "mate")
+        self.assertEqual(outcome_row["result"], "failed_attempt")
+
+    def test_fork_missed_reclassified_failed_attempt(self) -> None:
+        class StubEngine:
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def analyse(self, board: chess.Board) -> EngineResult:
+                self.calls += 1
+                return EngineResult(
+                    best_move=chess.Move.from_uci("f5e7"),
+                    score_cp=200,
+                    depth=12,
+                    mate_in=None,
+                )
+
+        board = chess.Board(None)
+        board.clear()
+        board.set_piece_at(chess.F5, chess.Piece(chess.KNIGHT, chess.WHITE))
+        board.set_piece_at(chess.E8, chess.Piece(chess.QUEEN, chess.BLACK))
+        board.set_piece_at(chess.F7, chess.Piece(chess.ROOK, chess.BLACK))
+        board.set_piece_at(chess.A1, chess.Piece(chess.KING, chess.WHITE))
+        board.set_piece_at(chess.H8, chess.Piece(chess.KING, chess.BLACK))
+        board.turn = chess.WHITE
+
+        position = {
+            "game_id": "unit-fork-failed-attempt",
+            "fen": board.fen(),
+            "uci": "f5d6",
+        }
+
+        result = analyze_position(position, StubEngine())
+
+        self.assertIsNotNone(result)
+        tactic_row, outcome_row = result
+        self.assertEqual(tactic_row["motif"], "fork")
         self.assertEqual(outcome_row["result"], "failed_attempt")
 
 

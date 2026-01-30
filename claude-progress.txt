@@ -1,3 +1,14 @@
+Session 2026-01-30 (feature 218 – fork failed_attempt outcome)
+- Added fork missed→failed_attempt reclassification threshold (-500) with override-aware fallback in tactics analyzer.
+- Added unit coverage for fork failed_attempt reclassification in [tests/test_tactics_analyzer.py](tests/test_tactics_analyzer.py).
+- Seeded fork failed_attempt outcome: `/Users/andy/tactix/.venv/bin/python tmp-logs/feature_188_seed_outcome_failed_attempt_fork_rapid.py`.
+- Manual UI verification: `node verification/puppeteer_feature_218_outcome_failed_attempt_fork_manual_ui.js`.
+- Screenshot: `verification/feature-218-outcome-failed-attempt-fork-2026-01-30.png`.
+- Added CI integration check: [verification/integration_feature_218_outcome_failed_attempt_fork.js](verification/integration_feature_218_outcome_failed_attempt_fork.js).
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_tactics_analyzer.py -q`.
+- make check: failed on pre-existing lint gates (ruff/pylint warnings in duckdb_store, pipeline, postgres_store, etc.).
+- Current passing count: 219.
+
 Session 2026-01-30 (feature 218 – mate-in-two failed_attempt outcome)
 - Updated mate-in-two outcome classification to reclassify best-line deviations as failed_attempt when eval remains strong.
 - Added unit test coverage for mate-in-two unclear→failed_attempt reclassification in `tests/test_tactics_analyzer.py`.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Dict, Iterable, List, Tuple
+from collections.abc import Iterable
+from typing import Dict, List, Tuple
 
 import chess
 
@@ -20,23 +21,20 @@ _PROFILE_FAST = frozenset({"bullet", "blitz", "rapid", "classical", "corresponde
 _PROFILE_DISCOVERED_CHECK_LOW = frozenset(
     {"bullet", "blitz", "rapid", "classical", "correspondence"}
 )
-_PROFILE_DISCOVERED_CHECK_HIGH = frozenset(
-    {"blitz", "rapid", "classical", "correspondence"}
-)
+_PROFILE_DISCOVERED_CHECK_HIGH = frozenset({"blitz", "rapid", "classical", "correspondence"})
 _PROFILE_DISCOVERED_ATTACK_LOW = frozenset()
 _PROFILE_DISCOVERED_ATTACK_HIGH = frozenset(
     {"bullet", "blitz", "rapid", "classical", "correspondence"}
 )
 _PROFILE_HANGING_PIECE_LOW = frozenset()
-_PROFILE_HANGING_PIECE_HIGH = frozenset(
-    {"bullet", "blitz", "rapid", "classical", "correspondence"}
-)
+_PROFILE_HANGING_PIECE_HIGH = frozenset({"bullet", "blitz", "rapid", "classical", "correspondence"})
 _PROFILE_FORK_LOW = frozenset({"blitz", "rapid"})
 _PROFILE_FORK_HIGH = frozenset({"bullet"})
 _PROFILE_FORK_SLOW = frozenset({"classical", "correspondence"})
 _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS = {
     "discovered_attack": -1200,
     "discovered_check": -950,
+    "fork": -500,
     "skewer": -700,
 }
 
@@ -46,15 +44,9 @@ def _normalized_profile(settings: Settings | None) -> tuple[str, str]:
         return "", ""
     source = (settings.source or "").strip().lower()
     if source == "chesscom":
-        profile = (
-            (settings.chesscom_profile or settings.chesscom_time_class or "")
-            .strip()
-            .lower()
-        )
+        profile = (settings.chesscom_profile or settings.chesscom_time_class or "").strip().lower()
     else:
-        profile = (
-            (settings.lichess_profile or settings.rapid_perf or "").strip().lower()
-        )
+        profile = (settings.lichess_profile or settings.rapid_perf or "").strip().lower()
     return source, profile
 
 
@@ -86,10 +78,10 @@ def _fork_severity_floor(settings: Settings | None) -> float | None:
 
 
 def analyze_position(
-    position: Dict[str, object],
+    position: dict[str, object],
     engine: StockfishEngine,
     settings: Settings | None = None,
-) -> tuple[Dict[str, object], Dict[str, object]] | None:
+) -> tuple[dict[str, object], dict[str, object]] | None:
     fen = str(position["fen"])
     user_move_uci = str(position["uci"])
     board = chess.Board(fen)
@@ -99,9 +91,7 @@ def analyze_position(
     engine_result: EngineResult = engine.analyse(board)
     best_move_obj = engine_result.best_move
     best_move = best_move_obj.uci() if best_move_obj else None
-    base_cp = BaseTacticDetector.score_from_pov(
-        engine_result.score_cp, mover_color, board.turn
-    )
+    base_cp = BaseTacticDetector.score_from_pov(engine_result.score_cp, mover_color, board.turn)
     mate_in_one = False
     mate_in_two = False
     mate_in: int | None = None
@@ -127,9 +117,7 @@ def analyze_position(
         engine.analyse(board).score_cp, mover_color, board.turn
     )
 
-    result, delta = BaseTacticDetector.classify_result(
-        best_move, user_move_uci, base_cp, after_cp
-    )
+    result, delta = BaseTacticDetector.classify_result(best_move, user_move_uci, base_cp, after_cp)
     user_board = motif_board.copy()
     user_board.push(user_move)
     if motif_board.is_capture(user_move) and BaseTacticDetector.is_hanging_capture(
@@ -143,9 +131,7 @@ def analyze_position(
     if result in {"missed", "failed_attempt"} and best_move_obj is not None:
         best_board = motif_board.copy()
         best_board.push(best_move_obj)
-        if motif_board.is_capture(
-            best_move_obj
-        ) and BaseTacticDetector.is_hanging_capture(
+        if motif_board.is_capture(best_move_obj) and BaseTacticDetector.is_hanging_capture(
             motif_board, best_board, best_move_obj, mover_color
         ):
             best_motif = "hanging_piece"
@@ -170,17 +156,12 @@ def analyze_position(
             "discovered_check",
         }
         if user_motif in overrideable_user_motifs:
-            if result == "missed" and best_motif in missed_override_targets:
-                motif = best_motif
-            elif (
-                result == "failed_attempt"
-                and best_motif in failed_attempt_override_targets
-            ):
+            if (result == "missed" and best_motif in missed_override_targets) or (result == "failed_attempt" and best_motif in failed_attempt_override_targets):
                 motif = best_motif
     reclassify_motif = None
     if user_motif in _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS:
         reclassify_motif = user_motif
-    elif motif == "skewer" and motif in _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS:
+    elif motif in _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS:
         reclassify_motif = motif
     if (
         result == "missed"
@@ -197,9 +178,7 @@ def analyze_position(
         motif = "mate"
     if mate_in in {1, 2}:
         missed_threshold = 200 * mate_in
-        if result == "missed" and after_cp >= missed_threshold:
-            result = "failed_attempt"
-        elif (
+        if (result == "missed" and after_cp >= missed_threshold) or (
             mate_in == 2
             and result == "unclear"
             and best_move
@@ -279,11 +258,11 @@ def analyze_position(
 
 
 def analyze_positions(
-    positions: Iterable[Dict[str, object]],
+    positions: Iterable[dict[str, object]],
     settings: Settings,
-) -> Tuple[List[Dict[str, object]], List[Dict[str, object]]]:
-    tactics_rows: List[Dict[str, object]] = []
-    outcomes_rows: List[Dict[str, object]] = []
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    tactics_rows: list[dict[str, object]] = []
+    outcomes_rows: list[dict[str, object]] = []
 
     with StockfishEngine(settings) as engine:
         for pos in positions:

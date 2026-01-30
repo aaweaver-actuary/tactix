@@ -20,7 +20,7 @@ from tactix.chess_clients.base_chess_client import (
 from tactix.chess_clients.chess_game_row import (
     ChessGameRow,
     coerce_game_row_dict,
-    coerce_game_rows,
+    coerce_rows_for_model,
 )
 from tactix.chess_clients.fetch_helpers import (
     load_fixture_games,
@@ -138,7 +138,7 @@ class ChesscomClient(BaseChessClient):
             logger=self.logger,
             missing_message="Chess.com fixture PGN path missing: %s",
             loaded_message="Loaded %s Chess.com fixture PGNs from %s",
-            coerce_rows=self._coerce_games,
+            coerce_rows=coerce_rows_for_model(ChessGameRow),
         )
 
     def _fetch_remote_games(self, since_ms: int, full_history: bool) -> list[dict]:
@@ -438,19 +438,6 @@ class ChesscomClient(BaseChessClient):
             cursor,
             next_cursor,
         )
-
-    @staticmethod
-    def _coerce_games(rows: Iterable[dict]) -> list[dict]:
-        """Coerce raw rows into validated models.
-
-        Args:
-            rows: Iterable of raw row dictionaries.
-
-        Returns:
-            Validated game rows.
-        """
-
-        return coerce_game_rows(rows, ChessGameRow)
 
 
 def _should_stop_archive_fetch(since_ms: int, archive_max_ts: int) -> bool:

@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -30,7 +29,7 @@ from tactix.chess_clients.base_chess_client import (
 from tactix.chess_clients.chess_game_row import (
     ChessGameRow,
     build_game_row_dict,
-    coerce_game_rows,
+    coerce_rows_for_model,
 )
 from tactix.chess_clients.fetch_helpers import (
     load_fixture_games,
@@ -180,7 +179,7 @@ class LichessClient(BaseChessClient):
             since_ms=since_ms,
             until_ms=until_ms,
             logger=self.logger,
-            coerce_rows=self._coerce_games,
+            coerce_rows=coerce_rows_for_model(LichessGameRow),
         )
 
     @retry(
@@ -289,18 +288,6 @@ class LichessClient(BaseChessClient):
                 games.append(row)
         self.logger.info("Fetched %s PGNs", len(games))
         return games
-
-    def _coerce_games(self, rows: Iterable[dict]) -> list[dict]:
-        """Coerce raw rows into validated models.
-
-        Args:
-            rows: Iterable of raw row dictionaries.
-
-        Returns:
-            Validated game rows.
-        """
-
-        return coerce_game_rows(rows, LichessGameRow)
 
 
 def _coerce_perf_type(value: str | None) -> PerfType | None:

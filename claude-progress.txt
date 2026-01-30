@@ -1,3 +1,9 @@
+Session 2026-01-30 (refactor consolidation – shared game-row coercion)
+- Extracted a shared fixture row coercion callback for chess clients.
+- Before → After map:
+	- chesscom_client._coerce_games + lichess_client._coerce_games → chess_clients.chess_game_row.coerce_rows_for_model
+- Tests: `make check` (before), `make check` (after).
+
 Session 2026-01-30 (refactor consolidation – fixture decision helper)
 - Centralized the fixture-usage decision helper for chess clients.
 - Before → After map:

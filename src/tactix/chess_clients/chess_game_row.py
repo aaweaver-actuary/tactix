@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from datetime import UTC, datetime
 from typing import cast
 
@@ -65,3 +65,12 @@ def coerce_game_rows[T: "ChessGameRow"](
     model_cls: type[T],
 ) -> list[dict]:
     return [model_cls.model_validate(row).model_dump() for row in rows]
+
+
+def coerce_rows_for_model[T: "ChessGameRow"](
+    model_cls: type[T],
+) -> Callable[[Iterable[dict]], list[dict]]:
+    def _coerce(rows: Iterable[dict]) -> list[dict]:
+        return coerce_game_rows(rows, model_cls)
+
+    return _coerce

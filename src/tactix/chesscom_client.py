@@ -12,13 +12,13 @@ from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 import requests
 from pydantic import Field
 
-from tactix.chess_clients import ChessGameRow
 from tactix.chess_clients.base_chess_client import (
     BaseChessClient,
     BaseChessClientContext,
     ChessFetchRequest,
     ChessFetchResult,
 )
+from tactix.chess_clients.chess_game_row import ChessGameRow
 from tactix.config import Settings
 from tactix.pgn_utils import (
     extract_game_id,

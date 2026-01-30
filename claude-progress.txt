@@ -1,3 +1,9 @@
+Session 2026-01-30 (refactor cleanup – make check)
+- Restored chess_clients wrappers to re-export legacy helpers and error classes (including private Lichess helpers used in tests).
+- Added shared test utilities for table headers/rows; refactored RecentGamesTable/TacticsTable/Hero tests to remove duplication flagged by jscpd.
+- Factored shared line-tactic comparison helper for pin/skewer detection to eliminate duplicate logic.
+- Tests: `make check`.
+
 Session 2026-01-30 (feature 218 – fork failed_attempt outcome)
 - Added fork missed→failed_attempt reclassification threshold (-500) with override-aware fallback in tactics analyzer.
 - Added unit coverage for fork failed_attempt reclassification in [tests/test_tactics_analyzer.py](tests/test_tactics_analyzer.py).

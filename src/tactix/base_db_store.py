@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import cast
 
 from tactix.config import Settings
@@ -63,6 +63,21 @@ def _normalize_pgn_text(
     return normalize_pgn(pgn_text) if normalize_pgn else None
 
 
+def _resolve_pgn_hash(
+    pgn_text: str,
+    normalize_pgn: Callable[[str], str] | None,
+    hash_pgn: Callable[[str], str] | None,
+) -> tuple[str | None, str]:
+    normalized = _normalize_pgn_text(pgn_text, normalize_pgn)
+    hasher = hash_pgn if hash_pgn is not None else hash
+    source = normalized if normalized is not None else pgn_text
+    return normalized, hasher(source)
+
+
+def _resolve_timestamp(value: datetime | None) -> datetime:
+    return value if value is not None else now()
+
+
 def _is_latest_hash(latest_hash: str | None, pgn_hash: str) -> bool:
     return latest_hash == pgn_hash
 
@@ -88,11 +103,23 @@ class BaseDbStore:
 
         return self._context.settings
 
+    @property
+    def logger(self) -> logging.Logger:
+        """Expose the logger from the context."""
+
+        return self._context.logger
+
     @staticmethod
     def extract_pgn_metadata(pgn: str, user: str) -> Mapping[str, object]:
         """Extract PGN metadata using shared utilities."""
 
         return extract_pgn_metadata(pgn, user)
+
+    @staticmethod
+    def hash_pgn(pgn: str) -> str:
+        """Return the normalized hash for PGN content."""
+
+        return hash(pgn)
 
     @staticmethod
     def build_pgn_upsert_plan(
@@ -102,13 +129,13 @@ class BaseDbStore:
         latest_hash: str | None,
         latest_version: int,
         normalize_pgn: Callable[[str], str] | None = None,
+        hash_pgn: Callable[[str], str] | None = None,
         fetched_at: datetime | None = None,
         ingested_at: datetime | None = None,
         last_timestamp_ms: int = 0,
         cursor: object | None = None,
     ) -> PgnUpsertPlan | None:
-        normalized = _normalize_pgn_text(pgn_text, normalize_pgn)
-        pgn_hash = hash(normalized) if normalized else hash(pgn_text)
+        normalized, pgn_hash = _resolve_pgn_hash(pgn_text, normalize_pgn, hash_pgn)
         if _is_latest_hash(latest_hash, pgn_hash):
             return None
         metadata = BaseDbStore.extract_pgn_metadata(pgn_text, user)
@@ -118,8 +145,8 @@ class BaseDbStore:
             pgn_version=latest_version + 1,
             normalized_pgn=normalized,
             metadata=metadata,
-            fetched_at=fetched_at or now(),
-            ingested_at=ingested_at or now(),
+            fetched_at=_resolve_timestamp(fetched_at),
+            ingested_at=_resolve_timestamp(ingested_at),
             last_timestamp_ms=last_timestamp_ms,
             cursor=cursor,
         )
@@ -161,6 +188,11 @@ class BaseDbStore:
             user_uci=outcome_row.get("user_uci", ""),
             eval_delta=outcome_row.get("eval_delta", 0),
         )
+
+    def _now_utc(self) -> datetime:
+        """Return the current UTC time."""
+
+        return datetime.now(UTC)
 
     def get_dashboard_payload(
         self,

@@ -382,13 +382,14 @@ def _is_skewer_in_step(
     step: int,
     opponent: bool,
 ) -> bool:
-    pieces = _two_pieces_in_line(detector, board, start, step)
-    if pieces is None:
-        return False
-    target, behind = pieces
-    if not _is_opponent_piece(target, opponent) or not _is_opponent_piece(behind, opponent):
-        return False
-    return detector.piece_value(target.piece_type) > detector.piece_value(behind.piece_type)
+    return _is_line_tactic(
+        detector,
+        board,
+        start,
+        step,
+        opponent,
+        target_stronger=True,
+    )
 
 
 def _has_pin_in_steps(
@@ -408,13 +409,36 @@ def _is_pin_in_step(
     step: int,
     opponent: bool,
 ) -> bool:
+    return _is_line_tactic(
+        detector,
+        board,
+        start,
+        step,
+        opponent,
+        target_stronger=False,
+    )
+
+
+def _is_line_tactic(
+    detector: BaseTacticDetector,
+    board: chess.Board,
+    start: chess.Square,
+    step: int,
+    opponent: bool,
+    *,
+    target_stronger: bool,
+) -> bool:
     pieces = _two_pieces_in_line(detector, board, start, step)
     if pieces is None:
         return False
     target, behind = pieces
     if not _is_opponent_piece(target, opponent) or not _is_opponent_piece(behind, opponent):
         return False
-    return detector.piece_value(behind.piece_type) > detector.piece_value(target.piece_type)
+    target_value = detector.piece_value(target.piece_type)
+    behind_value = detector.piece_value(behind.piece_type)
+    if target_stronger:
+        return target_value > behind_value
+    return behind_value > target_value
 
 
 def _is_opponent_piece(piece: chess.Piece | None, opponent: bool) -> bool:

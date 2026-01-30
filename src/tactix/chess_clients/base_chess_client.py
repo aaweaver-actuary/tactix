@@ -5,7 +5,9 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from ..config import Settings
-from . import ChessFetchRequest, ChessFetchResult, ChessGameRow
+from .chess_fetch_request import ChessFetchRequest
+from .chess_fetch_result import ChessFetchResult
+from .chess_game_row import ChessGameRow
 
 
 @dataclass(slots=True)

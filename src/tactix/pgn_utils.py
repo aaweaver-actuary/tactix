@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
+import time
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from io import StringIO
@@ -9,7 +10,7 @@ from pathlib import Path
 
 import chess.pgn
 
-from tactix.utils import now
+from tactix.utils.logger import get_logger
 
 SITE_PATTERNS = [
     re.compile(r"lichess\.org/([A-Za-z0-9]{8})"),
@@ -22,6 +23,10 @@ FIXTURE_SPLIT_RE = re.compile(r"\n{2,}(?=\[Event )")
 
 def split_pgn_chunks(text: str) -> list[str]:
     return [chunk.strip() for chunk in FIXTURE_SPLIT_RE.split(text) if chunk.strip()]
+
+
+def _current_timestamp_ms() -> int:
+    return int(time.time() * 1000)
 
 
 def _should_include_fixture(
@@ -62,7 +67,7 @@ def load_fixture_games(
     loaded_message: str = "Loaded %s fixture PGNs from %s",
 ) -> list[dict[str, object]]:
     """Load fixture PGNs from disk and apply since/until timestamp filters."""
-    active_logger = logger or logging.getLogger(__name__)
+    active_logger = logger or get_logger(__name__)
     if not path.exists():
         active_logger.warning(missing_message, path)
         return []
@@ -115,10 +120,10 @@ def _match_site_id(site: str) -> str | None:
 def extract_last_timestamp_ms(pgn: str) -> int:
     game = chess.pgn.read_game(StringIO(pgn))
     if not game:
-        return now()
+        return _current_timestamp_ms()
     utc_date = game.headers.get("UTCDate")
     utc_time = game.headers.get("UTCTime")
-    return _parse_utc_start_ms(utc_date, utc_time) or now()
+    return _parse_utc_start_ms(utc_date, utc_time) or _current_timestamp_ms()
 
 
 def _parse_elo(raw: str | None) -> int | None:

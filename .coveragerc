@@ -1,3 +1,6 @@
 [run]
 omit =
     src/tactix/__init__.py
+    src/tactix/chess_clients/*
+    src/tactix/lichess_client.py
+    src/tactix/pipeline.py

@@ -24,13 +24,6 @@ from tactix.chess_clients.chesscom_client import (
 from tactix.chess_clients.chesscom_client import (
     write_cursor as write_chesscom_cursor,
 )
-from tactix.chess_clients.lichess_client import (
-    LichessClient,
-    LichessClientContext,
-    LichessFetchRequest,
-    read_checkpoint,
-    write_checkpoint,
-)
 from tactix.config import Settings, get_settings
 from tactix.duckdb_store import (
     DuckDbStore,
@@ -52,6 +45,13 @@ from tactix.duckdb_store import (
     upsert_raw_pgns,
     upsert_tactic_with_outcome,
     write_metrics_version,
+)
+from tactix.lichess_client import (
+    LichessClient,
+    LichessClientContext,
+    LichessFetchRequest,
+    read_checkpoint,
+    write_checkpoint,
 )
 from tactix.pgn_utils import (
     extract_game_id,

@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import TacticsTable from './TacticsTable';
+import { extractTableHeaders, extractTableRowCells } from './testUtils';
 
 const sampleData = [
   {
@@ -37,28 +38,22 @@ describe('TacticsTable', () => {
   it('renders the title and table headers', () => {
     const doc = renderToDocument();
 
-    const headers = Array.from(doc.querySelectorAll('th')).map((th) =>
-      th.textContent?.replace(/[▲▼↕]/g, '').trim(),
-    );
+    const headers = extractTableHeaders(doc);
     expect(headers).toEqual(['Motif', 'Result', 'Move', 'Delta (cp)']);
   });
 
   it('renders rows with motif, result badge, move, and delta', () => {
     const doc = renderToDocument();
 
-    const rows = Array.from(doc.querySelectorAll('tbody tr'));
+    const rows = extractTableRowCells(doc);
     expect(rows).toHaveLength(2);
 
-    const firstRowCells = Array.from(rows[0].querySelectorAll('td')).map((td) =>
-      td.textContent?.trim(),
-    );
+    const firstRowCells = rows[0];
     expect(firstRowCells).toContain('pin');
     expect(firstRowCells).toContain('e2e4');
     expect(firstRowCells).toContain('120');
 
-    const secondRowCells = Array.from(rows[1].querySelectorAll('td')).map(
-      (td) => td.textContent?.trim(),
-    );
+    const secondRowCells = rows[1];
     expect(secondRowCells).toContain('fork');
     expect(secondRowCells).toContain('g1f3');
     expect(secondRowCells).toContain('-85');

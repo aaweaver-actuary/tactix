@@ -2,6 +2,7 @@ import { render, fireEvent, screen } from '@testing-library/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 import RecentGamesTable from './RecentGamesTable';
+import { extractTableHeaders, extractTableRowCells } from './testUtils';
 
 const sampleData = [
   {
@@ -44,9 +45,7 @@ describe('RecentGamesTable', () => {
   it('renders the table headers', () => {
     const doc = renderToDocument();
 
-    const headers = Array.from(doc.querySelectorAll('th')).map((th) =>
-      th.textContent?.replace(/[▲▼↕]/g, '').trim(),
-    );
+    const headers = extractTableHeaders(doc);
     expect(headers).toEqual([
       'Source',
       'Opponent',
@@ -59,19 +58,15 @@ describe('RecentGamesTable', () => {
   it('renders rows with opponent, result, and date', () => {
     const doc = renderToDocument();
 
-    const rows = Array.from(doc.querySelectorAll('tbody tr'));
+    const rows = extractTableRowCells(doc);
     expect(rows).toHaveLength(2);
 
-    const firstRowCells = Array.from(rows[0].querySelectorAll('td')).map((td) =>
-      td.textContent?.trim(),
-    );
+    const firstRowCells = rows[0];
     expect(firstRowCells).toContain('opponent1');
     expect(firstRowCells).toContain('1-0');
     expect(firstRowCells).toContain('2026-01-29T12:00:00.000Z');
 
-    const secondRowCells = Array.from(rows[1].querySelectorAll('td')).map(
-      (td) => td.textContent?.trim(),
-    );
+    const secondRowCells = rows[1];
     expect(secondRowCells).toContain('opponent2');
     expect(secondRowCells).toContain('0-1');
     expect(secondRowCells).toContain('2026-01-28T18:30:00.000Z');

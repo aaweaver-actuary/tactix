@@ -22,6 +22,20 @@ describe('Hero', () => {
     onBackfillEndChange: vi.fn(),
   };
 
+  const expectActionsDisabled = () => {
+    expect(
+      screen.getByRole('button', { name: 'Backfill history' }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Run migrations' }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Refresh metrics' }),
+    ).toBeDisabled();
+    expect(screen.getByTestId('backfill-start')).toBeDisabled();
+    expect(screen.getByTestId('backfill-end')).toBeDisabled();
+  };
+
   it('renders title and metadata', () => {
     render(<Hero {...baseProps} />);
     expect(
@@ -84,17 +98,7 @@ describe('Hero', () => {
   it('shows loading state and disables buttons', () => {
     render(<Hero {...baseProps} loading={true} />);
     expect(screen.getByRole('button', { name: 'Running…' })).toBeDisabled();
-    expect(
-      screen.getByRole('button', { name: 'Backfill history' }),
-    ).toBeDisabled();
-    expect(
-      screen.getByRole('button', { name: 'Run migrations' }),
-    ).toBeDisabled();
-    expect(
-      screen.getByRole('button', { name: 'Refresh metrics' }),
-    ).toBeDisabled();
-    expect(screen.getByTestId('backfill-start')).toBeDisabled();
-    expect(screen.getByTestId('backfill-end')).toBeDisabled();
+    expectActionsDisabled();
 
     SOURCE_OPTIONS.forEach((opt) => {
       expect(screen.getByRole('button', { name: opt.label })).toBeDisabled();
@@ -126,16 +130,6 @@ describe('Hero', () => {
     expect(
       screen.getByRole('button', { name: 'Run + Refresh' }),
     ).toBeDisabled();
-    expect(
-      screen.getByRole('button', { name: 'Backfill history' }),
-    ).toBeDisabled();
-    expect(
-      screen.getByRole('button', { name: 'Run migrations' }),
-    ).toBeDisabled();
-    expect(
-      screen.getByRole('button', { name: 'Refresh metrics' }),
-    ).toBeDisabled();
-    expect(screen.getByTestId('backfill-start')).toBeDisabled();
-    expect(screen.getByTestId('backfill-end')).toBeDisabled();
+    expectActionsDisabled();
   });
 });

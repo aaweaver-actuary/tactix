@@ -16,9 +16,9 @@ from tactix.chess_clients.lichess_client import (
     LichessFetchRequest,
 )
 from tactix.config import Settings
-from tactix.utils import Logger
+from tactix.utils.logger import get_logger
 
-log = Logger(__name__)
+log = get_logger(__name__)
 
 
 @retry(

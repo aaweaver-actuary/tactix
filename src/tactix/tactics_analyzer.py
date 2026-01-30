@@ -48,7 +48,6 @@ MATE_IN_ONE = 1
 MATE_IN_TWO = 2
 
 
-
 def _normalized_profile(settings: Settings | None) -> tuple[str, str]:
     if settings is None:
         return "", ""
@@ -335,10 +334,10 @@ def _severity_for_mate_two(severity: float, settings: Settings | None) -> float:
 
 
 def _adjust_severity_for_fork(severity: float, settings: Settings | None) -> float:
-    if _is_profile_in(settings, TIME_CONTROLS):
-        severity = min(severity, _SEVERITY_MIN)
-    if _is_profile_in(settings, TIME_CONTROLS):
+    if _is_profile_in(settings, {"bullet"}):
         severity = max(severity, _SEVERITY_MAX)
+    elif _is_profile_in(settings, TIME_CONTROLS):
+        severity = min(severity, _SEVERITY_MIN)
     floor = _fork_severity_floor(settings)
     if floor is not None and _is_profile_in(settings, TIME_CONTROLS):
         severity = max(severity, floor)
@@ -368,8 +367,8 @@ def _adjust_severity_for_discovered_attack(
     result: str,
     settings: Settings | None,
 ) -> float:
-    if _is_profile_in(settings, TIME_CONTROLS):
-        return min(severity, _SEVERITY_MIN)
+    if _is_profile_in(settings, TIME_CONTROLS) and result in {"missed", "failed_attempt"}:
+        return max(severity, _SEVERITY_MAX)
     if _is_profile_in(settings, TIME_CONTROLS) and result == "found":
         return min(severity, _SEVERITY_MIN)
     return severity

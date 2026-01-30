@@ -97,3 +97,9 @@ Session 2026-01-29 (BaseChessClient refactor + DI)
 	- src/tactix/pipeline.py: run_daily_game_sync now accepts injected BaseChessClient and uses client-based fetches.
 - Tests: added base client coverage + expanded chesscom/lichess unit coverage to 100% for both files.
 - Make check: Python/Rust tests pass; JS tests still fail on TacticsTable header arrow mismatch (existing).
+
+Session 2026-01-30 (refactor cleanup – make check)
+- Restored chess_clients wrappers to re-export legacy helpers and error classes (including private Lichess helpers used in tests).
+- Added shared test utilities for table headers/rows; refactored RecentGamesTable/TacticsTable/Hero tests to remove duplication flagged by jscpd.
+- Factored shared line-tactic comparison helper for pin/skewer detection to eliminate duplicate logic.
+- Tests: `make check`.

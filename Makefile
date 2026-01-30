@@ -34,7 +34,10 @@ py-deadcode:
 	uv run vulture src/ tests/ \
 		--min-confidence 60
 
-deadcode: py-deadcode
+js-deadcode:
+	cd client && npx knip
+
+deadcode: py-deadcode js-deadcode
 
 js-dup:
 	cd client && npx jscpd \

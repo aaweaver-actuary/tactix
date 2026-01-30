@@ -9,7 +9,7 @@ from typing import cast
 import duckdb
 
 from tactix.base_db_store import BaseDbStore, BaseDbStoreContext, PgnUpsertPlan
-from tactix.db.raw_pgn_summary import coerce_raw_pgn_summary_rows
+from tactix.db.raw_pgn_summary import build_raw_pgn_summary_sources
 from tactix.pgn_utils import extract_pgn_metadata
 from tactix.tactics_explanation import format_tactic_explanation
 from tactix.utils.logger import get_logger
@@ -683,7 +683,7 @@ def fetch_raw_pgns_summary(
         params,
     )
     rows = _rows_to_dicts(result)
-    return cast(list[dict[str, object]], coerce_raw_pgn_summary_rows(rows))
+    return cast(list[dict[str, object]], build_raw_pgn_summary_sources(rows))
 
 
 def fetch_position_counts(

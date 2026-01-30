@@ -19,7 +19,7 @@ from tactix.base_db_store import (
     TacticInsertPlan,
 )
 from tactix.config import Settings
-from tactix.db.raw_pgn_summary import coerce_raw_pgn_summary_rows
+from tactix.db.raw_pgn_summary import build_raw_pgn_summary_payload
 from tactix.pgn_utils import normalize_pgn
 from tactix.utils.logger import get_logger
 
@@ -504,13 +504,7 @@ def _fetch_raw_pgn_summary(cur) -> tuple[list[Mapping[str, Any]], Mapping[str, A
 def _build_raw_pgn_summary(
     sources: list[Mapping[str, Any]], totals: Mapping[str, Any]
 ) -> dict[str, Any]:
-    return {
-        "status": "ok",
-        "total_rows": totals.get("total_rows", 0),
-        "distinct_games": totals.get("distinct_games", 0),
-        "latest_ingested_at": totals.get("latest_ingested_at"),
-        "sources": coerce_raw_pgn_summary_rows(sources),
-    }
+    return build_raw_pgn_summary_payload(sources=sources, totals=totals)
 
 
 def _delete_existing_analysis(cur, position_id: int) -> None:

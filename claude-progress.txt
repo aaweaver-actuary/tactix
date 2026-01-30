@@ -1,3 +1,9 @@
+Session 2026-01-30 (refactor consolidation – raw PGN summary mapping helper)
+- Added shared raw PGN summary payload + sources helpers and reused them in DuckDB/Postgres stores.
+- Before → After map:
+	- duckdb_store.fetch_raw_pgns_summary + postgres_store._build_raw_pgn_summary source mapping → db/raw_pgn_summary.build_raw_pgn_summary_sources/build_raw_pgn_summary_payload
+- Tests: `make check` (before), `make check` (after; interrupted by KeyboardInterrupt during pytest run).
+
 Session 2026-01-30 (refactor consolidation – shared game-row coercion helper)
 - Added shared game-row builder for Chess.com + Lichess PGN coercion.
 - Before → After map:

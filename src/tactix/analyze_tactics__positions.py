@@ -25,6 +25,7 @@ _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS = {
     "skewer": -700,
 }
 _PIN_FAILED_ATTEMPT_SWING_THRESHOLD = -50
+_SKEWER_FAILED_ATTEMPT_SWING_THRESHOLD = -50
 _MATE_MISSED_SCORE_MULTIPLIER = 200
 _SEVERITY_MIN = 1.0
 _SEVERITY_MAX = 1.5
@@ -267,9 +268,11 @@ def _should_reclassify(result: str, delta: int, reclassify_motif: str | None) ->
 
 def _compute_eval__swing_threshold(motif: str, settings: Settings | None) -> int | None:
     del settings
-    if motif != "pin":
-        return None
-    return _PIN_FAILED_ATTEMPT_SWING_THRESHOLD
+    if motif == "pin":
+        return _PIN_FAILED_ATTEMPT_SWING_THRESHOLD
+    if motif == "skewer":
+        return _SKEWER_FAILED_ATTEMPT_SWING_THRESHOLD
+    return None
 
 
 def _select_motif__pin_target(motif: str, best_motif: str | None) -> str:
@@ -280,7 +283,30 @@ def _select_motif__pin_target(motif: str, best_motif: str | None) -> str:
     return ""
 
 
+def _select_motif__skewer_target(motif: str, best_motif: str | None) -> str:
+    if best_motif == "skewer":
+        return "skewer"
+    if motif == "skewer":
+        return "skewer"
+    return ""
+
+
 def _should_override__pin_failed_attempt(
+    result: str,
+    swing: int | None,
+    threshold: int | None,
+    target_motif: str,
+) -> bool:
+    return bool(
+        result == "unclear"
+        and swing is not None
+        and threshold is not None
+        and swing <= threshold
+        and target_motif
+    )
+
+
+def _should_override__skewer_failed_attempt(
     result: str,
     swing: int | None,
     threshold: int | None,
@@ -306,6 +332,38 @@ def _apply_outcome__failed_attempt_pin(
     if _should_override__pin_failed_attempt(result, swing, threshold, target_motif):
         return "failed_attempt", target_motif
     return result, motif
+
+
+def _apply_outcome__failed_attempt_skewer(
+    result: str,
+    motif: str,
+    best_motif: str | None,
+    swing: int | None,
+    threshold: int | None,
+) -> tuple[str, str]:
+    target_motif = _select_motif__skewer_target(motif, best_motif)
+    if _should_override__skewer_failed_attempt(result, swing, threshold, target_motif):
+        return "failed_attempt", target_motif
+    return result, motif
+
+
+def _apply_outcome__failed_attempt_line_tactics(
+    result: str,
+    motif: str,
+    best_motif: str | None,
+    swing: int | None,
+    settings: Settings | None,
+) -> tuple[str, str]:
+    result, motif = _apply_outcome__failed_attempt_pin(
+        result, motif, best_motif, swing, _compute_eval__swing_threshold("pin", settings)
+    )
+    return _apply_outcome__failed_attempt_skewer(
+        result,
+        motif,
+        best_motif,
+        swing,
+        _compute_eval__swing_threshold("skewer", settings),
+    )
 
 
 def _apply_mate_overrides(
@@ -544,19 +602,16 @@ def analyze_position(
         best_motif = _infer_hanging_or_detected_motif(motif_board, best_move_obj, mover_color)
         motif = _override_motif_for_missed(user_motif, best_motif, result)
     result = _reclassify_failed_attempt(result, delta, motif, user_motif)
-    result, motif = _apply_outcome__failed_attempt_pin(
-        result,
-        motif,
-        best_motif,
-        _compare_move__best_line(
-            motif_board,
-            best_move_obj,
-            user_move_uci,
-            after_cp,
-            engine,
-            mover_color,
-        ),
-        _compute_eval__swing_threshold(motif, settings),
+    swing = _compare_move__best_line(
+        motif_board,
+        best_move_obj,
+        user_move_uci,
+        after_cp,
+        engine,
+        mover_color,
+    )
+    result, motif = _apply_outcome__failed_attempt_line_tactics(
+        result, motif, best_motif, swing, settings
     )
     result, motif, mate_in = _apply_mate_overrides(
         result,

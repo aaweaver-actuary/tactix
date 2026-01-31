@@ -24,6 +24,7 @@ _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS = {
     "fork": -500,
     "skewer": -700,
 }
+_PIN_FAILED_ATTEMPT_SWING_THRESHOLD = -50
 _MATE_MISSED_SCORE_MULTIPLIER = 200
 _SEVERITY_MIN = 1.0
 _SEVERITY_MAX = 1.5
@@ -181,6 +182,35 @@ def _score_after_move(board: chess.Board, engine: StockfishEngine, mover_color: 
     )
 
 
+def _score_best_line__after_move(
+    board: chess.Board,
+    best_move: chess.Move | None,
+    engine: StockfishEngine,
+    mover_color: bool,
+) -> int | None:
+    if best_move is None:
+        return None
+    best_board = board.copy()
+    best_board.push(best_move)
+    return _score_after_move(best_board, engine, mover_color)
+
+
+def _compare_move__best_line(
+    board: chess.Board,
+    best_move: chess.Move | None,
+    user_move_uci: str,
+    after_cp: int,
+    engine: StockfishEngine,
+    mover_color: bool,
+) -> int | None:
+    if best_move is None or user_move_uci == best_move.uci():
+        return None
+    best_after_cp = _score_best_line__after_move(board, best_move, engine, mover_color)
+    if best_after_cp is None:
+        return None
+    return after_cp - best_after_cp
+
+
 def _infer_hanging_or_detected_motif(
     motif_board: chess.Board,
     move: chess.Move,
@@ -233,6 +263,49 @@ def _should_reclassify(result: str, delta: int, reclassify_motif: str | None) ->
     if result != "missed" or reclassify_motif is None:
         return False
     return delta > _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS[reclassify_motif]
+
+
+def _compute_eval__swing_threshold(motif: str, settings: Settings | None) -> int | None:
+    del settings
+    if motif != "pin":
+        return None
+    return _PIN_FAILED_ATTEMPT_SWING_THRESHOLD
+
+
+def _select_motif__pin_target(motif: str, best_motif: str | None) -> str:
+    if best_motif == "pin":
+        return "pin"
+    if motif == "pin":
+        return "pin"
+    return ""
+
+
+def _should_override__pin_failed_attempt(
+    result: str,
+    swing: int | None,
+    threshold: int | None,
+    target_motif: str,
+) -> bool:
+    return bool(
+        result == "unclear"
+        and swing is not None
+        and threshold is not None
+        and swing <= threshold
+        and target_motif
+    )
+
+
+def _apply_outcome__failed_attempt_pin(
+    result: str,
+    motif: str,
+    best_motif: str | None,
+    swing: int | None,
+    threshold: int | None,
+) -> tuple[str, str]:
+    target_motif = _select_motif__pin_target(motif, best_motif)
+    if _should_override__pin_failed_attempt(result, swing, threshold, target_motif):
+        return "failed_attempt", target_motif
+    return result, motif
 
 
 def _apply_mate_overrides(
@@ -467,10 +540,24 @@ def analyze_position(
     user_motif = _infer_hanging_or_detected_motif(motif_board, user_move, mover_color)
     motif = user_motif
     best_motif: str | None = None
-    if result in {"missed", "failed_attempt"} and best_move_obj is not None:
+    if result in {"missed", "failed_attempt", "unclear"} and best_move_obj is not None:
         best_motif = _infer_hanging_or_detected_motif(motif_board, best_move_obj, mover_color)
         motif = _override_motif_for_missed(user_motif, best_motif, result)
     result = _reclassify_failed_attempt(result, delta, motif, user_motif)
+    result, motif = _apply_outcome__failed_attempt_pin(
+        result,
+        motif,
+        best_motif,
+        _compare_move__best_line(
+            motif_board,
+            best_move_obj,
+            user_move_uci,
+            after_cp,
+            engine,
+            mover_color,
+        ),
+        _compute_eval__swing_threshold(motif, settings),
+    )
     result, motif, mate_in = _apply_mate_overrides(
         result,
         motif,

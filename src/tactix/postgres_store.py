@@ -20,7 +20,7 @@ from tactix.base_db_store import (
 )
 from tactix.config import Settings
 from tactix.db.raw_pgn_summary import build_raw_pgn_summary_payload
-from tactix.pgn_utils import normalize_pgn
+from tactix.prepare_pgn__chess import normalize_pgn
 from tactix.utils.logger import get_logger
 
 logger = get_logger(__name__)

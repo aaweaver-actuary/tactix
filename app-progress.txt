@@ -103,3 +103,9 @@ Session 2026-01-30 (refactor cleanup – make check)
 - Added shared test utilities for table headers/rows; refactored RecentGamesTable/TacticsTable/Hero tests to remove duplication flagged by jscpd.
 - Factored shared line-tactic comparison helper for pin/skewer detection to eliminate duplicate logic.
 - Tests: `make check`.
+
+Session 2026-01-30 (naming convention refactor – Python modules)
+- Added verb_object__details modules for PGN handling, position extraction, Stockfish engine, tactic detection/explanation/analysis, and mock DB store.
+- Converted legacy modules into shims and updated imports to use the new naming convention while preserving public APIs.
+- Fixed shim behavior for position extraction to keep pytest patching semantics intact.
+- Tests: `make check`.

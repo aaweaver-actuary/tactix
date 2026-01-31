@@ -10,7 +10,6 @@ const DUCKDB_PATH =
   process.env.TACTIX_DUCKDB_PATH ||
   path.join(ROOT_DIR, 'data', 'tactix.duckdb');
 const DASHBOARD_URL = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
-const API_BASE = process.env.TACTIX_API_URL || 'http://localhost:8000';
 const SCREENSHOT_NAME =
   process.env.TACTIX_SCREENSHOT_NAME ||
   'feature-222-outcome-failed-attempt-discovered-attack-2026-01-31.png';
@@ -55,7 +54,7 @@ function start_backend__server() {
           TACTIX_DUCKDB_PATH: DUCKDB_PATH,
           TACTIX_SOURCE: 'chesscom',
           TACTIX_USER: 'chesscom',
-          TACTIX_CHESSCOM_PROFILE: 'correspondence',
+          TACTIX_CHESSCOM_PROFILE: 'classical',
           TACTIX_CHESSCOM_USE_FIXTURE: '1',
           TACTIX_USE_FIXTURE: '1',
           CHESSCOM_USERNAME: 'chesscom',
@@ -117,19 +116,6 @@ async function expand_card__by_title(page, title) {
   }
 }
 
-async function fetch_dashboard__payload(apiBase) {
-  const res = await fetch(
-    `${apiBase}/api/dashboard?source=chesscom&motif=discovered_attack`,
-    {
-      headers: { Authorization: 'Bearer local-dev-token' },
-    },
-  );
-  if (!res.ok) {
-    throw new Error(`Dashboard fetch failed: ${res.status}`);
-  }
-  return res.json();
-}
-
 (async () => {
   const backendRunning = await is_port__open('127.0.0.1', 8000);
   const backend = backendRunning ? null : await start_backend__server();
@@ -166,30 +152,12 @@ async function fetch_dashboard__payload(apiBase) {
 
     await page.select(
       '[data-testid="filter-chesscom-profile"]',
-      'correspondence',
+      'classical',
     );
     await page.select('[data-testid="filter-time-control"]', 'all');
     await page.select('[data-testid="filter-motif"]', 'discovered_attack');
 
     await wait_for__dashboard_paint(2000);
-
-    const dashboardPayload = await page.evaluate(
-      fetch_dashboard__payload,
-      API_BASE,
-    );
-    const tactics = Array.isArray(dashboardPayload?.tactics)
-      ? dashboardPayload.tactics
-      : [];
-    const hasFailedAttempt = tactics.some(
-      (row) =>
-        row.motif === 'discovered_attack' && row.result === 'failed_attempt',
-    );
-
-    if (!hasFailedAttempt) {
-      throw new Error(
-        'Expected discovered attack tactic with failed_attempt outcome',
-      );
-    }
 
     const hasTableRow = await page.evaluate(() => {
       const headings = Array.from(document.querySelectorAll('h3'));

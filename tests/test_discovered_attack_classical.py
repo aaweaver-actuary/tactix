@@ -278,6 +278,9 @@ class DiscoveredAttackClassicalTests(unittest.TestCase):
         tactic_row, outcome_row = result
         self.assertEqual(tactic_row["motif"], "discovered_attack")
         self.assertEqual(outcome_row["result"], "failed_attempt")
+        self.assertTrue(tactic_row["best_uci"])
+        self.assertNotEqual(tactic_row["best_uci"], failed_position["uci"])
+        self.assertIsNotNone(outcome_row["eval_delta"])
 
         position_ids = insert_positions(conn, [failed_position])
         tactic_row["position_id"] = position_ids[0]

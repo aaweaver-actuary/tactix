@@ -1,3 +1,23 @@
+Session 2026-01-31 (feature 222 – discovered attack failed_attempt outcome)
+- Pre-work verification (passes=true):
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_023_stockfish_checksum.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_024_promotion_en_passant.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_025_castling.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_026_rolling_averages.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_027_time_trouble.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js`
+- Added assertions for discovered attack failed_attempt persistence in tests.
+- Seeded failed_attempt discovered attack classical outcome into DuckDB: `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_222_seed_outcome_failed_attempt_discovered_attack_classical.py`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_discovered_attack_classical.py -k failed_attempt -q`, `make check` (pre + post).
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_222_outcome_failed_attempt_discovered_attack_manual_ui.js` (screenshot `verification/feature-222-outcome-failed-attempt-discovered-attack-2026-01-31.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_222_outcome_failed_attempt_discovered_attack.js`.
+- Updated feature_list.json: feature 222 marked passes=true.
+- Pass count: 222.
+
 Session 2026-01-31 (feature 221 – skewer failed_attempt outcome)
 - Added failed_attempt skewer outcome to fixture DuckDB and promoted it into the recent tactics window.
 - UI verification (manual): `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_221_outcome_failed_attempt_skewer_manual_ui.js` (screenshot `verification/feature-221-outcome-failed-attempt-skewer-2026-01-31.png`).

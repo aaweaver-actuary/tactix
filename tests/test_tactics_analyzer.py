@@ -196,9 +196,14 @@ class TacticsAnalyzerTests(unittest.TestCase):
 
             def analyse(self, board: chess.Board) -> EngineResult:
                 self.calls += 1
+                score_cp = 200
+                if board.piece_at(chess.D6) == chess.Piece(chess.KNIGHT, chess.WHITE):
+                    score_cp = 200
+                elif board.piece_at(chess.E7) == chess.Piece(chess.KNIGHT, chess.WHITE):
+                    score_cp = -150
                 return EngineResult(
                     best_move=chess.Move.from_uci("f5e7"),
-                    score_cp=200,
+                    score_cp=score_cp,
                     depth=12,
                     mate_in=None,
                 )
@@ -224,6 +229,69 @@ class TacticsAnalyzerTests(unittest.TestCase):
         tactic_row, outcome_row = result
         self.assertEqual(tactic_row["motif"], "fork")
         self.assertEqual(outcome_row["result"], "failed_attempt")
+
+    def test_fork_unclear_persists(self) -> None:
+        class StubEngine:
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def analyse(self, board: chess.Board) -> EngineResult:
+                self.calls += 1
+                score_cp = 200
+                if board.piece_at(chess.D6) == chess.Piece(chess.KNIGHT, chess.WHITE):
+                    score_cp = 200
+                elif board.piece_at(chess.E7) == chess.Piece(chess.KNIGHT, chess.WHITE):
+                    score_cp = 180
+                return EngineResult(
+                    best_move=chess.Move.from_uci("f5e7"),
+                    score_cp=score_cp,
+                    depth=12,
+                    mate_in=None,
+                )
+
+        board = chess.Board(None)
+        board.clear()
+        board.set_piece_at(chess.F5, chess.Piece(chess.KNIGHT, chess.WHITE))
+        board.set_piece_at(chess.E8, chess.Piece(chess.QUEEN, chess.BLACK))
+        board.set_piece_at(chess.F7, chess.Piece(chess.ROOK, chess.BLACK))
+        board.set_piece_at(chess.A1, chess.Piece(chess.KING, chess.WHITE))
+        board.set_piece_at(chess.H8, chess.Piece(chess.KING, chess.BLACK))
+        board.turn = chess.WHITE
+
+        position = {
+            "game_id": "unit-fork-unclear",
+            "user": "unit",
+            "source": "lichess",
+            "fen": board.fen(),
+            "ply": board.ply(),
+            "move_number": board.fullmove_number,
+            "side_to_move": "white",
+            "uci": "f5d6",
+            "san": board.san(chess.Move.from_uci("f5d6")),
+            "clock_seconds": None,
+            "is_legal": True,
+        }
+
+        result = analyze_position(position, StubEngine())
+
+        self.assertIsNotNone(result)
+        tactic_row, outcome_row = result
+        self.assertEqual(tactic_row["motif"], "fork")
+        self.assertEqual(outcome_row["result"], "unclear")
+
+        tmp_dir = Path(tempfile.mkdtemp())
+        conn = get_connection(tmp_dir / "fork_unclear.duckdb")
+        init_schema(conn)
+        position_ids = insert_positions(conn, [position])
+        tactic_row["position_id"] = position_ids[0]
+
+        tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
+        stored_outcome = conn.execute(
+            "SELECT result, user_uci FROM tactic_outcomes WHERE tactic_id = ?",
+            [tactic_id],
+        ).fetchone()
+        self.assertEqual(stored_outcome[0], "unclear")
+        self.assertEqual(stored_outcome[1], position["uci"])
 
     def test_discovered_attack_unclear_reclassified_failed_attempt(self) -> None:
         class StubEngine:

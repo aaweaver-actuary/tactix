@@ -144,6 +144,8 @@ class StockfishEngine:
             if self.engine is None:
                 return EngineResult(best_move=None, score_cp=self._material_score(board), depth=0)
         engine = self.engine
+        if engine is None:
+            return EngineResult(best_move=None, score_cp=self._material_score(board), depth=0)
         info = engine.analyse(
             board,
             limit=self._build_limit(),

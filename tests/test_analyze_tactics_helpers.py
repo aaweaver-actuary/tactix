@@ -64,6 +64,9 @@ class AnalyzeTacticsHelperTests(unittest.TestCase):
         self.assertEqual(impl._compute_eval__swing_threshold("hanging_piece", None), -50)
         self.assertIsNone(impl._compute_eval__swing_threshold("fork", None))
 
+    def test_compute_eval_fork_unclear_threshold(self) -> None:
+        self.assertEqual(impl._compute_eval__fork_unclear_threshold(None), -300)
+
     def test_apply_outcome_failed_attempt_line_tactics_overrides(self) -> None:
         result, motif = impl._apply_outcome__failed_attempt_line_tactics(
             "unclear",
@@ -115,6 +118,17 @@ class AnalyzeTacticsHelperTests(unittest.TestCase):
         )
         self.assertEqual(result, "failed_attempt")
         self.assertEqual(motif, "hanging_piece")
+
+    def test_apply_outcome_unclear_fork_override(self) -> None:
+        result = impl._apply_outcome__unclear_fork(
+            "failed_attempt",
+            "fork",
+            "f5e7",
+            "f5d6",
+            -20,
+            impl._compute_eval__fork_unclear_threshold(None),
+        )
+        self.assertEqual(result, "unclear")
 
     def test_apply_outcome_unclear_mate_in_one_override(self) -> None:
         result = impl._apply_outcome__unclear_mate_in_one(

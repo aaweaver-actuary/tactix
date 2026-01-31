@@ -30,6 +30,7 @@ _SKEWER_FAILED_ATTEMPT_SWING_THRESHOLD = -50
 _DISCOVERED_ATTACK_FAILED_ATTEMPT_SWING_THRESHOLD = -50
 _DISCOVERED_CHECK_FAILED_ATTEMPT_SWING_THRESHOLD = -50
 _HANGING_PIECE_FAILED_ATTEMPT_SWING_THRESHOLD = -50
+_FORK_UNCLEAR_SWING_THRESHOLD = -300
 _MATE_MISSED_SCORE_MULTIPLIER = 200
 _SEVERITY_MIN = 1.0
 _SEVERITY_MAX = 1.5
@@ -345,6 +346,11 @@ def _compute_eval__swing_threshold(motif: str, settings: Settings | None) -> int
     return thresholds.get(motif)
 
 
+def _compute_eval__fork_unclear_threshold(settings: Settings | None) -> int | None:
+    del settings
+    return _FORK_UNCLEAR_SWING_THRESHOLD
+
+
 def _select_motif__pin_target(motif: str, best_motif: str | None) -> str:
     if best_motif == "pin":
         return "pin"
@@ -525,6 +531,47 @@ def _apply_outcome__failed_attempt_hanging_piece(
     return result, motif
 
 
+def _apply_outcome__unclear_fork(
+    result: str,
+    motif: str,
+    best_move: str | None,
+    user_move_uci: str,
+    swing: int | None,
+    threshold: int | None,
+) -> str:
+    if _should_mark_unclear_fork(result, motif, best_move, user_move_uci, swing, threshold):
+        return "unclear"
+    return result
+
+
+def _should_mark_unclear_fork(
+    result: str,
+    motif: str,
+    best_move: str | None,
+    user_move_uci: str,
+    swing: int | None,
+    threshold: int | None,
+) -> bool:
+    if swing is None or threshold is None or best_move is None:
+        return False
+    if not _is_unclear_fork_candidate(motif, best_move, user_move_uci, result):
+        return False
+    return _is_swing_at_least(swing, threshold)
+
+
+def _is_unclear_fork_candidate(
+    motif: str,
+    best_move: str,
+    user_move_uci: str,
+    result: str,
+) -> bool:
+    if motif != "fork":
+        return False
+    if user_move_uci == best_move:
+        return False
+    return result in {"missed", "failed_attempt", "unclear"}
+
+
 def _apply_outcome__failed_attempt_line_tactics(
     result: str,
     motif: str,
@@ -555,6 +602,48 @@ def _apply_outcome__failed_attempt_line_tactics(
         best_motif,
         swing,
         _compute_eval__swing_threshold("discovered_check", settings),
+    )
+
+
+def _apply_outcome_overrides(
+    result: str,
+    motif: str,
+    best_motif: str | None,
+    best_move: str | None,
+    user_move_uci: str,
+    swing: int | None,
+    after_cp: int,
+    mate_in_one: bool,
+    mate_in_two: bool,
+    settings: Settings | None,
+) -> tuple[str, str, int | None]:
+    result, motif = _apply_outcome__failed_attempt_line_tactics(
+        result, motif, best_motif, swing, settings
+    )
+    result, motif = _apply_outcome__failed_attempt_hanging_piece(
+        result,
+        motif,
+        best_motif,
+        swing,
+        _compute_eval__swing_threshold("hanging_piece", settings),
+    )
+    result = _apply_outcome__unclear_fork(
+        result,
+        motif,
+        best_move,
+        user_move_uci,
+        swing,
+        _compute_eval__fork_unclear_threshold(settings),
+    )
+    return _apply_mate_overrides(
+        result,
+        motif,
+        best_move,
+        user_move_uci,
+        swing,
+        after_cp,
+        mate_in_one,
+        mate_in_two,
     )
 
 
@@ -759,25 +848,17 @@ def analyze_position(
         engine,
         mover_color,
     )
-    result, motif = _apply_outcome__failed_attempt_line_tactics(
-        result, motif, best_motif, swing, settings
-    )
-    result, motif = _apply_outcome__failed_attempt_hanging_piece(
+    result, motif, mate_in = _apply_outcome_overrides(
         result,
         motif,
         best_motif,
-        swing,
-        _compute_eval__swing_threshold("hanging_piece", settings),
-    )
-    result, motif, mate_in = _apply_mate_overrides(
-        result,
-        motif,
         best_move,
         user_move_uci,
         swing,
         after_cp,
         mate_in_one,
         mate_in_two,
+        settings,
     )
     severity = _compute_severity__tactic(base_cp, delta, motif, mate_in, result, settings)
     best_san, explanation = format_tactic_explanation(fen, best_move or "", motif)

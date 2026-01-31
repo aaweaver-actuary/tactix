@@ -8,6 +8,7 @@ from io import StringIO
 import chess
 import chess.pgn
 
+from tactix.extract_positions_with_fallback__pgn import _extract_positions_with_fallback
 from tactix.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -331,18 +332,16 @@ def extract_positions(
     game_id: str | None = None,
     side_to_move_filter: str | None = None,
 ) -> list[dict[str, object]]:
-    if os.getenv("PYTEST_CURRENT_TEST"):
-        return _extract_positions_fallback(pgn, user, source, game_id, side_to_move_filter)
-    rust_extractor = _load_rust_extractor()
-    if rust_extractor is None:
-        return _extract_positions_fallback(pgn, user, source, game_id, side_to_move_filter)
-    return _call_rust_extractor(
-        rust_extractor,
+    return _extract_positions_with_fallback(
         pgn,
         user,
         source,
         game_id,
         side_to_move_filter,
+        getenv=os.getenv,
+        load_rust_extractor=_load_rust_extractor,
+        call_rust_extractor=_call_rust_extractor,
+        extract_positions_fallback=_extract_positions_fallback,
     )
 
 

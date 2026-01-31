@@ -1,3 +1,43 @@
+Session 2026-01-30 (regression verification - features 001-003)
+- Attempted regression verification for feature 001 (Airflow Lichess rapid pipeline).
+- Failure: Airflow UI did not expose a Trigger DAG button in daily_game_sync grid view.
+- Evidence screenshots:
+	- verification/failed-feature-001-airflow-lichess-rapid-2026-01-30-regression.png
+	- verification/feature-001-raw-pgn-summary-2026-01-30-regression-lichess.png
+	- verification/feature-001-raw-pgn-summary-2026-01-30-regression-chesscom.png
+- Result: marked feature 001 as failing; regression verification halted per instructions.
+
+Session 2026-01-30 (refactor split – chesscom_client module)
+- Split Chess.com client helpers into single-purpose modules and rebuilt the chesscom_client facade.
+- Before → After map:
+	- src/tactix/chesscom_client.py functions → src/tactix/define_chesscom_client__chesscom_client.py + helper modules: build_auth_headers__chesscom_auth.py, build_cursor__chesscom_cursor.py, parse_cursor__chesscom_cursor.py, read_cursor__chesscom_cursor.py, write_cursor__chesscom_cursor.py, fetch_with_backoff__chesscom_client.py, fetch_archive_pages__chesscom_archive.py, fetch_remote_games__chesscom_archive.py, load_fixture_games__chesscom_fixture.py, resolve_next_page_url__chesscom_pagination.py, resolve_next_page_candidate__chesscom_pagination.py, extract_candidate_href__chesscom_pagination.py, ensure_non_empty_str__chesscom_pagination.py, get_first_string__chesscom_pagination.py, resolve_page_from_numbers__chesscom_pagination.py, resolve_pagination_values__chesscom_pagination.py, build_page_url__chesscom_pagination.py, parse_retry_after__chesscom_rate_limit.py, parse_retry_after_seconds__chesscom_rate_limit.py, parse_retry_after_date__chesscom_rate_limit.py, should_stop_archive_fetch__chesscom_archive.py, apply_client_method__chesscom_client.py, build_client_for_settings__chesscom_client.py, filter_by_cursor__chesscom_cursor.py, cursor_allows_game__chesscom_cursor.py, fetch_incremental_games__chesscom_client.py
+- Tests: `make check`.
+
+Session 2026-01-30 (refactor split – chess_game module)
+- Split ChessGame into a single-purpose module and rebuilt the chess_game facade.
+- Before → After map:
+	- src/tactix/chess_game.py → src/tactix/define_chess_game__chess_game.py
+- Tests: `make check`.
+
+Session 2026-01-30 (refactor – eliminate jscpd clones)
+- Eliminated duplicate extract-positions fallback wiring and raw PGN setup logic.
+- Before → After map:
+	- src/tactix/extract_positions__pgn.py + src/tactix/position_extractor.py duplicate fallback wiring → shared helper src/tactix/extract_positions_with_fallback__pgn.py; position_extractor now routes through `_fallback_kwargs()` while preserving patched fallback behavior.
+	- src/tactix/convert_raw_pgns_to_positions__pipeline.py + src/tactix/run_monitor_new_positions__pipeline.py raw PGN setup block → shared helper src/tactix/prepare_raw_pgn_context__pipeline.py.
+- Tests: `make check` (pre-change), `make check` (post-change).
+
+Session 2026-01-30 (refactor split – const module)
+- Split constant definitions into single-purpose modules and rebuilt const facade.
+- Before → After map:
+	- src/tactix/const.py → src/tactix/define_db_schemas__const.py, src/tactix/define_time_controls__const.py
+- Tests: `make check`.
+
+Session 2026-01-30 (refactor split – config module)
+- Split config helpers, settings dataclasses, and defaults into single-purpose modules with a config facade.
+- Before → After map:
+	- src/tactix/config.py helpers + defaults + settings classes → src/tactix/define_config_defaults__config.py, read_fork_severity_floor__config.py, resolve_field_value__config.py, apply_settings_aliases__config.py, raise_on_unexpected_kwargs__config.py, define_lichess_settings__config.py, define_chesscom_settings__config.py, define_stockfish_settings__config.py, define_settings__config.py, apply_env_user_overrides__config.py, get_settings__config.py
+- Tests: `make check`.
+
 Session 2026-01-30 (refactor split – api module follow-up)
 - Updated API helper tests to import single-function modules directly instead of routing through tactix.api, preserving behavior.
 - Tests: `make check`.

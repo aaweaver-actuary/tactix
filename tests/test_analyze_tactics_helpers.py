@@ -51,7 +51,9 @@ class AnalyzeTacticsHelperTests(unittest.TestCase):
 
     def test_compare_move_best_line_returns_none_when_best_move_none(self) -> None:
         board = chess.Board()
-        result = impl._compare_move__best_line(board, None, "e2e4", 0, DummyEngine(Settings()), True)
+        result = impl._compare_move__best_line(
+            board, None, "e2e4", 0, DummyEngine(Settings()), True
+        )
         self.assertIsNone(result)
 
     def test_compute_eval_swing_thresholds(self) -> None:
@@ -113,6 +115,34 @@ class AnalyzeTacticsHelperTests(unittest.TestCase):
         )
         self.assertEqual(result, "failed_attempt")
         self.assertEqual(motif, "hanging_piece")
+
+    def test_apply_outcome_unclear_mate_in_one_override(self) -> None:
+        result = impl._apply_outcome__unclear_mate_in_one(
+            "failed_attempt",
+            "d8h4",
+            "a2a3",
+            300,
+            impl.MATE_IN_ONE,
+        )
+        self.assertEqual(result, "unclear")
+
+        result = impl._apply_outcome__unclear_mate_in_one(
+            "missed",
+            "d8h4",
+            "d8h4",
+            300,
+            impl.MATE_IN_ONE,
+        )
+        self.assertEqual(result, "missed")
+
+        result = impl._apply_outcome__unclear_mate_in_one(
+            "missed",
+            "d8h4",
+            "a2a3",
+            100,
+            impl.MATE_IN_ONE,
+        )
+        self.assertEqual(result, "missed")
 
     def test_analyze_positions_collects_rows_and_skips_invalid(self) -> None:
         board = chess.Board()

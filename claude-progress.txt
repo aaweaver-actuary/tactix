@@ -1,3 +1,15 @@
+Session 2026-01-31 (feature 225 – mate in one unclear outcome)
+- Pre-work verification (passes=true): `uv run pytest tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_base_chess_client.py tests/test_position_extractor.py tests/test_discovered_attack_blitz_case.py tests/test_hanging_piece_blitz.py tests/test_fork_classical.py tests/test_dashboard_filters.py tests/test_api_profile.py tests/test_api_helpers.py tests/test_stockfish_runner.py tests/test_tactic_severity.py`.
+- Pre-change make check: `make check`.
+- Added mate-in-one unclear override threshold + helper in src/tactix/analyze_tactics__positions.py.
+- Added unit coverage for mate-in-one unclear classification + helper checks in tests/test_tactics_analyzer.py and tests/test_analyze_tactics_helpers.py.
+- Seeded unclear mate-in-one rapid outcome: `uv run python tmp-logs/feature_225_seed_outcome_unclear_mate_in_one_rapid.py`.
+- UI verification (manual): `node verification/puppeteer_feature_225_outcome_unclear_mate_in_one_manual_ui.js` (screenshot verification/feature-225-outcome-unclear-mate-in-one-2026-01-31.png).
+- CI integration check: `node verification/integration_feature_225_outcome_unclear_mate_in_one.js`.
+- Tests: `uv run pytest tests/test_analyze_tactics_helpers.py tests/test_tactics_analyzer.py -q`, `make check` (post).
+- Updated feature_list.json: feature 225 marked passes=true.
+- Pass count: 225.
+
 Session 2026-01-31 (feature 224 – hanging piece failed_attempt outcome)
 - Pre-work verification (passes=true):
 	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`

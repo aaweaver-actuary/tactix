@@ -54,6 +54,7 @@ _FAILED_ATTEMPT_OVERRIDE_TARGETS = {
 }
 MATE_IN_ONE = 1
 MATE_IN_TWO = 2
+_MATE_IN_ONE_UNCLEAR_SCORE_THRESHOLD = _MATE_MISSED_SCORE_MULTIPLIER * MATE_IN_ONE + 50
 
 
 def _is_profile_in(settings: Settings, profiles: set[str]) -> bool:
@@ -567,6 +568,13 @@ def _apply_mate_overrides(
 ) -> tuple[str, str, int | None]:
     mate_in = _resolve_mate_in(mate_in_one, mate_in_two)
     motif = _override_mate_motif(motif, mate_in)
+    result = _apply_outcome__unclear_mate_in_one(
+        result,
+        best_move,
+        user_move_uci,
+        after_cp,
+        mate_in,
+    )
     if _should_upgrade_mate_result(
         result,
         best_move,
@@ -606,7 +614,11 @@ def _should_upgrade_mate_result(
     missed_threshold = _MATE_MISSED_SCORE_MULTIPLIER * mate_in
     if _is_missed_mate(result, after_cp, missed_threshold):
         return True
-    return _is_unclear_two_move_mate(result, best_move, user_move_uci, after_cp, missed_threshold)
+    if mate_in == MATE_IN_TWO:
+        return _is_unclear_two_move_mate(
+            result, best_move, user_move_uci, after_cp, missed_threshold
+        )
+    return False
 
 
 def _is_missed_mate(result: str, after_cp: int, threshold: int) -> bool:
@@ -623,6 +635,40 @@ def _is_unclear_two_move_mate(
     if result != "unclear" or best_move is None:
         return False
     return user_move_uci != best_move and after_cp >= threshold
+
+
+def _apply_outcome__unclear_mate_in_one(
+    result: str,
+    best_move: str | None,
+    user_move_uci: str,
+    after_cp: int,
+    mate_in: int | None,
+) -> str:
+    if _should_mark_unclear_mate_in_one(
+        result,
+        best_move,
+        user_move_uci,
+        after_cp,
+        mate_in,
+    ):
+        return "unclear"
+    return result
+
+
+def _should_mark_unclear_mate_in_one(
+    result: str,
+    best_move: str | None,
+    user_move_uci: str,
+    after_cp: int,
+    mate_in: int | None,
+) -> bool:
+    return bool(
+        mate_in == MATE_IN_ONE
+        and best_move is not None
+        and user_move_uci != best_move
+        and result in {"missed", "failed_attempt"}
+        and after_cp >= _MATE_IN_ONE_UNCLEAR_SCORE_THRESHOLD
+    )
 
 
 def analyze_position(

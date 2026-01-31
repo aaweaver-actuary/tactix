@@ -1,8 +1,16 @@
+import tempfile
 import unittest
+from pathlib import Path
 
 import chess
 
 from tactix.config import Settings
+from tactix.db.duckdb_store import (
+    get_connection,
+    init_schema,
+    insert_positions,
+    upsert_tactic_with_outcome,
+)
 from tactix.stockfish_runner import EngineResult
 from tactix.tactic_detectors import (
     BaseTacticDetector,
@@ -99,6 +107,63 @@ class TacticsAnalyzerTests(unittest.TestCase):
         tactic_row, outcome_row = result
         self.assertEqual(tactic_row["motif"], "mate")
         self.assertEqual(outcome_row["result"], "failed_attempt")
+
+    def test_mate_in_one_unclear_persists(self) -> None:
+        class StubEngine:
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def analyse(self, board: chess.Board) -> EngineResult:
+                self.calls += 1
+                score_cp = 100000 if board.turn == chess.WHITE else -100000
+                return EngineResult(
+                    best_move=chess.Move.from_uci("h6g7"),
+                    score_cp=score_cp,
+                    depth=12,
+                    mate_in=1,
+                )
+
+        board = chess.Board(None)
+        board.clear()
+        board.set_piece_at(chess.H8, chess.Piece(chess.KING, chess.BLACK))
+        board.set_piece_at(chess.G6, chess.Piece(chess.KING, chess.WHITE))
+        board.set_piece_at(chess.H6, chess.Piece(chess.QUEEN, chess.WHITE))
+        board.turn = chess.WHITE
+        user_move = chess.Move.from_uci("h6g5")
+        position = {
+            "game_id": "unit-mate-in-one",
+            "user": "unit",
+            "source": "lichess",
+            "fen": board.fen(),
+            "ply": board.ply(),
+            "move_number": board.fullmove_number,
+            "side_to_move": "white" if board.turn == chess.WHITE else "black",
+            "uci": user_move.uci(),
+            "san": board.san(user_move),
+            "clock_seconds": None,
+            "is_legal": True,
+        }
+
+        result = analyze_position(position, StubEngine())
+
+        self.assertIsNotNone(result)
+        tactic_row, outcome_row = result
+        self.assertEqual(tactic_row["motif"], "mate")
+        self.assertEqual(outcome_row["result"], "unclear")
+
+        tmp_dir = Path(tempfile.mkdtemp())
+        conn = get_connection(tmp_dir / "mate_in_one_unclear.duckdb")
+        init_schema(conn)
+        position_ids = insert_positions(conn, [position])
+        tactic_row["position_id"] = position_ids[0]
+
+        tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
+        stored_outcome = conn.execute(
+            "SELECT result, user_uci FROM tactic_outcomes WHERE tactic_id = ?",
+            [tactic_id],
+        ).fetchone()
+        self.assertEqual(stored_outcome[0], "unclear")
+        self.assertEqual(stored_outcome[1], position["uci"])
 
     def test_fork_missed_reclassified_failed_attempt(self) -> None:
         class StubEngine:

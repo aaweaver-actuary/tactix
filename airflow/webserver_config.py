@@ -54,7 +54,9 @@ AUTH_TYPE = AUTH_DB
 # AUTH_ROLE_ADMIN = 'Admin'
 
 # Uncomment and set to desired role to enable access without authentication
-# AUTH_ROLE_PUBLIC = 'Viewer'
+public_role = os.getenv("TACTIX_AIRFLOW_PUBLIC_ROLE")
+if public_role:
+	AUTH_ROLE_PUBLIC = public_role
 
 # Will allow user self registration
 # AUTH_USER_REGISTRATION = True

@@ -78,6 +78,7 @@ services:
       STOCKFISH_PATH: /usr/games/stockfish
     volumes:
       - ./airflow/dags:/opt/airflow/dags
+      - ./src:/opt/tactix/src
       - ./data:/opt/airflow/data
       - ./tmp-logs:/opt/airflow/tmp-logs
     command: >
@@ -104,6 +105,7 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://tactix:tactix@postgres:5432/tactix
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
       AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
+      TACTIX_AIRFLOW_PUBLIC_ROLE: Admin
       TACTIX_SOURCE: ${TACTIX_SOURCE:-lichess}
       TACTIX_DATA_DIR: /opt/airflow/data
       TACTIX_POSTGRES_HOST: postgres
@@ -117,6 +119,8 @@ services:
       STOCKFISH_PATH: /usr/games/stockfish
     volumes:
       - ./airflow/dags:/opt/airflow/dags
+      - ./src:/opt/tactix/src
+      - ./airflow/webserver_config.py:/opt/airflow/webserver_config.py
       - ./data:/opt/airflow/data
       - ./tmp-logs:/opt/airflow/tmp-logs
     ports:
@@ -151,6 +155,7 @@ services:
       STOCKFISH_PATH: /usr/games/stockfish
     volumes:
       - ./airflow/dags:/opt/airflow/dags
+      - ./src:/opt/tactix/src
       - ./data:/opt/airflow/data
       - ./tmp-logs:/opt/airflow/tmp-logs
     depends_on:

@@ -1,3 +1,8 @@
+Session 2026-01-30 (naming convention fix – db_store helpers)
+- Renamed db_store helper functions to underscore-prefixed naming while preserving module names: `_normalize_pgn_text`, `_resolve_pgn_hash`, `_resolve_timestamp`, `_is_latest_hash`.
+- Updated BaseDbStore helper wiring to use the renamed helpers.
+- Tests: `make check`.
+
 Session 2026-01-30 (regression verification - features 001-003)
 - Attempted regression verification for feature 001 (Airflow Lichess rapid pipeline).
 - Failure: Airflow UI did not expose a Trigger DAG button in daily_game_sync grid view.
@@ -2328,3 +2333,32 @@ Session 2026-01-30 (feature 217 – mate in 1 failed_attempt outcome)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_mate_in_one_rapid.py -q`.
 - Updated feature_list.json: feature 217 marked passes=true.
 - Pass count: 217.
+
+Session 2026-01-30 (regression – Airflow Trigger DAG missing in grid view)
+- Pre-work verification (passes=true):
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_023_stockfish_checksum.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_024_promotion_en_passant.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_025_castling.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_026_rolling_averages.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_027_time_trouble.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js` (failed with job stream request aborted; marked “Ingestion Lichess blitz games via incremental sync” passes=false).
+- Root cause: Airflow DAGs failed to load in Docker due to `airflow.dags._dag_helpers` import path and missing `src` mount, so the UI grid view had no Trigger DAG action.
+- Fixes:
+	- Added `src/tactix/airflow_dag_helpers.py` and updated DAGs to import from `tactix.airflow_dag_helpers`.
+	- Updated `airflow/dags/_dag_helpers.py` to re-export from the new module.
+	- Mounted `src/` and `airflow/webserver_config.py` into Airflow containers; added `TACTIX_AIRFLOW_PUBLIC_ROLE=Admin` for local webserver and added admin user creation in `init.sh` when `AIRFLOW_INIT=1`.
+- Airflow verification:
+	- Trigger DAG in grid view: `verification/airflow-daily_game_sync-2026-01-31.png`.
+	- Incremental log capture: `verification/airflow-daily_game_sync-incremental-2026-01-31.png`.
+- Feature 001/002/003 verification screenshots:
+	- Lichess rapid incremental UI: `verification/feature-035-lichess-rapid-incremental-2026-01-25.png`.
+	- Chess.com blitz incremental UI: `verification/feature-044-chesscom-blitz-incremental-2026-01-25.png`.
+	- Positions (Lichess/Chess.com): `verification/feature-107-fen-positions-2026-01-27.png`, `verification/feature-107-fen-positions-chesscom-2026-01-31.png`.
+	- Raw PGN summaries: `verification/feature-109-raw-pgn-summary-2026-01-31-lichess.png`, `verification/feature-109-raw-pgn-summary-2026-01-31-chesscom.png`.
+	- Dashboard (Lichess/Chess.com): `verification/feature-110-dashboard-lichess-2026-01-31.png`, `verification/feature-110-dashboard-chesscom-2026-01-31.png`.
+- Tests: `make check`.
+- Updated feature_list.json: feature 001 marked passes=true; “Ingestion Lichess blitz games via incremental sync” marked passes=false.

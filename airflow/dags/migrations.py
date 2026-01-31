@@ -7,7 +7,7 @@ from airflow.utils import timezone
 from tactix.config import get_settings
 from tactix.pipeline import run_migrations
 from tactix.utils.logger import get_logger
-from airflow.dags._dag_helpers import default_args
+from tactix.airflow_dag_helpers import default_args
 
 logger = get_logger(__name__)
 

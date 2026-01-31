@@ -46,6 +46,23 @@ if [ "${AIRFLOW_INIT:-0}" -eq 1 ]; then
     else
       info "Airflow metadata DB already present"
     fi
+    AIRFLOW_ADMIN_USERNAME="${AIRFLOW_ADMIN_USERNAME:-admin}"
+    AIRFLOW_ADMIN_PASSWORD="${AIRFLOW_ADMIN_PASSWORD:-admin}"
+    AIRFLOW_ADMIN_EMAIL="${AIRFLOW_ADMIN_EMAIL:-admin@example.com}"
+    AIRFLOW_ADMIN_FIRSTNAME="${AIRFLOW_ADMIN_FIRSTNAME:-Admin}"
+    AIRFLOW_ADMIN_LASTNAME="${AIRFLOW_ADMIN_LASTNAME:-User}"
+
+    if ! uv run airflow users list | awk 'NR>2 {print $1}' | grep -qx "${AIRFLOW_ADMIN_USERNAME}"; then
+      info "Creating Airflow admin user ${AIRFLOW_ADMIN_USERNAME}"
+      uv run airflow users create \
+        --username "${AIRFLOW_ADMIN_USERNAME}" \
+        --password "${AIRFLOW_ADMIN_PASSWORD}" \
+        --firstname "${AIRFLOW_ADMIN_FIRSTNAME}" \
+        --lastname "${AIRFLOW_ADMIN_LASTNAME}" \
+        --role Admin \
+        --email "${AIRFLOW_ADMIN_EMAIL}" \
+        || warn "Failed to create Airflow admin user; ensure Airflow metadata DB is initialized"
+    fi
   else
     warn "uv unavailable; cannot run Airflow init"
   fi

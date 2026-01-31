@@ -49,6 +49,19 @@ def pin_fixture_position() -> dict[str, object]:
     raise AssertionError("No pin fixture position found")
 
 
+def pin_fixture_positions() -> list[dict[str, object]]:
+    fixture_path = Path(__file__).resolve().parent / "fixtures" / "pin.pgn"
+    chunks = split_pgn_chunks(fixture_path.read_text())
+    positions: list[dict[str, object]] = []
+    for chunk in chunks:
+        position = _first_move_position(chunk)
+        if position:
+            positions.append(position)
+    if not positions:
+        raise AssertionError("No pin fixture positions found")
+    return positions
+
+
 def skewer_fixture_position() -> dict[str, object]:
     fixture_path = Path(__file__).resolve().parent / "fixtures" / "skewer.pgn"
     chunks = split_pgn_chunks(fixture_path.read_text())
@@ -135,3 +148,27 @@ def find_failed_attempt_position(
         if outcome_row["result"] == "failed_attempt" and tactic_row["motif"] == expected_motif:
             return candidate, result
     raise AssertionError("No failed_attempt outcome found for fixture position")
+
+
+def find_unclear_position(
+    position: dict[str, object],
+    engine: StockfishEngine,
+    settings: Settings,
+    expected_motif: str,
+) -> tuple[dict[str, object], tuple[dict[str, object], dict[str, object]]]:
+    board = chess.Board(str(position["fen"]))
+    best_move = engine.analyse(board).best_move
+    for move in board.legal_moves:
+        if best_move is not None and move == best_move:
+            continue
+        candidate = dict(position)
+        candidate["uci"] = move.uci()
+        with suppress(Exception):
+            candidate["san"] = board.san(move)
+        result = analyze_position(candidate, engine, settings=settings)
+        if result is None:
+            continue
+        tactic_row, outcome_row = result
+        if outcome_row["result"] == "unclear" and tactic_row["motif"] == expected_motif:
+            return candidate, result
+    raise AssertionError("No unclear outcome found for fixture position")

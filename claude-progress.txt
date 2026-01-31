@@ -1,3 +1,25 @@
+Session 2026-01-31 (feature 228 – pin unclear outcome)
+- Pre-work verification (passes=true):
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_023_stockfish_checksum.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_024_promotion_en_passant.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_025_castling.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_026_rolling_averages.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_027_time_trouble.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_035_lichess_rapid_incremental.js`
+- Pre-change make check: `make check`.
+- Added pin unclear swing threshold + outcome override in `src/tactix/analyze_tactics__positions.py`; added helper coverage + pin unclear persistence test in `tests/test_tactics_analyzer.py`; added `pin_fixture_positions` helper and updated pin correspondence tests to scan fixture positions.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_analyze_tactics_helpers.py /Users/andy/tactix/tests/test_tactics_analyzer.py /Users/andy/tactix/tests/test_pin_correspondence.py -q`, `make check` (post).
+- Seeded pin unclear outcome: `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_228_seed_outcome_unclear_pin_correspondence.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_228_outcome_unclear_pin_manual_ui.js` (screenshot `verification/feature-228-outcome-unclear-pin-2026-01-31.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_228_outcome_unclear_pin.js`.
+- Updated feature_list.json: feature 228 marked passes=true.
+- Pass count: 228/502.
+
 Session 2026-01-31 (feature 227 – fork unclear outcome)
 - Pre-work verification (passes=true):
 	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`

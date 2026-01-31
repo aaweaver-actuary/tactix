@@ -16,6 +16,7 @@ from tests.fixture_helpers import (
     find_failed_attempt_position,
     find_missed_position,
     pin_fixture_position,
+    pin_fixture_positions,
 )
 
 
@@ -81,14 +82,26 @@ class PinCorrespondenceTests(unittest.TestCase):
         )
         settings.apply_chesscom_profile("correspondence")
 
-        position = pin_fixture_position()
+        positions = pin_fixture_positions()
 
         tmp_dir = Path(tempfile.mkdtemp())
         conn = get_connection(tmp_dir / "pin_correspondence_missed.duckdb")
         init_schema(conn)
 
+        missed_position = None
+        result = None
         with StockfishEngine(settings) as engine:
-            missed_position, result = find_missed_position(position, engine, settings, "pin")
+            for position in positions:
+                try:
+                    missed_position, result = find_missed_position(
+                        position, engine, settings, "pin"
+                    )
+                except AssertionError:
+                    continue
+                break
+
+        if missed_position is None or result is None:
+            self.fail("No missed outcome found for pin fixture positions")
 
         tactic_row, outcome_row = result
         self.assertEqual(tactic_row["motif"], "pin")
@@ -118,16 +131,26 @@ class PinCorrespondenceTests(unittest.TestCase):
         )
         settings.apply_chesscom_profile("correspondence")
 
-        position = pin_fixture_position()
+        positions = pin_fixture_positions()
 
         tmp_dir = Path(tempfile.mkdtemp())
         conn = get_connection(tmp_dir / "pin_correspondence_failed_attempt.duckdb")
         init_schema(conn)
 
+        failed_position = None
+        result = None
         with StockfishEngine(settings) as engine:
-            failed_position, result = find_failed_attempt_position(
-                position, engine, settings, "pin"
-            )
+            for position in positions:
+                try:
+                    failed_position, result = find_failed_attempt_position(
+                        position, engine, settings, "pin"
+                    )
+                except AssertionError:
+                    continue
+                break
+
+        if failed_position is None or result is None:
+            self.fail("No failed_attempt outcome found for pin fixture positions")
 
         tactic_row, outcome_row = result
         self.assertEqual(tactic_row["motif"], "pin")
@@ -145,7 +168,6 @@ class PinCorrespondenceTests(unittest.TestCase):
         ).fetchone()
         self.assertEqual(stored_outcome[0], "failed_attempt")
         self.assertEqual(stored_outcome[1], failed_position["uci"])
-
 
 if __name__ == "__main__":
     unittest.main()

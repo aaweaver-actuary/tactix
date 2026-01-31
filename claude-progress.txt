@@ -1,3 +1,44 @@
+Session 2026-01-31 (refactor – Airflow DAG helpers naming)
+- Renamed Airflow DAG helper module to naming convention and extracted backfill helpers for SRP.
+- Before → After map:
+	- src/tactix/airflow_dag_helpers.py → src/tactix/prepare_dag_helpers__airflow.py (airflow_dag_helpers retained as facade)
+- Updated Airflow DAG + test imports to new module path.
+- Tests: `make check` (before), `make check` (after).
+
+Session 2026-01-31 (regression verification rerun - features 001-003)
+- Feature 001 (Airflow Lichess rapid pipeline):
+	- Airflow trigger: verification/feature-001-airflow-lichess-rapid-2026-01-31b.png
+	- Airflow log: verification/feature-001-airflow-lichess-rapid-log-2026-01-31b.png
+	- Dashboard: verification/feature-001-dashboard-lichess-rapid-2026-01-31b.png
+	- Result: pass (no console errors).
+- Feature 002 (Airflow Chess.com blitz pipeline):
+	- Airflow trigger: verification/feature-002-airflow-chesscom-blitz-2026-01-31b.png
+	- Airflow log: verification/feature-002-airflow-chesscom-blitz-log-2026-01-31b.png
+	- Dashboard: verification/feature-002-dashboard-chesscom-blitz-2026-01-31b.png
+	- Result: pass (no console errors).
+- Feature 003 (Lichess incremental since sync):
+	- Airflow trigger: verification/feature-003-airflow-lichess-incremental-2026-01-31b.png
+	- Airflow log: verification/feature-003-lichess-incremental-log-2026-01-31b.png
+	- Dashboard: verification/feature-003-dashboard-lichess-incremental-2026-01-31b.png
+	- Result: pass (no console errors).
+
+Session 2026-01-31 (regression verification - features 001-003)
+- Feature 001 (Airflow Lichess rapid pipeline):
+	- Airflow trigger: verification/feature-001-airflow-lichess-rapid-2026-01-31.png
+	- Airflow log: verification/feature-001-airflow-lichess-rapid-log-2026-01-31.png
+	- Dashboard: verification/feature-001-dashboard-lichess-rapid-2026-01-31.png
+	- Result: pass (no console errors).
+- Feature 002 (Airflow Chess.com blitz pipeline):
+	- Airflow trigger: verification/feature-002-airflow-chesscom-blitz-2026-01-31.png
+	- Airflow log: verification/feature-002-airflow-chesscom-blitz-log-2026-01-31.png
+	- Dashboard: verification/feature-002-dashboard-chesscom-blitz-2026-01-31.png
+	- Result: pass (no console errors).
+- Feature 003 (Lichess incremental since sync):
+	- Airflow trigger: verification/feature-003-airflow-lichess-incremental-2026-01-31.png
+	- Airflow log: verification/feature-003-lichess-incremental-log-2026-01-31.png
+	- Dashboard: verification/feature-003-dashboard-lichess-incremental-2026-01-31.png
+	- Result: pass (no console errors).
+
 Session 2026-01-30 (naming convention fix – db_store helpers)
 - Renamed db_store helper functions to underscore-prefixed naming while preserving module names: `_normalize_pgn_text`, `_resolve_pgn_hash`, `_resolve_timestamp`, `_is_latest_hash`.
 - Updated BaseDbStore helper wiring to use the renamed helpers.

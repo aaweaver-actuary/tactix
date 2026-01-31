@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from airflow.utils import timezone
 
-from tactix.airflow_dag_helpers import (
+from tactix.prepare_dag_helpers__airflow import (
     default_args,
     make_notify_dashboard_task,
     resolve_backfill_window,
@@ -80,7 +80,9 @@ class AirflowDagHelpersTests(unittest.TestCase):
         self.assertTrue(is_backfill)
 
     def test_make_notify_dashboard_task_uses_payload(self) -> None:
-        with patch("tactix.airflow_dag_helpers.get_dashboard_payload") as get_payload:
+        with patch(
+            "tactix.prepare_dag_helpers__airflow.get_dashboard_payload"
+        ) as get_payload:
             get_payload.return_value = {"metrics_version": 42}
             notify = make_notify_dashboard_task(settings=object(), source="lichess")
             callable_fn = (

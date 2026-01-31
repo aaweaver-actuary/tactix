@@ -7,7 +7,10 @@ from airflow.utils import timezone
 from tactix.config import get_settings
 from tactix.pipeline import run_refresh_metrics
 from tactix.utils.logger import get_logger
-from tactix.airflow_dag_helpers import default_args, make_notify_dashboard_task
+from tactix.prepare_dag_helpers__airflow import (
+    default_args,
+    make_notify_dashboard_task,
+)
 
 logger = get_logger(__name__)
 

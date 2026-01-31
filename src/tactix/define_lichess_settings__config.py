@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+
+from tactix.define_config_defaults__config import DEFAULT_DATA_DIR, DEFAULT_LICHESS_CHECKPOINT
 
 
 @dataclass(slots=True)
@@ -17,11 +19,17 @@ class LichessSettings:
     oauth_token_url: str = os.getenv("LICHESS_OAUTH_TOKEN_URL", "https://lichess.org/api/token")
 
     profile: str = os.getenv("TACTIX_LICHESS_PROFILE", "")
-    data_dir: Path = Path(os.getenv("LICHESS_DATA_DIR"))
+    data_dir: Path = Path(os.getenv("LICHESS_DATA_DIR", str(DEFAULT_DATA_DIR)))
+    checkpoint_path: Path = Path(
+        os.getenv("TACTIX_LICHESS_CHECKPOINT_PATH", DEFAULT_LICHESS_CHECKPOINT)
+    )
+    token_cache_path: Path = field(init=False)
 
     def __post_init__(self) -> None:
         if not self.data_dir.exists():
             self.data_dir.mkdir(parents=True, exist_ok=True)
-        self.token_cache_path: Path = Path(
-            os.getenv("LICHESS_TOKEN_CACHE_PATH", str(self.data_dir / "lichess_token.json"))
+        object.__setattr__(
+            self,
+            "token_cache_path",
+            Path(os.getenv("LICHESS_TOKEN_CACHE_PATH", str(self.data_dir / "lichess_token.json"))),
         )

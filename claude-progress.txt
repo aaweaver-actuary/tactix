@@ -2426,3 +2426,10 @@ Session 2026-01-30 (regression – Airflow Trigger DAG missing in grid view)
 	- Dashboard (Lichess/Chess.com): `verification/feature-110-dashboard-lichess-2026-01-31.png`, `verification/feature-110-dashboard-chesscom-2026-01-31.png`.
 - Tests: `make check`.
 - Updated feature_list.json: feature 001 marked passes=true; “Ingestion Lichess blitz games via incremental sync” marked passes=false.
+
+- 2026-01-31: Fixed tactic severity regression after refactor.
+	- Restored severity scaling with outcome-aware logic, mate overrides, fork floor handling, and bullet profile floor.
+	- Added helper coverage tests for tactic analysis, engine result parsing, and misc models/utilities to reach coverage ≥95%.
+	- Refactored Stockfish settings/env parsing, engine result parsing, and retry/engine startup helpers to pass complexity checks.
+	- Added TYPE_CHECKING references to avoid dead-code warnings for exported utilities/models.
+	- Tests: `uv run pytest tests/test_mate_in_one_rapid.py tests/test_pin_correspondence.py tests/test_hanging_piece_correspondence.py tests/test_discovered_attack_correspondence.py tests/test_fork_correspondence.py tests/test_fork_classical.py tests/test_tactic_severity.py`, `uv run pytest tests/test_discovered_check_blitz_low.py tests/test_mate_in_one_bullet.py tests/test_tactic_severity.py`, `uv run pytest tests/test_analyze_tactics_helpers.py tests/test_tactic_severity.py`, `uv run pytest tests/test_engine_result_helpers.py`, `uv run pytest tests/test_misc_coverage.py`, `make check`.

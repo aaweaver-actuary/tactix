@@ -52,6 +52,31 @@ MATE_IN_ONE = 1
 MATE_IN_TWO = 2
 
 
+def _is_profile_in(settings: Settings, profiles: set[str]) -> bool:
+    normalized = _normalize_profile__settings(settings)
+    if not normalized:
+        return False
+    return normalized in {entry.strip().lower() for entry in profiles}
+
+
+def _normalize_profile__settings(settings: Settings) -> str:
+    profile_value = _resolve_profile_value__settings(settings)
+    return profile_value.strip().lower()
+
+
+def _resolve_profile_value__settings(settings: Settings) -> str:
+    if settings.source == "chesscom":
+        return _resolve_chesscom_profile_value(settings)
+    return settings.lichess_profile or settings.rapid_perf
+
+
+def _resolve_chesscom_profile_value(settings: Settings) -> str:
+    profile_value = settings.chesscom_profile or settings.chesscom.time_class
+    if profile_value == "daily":
+        return "correspondence"
+    return profile_value
+
+
 def _fork_severity_floor(settings: Settings | None) -> float | None:
     """Returns the fork severity floor from settings, if applicable.
 
@@ -68,6 +93,72 @@ def _fork_severity_floor(settings: Settings | None) -> float | None:
     if settings is None:
         return None
     return settings.fork_severity_floor
+
+
+def _compute_severity__tactic(
+    base_cp: int,
+    delta: int,
+    motif: str,
+    mate_in: int | None,
+    result: str,
+    settings: Settings | None,
+) -> float:
+    severity = _severity_for_result(base_cp, delta, motif, mate_in, result)
+    severity = min(severity, _SEVERITY_MAX)
+    return _apply_fork_severity_floor(severity, motif, settings)
+
+
+def _severity_for_found_tactic(
+    base_cp: int,
+    delta: int,
+    motif: str,
+    mate_in: int | None,
+) -> float:
+    if mate_in in {MATE_IN_ONE, MATE_IN_TWO} or motif == "mate":
+        return _SEVERITY_MAX
+    if motif == "pin":
+        return abs(base_cp) / 100.0
+    return max(abs(delta) / 100.0, 0.01)
+
+
+def _severity_for_result(
+    base_cp: int,
+    delta: int,
+    motif: str,
+    mate_in: int | None,
+    result: str,
+) -> float:
+    if result == "found":
+        return _severity_for_found_tactic(base_cp, delta, motif, mate_in)
+    return _severity_for_nonfound_tactic(base_cp, delta, motif)
+
+
+def _severity_for_nonfound_tactic(base_cp: int, delta: int, motif: str) -> float:
+    if motif == "discovered_check":
+        return abs(delta) / 100.0
+    return max(abs(base_cp), abs(delta)) / 100.0
+
+
+def _apply_fork_severity_floor(
+    severity: float,
+    motif: str,
+    settings: Settings | None,
+) -> float:
+    if motif != "fork":
+        return severity
+    floor = _fork_floor_for_settings(settings)
+    if floor is None:
+        return severity
+    return max(severity, floor)
+
+
+def _fork_floor_for_settings(settings: Settings | None) -> float | None:
+    floor = _fork_severity_floor(settings)
+    if floor is not None or settings is None:
+        return floor
+    if _is_profile_in(settings, {"bullet"}):
+        return _SEVERITY_MAX
+    return None
 
 
 def _evaluate_engine_position(
@@ -496,7 +587,7 @@ def analyze_position(
         mate_in_one,
         mate_in_two,
     )
-    severity = abs(delta) / 100.0
+    severity = _compute_severity__tactic(base_cp, delta, motif, mate_in, result, settings)
     best_san, explanation = format_tactic_explanation(fen, best_move or "", motif)
     return _build_tactic_rows(
         position,

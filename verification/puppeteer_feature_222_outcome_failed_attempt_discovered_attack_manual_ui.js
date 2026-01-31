@@ -164,7 +164,10 @@ async function fetch_dashboard__payload(apiBase) {
     await expand_card__by_title(page, 'Recent tactics');
     await wait_for__dashboard_paint(1000);
 
-    await page.select('[data-testid="filter-chesscom-profile"]', 'correspondence');
+    await page.select(
+      '[data-testid="filter-chesscom-profile"]',
+      'correspondence',
+    );
     await page.select('[data-testid="filter-time-control"]', 'all');
     await page.select('[data-testid="filter-motif"]', 'discovered_attack');
 
@@ -178,11 +181,14 @@ async function fetch_dashboard__payload(apiBase) {
       ? dashboardPayload.tactics
       : [];
     const hasFailedAttempt = tactics.some(
-      (row) => row.motif === 'discovered_attack' && row.result === 'failed_attempt',
+      (row) =>
+        row.motif === 'discovered_attack' && row.result === 'failed_attempt',
     );
 
     if (!hasFailedAttempt) {
-      throw new Error('Expected discovered attack tactic with failed_attempt outcome');
+      throw new Error(
+        'Expected discovered attack tactic with failed_attempt outcome',
+      );
     }
 
     const hasTableRow = await page.evaluate(() => {
@@ -198,7 +204,9 @@ async function fetch_dashboard__payload(apiBase) {
       const rows = Array.from(table.querySelectorAll('tbody tr'));
       return rows.some((row) => {
         const text = (row.textContent || '').toLowerCase();
-        return text.includes('failed_attempt') && text.includes('discovered_attack');
+        return (
+          text.includes('failed_attempt') && text.includes('discovered_attack')
+        );
       });
     });
     if (!hasTableRow) {

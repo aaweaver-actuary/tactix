@@ -10,14 +10,13 @@ from tactix.db.duckdb_store import (
 )
 from tactix.emit_progress__pipeline import _emit_progress
 from tactix.pipeline_state__pipeline import ProgressCallback
-from tactix.refresh_metrics_result import RefreshMetricsResult
 
 
 def run_refresh_metrics(
     settings: Settings | None = None,
     source: str | None = None,
     progress: ProgressCallback | None = None,
-) -> RefreshMetricsResult:
+) -> dict[str, object]:
     settings = settings or get_settings(source=source)
     if source:
         settings.source = source
@@ -44,9 +43,9 @@ def run_refresh_metrics(
         message="Metrics refreshed",
     )
 
-    return RefreshMetricsResult(
-        source=settings.source,
-        user=settings.user,
-        metrics_version=metrics_version,
-        metrics_rows=len(fetch_metrics(conn, source=settings.source)),
-    )
+    return {
+        "source": settings.source,
+        "user": settings.user,
+        "metrics_version": metrics_version,
+        "metrics_rows": len(fetch_metrics(conn, source=settings.source)),
+    }

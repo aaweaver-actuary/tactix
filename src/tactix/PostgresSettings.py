@@ -25,4 +25,4 @@ class PostgresSettings:
             True if either DSN is provided or host, db, user, and password are set.
         """
 
-        return self.dsn or all([self.host, self.db, self.user, self.password])
+        return bool(self.dsn) or all([self.host, self.db, self.user, self.password])

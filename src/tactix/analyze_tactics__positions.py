@@ -22,12 +22,14 @@ _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS = {
     "discovered_attack": -1200,
     "discovered_check": -950,
     "fork": -500,
+    "hanging_piece": -900,
     "skewer": -700,
 }
 _PIN_FAILED_ATTEMPT_SWING_THRESHOLD = -50
 _SKEWER_FAILED_ATTEMPT_SWING_THRESHOLD = -50
 _DISCOVERED_ATTACK_FAILED_ATTEMPT_SWING_THRESHOLD = -50
 _DISCOVERED_CHECK_FAILED_ATTEMPT_SWING_THRESHOLD = -50
+_HANGING_PIECE_FAILED_ATTEMPT_SWING_THRESHOLD = -50
 _MATE_MISSED_SCORE_MULTIPLIER = 200
 _SEVERITY_MIN = 1.0
 _SEVERITY_MAX = 1.5
@@ -48,6 +50,7 @@ _FAILED_ATTEMPT_OVERRIDE_TARGETS = {
     "skewer",
     "discovered_attack",
     "discovered_check",
+    "hanging_piece",
 }
 MATE_IN_ONE = 1
 MATE_IN_TWO = 2
@@ -330,15 +333,14 @@ def _should_reclassify(result: str, delta: int, reclassify_motif: str | None) ->
 
 def _compute_eval__swing_threshold(motif: str, settings: Settings | None) -> int | None:
     del settings
-    if motif == "pin":
-        return _PIN_FAILED_ATTEMPT_SWING_THRESHOLD
-    if motif == "skewer":
-        return _SKEWER_FAILED_ATTEMPT_SWING_THRESHOLD
-    if motif == "discovered_attack":
-        return _DISCOVERED_ATTACK_FAILED_ATTEMPT_SWING_THRESHOLD
-    if motif == "discovered_check":
-        return _DISCOVERED_CHECK_FAILED_ATTEMPT_SWING_THRESHOLD
-    return None
+    thresholds = {
+        "pin": _PIN_FAILED_ATTEMPT_SWING_THRESHOLD,
+        "skewer": _SKEWER_FAILED_ATTEMPT_SWING_THRESHOLD,
+        "discovered_attack": _DISCOVERED_ATTACK_FAILED_ATTEMPT_SWING_THRESHOLD,
+        "discovered_check": _DISCOVERED_CHECK_FAILED_ATTEMPT_SWING_THRESHOLD,
+        "hanging_piece": _HANGING_PIECE_FAILED_ATTEMPT_SWING_THRESHOLD,
+    }
+    return thresholds.get(motif)
 
 
 def _select_motif__pin_target(motif: str, best_motif: str | None) -> str:
@@ -370,6 +372,14 @@ def _select_motif__discovered_check_target(motif: str, best_motif: str | None) -
         return "discovered_check"
     if motif == "discovered_check":
         return "discovered_check"
+    return ""
+
+
+def _select_motif__hanging_piece_target(motif: str, best_motif: str | None) -> str:
+    if best_motif == "hanging_piece":
+        return "hanging_piece"
+    if motif == "hanging_piece":
+        return "hanging_piece"
     return ""
 
 
@@ -433,6 +443,21 @@ def _should_override__discovered_check_failed_attempt(
     )
 
 
+def _should_override__hanging_piece_failed_attempt(
+    result: str,
+    swing: int | None,
+    threshold: int | None,
+    target_motif: str,
+) -> bool:
+    return bool(
+        result == "unclear"
+        and swing is not None
+        and threshold is not None
+        and swing <= threshold
+        and target_motif
+    )
+
+
 def _apply_outcome__failed_attempt_pin(
     result: str,
     motif: str,
@@ -481,6 +506,19 @@ def _apply_outcome__failed_attempt_discovered_check(
 ) -> tuple[str, str]:
     target_motif = _select_motif__discovered_check_target(motif, best_motif)
     if _should_override__discovered_check_failed_attempt(result, swing, threshold, target_motif):
+        return "failed_attempt", target_motif
+    return result, motif
+
+
+def _apply_outcome__failed_attempt_hanging_piece(
+    result: str,
+    motif: str,
+    best_motif: str | None,
+    swing: int | None,
+    threshold: int | None,
+) -> tuple[str, str]:
+    target_motif = _select_motif__hanging_piece_target(motif, best_motif)
+    if _should_override__hanging_piece_failed_attempt(result, swing, threshold, target_motif):
         return "failed_attempt", target_motif
     return result, motif
 
@@ -623,6 +661,13 @@ def analyze_position(
     )
     result, motif = _apply_outcome__failed_attempt_line_tactics(
         result, motif, best_motif, swing, settings
+    )
+    result, motif = _apply_outcome__failed_attempt_hanging_piece(
+        result,
+        motif,
+        best_motif,
+        swing,
+        _compute_eval__swing_threshold("hanging_piece", settings),
     )
     result, motif, mate_in = _apply_mate_overrides(
         result,

@@ -1,3 +1,25 @@
+Session 2026-01-31 (feature 224 – hanging piece failed_attempt outcome)
+- Pre-work verification (passes=true):
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_023_stockfish_checksum.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_024_promotion_en_passant.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_025_castling.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_026_rolling_averages.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_027_time_trouble.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js`
+- Pre-change make check: `make check`.
+- Added hanging piece failed_attempt overrides (threshold + swing) in `src/tactix/analyze_tactics__positions.py` and helper coverage in `tests/test_analyze_tactics_helpers.py`.
+- Added unit coverage for hanging piece failed_attempt persistence in `tests/test_hanging_piece_rapid.py`.
+- Seeded failed_attempt hanging piece rapid outcome: `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_224_seed_outcome_failed_attempt_hanging_piece_rapid.py`.
+- UI verification (manual): `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_224_outcome_failed_attempt_hanging_piece_manual_ui.js` (screenshot `verification/feature-224-outcome-failed-attempt-hanging-piece-2026-01-31.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_224_outcome_failed_attempt_hanging_piece.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_hanging_piece_rapid.py /Users/andy/tactix/tests/test_analyze_tactics_helpers.py -q`, `make check` (post).
+- Updated feature_list.json: feature 224 marked passes=true.
+- Pass count: 224.
+
 Session 2026-01-31 (feature 223 – discovered check failed_attempt outcome)
 - Added discovered check failed_attempt swing threshold override for line tactics.
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_analyze_tactics_helpers.py tests/test_discovered_check_blitz_low.py -k failed_attempt`, `make check` (pre + post).

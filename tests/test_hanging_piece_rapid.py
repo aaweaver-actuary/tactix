@@ -13,6 +13,7 @@ from tactix.db.duckdb_store import (
 from tactix.stockfish_runner import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 from tests.fixture_helpers import (
+    find_failed_attempt_position,
     find_missed_position,
     hanging_piece_fixture_position,
     hanging_piece_high_fixture_position,
@@ -206,6 +207,51 @@ class HangingPieceRapidTests(unittest.TestCase):
         ).fetchone()
         self.assertEqual(stored_outcome[0], "missed")
         self.assertEqual(stored_outcome[1], missed_position["uci"])
+
+    @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
+    def test_rapid_hanging_piece_records_failed_attempt_outcome(self) -> None:
+        settings = Settings(
+            source="chesscom",
+            chesscom_user="chesscom",
+            chesscom_profile="rapid",
+            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+            stockfish_movetime_ms=60,
+            stockfish_depth=None,
+            stockfish_multipv=1,
+        )
+        settings.apply_chesscom_profile("rapid")
+
+        position = hanging_piece_fixture_position(
+            fixture_filename="chesscom_rapid_sample.pgn",
+            label="Rapid Fixture 11 - Hanging Piece Low",
+            game_id="rapid-hanging-piece-low",
+        )
+
+        tmp_dir = Path(tempfile.mkdtemp())
+        conn = get_connection(tmp_dir / "hanging_piece_rapid_failed_attempt.duckdb")
+        init_schema(conn)
+
+        with StockfishEngine(settings) as engine:
+            failed_position, result = find_failed_attempt_position(
+                position, engine, settings, "hanging_piece"
+            )
+
+        tactic_row, outcome_row = result
+        self.assertEqual(tactic_row["motif"], "hanging_piece")
+        self.assertEqual(outcome_row["result"], "failed_attempt")
+        self.assertTrue(tactic_row["best_uci"])
+        self.assertNotEqual(tactic_row["best_uci"], failed_position["uci"])
+
+        position_ids = insert_positions(conn, [failed_position])
+        tactic_row["position_id"] = position_ids[0]
+
+        tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
+        stored_outcome = conn.execute(
+            "SELECT result, user_uci FROM tactic_outcomes WHERE tactic_id = ?",
+            [tactic_id],
+        ).fetchone()
+        self.assertEqual(stored_outcome[0], "failed_attempt")
+        self.assertEqual(stored_outcome[1], failed_position["uci"])
 
 
 if __name__ == "__main__":

@@ -1,0 +1,115 @@
+import shutil
+from io import StringIO
+from pathlib import Path
+
+import chess
+import chess.pgn
+
+from tactix.config import DEFAULT_RAPID_STOCKFISH_DEPTH, Settings
+from tactix.db.duckdb_store import (
+    get_connection,
+    init_schema,
+    upsert_tactic_with_outcome,
+    update_metrics_summary,
+    write_metrics_version,
+)
+from tactix.pgn_utils import split_pgn_chunks
+from tactix.stockfish_runner import StockfishEngine
+from tactix.tactics_analyzer import analyze_position
+from _seed_helpers import _ensure_position
+
+
+def _find_failed_attempt_position(
+    position: dict[str, object],
+    engine: StockfishEngine,
+    settings: Settings,
+    expected_motif: str,
+) -> tuple[dict[str, object], tuple[dict[str, object], dict[str, object]]]:
+    board = chess.Board(str(position["fen"]))
+    best_move = engine.analyse(board).best_move
+    for move in board.legal_moves:
+        if best_move is not None and move == best_move:
+            continue
+        candidate = dict(position)
+        candidate["uci"] = move.uci()
+        try:
+            candidate["san"] = board.san(move)
+        except Exception:
+            pass
+        result = analyze_position(candidate, engine, settings=settings)
+        if result is None:
+            continue
+        tactic_row, outcome_row = result
+        if outcome_row["result"] == "failed_attempt" and tactic_row["motif"] == expected_motif:
+            return candidate, result
+    raise SystemExit("No failed_attempt outcome found for hanging piece fixture")
+
+
+def _hanging_piece_fixture_position() -> dict[str, object]:
+    fixture_path = Path("tests/fixtures/chesscom_rapid_sample.pgn")
+    chunks = split_pgn_chunks(fixture_path.read_text())
+    hanging_chunk = next(
+        chunk for chunk in chunks if "Rapid Fixture 11 - Hanging Piece Low" in chunk
+    )
+    game = chess.pgn.read_game(StringIO(hanging_chunk))
+    if not game:
+        raise SystemExit("No hanging piece fixture game found")
+    fen = game.headers.get("FEN")
+    board = chess.Board(fen) if fen else game.board()
+    moves = list(game.mainline_moves())
+    if not moves:
+        raise SystemExit("No moves in hanging piece fixture")
+    move = moves[0]
+    side_to_move = "white" if board.turn == chess.WHITE else "black"
+    return {
+        "game_id": "rapid-hanging-piece-failed-attempt",
+        "user": "chesscom",
+        "source": "chesscom",
+        "fen": board.fen(),
+        "ply": board.ply(),
+        "move_number": board.fullmove_number,
+        "side_to_move": side_to_move,
+        "uci": move.uci(),
+        "san": board.san(move),
+        "clock_seconds": None,
+        "is_legal": True,
+    }
+
+
+if not shutil.which("stockfish"):
+    raise SystemExit("Stockfish binary not on PATH")
+
+settings = Settings(
+    source="chesscom",
+    chesscom_user="chesscom",
+    chesscom_profile="rapid",
+    stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
+    stockfish_movetime_ms=60,
+    stockfish_depth=None,
+    stockfish_multipv=1,
+)
+settings.apply_chesscom_profile("rapid")
+assert settings.stockfish_depth == DEFAULT_RAPID_STOCKFISH_DEPTH
+
+position = _hanging_piece_fixture_position()
+
+conn = get_connection(Path("data") / "tactix.duckdb")
+init_schema(conn)
+
+with StockfishEngine(settings) as engine:
+    failed_position, result = _find_failed_attempt_position(
+        position, engine, settings, "hanging_piece"
+    )
+
+tactic_row, outcome_row = result
+if outcome_row["result"] != "failed_attempt":
+    raise SystemExit("Expected failed_attempt outcome for hanging piece rapid fixture")
+
+failed_position = _ensure_position(conn, failed_position)
+tactic_row["position_id"] = failed_position["position_id"]
+
+upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
+update_metrics_summary(conn)
+write_metrics_version(conn)
+print("seeded hanging piece (rapid) failed_attempt outcome into data/tactix.duckdb")
+

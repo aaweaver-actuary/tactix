@@ -61,7 +61,10 @@ def test_practice_attempt_includes_latency_and_errors() -> None:
         patch("tactix.post_practice_attempt__api.get_connection", return_value=MagicMock()),
         patch("tactix.post_practice_attempt__api.init_schema"),
         patch("tactix.post_practice_attempt__api.time_module.time", return_value=10.0),
-        patch("tactix.post_practice_attempt__api.grade_practice_attempt", return_value={"status": "ok"}) as grade,
+        patch(
+            "tactix.post_practice_attempt__api.grade_practice_attempt",
+            return_value={"status": "ok"},
+        ) as grade,
     ):
         response = client.post(
             "/api/practice/attempt",
@@ -76,7 +79,10 @@ def test_practice_attempt_includes_latency_and_errors() -> None:
     with (
         patch("tactix.post_practice_attempt__api.get_connection", return_value=MagicMock()),
         patch("tactix.post_practice_attempt__api.init_schema"),
-        patch("tactix.post_practice_attempt__api.grade_practice_attempt", side_effect=ValueError("bad")),
+        patch(
+            "tactix.post_practice_attempt__api.grade_practice_attempt",
+            side_effect=ValueError("bad"),
+        ),
     ):
         error_response = client.post(
             "/api/practice/attempt",

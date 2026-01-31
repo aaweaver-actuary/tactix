@@ -10,10 +10,10 @@ from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
 from tactix.define_outcome_insert_plan__db_store import OutcomeInsertPlan
 from tactix.define_pgn_upsert_plan__db_store import PgnUpsertPlan
 from tactix.define_tactic_insert_plan__db_store import TacticInsertPlan
-from tactix.is_latest_hash__db_store import is_latest_hash__db_store
+from tactix.is_latest_hash__db_store import _is_latest_hash
 from tactix.prepare_pgn__chess import extract_pgn_metadata
-from tactix.resolve_pgn_hash__db_store import resolve_pgn_hash__db_store
-from tactix.resolve_timestamp__db_store import resolve_timestamp__db_store
+from tactix.resolve_pgn_hash__db_store import _resolve_pgn_hash
+from tactix.resolve_timestamp__db_store import _resolve_timestamp
 from tactix.utils import hash
 
 
@@ -70,8 +70,8 @@ class BaseDbStore:
         last_timestamp_ms: int = 0,
         cursor: object | None = None,
     ) -> PgnUpsertPlan | None:
-        normalized, pgn_hash = resolve_pgn_hash__db_store(pgn_text, normalize_pgn, hash_pgn)
-        if is_latest_hash__db_store(latest_hash, pgn_hash):
+        normalized, pgn_hash = _resolve_pgn_hash(pgn_text, normalize_pgn, hash_pgn)
+        if _is_latest_hash(latest_hash, pgn_hash):
             return None
         metadata = extract_pgn_metadata(pgn_text, user)
         return PgnUpsertPlan(
@@ -80,8 +80,8 @@ class BaseDbStore:
             pgn_version=latest_version + 1,
             normalized_pgn=normalized,
             metadata=metadata,
-            fetched_at=resolve_timestamp__db_store(fetched_at),
-            ingested_at=resolve_timestamp__db_store(ingested_at),
+            fetched_at=_resolve_timestamp(fetched_at),
+            ingested_at=_resolve_timestamp(ingested_at),
             last_timestamp_ms=last_timestamp_ms,
             cursor=cursor,
         )

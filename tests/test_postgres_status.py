@@ -14,9 +14,7 @@ def test_postgres_status_disabled(monkeypatch) -> None:
 
     client = TestClient(app)
     token = get_settings().api_token
-    response = client.get(
-        "/api/postgres/status", headers={"Authorization": f"Bearer {token}"}
-    )
+    response = client.get("/api/postgres/status", headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == 200
     payload = response.json()

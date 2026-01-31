@@ -1,18 +1,7 @@
-from dataclasses import dataclass
+from tactix.define_db_schemas__const import DbSchemas
+from tactix.define_time_controls__const import TIME_CONTROLS
 
-
-@dataclass(slots=True)
-class DbSchemas:
-    """
-    A container class for database schema names used in the Tactix application.
-
-    Attributes:
-        analysis (str): The schema name for analysis-related tables.
-        pgn (str): The schema name for PGN (Portable Game Notation) related tables.
-    """
-
-    analysis: str = "tactix_analysis"
-    pgn: str = "tactix_pgns"
-
-
-TIME_CONTROLS = frozenset({"bullet", "blitz", "rapid", "classical", "correspondence"})
+__all__ = [
+    "TIME_CONTROLS",
+    "DbSchemas",
+]

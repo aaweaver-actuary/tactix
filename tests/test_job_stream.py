@@ -7,9 +7,7 @@ from tactix.api import app
 from tactix.config import Settings, get_settings
 
 
-def _stream_events(
-    client: TestClient, url: str, token: str
-) -> list[tuple[str, dict[str, object]]]:
+def _stream_events(client: TestClient, url: str, token: str) -> list[tuple[str, dict[str, object]]]:
     headers = {"Authorization": f"Bearer {token}"}
     events: list[tuple[str, dict[str, object]]] = []
     with client.stream("GET", url, headers=headers) as response:

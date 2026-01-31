@@ -34,7 +34,10 @@ class ApiDashboardCacheTests(unittest.TestCase):
 
         with (
             patch("tactix.set_dashboard_cache__api_cache.time_module.time", return_value=1000.0),
-            patch("tactix.get_cached_dashboard_payload__api_cache.time_module.time", return_value=1000.0),
+            patch(
+                "tactix.get_cached_dashboard_payload__api_cache.time_module.time",
+                return_value=1000.0,
+            ),
         ):
             _set_dashboard_cache(key, payload)
             cached = _get_cached_dashboard_payload(key)

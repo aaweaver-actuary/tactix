@@ -122,7 +122,10 @@ class ChesscomClientTests(unittest.TestCase):
 
         fake_get = make_fake_get(responses, captured_urls=captured_urls)
 
-        with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
+        with patch(
+            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            side_effect=fake_get,
+        ):
             result = fetch_incremental_games(settings, cursor=None)
 
         self.assertEqual(len(result.games), 1)
@@ -169,7 +172,10 @@ class ChesscomClientTests(unittest.TestCase):
 
         fake_get = make_fake_get(responses)
 
-        with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
+        with patch(
+            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            side_effect=fake_get,
+        ):
             result = fetch_incremental_games(settings, cursor=None)
 
         self.assertEqual(len(result.games), 1)
@@ -216,7 +222,10 @@ class ChesscomClientTests(unittest.TestCase):
 
         fake_get = make_fake_get(responses)
 
-        with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
+        with patch(
+            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            side_effect=fake_get,
+        ):
             result = fetch_incremental_games(settings, cursor=None)
 
         self.assertEqual(len(result.games), 1)
@@ -263,7 +272,10 @@ class ChesscomClientTests(unittest.TestCase):
 
         fake_get = make_fake_get(responses)
 
-        with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
+        with patch(
+            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            side_effect=fake_get,
+        ):
             result = fetch_incremental_games(settings, cursor=None)
 
         self.assertEqual(len(result.games), 1)
@@ -300,8 +312,14 @@ class ChesscomClientTests(unittest.TestCase):
         fake_get = make_fake_get(responses)
 
         with (
-            patch("tactix.chesscom_client.requests.get", side_effect=fake_get),
-            patch("tactix.chesscom_client.time.sleep", return_value=None),
+            patch(
+                "tactix.define_chesscom_client__chesscom_client.requests.get",
+                side_effect=fake_get,
+            ),
+            patch(
+                "tactix.define_chesscom_client__chesscom_client.time.sleep",
+                return_value=None,
+            ),
         ):
             response = _get_with_backoff(settings, "https://example.com", timeout=5)
 
@@ -323,7 +341,10 @@ class ChesscomClientTests(unittest.TestCase):
 
         fake_get = make_fake_get([FakeResponse(429, headers={"Retry-After": "0"})])
 
-        with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
+        with patch(
+            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            side_effect=fake_get,
+        ):
             with self.assertRaises(ChesscomRateLimitError):
                 _get_with_backoff(settings, "https://example.com", timeout=5)
 
@@ -579,7 +600,10 @@ class ChesscomClientTests(unittest.TestCase):
 
         fake_get = make_fake_get(responses)
 
-        with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
+        with patch(
+            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            side_effect=fake_get,
+        ):
             result = fetch_incremental_games(settings, cursor=None)
 
         self.assertEqual(len(result.games), 1)
@@ -626,7 +650,10 @@ class ChesscomClientTests(unittest.TestCase):
 
         fake_get = make_fake_get(responses)
 
-        with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
+        with patch(
+            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            side_effect=fake_get,
+        ):
             result = fetch_incremental_games(settings, cursor=None)
 
         self.assertEqual(len(result.games), 1)
@@ -675,7 +702,10 @@ class ChesscomClientTests(unittest.TestCase):
                 )
             raise AssertionError(f"Unexpected URL: {url}")
 
-        with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
+        with patch(
+            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            side_effect=fake_get,
+        ):
             result = fetch_incremental_games(settings, cursor=None, full_history=True)
 
         self.assertEqual(len(result.games), len(archive_urls))
@@ -743,8 +773,11 @@ class ChesscomClientTests(unittest.TestCase):
         fake_get = make_fake_get(responses)
 
         with (
-            patch("tactix.chesscom_client.requests.get", side_effect=fake_get),
-            patch("tactix.chesscom_client.time.sleep") as sleep_mock,
+            patch(
+                "tactix.define_chesscom_client__chesscom_client.requests.get",
+                side_effect=fake_get,
+            ),
+            patch("tactix.define_chesscom_client__chesscom_client.time.sleep") as sleep_mock,
         ):
             result = fetch_incremental_games(settings, cursor=None)
 
@@ -799,7 +832,10 @@ class ChesscomClientTests(unittest.TestCase):
 
         fake_get = make_fake_get(responses)
 
-        with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
+        with patch(
+            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            side_effect=fake_get,
+        ):
             result = fetch_incremental_games(settings, cursor=None)
 
         self.assertEqual(len(result.games), 2)
@@ -849,7 +885,10 @@ class ChesscomClientTests(unittest.TestCase):
 
             raise AssertionError(f"Unexpected URL: {url}")
 
-        with patch("tactix.chesscom_client.requests.get", side_effect=fake_get):
+        with patch(
+            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            side_effect=fake_get,
+        ):
             result = fetch_incremental_games(settings, cursor=None)
 
         self.assertEqual(len(result.games), total_pages * 50)

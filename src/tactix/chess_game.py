@@ -1,28 +1,5 @@
-from collections.abc import Mapping
-from dataclasses import dataclass, field
-from io import StringIO
+from tactix.define_chess_game__chess_game import ChessGame
 
-import chess.pgn
-
-from tactix.utils import generate_id
-
-_EMPTY_HEADERS: Mapping[str, str] = {}
-
-
-@dataclass(slots=True)
-class ChessGame:
-    _raw_pgn: str
-    game_id: str = field(default_factory=generate_id)
-
-    @property
-    def game(self) -> chess.pgn.Game | None:
-        return chess.pgn.read_game(StringIO(self._raw_pgn))
-
-    @property
-    def headers(self) -> Mapping[str, str]:
-        game = self.game
-        return game.headers if game else _EMPTY_HEADERS
-
-    @property
-    def timestamp(self) -> str | None:
-        return self.headers.get("UTCDate")
+__all__ = [
+    "ChessGame",
+]

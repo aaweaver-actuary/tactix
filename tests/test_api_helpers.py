@@ -142,7 +142,9 @@ class ApiHelperTests(unittest.TestCase):
 
         with (
             patch("tactix.wait_for_airflow_run__job_stream._airflow_state", return_value="running"),
-            patch("tactix.wait_for_airflow_run__job_stream.time_module.time", side_effect=[0, 0, 2]),
+            patch(
+                "tactix.wait_for_airflow_run__job_stream.time_module.time", side_effect=[0, 0, 2]
+            ),
             patch("tactix.wait_for_airflow_run__job_stream.time_module.sleep"),
         ):
             with self.assertRaises(TimeoutError):
@@ -162,7 +164,9 @@ class ApiHelperTests(unittest.TestCase):
         )
         with (
             patch("tactix.set_dashboard_cache__api_cache.time_module.time", return_value=0),
-            patch("tactix.get_cached_dashboard_payload__api_cache.time_module.time", return_value=0),
+            patch(
+                "tactix.get_cached_dashboard_payload__api_cache.time_module.time", return_value=0
+            ),
         ):
             _set_dashboard_cache(key, {"status": "ok"})
             cached = _get_cached_dashboard_payload(key)

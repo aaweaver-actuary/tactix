@@ -13,7 +13,6 @@ def _run_analysis_and_metrics(
     settings: Settings,
     positions: list[dict[str, object]],
     resume_index: int,
-    analysis_checkpoint_path,
     analysis_signature: str,
     progress: ProgressCallback | None,
     profile: str | None,
@@ -24,7 +23,6 @@ def _run_analysis_and_metrics(
         settings,
         positions,
         resume_index,
-        analysis_checkpoint_path,
         analysis_signature,
         progress,
     )

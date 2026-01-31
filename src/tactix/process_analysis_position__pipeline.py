@@ -6,7 +6,7 @@ from tactix.define_pipeline_state__pipeline import ProgressCallback
 from tactix.maybe_emit_analysis_progress__pipeline import _maybe_emit_analysis_progress
 from tactix.maybe_upsert_postgres_analysis__pipeline import _maybe_upsert_postgres_analysis
 from tactix.maybe_write_analysis_checkpoint__pipeline import _maybe_write_analysis_checkpoint
-from tactix.run_stockfish__engine import StockfishEngine
+from tactix.stockfish_engine import StockfishEngine
 
 
 def _process_analysis_position(

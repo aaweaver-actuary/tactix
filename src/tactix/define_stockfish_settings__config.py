@@ -4,6 +4,9 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+import chess
+import chess.engine
+
 
 @dataclass(slots=True)
 class StockfishSettings:
@@ -26,3 +29,15 @@ class StockfishSettings:
     random_seed: int | None = int(os.getenv("STOCKFISH_RANDOM_SEED", "0")) or None
     max_retries: int = int(os.getenv("STOCKFISH_MAX_RETRIES", "2"))
     retry_backoff_ms: int = int(os.getenv("STOCKFISH_RETRY_BACKOFF_MS", "250"))
+
+    @property
+    def limit(self) -> chess.engine.Limit:
+        """Get the analysis limit based on depth or movetime.
+
+        Returns:
+            A `chess.engine.Limit` instance configured with depth or time.
+        """
+
+        if self.depth:
+            return chess.engine.Limit(depth=self.depth)
+        return chess.engine.Limit(time=self.movetime_ms / 1000)

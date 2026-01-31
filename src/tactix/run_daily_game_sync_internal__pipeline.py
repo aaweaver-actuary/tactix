@@ -78,7 +78,6 @@ def _run_daily_game_sync(
         progress,
         profile,
     )
-    analysis_checkpoint_path = settings.analysis_checkpoint_path
     _log_raw_pgns_persisted(
         settings,
         analysis_prep.raw_pgns_inserted,
@@ -92,7 +91,6 @@ def _run_daily_game_sync(
         settings,
         analysis_prep.positions,
         analysis_prep.resume_index,
-        analysis_checkpoint_path,
         analysis_prep.analysis_signature,
         progress,
         profile,

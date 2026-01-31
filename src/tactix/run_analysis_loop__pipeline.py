@@ -21,7 +21,7 @@ def _run_analysis_loop(
     progress_every = _analysis_progress_interval(total_positions)
     tactics_count = 0
     postgres_written = 0
-    from tactix import pipeline as pipeline_module  # noqa: PLC0415
+    from tactix import stockfish_engine as pipeline_module  # noqa: PLC0415
 
     with pipeline_module.StockfishEngine(settings) as engine:
         for idx, pos in enumerate(positions):

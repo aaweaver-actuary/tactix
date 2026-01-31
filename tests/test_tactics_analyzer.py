@@ -136,6 +136,57 @@ class TacticsAnalyzerTests(unittest.TestCase):
         self.assertEqual(tactic_row["motif"], "fork")
         self.assertEqual(outcome_row["result"], "failed_attempt")
 
+    def test_discovered_attack_unclear_reclassified_failed_attempt(self) -> None:
+        class StubEngine:
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def analyse(self, board: chess.Board) -> EngineResult:
+                self.calls += 1
+                if self.calls == 1:
+                    return EngineResult(
+                        best_move=chess.Move.from_uci("a2c1"),
+                        score_cp=0,
+                        depth=12,
+                        mate_in=None,
+                    )
+                if self.calls == 2:
+                    return EngineResult(
+                        best_move=None,
+                        score_cp=50,
+                        depth=12,
+                        mate_in=None,
+                    )
+                return EngineResult(
+                    best_move=None,
+                    score_cp=-10,
+                    depth=12,
+                    mate_in=None,
+                )
+
+        board = chess.Board(None)
+        board.clear()
+        board.set_piece_at(chess.H1, chess.Piece(chess.KING, chess.WHITE))
+        board.set_piece_at(chess.A1, chess.Piece(chess.ROOK, chess.WHITE))
+        board.set_piece_at(chess.A2, chess.Piece(chess.KNIGHT, chess.WHITE))
+        board.set_piece_at(chess.G2, chess.Piece(chess.PAWN, chess.WHITE))
+        board.set_piece_at(chess.H8, chess.Piece(chess.KING, chess.BLACK))
+        board.set_piece_at(chess.A8, chess.Piece(chess.QUEEN, chess.BLACK))
+        board.turn = chess.WHITE
+
+        position = {
+            "game_id": "unit-discovered-attack-failed-attempt",
+            "fen": board.fen(),
+            "uci": "a2b4",
+        }
+
+        result = analyze_position(position, StubEngine())
+
+        self.assertIsNotNone(result)
+        tactic_row, outcome_row = result
+        self.assertEqual(tactic_row["motif"], "discovered_attack")
+        self.assertEqual(outcome_row["result"], "failed_attempt")
+
 
 if __name__ == "__main__":
     unittest.main()

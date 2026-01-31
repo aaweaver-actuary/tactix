@@ -14,7 +14,6 @@ def run_migrations(
     settings = settings or get_settings(source=source)
     if source:
         settings.source = source
-    settings.apply_source_defaults()
     settings.ensure_dirs()
 
     _emit_progress(

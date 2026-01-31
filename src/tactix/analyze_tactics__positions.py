@@ -1,22 +1,22 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 
 import chess
 
 from tactix.config import Settings
-from tactix.const import TIME_CONTROLS
 from tactix.detect_tactics__motifs import (
     BaseTacticDetector,
     MotifDetectorSuite,
     build_default_motif_detector_suite,
 )
 from tactix.format_tactics__explanation import format_tactic_explanation
-from tactix.run_stockfish__engine import StockfishEngine
-from tactix.utils.logger import get_logger
-from tactix.utils.source import normalized_source
+from tactix.stockfish_engine import StockfishEngine
+from tactix.utils import Logger
 
-logger = get_logger(__name__)
+logger = Logger(__name__)
+
+
 MOTIF_DETECTORS: MotifDetectorSuite = build_default_motif_detector_suite()
 _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS = {
     "discovered_attack": -1200,
@@ -52,59 +52,19 @@ MATE_IN_ONE = 1
 MATE_IN_TWO = 2
 
 
-def _normalized_profile(settings: Settings | None) -> tuple[str, str]:
-    """
-    Returns a tuple containing the normalized source and profile name based on the provided settings.
-
-    Args:
-        settings (Settings | None): The settings object containing configuration data, or None.
-
-    Returns:
-        tuple[str, str]: A tuple where the first element is the normalized source string and the second element is the normalized profile name. If settings is None, both elements are empty strings.
-    """
-    if settings is None:
-        return "", ""
-    source = normalized_source(settings.source)
-    profile = _normalized_profile_name(settings, source)
-    return source, profile
-
-
-def _normalized_profile_name(settings: Settings, source: str) -> str:
-    if source == "chesscom":
-        raw_profile = settings.chesscom_profile or settings.chesscom_time_class
-    else:
-        raw_profile = settings.lichess_profile or settings.rapid_perf
-    return (raw_profile or "").strip().lower()
-
-
-def _is_profile_in(settings: Settings | None, profiles: Iterable[str]) -> bool:
-    """Check if the current profile matches one of the provided profiles.
-
-    Chess.com "daily" is treated as "correspondence" when correspondence is
-    part of the requested profile list.
-    """
-    source, profile = _normalized_profile(settings)
-    if not profile:
-        return False
-    normalized_profiles = _normalized_profiles(profiles)
-    if profile in normalized_profiles:
-        return True
-    return _is_chesscom_daily_match(source, profile, normalized_profiles)
-
-
-def _normalized_profiles(profiles: Iterable[str]) -> set[str]:
-    return {str(item).strip().lower() for item in profiles}
-
-
-def _is_chesscom_daily_match(source: str, profile: str, normalized_profiles: set[str]) -> bool:
-    return source == "chesscom" and "correspondence" in normalized_profiles and profile == "daily"
-
-
-def _is_fast_profile(settings: Settings | None) -> bool:
-    return _is_profile_in(settings, TIME_CONTROLS)
-
-
 def _fork_severity_floor(settings: Settings | None) -> float | None:
+    """Returns the fork severity floor from settings, if applicable.
+
+    Parameters
+    ----------
+    settings : Settings or None
+        The settings object to check, or None.
+
+    Returns
+    -------
+    float or None
+        The fork severity floor if defined in settings and applicable, otherwise None.
+    """
     if settings is None:
         return None
     return settings.fork_severity_floor
@@ -490,147 +450,6 @@ def _is_unclear_two_move_mate(
     return user_move_uci != best_move and after_cp >= threshold
 
 
-def _adjust_severity_for_mate(
-    severity: float,
-    result: str,
-    mate_in_one: bool,
-    mate_in_two: bool,
-    settings: Settings | None,
-) -> float:
-    if mate_in_one and result == "found":
-        return _severity_for_mate_one(severity, settings)
-    if mate_in_two and result == "found":
-        return _severity_for_mate_two(severity, settings)
-    return severity
-
-
-def _severity_for_mate_one(severity: float, settings: Settings | None) -> float:
-    if _is_fast_profile(settings):
-        return max(severity, _SEVERITY_MAX)
-    return min(severity, _SEVERITY_MIN)
-
-
-def _severity_for_mate_two(severity: float, settings: Settings | None) -> float:
-    if _is_profile_in(settings, TIME_CONTROLS):
-        return max(severity, _SEVERITY_MAX)
-    return severity
-
-
-def _adjust_severity_for_fork(severity: float, settings: Settings | None) -> float:
-    if _is_profile_in(settings, {"bullet"}):
-        severity = max(severity, _SEVERITY_MAX)
-    elif _is_profile_in(settings, TIME_CONTROLS):
-        severity = min(severity, _SEVERITY_MIN)
-    floor = _fork_severity_floor(settings)
-    if floor is not None and _is_profile_in(settings, TIME_CONTROLS):
-        severity = max(severity, floor)
-    return severity
-
-
-def _adjust_severity_for_pin(severity: float, settings: Settings | None) -> float:
-    if _is_profile_in(settings, TIME_CONTROLS):
-        return max(severity, _SEVERITY_MAX)
-    return severity
-
-
-def _adjust_severity_for_discovered_check(
-    severity: float,
-    result: str,
-    settings: Settings | None,
-) -> float:
-    if _is_profile_in(settings, TIME_CONTROLS) and result == "found":
-        return min(severity, _SEVERITY_MIN)
-    if not _is_profile_in(settings, TIME_CONTROLS) and _is_profile_in(settings, TIME_CONTROLS):
-        return min(severity, _SEVERITY_MIN)
-    return severity
-
-
-def _adjust_severity_for_discovered_attack(
-    severity: float,
-    result: str,
-    settings: Settings | None,
-) -> float:
-    if _is_profile_in(settings, TIME_CONTROLS) and result in {"missed", "failed_attempt"}:
-        return max(severity, _SEVERITY_MAX)
-    if _is_profile_in(settings, TIME_CONTROLS) and result == "found":
-        return min(severity, _SEVERITY_MIN)
-    return severity
-
-
-def _adjust_severity_for_hanging_piece(
-    severity: float,
-    result: str,
-    settings: Settings | None,
-) -> float:
-    if _is_profile_in(settings, TIME_CONTROLS):
-        return min(severity, _SEVERITY_MIN) if result == "found" else max(severity, _SEVERITY_MAX)
-    if _is_profile_in(settings, TIME_CONTROLS):
-        return min(severity, _SEVERITY_MIN)
-    return severity
-
-
-def _adjust_severity_for_skewer(severity: float, result: str) -> float:
-    if result == "found":
-        return min(severity, _SEVERITY_MIN)
-    return severity
-
-
-def _adjust_severity(
-    severity: float,
-    motif: str,
-    result: str,
-    mate_in_one: bool,
-    mate_in_two: bool,
-    settings: Settings | None,
-) -> float:
-    severity = _adjust_severity_for_mate(severity, result, mate_in_one, mate_in_two, settings)
-    adjuster = _SEVERITY_ADJUSTERS.get(motif)
-    if adjuster is None:
-        return severity
-    return adjuster(severity, result, settings)
-
-
-def _adjust_fork_wrapper(severity: float, result: str, settings: Settings | None) -> float:
-    del result
-    return _adjust_severity_for_fork(severity, settings)
-
-
-def _adjust_pin_wrapper(severity: float, result: str, settings: Settings | None) -> float:
-    del result
-    return _adjust_severity_for_pin(severity, settings)
-
-
-def _adjust_discovered_check_wrapper(
-    severity: float, result: str, settings: Settings | None
-) -> float:
-    return _adjust_severity_for_discovered_check(severity, result, settings)
-
-
-def _adjust_discovered_attack_wrapper(
-    severity: float, result: str, settings: Settings | None
-) -> float:
-    return _adjust_severity_for_discovered_attack(severity, result, settings)
-
-
-def _adjust_hanging_piece_wrapper(severity: float, result: str, settings: Settings | None) -> float:
-    return _adjust_severity_for_hanging_piece(severity, result, settings)
-
-
-def _adjust_skewer_wrapper(severity: float, result: str, settings: Settings | None) -> float:
-    del settings
-    return _adjust_severity_for_skewer(severity, result)
-
-
-_SEVERITY_ADJUSTERS: dict[str, Callable[[float, str, Settings | None], float]] = {
-    "fork": _adjust_fork_wrapper,
-    "pin": _adjust_pin_wrapper,
-    "discovered_check": _adjust_discovered_check_wrapper,
-    "discovered_attack": _adjust_discovered_attack_wrapper,
-    "hanging_piece": _adjust_hanging_piece_wrapper,
-    "skewer": _adjust_skewer_wrapper,
-}
-
-
 def analyze_position(
     position: dict[str, object],
     engine: StockfishEngine,
@@ -678,15 +497,6 @@ def analyze_position(
         mate_in_two,
     )
     severity = abs(delta) / 100.0
-    severity = _adjust_severity(
-        severity,
-        motif,
-        result,
-        mate_in_one,
-        mate_in_two,
-        settings,
-    )
-
     best_san, explanation = format_tactic_explanation(fen, best_move or "", motif)
     return _build_tactic_rows(
         position,

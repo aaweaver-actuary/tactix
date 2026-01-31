@@ -55,6 +55,7 @@ _FAILED_ATTEMPT_OVERRIDE_TARGETS = {
 MATE_IN_ONE = 1
 MATE_IN_TWO = 2
 _MATE_IN_ONE_UNCLEAR_SCORE_THRESHOLD = _MATE_MISSED_SCORE_MULTIPLIER * MATE_IN_ONE + 50
+_MATE_IN_TWO_UNCLEAR_SWING_THRESHOLD = -50
 
 
 def _is_profile_in(settings: Settings, profiles: set[str]) -> bool:
@@ -562,6 +563,7 @@ def _apply_mate_overrides(
     motif: str,
     best_move: str | None,
     user_move_uci: str,
+    swing: int | None,
     after_cp: int,
     mate_in_one: bool,
     mate_in_two: bool,
@@ -575,11 +577,19 @@ def _apply_mate_overrides(
         after_cp,
         mate_in,
     )
+    result = _apply_outcome__unclear_mate_in_two(
+        result,
+        best_move,
+        user_move_uci,
+        swing,
+        mate_in,
+    )
     if _should_upgrade_mate_result(
         result,
         best_move,
         user_move_uci,
         after_cp,
+        swing,
         mate_in,
     ):
         result = "failed_attempt"
@@ -607,6 +617,7 @@ def _should_upgrade_mate_result(
     best_move: str | None,
     user_move_uci: str,
     after_cp: int,
+    swing: int | None,
     mate_in: int | None,
 ) -> bool:
     if mate_in not in {MATE_IN_ONE, MATE_IN_TWO}:
@@ -615,9 +626,7 @@ def _should_upgrade_mate_result(
     if _is_missed_mate(result, after_cp, missed_threshold):
         return True
     if mate_in == MATE_IN_TWO:
-        return _is_unclear_two_move_mate(
-            result, best_move, user_move_uci, after_cp, missed_threshold
-        )
+        return _is_unclear_two_move_mate(result, best_move, user_move_uci, swing)
     return False
 
 
@@ -625,16 +634,25 @@ def _is_missed_mate(result: str, after_cp: int, threshold: int) -> bool:
     return result == "missed" and after_cp >= threshold
 
 
+def _is_swing_at_least(swing: int | None, threshold: int) -> bool:
+    if swing is None:
+        return False
+    return swing >= threshold
+
+
 def _is_unclear_two_move_mate(
     result: str,
     best_move: str | None,
     user_move_uci: str,
-    after_cp: int,
-    threshold: int,
+    swing: int | None,
 ) -> bool:
     if result != "unclear" or best_move is None:
         return False
-    return user_move_uci != best_move and after_cp >= threshold
+    if user_move_uci == best_move:
+        return False
+    if swing is None:
+        return False
+    return swing <= _MATE_IN_TWO_UNCLEAR_SWING_THRESHOLD
 
 
 def _apply_outcome__unclear_mate_in_one(
@@ -653,6 +671,42 @@ def _apply_outcome__unclear_mate_in_one(
     ):
         return "unclear"
     return result
+
+
+def _apply_outcome__unclear_mate_in_two(
+    result: str,
+    best_move: str | None,
+    user_move_uci: str,
+    swing: int | None,
+    mate_in: int | None,
+) -> str:
+    if _should_mark_unclear_mate_in_two(
+        result,
+        best_move,
+        user_move_uci,
+        swing,
+        mate_in,
+    ):
+        return "unclear"
+    return result
+
+
+def _should_mark_unclear_mate_in_two(
+    result: str,
+    best_move: str | None,
+    user_move_uci: str,
+    swing: int | None,
+    mate_in: int | None,
+) -> bool:
+    return all(
+        (
+            mate_in == MATE_IN_TWO,
+            best_move is not None,
+            user_move_uci != best_move,
+            result in {"missed", "failed_attempt", "unclear"},
+            _is_swing_at_least(swing, _MATE_IN_TWO_UNCLEAR_SWING_THRESHOLD),
+        )
+    )
 
 
 def _should_mark_unclear_mate_in_one(
@@ -720,6 +774,7 @@ def analyze_position(
         motif,
         best_move,
         user_move_uci,
+        swing,
         after_cp,
         mate_in_one,
         mate_in_two,

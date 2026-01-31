@@ -80,7 +80,7 @@ class TacticsAnalyzerTests(unittest.TestCase):
         self.assertTrue(_is_profile_in(lichess_rapid, {"rapid"}))
         self.assertFalse(_is_profile_in(lichess_rapid, {"blitz"}))
 
-    def test_mate_in_two_unclear_reclassified_failed_attempt(self) -> None:
+    def test_mate_in_two_unclear_persists(self) -> None:
         class StubEngine:
             def __init__(self) -> None:
                 self.calls = 0
@@ -95,10 +95,20 @@ class TacticsAnalyzerTests(unittest.TestCase):
                     mate_in=2,
                 )
 
+        board = chess.Board()
+        user_move = chess.Move.from_uci("d2d4")
         position = {
             "game_id": "unit-mate-in-two",
-            "fen": chess.STARTING_FEN,
-            "uci": "d2d4",
+            "user": "unit",
+            "source": "lichess",
+            "fen": board.fen(),
+            "ply": board.ply(),
+            "move_number": board.fullmove_number,
+            "side_to_move": "white",
+            "uci": user_move.uci(),
+            "san": board.san(user_move),
+            "clock_seconds": None,
+            "is_legal": True,
         }
 
         result = analyze_position(position, StubEngine())
@@ -106,7 +116,21 @@ class TacticsAnalyzerTests(unittest.TestCase):
         self.assertIsNotNone(result)
         tactic_row, outcome_row = result
         self.assertEqual(tactic_row["motif"], "mate")
-        self.assertEqual(outcome_row["result"], "failed_attempt")
+        self.assertEqual(outcome_row["result"], "unclear")
+
+        tmp_dir = Path(tempfile.mkdtemp())
+        conn = get_connection(tmp_dir / "mate_in_two_unclear.duckdb")
+        init_schema(conn)
+        position_ids = insert_positions(conn, [position])
+        tactic_row["position_id"] = position_ids[0]
+
+        tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
+        stored_outcome = conn.execute(
+            "SELECT result, user_uci FROM tactic_outcomes WHERE tactic_id = ?",
+            [tactic_id],
+        ).fetchone()
+        self.assertEqual(stored_outcome[0], "unclear")
+        self.assertEqual(stored_outcome[1], position["uci"])
 
     def test_mate_in_one_unclear_persists(self) -> None:
         class StubEngine:

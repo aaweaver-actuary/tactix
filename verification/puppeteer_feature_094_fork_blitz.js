@@ -13,6 +13,7 @@ const DASHBOARD_URL = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const SCREENSHOT_NAME =
   process.env.TACTIX_SCREENSHOT_NAME ||
   'feature-094-fork-blitz-low-severity-2026-01-26.png';
+const DASHBOARD_PATH = '/api/dashboard';
 
 function isPortOpen(host, port, timeoutMs = 1000) {
   return new Promise((resolve) => {
@@ -89,6 +90,17 @@ function startBackend() {
   });
 }
 
+async function selectWithDashboardWait(page, selector, value) {
+  await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.url().includes(DASHBOARD_PATH) && response.status() === 200,
+      { timeout: 60000 },
+    ),
+    page.select(selector, value),
+  ]);
+}
+
 (async () => {
   const backendRunning = await isPortOpen('127.0.0.1', 8000);
   const backend = backendRunning ? null : await startBackend();
@@ -110,15 +122,30 @@ function startBackend() {
     await page.goto(DASHBOARD_URL, { waitUntil: 'networkidle0' });
     await page.waitForSelector('[data-testid="filter-source"]');
 
-    await page.select('[data-testid="filter-source"]', 'chesscom');
+    await selectWithDashboardWait(page, '[data-testid="filter-source"]', 'chesscom');
     await page.waitForSelector('[data-testid="filter-chesscom-profile"]');
-    await page.select('[data-testid="filter-chesscom-profile"]', 'blitz');
-    await page.select('[data-testid="filter-motif"]', 'fork');
-    await page.select('[data-testid="filter-time-control"]', '300');
-
-    await page.click('[data-testid="action-run"]');
+    await selectWithDashboardWait(
+      page,
+      '[data-testid="filter-chesscom-profile"]',
+      'blitz',
+    );
+    await selectWithDashboardWait(page, '[data-testid="filter-motif"]', 'fork');
+    await selectWithDashboardWait(
+      page,
+      '[data-testid="filter-time-control"]',
+      '300',
+    );
     await page.waitForSelector('table');
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    await page.waitForFunction(
+      () => {
+        const rows = Array.from(document.querySelectorAll('table tbody tr'));
+        return rows.some((row) =>
+          (row.textContent || '').toLowerCase().includes('fork'),
+        );
+      },
+      { timeout: 60000 },
+    );
 
     const rows = await page.$$eval('table tbody tr', (items) =>
       items.map((row) => row.textContent || ''),

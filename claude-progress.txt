@@ -1,3 +1,15 @@
+Session 2026-01-31 (feature 226 – mate in two unclear outcome)
+- Pre-work verification (passes=true): `node verification/puppeteer_feature_110_dashboard.js`, `node verification/puppeteer_motif_filters.js`, `node verification/puppeteer_feature_094_fork_blitz.js`, `node verification/puppeteer_feature_085_mate_in_two_rapid.js`, `node verification/puppeteer_feature_096_fork_classical.js`, `node verification/puppeteer_feature_133_pin_rapid_high_ci.js`, `node verification/puppeteer_feature_135_pin_correspondence_high.js`, `node verification/puppeteer_feature_156_discovered_attack_blitz_high.js`, `node verification/puppeteer_feature_181_hanging_piece_bullet_high_ci.js`, `node verification/puppeteer_feature_117_airflow_postgres.js`.
+- Regression fix: stabilized `verification/puppeteer_feature_094_fork_blitz.js` to wait for dashboard responses (screenshot `verification/feature-094-fork-blitz-low-severity-2026-01-26.png`).
+- Pre-change make check: `make check` (ty unsupported-operator resolved).
+- Added mate-in-two unclear swing threshold + helpers in `src/tactix/analyze_tactics__positions.py` and unit coverage in `tests/test_tactics_analyzer.py`.
+- Seeded unclear mate-in-two blitz outcome: `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_226_seed_outcome_unclear_mate_in_two_blitz.py`.
+- UI verification (manual): `node verification/puppeteer_feature_226_outcome_unclear_mate_in_two_manual_ui.js` (screenshot `verification/feature-226-outcome-unclear-mate-in-two-2026-01-31.png`).
+- CI integration check: `node verification/integration_feature_226_outcome_unclear_mate_in_two.js`.
+- Tests: `make check` (post).
+- Updated feature_list.json: feature 226 marked passes=true.
+- Pass count: 226/502.
+
 Session 2026-01-31 (feature 225 – mate in one unclear outcome)
 - Pre-work verification (passes=true): `uv run pytest tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_base_chess_client.py tests/test_position_extractor.py tests/test_discovered_attack_blitz_case.py tests/test_hanging_piece_blitz.py tests/test_fork_classical.py tests/test_dashboard_filters.py tests/test_api_profile.py tests/test_api_helpers.py tests/test_stockfish_runner.py tests/test_tactic_severity.py`.
 - Pre-change make check: `make check`.

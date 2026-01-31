@@ -3,6 +3,14 @@ Session 2026-01-30 (naming convention fix – db_store helpers)
 - Updated BaseDbStore helper wiring to use the renamed helpers.
 - Tests: `make check`.
 
+Session 2026-01-30 (feature 35 – Lichess blitz incremental sync regression)
+- Root cause: SSE stream completion aborted the client fetch, raising AbortError and marking the run as failed even after `complete` events.
+- Fix: let SSE stream finish naturally and ignore aborts after completion in `client/src/App.tsx`.
+- Added CI integration test: `verification/integration_feature_033_lichess_blitz_incremental.js`.
+- UI verification (manual): `NODE_PATH=/Users/andy/tactix/client/node_modules TACTIX_SCREENSHOT_NAME=feature-035-lichess-blitz-incremental-2026-01-30.png node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js` (screenshot `verification/feature-035-lichess-blitz-incremental-2026-01-30.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_033_lichess_blitz_incremental.js`.
+- Tests: `make check` (fails coverage gate: total 94.67% < 95%).
+
 Session 2026-01-30 (regression verification - features 001-003)
 - Attempted regression verification for feature 001 (Airflow Lichess rapid pipeline).
 - Failure: Airflow UI did not expose a Trigger DAG button in daily_game_sync grid view.

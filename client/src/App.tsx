@@ -401,6 +401,8 @@ export default function App() {
     const decoder = new TextDecoder();
     let buffer = '';
 
+    let streamFinished = false;
+
     async function handleEvent(eventName: string, data: string) {
       if (!data) return;
       let payload: Record<string, unknown> | null = null;
@@ -421,22 +423,20 @@ export default function App() {
 
       if (eventName === 'complete') {
         setJobStatus('complete');
+        streamFinished = true;
         const dashboard = await fetchDashboard(nextSource, nextFilters);
         setData(dashboard);
         await loadPracticeQueue(nextSource, includeFailedAttempt, true);
         setLoading(false);
-        controller.abort();
-        streamAbortRef.current = null;
         await loadPostgres();
         await loadPostgresAnalysis();
       }
 
       if (eventName === 'error') {
         setJobStatus('error');
+        streamFinished = true;
         setLoading(false);
         setError(disconnectMessage);
-        controller.abort();
-        streamAbortRef.current = null;
         await loadPostgres();
         await loadPostgresAnalysis();
       }
@@ -462,10 +462,23 @@ export default function App() {
       }
     }
 
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      await parseChunk(decoder.decode(value, { stream: true }));
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        await parseChunk(decoder.decode(value, { stream: true }));
+        if (streamFinished) {
+          await reader.cancel();
+          break;
+        }
+      }
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      throw err;
+    } finally {
+      if (streamAbortRef.current === controller) {
+        streamAbortRef.current = null;
+      }
     }
   };
 

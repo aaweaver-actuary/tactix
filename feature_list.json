@@ -2687,7 +2687,7 @@
     "category": "functional",
     "description": "Outcome failed_attempt recorded for discovered check",
     "steps": ["Step 1: Compare user move to engine best line", "Step 2: Compute eval swing threshold", "Step 3: Mark outcome as failed_attempt and store"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

@@ -58,6 +58,7 @@ class AnalyzeTacticsHelperTests(unittest.TestCase):
         self.assertEqual(impl._compute_eval__swing_threshold("pin", None), -50)
         self.assertEqual(impl._compute_eval__swing_threshold("skewer", None), -50)
         self.assertEqual(impl._compute_eval__swing_threshold("discovered_attack", None), -50)
+        self.assertEqual(impl._compute_eval__swing_threshold("discovered_check", None), -50)
         self.assertIsNone(impl._compute_eval__swing_threshold("fork", None))
 
     def test_apply_outcome_failed_attempt_line_tactics_overrides(self) -> None:
@@ -90,6 +91,16 @@ class AnalyzeTacticsHelperTests(unittest.TestCase):
         )
         self.assertEqual(result, "failed_attempt")
         self.assertEqual(motif, "discovered_attack")
+
+        result, motif = impl._apply_outcome__failed_attempt_line_tactics(
+            "unclear",
+            "discovered_check",
+            None,
+            -100,
+            None,
+        )
+        self.assertEqual(result, "failed_attempt")
+        self.assertEqual(motif, "discovered_check")
 
     def test_analyze_positions_collects_rows_and_skips_invalid(self) -> None:
         board = chess.Board()

@@ -1,3 +1,12 @@
+Session 2026-01-31 (feature 223 – discovered check failed_attempt outcome)
+- Added discovered check failed_attempt swing threshold override for line tactics.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_analyze_tactics_helpers.py tests/test_discovered_check_blitz_low.py -k failed_attempt`, `make check` (pre + post).
+- Seeded failed_attempt discovered check blitz outcome: `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_223_seed_outcome_failed_attempt_discovered_check_blitz.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_223_outcome_failed_attempt_discovered_check_manual_ui.js` (screenshot `verification/feature-223-outcome-failed-attempt-discovered-check-2026-01-31.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_223_outcome_failed_attempt_discovered_check.js`.
+- Updated feature_list.json: feature 223 marked passes=true.
+- Pass count: 223.
+
 Session 2026-01-31 (feature 222 – discovered attack failed_attempt outcome)
 - Pre-work verification (passes=true):
 	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`

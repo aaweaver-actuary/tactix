@@ -27,6 +27,7 @@ _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS = {
 _PIN_FAILED_ATTEMPT_SWING_THRESHOLD = -50
 _SKEWER_FAILED_ATTEMPT_SWING_THRESHOLD = -50
 _DISCOVERED_ATTACK_FAILED_ATTEMPT_SWING_THRESHOLD = -50
+_DISCOVERED_CHECK_FAILED_ATTEMPT_SWING_THRESHOLD = -50
 _MATE_MISSED_SCORE_MULTIPLIER = 200
 _SEVERITY_MIN = 1.0
 _SEVERITY_MAX = 1.5
@@ -335,6 +336,8 @@ def _compute_eval__swing_threshold(motif: str, settings: Settings | None) -> int
         return _SKEWER_FAILED_ATTEMPT_SWING_THRESHOLD
     if motif == "discovered_attack":
         return _DISCOVERED_ATTACK_FAILED_ATTEMPT_SWING_THRESHOLD
+    if motif == "discovered_check":
+        return _DISCOVERED_CHECK_FAILED_ATTEMPT_SWING_THRESHOLD
     return None
 
 
@@ -359,6 +362,14 @@ def _select_motif__discovered_attack_target(motif: str, best_motif: str | None) 
         return "discovered_attack"
     if motif == "discovered_attack":
         return "discovered_attack"
+    return ""
+
+
+def _select_motif__discovered_check_target(motif: str, best_motif: str | None) -> str:
+    if best_motif == "discovered_check":
+        return "discovered_check"
+    if motif == "discovered_check":
+        return "discovered_check"
     return ""
 
 
@@ -393,6 +404,21 @@ def _should_override__skewer_failed_attempt(
 
 
 def _should_override__discovered_attack_failed_attempt(
+    result: str,
+    swing: int | None,
+    threshold: int | None,
+    target_motif: str,
+) -> bool:
+    return bool(
+        result == "unclear"
+        and swing is not None
+        and threshold is not None
+        and swing <= threshold
+        and target_motif
+    )
+
+
+def _should_override__discovered_check_failed_attempt(
     result: str,
     swing: int | None,
     threshold: int | None,
@@ -446,6 +472,19 @@ def _apply_outcome__failed_attempt_discovered_attack(
     return result, motif
 
 
+def _apply_outcome__failed_attempt_discovered_check(
+    result: str,
+    motif: str,
+    best_motif: str | None,
+    swing: int | None,
+    threshold: int | None,
+) -> tuple[str, str]:
+    target_motif = _select_motif__discovered_check_target(motif, best_motif)
+    if _should_override__discovered_check_failed_attempt(result, swing, threshold, target_motif):
+        return "failed_attempt", target_motif
+    return result, motif
+
+
 def _apply_outcome__failed_attempt_line_tactics(
     result: str,
     motif: str,
@@ -463,12 +502,19 @@ def _apply_outcome__failed_attempt_line_tactics(
         swing,
         _compute_eval__swing_threshold("skewer", settings),
     )
-    return _apply_outcome__failed_attempt_discovered_attack(
+    result, motif = _apply_outcome__failed_attempt_discovered_attack(
         result,
         motif,
         best_motif,
         swing,
         _compute_eval__swing_threshold("discovered_attack", settings),
+    )
+    return _apply_outcome__failed_attempt_discovered_check(
+        result,
+        motif,
+        best_motif,
+        swing,
+        _compute_eval__swing_threshold("discovered_check", settings),
     )
 
 

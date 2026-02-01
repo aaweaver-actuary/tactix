@@ -1,3 +1,7 @@
+Session 2026-02-01 (refactor issue #1 chesscom bullet test)
+- Before → After: `test_pipeline_validates_bullet_games_for_2026_02_01` inline setup/validation → extracted helpers for settings, windows, game summaries, rating diff assertions, and missed tactic checks in tests/test_chesscom_bullet_pipeline_2026_02_01.py.
+- Tests: `make check` (pre), `make check` (post).
+
 Session 2026-02-01 (dev cleanup – lint/worktree)
 - Reverted unintended local edits related to metrics stream updates (client/server/test changes) to restore clean working tree.
 - Removed stray verification/log artifacts from the workspace.

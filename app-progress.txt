@@ -113,3 +113,8 @@ Session 2026-01-30 (naming convention refactor – Python modules)
 Session 2026-02-01 (test fix – App job stream)
 - Updated App stream test to wait for source buttons to enable before selecting Lichess, matching actual loading behavior.
 - Tests: `make check` (all checks passed).
+
+Session 2026-02-01 (refactor – SSE job/metrics stream)
+- Added shared `_queue_job_event()` helper to reduce duplication across job and metrics SSE stream handlers.
+- Metrics/job streaming behavior unchanged; only payload enqueueing deduped.
+- Tests: `make check` (before + after).

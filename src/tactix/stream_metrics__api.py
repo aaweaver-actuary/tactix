@@ -14,6 +14,7 @@ from tactix.event_stream__job_stream import _event_stream
 from tactix.get_dashboard__api import DashboardQueryFilters, _resolve_dashboard_filters
 from tactix.list_sources_for_cache_refresh__api_cache import _sources_for_cache_refresh
 from tactix.pipeline import get_dashboard_payload, run_refresh_metrics
+from tactix.queue_job_event__job_stream import _queue_job_event
 from tactix.refresh_dashboard_cache_async__api_cache import _refresh_dashboard_cache_async
 
 
@@ -29,9 +30,7 @@ def _stream_metrics_worker(
     end_date: datetime | None,
 ) -> None:
     def progress(payload: dict[str, object]) -> None:
-        payload["job"] = "refresh_metrics"
-        payload["job_id"] = "refresh_metrics"
-        queue.put(("progress", payload))
+        _queue_job_event(queue, "progress", "refresh_metrics", payload)
 
     try:
         result = run_refresh_metrics(settings, source=normalized_source, progress=progress)
@@ -55,30 +54,26 @@ def _stream_metrics_worker(
                 "metrics": payload.get("metrics"),
             }
         )
-        queue.put(("metrics_update", metrics_payload))
-        queue.put(
-            (
-                "complete",
-                {
-                    "job": "refresh_metrics",
-                    "job_id": "refresh_metrics",
-                    "step": "complete",
-                    "message": "Metrics refresh complete",
-                    "result": result,
-                },
-            )
+        _queue_job_event(queue, "metrics_update", "refresh_metrics", metrics_payload)
+        _queue_job_event(
+            queue,
+            "complete",
+            "refresh_metrics",
+            {
+                "step": "complete",
+                "message": "Metrics refresh complete",
+                "result": result,
+            },
         )
     except Exception as exc:  # pragma: no cover - defensive
-        queue.put(
-            (
-                "error",
-                {
-                    "job": "refresh_metrics",
-                    "job_id": "refresh_metrics",
-                    "step": "error",
-                    "message": str(exc),
-                },
-            )
+        _queue_job_event(
+            queue,
+            "error",
+            "refresh_metrics",
+            {
+                "step": "error",
+                "message": str(exc),
+            },
         )
     finally:
         queue.put(sentinel)

@@ -4,6 +4,7 @@ from queue import Queue
 
 from tactix.config import Settings
 from tactix.list_sources_for_cache_refresh__api_cache import _sources_for_cache_refresh
+from tactix.queue_job_event__job_stream import _queue_job_event
 from tactix.refresh_dashboard_cache_async__api_cache import _refresh_dashboard_cache_async
 from tactix.run_stream_job__job_stream import _run_stream_job
 
@@ -20,9 +21,7 @@ def _stream_job_worker(
     triggered_at_ms: int,
 ) -> None:
     def progress(payload: dict[str, object]) -> None:
-        payload["job"] = job
-        payload["job_id"] = job
-        queue.put(("progress", payload))
+        _queue_job_event(queue, "progress", job, payload)
 
     try:
         result = _run_stream_job(
@@ -38,29 +37,25 @@ def _stream_job_worker(
         )
         if job in {"daily_game_sync", "refresh_metrics"}:
             _refresh_dashboard_cache_async(_sources_for_cache_refresh(source))
-        queue.put(
-            (
-                "complete",
-                {
-                    "job": job,
-                    "job_id": job,
-                    "step": "complete",
-                    "message": "Job complete",
-                    "result": result,
-                },
-            )
+        _queue_job_event(
+            queue,
+            "complete",
+            job,
+            {
+                "step": "complete",
+                "message": "Job complete",
+                "result": result,
+            },
         )
     except Exception as exc:  # pragma: no cover - defensive
-        queue.put(
-            (
-                "error",
-                {
-                    "job": job,
-                    "job_id": job,
-                    "step": "error",
-                    "message": str(exc),
-                },
-            )
+        _queue_job_event(
+            queue,
+            "error",
+            job,
+            {
+                "step": "error",
+                "message": str(exc),
+            },
         )
     finally:
         queue.put(sentinel)

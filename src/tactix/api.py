@@ -56,6 +56,7 @@ from tactix.stream_job_worker__job_stream import _stream_job_worker
 from tactix.stream_jobs__api import stream_jobs
 from tactix.trigger_airflow_daily_sync__airflow_jobs import _trigger_airflow_daily_sync
 from tactix.trigger_daily_sync__api_jobs import trigger_daily_sync
+from tactix.trigger_job__api_jobs import trigger_job
 from tactix.trigger_migrations__api_jobs import trigger_migrations
 from tactix.trigger_refresh_metrics__api_jobs import trigger_refresh_metrics
 from tactix.validate_backfill_window__airflow_jobs import _validate_backfill_window
@@ -83,6 +84,7 @@ app.get("/api/postgres/raw_pgns")(postgres_raw_pgns)
 app.post("/api/jobs/daily_game_sync")(trigger_daily_sync)
 app.post("/api/jobs/refresh_metrics")(trigger_refresh_metrics)
 app.post("/api/jobs/migrations")(trigger_migrations)
+app.post("/api/jobs/trigger")(trigger_job)
 app.get("/api/dashboard")(dashboard)
 app.get("/api/practice/queue")(practice_queue)
 app.get("/api/practice/next")(practice_next)
@@ -148,6 +150,7 @@ __all__ = [
     "tactics_search",
     "trend_stats",
     "trigger_daily_sync",
+    "trigger_job",
     "trigger_migrations",
     "trigger_refresh_metrics",
 ]

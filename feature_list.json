@@ -2777,7 +2777,7 @@
     "category": "functional",
     "description": "FastAPI endpoint /api/jobs/trigger returns expected schema",
     "steps": ["Step 1: Authenticate with local token", "Step 2: Call /api/jobs/trigger with valid parameters", "Step 3: Validate HTTP 200 and JSON schema"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

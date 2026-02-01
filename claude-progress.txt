@@ -1,3 +1,25 @@
+Session 2026-02-01 (feature 238 – jobs trigger endpoint schema)
+- Pre-work verification (passes=true):
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_023_stockfish_checksum.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_024_promotion_en_passant.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_025_castling.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_026_rolling_averages.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_027_time_trouble.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js`
+- Pre-change make check: `make check`.
+- Added /api/jobs/trigger implementation in `src/tactix/trigger_job__api_jobs.py` and wired in `src/tactix/api.py`.
+- Added schema + auth coverage for /api/jobs/trigger in `tests/test_api_jobs.py`.
+- Added verification script: `verification/integration_feature_238_jobs_trigger.js`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_api_jobs.py -q`, `make check` (post).
+- Manual verification (API): `TACTIX_API_URL=http://localhost:8001 TACTIX_API_TOKEN=local-dev-token node /Users/andy/tactix/verification/integration_feature_238_jobs_trigger.js` (server log `tmp-logs/feature_238_uvicorn.log`).
+- CI integration check: `TACTIX_API_URL=http://localhost:8001 TACTIX_API_TOKEN=local-dev-token node /Users/andy/tactix/verification/integration_feature_238_jobs_trigger.js`.
+- Updated feature_list.json: /api/jobs/trigger schema marked passes=true.
+- Pass count: 238/502.
+
 Session 2026-02-01 (feature 237 – practice attempt endpoint schema)
 - Pre-work verification (passes=true):
 	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`

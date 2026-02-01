@@ -60,6 +60,26 @@ def test_raw_pgns_summary_allows_token():
     assert response.status_code == 401
 
 
+def test_auth_token_requires_auth() -> None:
+    client = TestClient(app)
+    response = client.get("/api/auth/token")
+    assert response.status_code == 401
+
+
+def test_auth_token_returns_schema() -> None:
+    client = TestClient(app)
+    settings = get_settings()
+    token = settings.api_token
+    response = client.get("/api/auth/token", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    payload = response.json()
+    assert set(payload.keys()) == {"status", "token", "token_type", "user"}
+    assert payload["status"] == "ok"
+    assert payload["token"] == token
+    assert payload["token_type"] == "bearer"
+    assert payload["user"] == settings.user
+
+
 def test_stats_motifs_returns_schema():
     client = TestClient(app)
     token = get_settings().api_token

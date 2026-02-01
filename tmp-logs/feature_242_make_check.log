@@ -1,0 +1,711 @@
+uv run ruff check --fix src/
+Found 2 errors (2 fixed, 0 remaining).
+uv run ruff format src/
+296 files left unchanged
+uv run ty check \
+		--error deprecated \
+		src/
+All checks passed!
+cd client && npx eslint --fix . --ext .js,.jsx,.ts,.tsx
+cd client && npx prettier --write --cache .
+.prettierrc 0ms (unchanged) (cached)
+coverage/_components/Badge.tsx.html 39ms
+coverage/_components/BaseCard.tsx.html 24ms
+coverage/_components/BaseTable.tsx.html 29ms
+coverage/_components/GameDetailModal.tsx.html 35ms
+coverage/_components/Hero.tsx.html 12ms
+coverage/_components/index.html 27ms
+coverage/_components/MetricCard.tsx.html 10ms
+coverage/_components/MetricsGrid.tsx.html 10ms
+coverage/_components/MetricsTrends.tsx.html 4ms
+coverage/_components/PositionsList.tsx.html 7ms
+coverage/_components/PracticeAttemptButton.tsx.html 6ms
+coverage/_components/PracticeMoveInput.tsx.html 4ms
+coverage/_components/PracticeQueue.tsx.html 4ms
+coverage/_components/PracticeSessionProgress.tsx.html 8ms
+coverage/_components/RecentGamesTable.tsx.html 6ms
+coverage/_components/TacticsTable.tsx.html 6ms
+coverage/_components/testUtils.ts.html 3ms
+coverage/_components/Text.tsx.html 4ms
+coverage/_components/TimeTroubleCorrelation.tsx.html 4ms
+coverage/base.css 13ms
+coverage/block-navigation.js 10ms
+coverage/coverage-final.json 96ms
+coverage/index.html 7ms
+coverage/prettify.css 2ms
+coverage/prettify.js 26ms
+coverage/sorter.js 6ms
+coverage/utils/buildPracticeFeedback.ts.html 4ms
+coverage/utils/cardOrder.ts.html 6ms
+coverage/utils/CHESSCOM_PROFILE_OPTIONS.ts.html 3ms
+coverage/utils/fetchDashboard.ts.html 4ms
+coverage/utils/fetchPostgresResource.ts.html 4ms
+coverage/utils/fetchPracticeQueue.ts.html 3ms
+coverage/utils/formatPgnMoveList.ts.html 6ms
+coverage/utils/getJobStreamUrl.ts.html 4ms
+coverage/utils/index.html 16ms
+coverage/utils/isPiecePlayable.ts.html 4ms
+coverage/utils/LICHESS_PROFILE_OPTIONS.ts.html 3ms
+coverage/utils/practiceSession.ts.html 4ms
+coverage/utils/SOURCE_OPTIONS.ts.html 3ms
+coverage/utils/submitPracticeAttempt.ts.html 3ms
+coverage/utils/triggerBackfill.ts.html 3ms
+coverage/utils/triggerDashboardJob.ts.html 3ms
+coverage/utils/triggerMetricsRefresh.ts.html 3ms
+coverage/utils/triggerMigrations.ts.html 3ms
+coverage/utils/triggerPipeline.ts.html 3ms
+dist/assets/index-ByskEL0h.js 569ms
+dist/assets/index-DJ8KIaeK.css 22ms
+dist/index.html 1ms
+eslint.config.js 0ms (unchanged) (cached)
+index.html 0ms (unchanged) (cached)
+package-lock.json 0ms (unchanged) (cached)
+package.json 0ms (unchanged) (cached)
+postcss.config.js 0ms (unchanged) (cached)
+src/_components/Badge.test.tsx 0ms (unchanged) (cached)
+src/_components/Badge.tsx 0ms (unchanged) (cached)
+src/_components/BaseCard.test.tsx 0ms (unchanged) (cached)
+src/_components/BaseCard.tsx 0ms (unchanged) (cached)
+src/_components/BaseTable.tsx 0ms (unchanged) (cached)
+src/_components/ErrorCard.tsx 0ms (unchanged) (cached)
+src/_components/FiltersCard.tsx 0ms (unchanged) (cached)
+src/_components/GameDetailModal.test.tsx 0ms (unchanged) (cached)
+src/_components/GameDetailModal.tsx 0ms (unchanged) (cached)
+src/_components/Hero.test.tsx 0ms (unchanged) (cached)
+src/_components/Hero.tsx 0ms (unchanged) (cached)
+src/_components/JobProgressCard.tsx 0ms (unchanged) (cached)
+src/_components/MetricCard.test.tsx 0ms (unchanged) (cached)
+src/_components/MetricCard.tsx 0ms (unchanged) (cached)
+src/_components/MetricsGrid.test.tsx 0ms (unchanged) (cached)
+src/_components/MetricsGrid.tsx 0ms (unchanged) (cached)
+src/_components/MetricsSummaryGrid.tsx 0ms (unchanged) (cached)
+src/_components/MetricsTrends.test.tsx 0ms (unchanged) (cached)
+src/_components/MetricsTrends.tsx 0ms (unchanged) (cached)
+src/_components/MotifCard.tsx 0ms (unchanged) (cached)
+src/_components/MotifTrendsCard.tsx 0ms (unchanged) (cached)
+src/_components/PositionsList.test.tsx 0ms (unchanged) (cached)
+src/_components/PositionsList.tsx 0ms (unchanged) (cached)
+src/_components/PostgresAnalysisCard.tsx 0ms (unchanged) (cached)
+src/_components/PostgresRawPgnsCard.tsx 0ms (unchanged) (cached)
+src/_components/PostgresStatusCard.tsx 0ms (unchanged) (cached)
+src/_components/PracticeAttemptButton.test.tsx 0ms (unchanged) (cached)
+src/_components/PracticeAttemptButton.tsx 0ms (unchanged) (cached)
+src/_components/PracticeAttemptCard.tsx 0ms (unchanged) (cached)
+src/_components/PracticeMoveInput.test.tsx 0ms (unchanged) (cached)
+src/_components/PracticeMoveInput.tsx 0ms (unchanged) (cached)
+src/_components/PracticeQueue.test.tsx 0ms (unchanged) (cached)
+src/_components/PracticeQueue.tsx 0ms (unchanged) (cached)
+src/_components/PracticeQueueCard.tsx 0ms (unchanged) (cached)
+src/_components/PracticeSessionProgress.test.tsx 0ms (unchanged) (cached)
+src/_components/PracticeSessionProgress.tsx 0ms (unchanged) (cached)
+src/_components/README.md 0ms (unchanged) (cached)
+src/_components/RecentGamesCard.tsx 0ms (unchanged) (cached)
+src/_components/RecentGamesTable.test.tsx 0ms (unchanged) (cached)
+src/_components/RecentGamesTable.tsx 0ms (unchanged) (cached)
+src/_components/RecentTacticsCard.tsx 0ms (unchanged) (cached)
+src/_components/TacticsTable.test.tsx 0ms (unchanged) (cached)
+src/_components/TacticsTable.tsx 0ms (unchanged) (cached)
+src/_components/testUtils.ts 0ms (unchanged) (cached)
+src/_components/Text.test.tsx 0ms (unchanged) (cached)
+src/_components/Text.tsx 0ms (unchanged) (cached)
+src/_components/TimeTroubleCorrelation.test.tsx 0ms (unchanged) (cached)
+src/_components/TimeTroubleCorrelation.tsx 0ms (unchanged) (cached)
+src/_components/TimeTroubleCorrelationCard.tsx 0ms (unchanged) (cached)
+src/api.ts 0ms (unchanged) (cached)
+src/App.tsx 0ms (unchanged) (cached)
+src/components.ts 0ms (unchanged) (cached)
+src/main.tsx 0ms (unchanged) (cached)
+src/styles.css 0ms (unchanged) (cached)
+src/test/setup.ts 0ms (unchanged) (cached)
+src/types.ts 0ms (unchanged) (cached)
+src/utils/buildPracticeFeedback.test.ts 0ms (unchanged) (cached)
+src/utils/buildPracticeFeedback.ts 0ms (unchanged) (cached)
+src/utils/cardOrder.test.ts 0ms (unchanged) (cached)
+src/utils/cardOrder.ts 0ms (unchanged) (cached)
+src/utils/CHESSCOM_PROFILE_OPTIONS.ts 0ms (unchanged) (cached)
+src/utils/fetchDashboard.test.ts 0ms (unchanged) (cached)
+src/utils/fetchDashboard.ts 0ms (unchanged) (cached)
+src/utils/fetchGameDetail.ts 0ms (unchanged) (cached)
+src/utils/fetchPostgresAnalysis.ts 0ms (unchanged) (cached)
+src/utils/fetchPostgresRawPgns.ts 0ms (unchanged) (cached)
+src/utils/fetchPostgresResource.test.ts 0ms (unchanged) (cached)
+src/utils/fetchPostgresResource.ts 0ms (unchanged) (cached)
+src/utils/fetchPostgresStatus.ts 0ms (unchanged) (cached)
+src/utils/fetchPracticeQueue.test.ts 0ms (unchanged) (cached)
+src/utils/fetchPracticeQueue.ts 0ms (unchanged) (cached)
+src/utils/formatPgnMoveList.test.ts 0ms (unchanged) (cached)
+src/utils/formatPgnMoveList.ts 0ms (unchanged) (cached)
+src/utils/getAuthHeaders.ts 0ms (unchanged) (cached)
+src/utils/getJobStreamUrl.test.ts 19ms (unchanged)
+src/utils/getJobStreamUrl.ts 3ms (unchanged)
+src/utils/isPiecePlayable.test.ts 0ms (unchanged) (cached)
+src/utils/isPiecePlayable.ts 0ms (unchanged) (cached)
+src/utils/LICHESS_PROFILE_OPTIONS.ts 0ms (unchanged) (cached)
+src/utils/practiceSession.test.ts 0ms (unchanged) (cached)
+src/utils/practiceSession.ts 0ms (unchanged) (cached)
+src/utils/SOURCE_OPTIONS.ts 0ms (unchanged) (cached)
+src/utils/submitPracticeAttempt.test.ts 0ms (unchanged) (cached)
+src/utils/submitPracticeAttempt.ts 0ms (unchanged) (cached)
+src/utils/triggerBackfill.test.ts 0ms (unchanged) (cached)
+src/utils/triggerBackfill.ts 0ms (unchanged) (cached)
+src/utils/triggerDashboardJob.test.ts 0ms (unchanged) (cached)
+src/utils/triggerDashboardJob.ts 0ms (unchanged) (cached)
+src/utils/triggerMetricsRefresh.test.ts 0ms (unchanged) (cached)
+src/utils/triggerMetricsRefresh.ts 0ms (unchanged) (cached)
+src/utils/triggerMigrations.test.ts 0ms (unchanged) (cached)
+src/utils/triggerMigrations.ts 0ms (unchanged) (cached)
+src/utils/triggerPipeline.test.ts 0ms (unchanged) (cached)
+src/utils/triggerPipeline.ts 0ms (unchanged) (cached)
+tailwind.config.js 0ms (unchanged) (cached)
+tsconfig.json 0ms (unchanged) (cached)
+tsconfig.node.json 0ms (unchanged) (cached)
+verification/pg_smoke.ts 0ms (unchanged) (cached)
+vite.config.ts 0ms (unchanged) (cached)
+uv run cargo test
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+uv run cargo test --release
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+uv run pytest tests/ \
+		--cov=src/ \
+		--cov-config=./.coveragerc \
+		--cov-report=term-missing \
+		--cov-fail-under=95
+============================= test session starts ==============================
+platform darwin -- Python 3.12.12, pytest-9.0.2, pluggy-1.6.0
+rootdir: /Users/andy
+configfile: .pytest.ini
+plugins: anyio-4.12.1, cov-7.0.0
+collected 512 items
+
+tests/test_airflow_client.py ......                                      [  1%]
+tests/test_airflow_dag.py ....                                           [  1%]
+tests/test_airflow_dag_helpers.py ......                                 [  3%]
+tests/test_airflow_metadata_postgres.py ..                               [  3%]
+tests/test_analyze_tactics_helpers.py .......................            [  8%]
+tests/test_api_auth.py .........                                         [  9%]
+tests/test_api_dashboard_cache.py ...                                    [ 10%]
+tests/test_api_helpers.py .............                                  [ 12%]
+tests/test_api_jobs.py .......                                           [ 14%]
+tests/test_api_practice.py .........                                     [ 16%]
+tests/test_api_profile.py ...                                            [ 16%]
+tests/test_api_stats_motifs.py ....                                      [ 17%]
+tests/test_api_tactics_search.py ..                                      [ 17%]
+tests/test_base_chess_client.py ...                                      [ 18%]
+tests/test_base_db_store.py ..........                                   [ 20%]
+tests/test_chesscom_client.py .................................          [ 26%]
+tests/test_config_env.py ...........                                     [ 28%]
+tests/test_constants.py ..                                               [ 29%]
+tests/test_dashboard_filters.py .                                        [ 29%]
+tests/test_discovered_attack_blitz_case.py ..                            [ 29%]
+tests/test_discovered_attack_bullet.py ..                                [ 30%]
+tests/test_discovered_attack_classical.py .....                          [ 31%]
+tests/test_discovered_attack_correspondence.py ..                        [ 31%]
+tests/test_discovered_attack_rapid_case.py ..                            [ 32%]
+tests/test_discovered_check_blitz_low.py ...........                     [ 34%]
+tests/test_discovered_check_bullet_low.py .                              [ 34%]
+tests/test_discovered_check_unclear.py .                                 [ 34%]
+tests/test_duckdb_store_helpers.py .............                         [ 37%]
+tests/test_engine_result_helpers.py .......                              [ 38%]
+tests/test_fixture_motifs.py .......                                     [ 39%]
+tests/test_fork_classical.py .                                           [ 40%]
+tests/test_fork_correspondence.py .                                      [ 40%]
+tests/test_hanging_piece_blitz.py ..                                     [ 40%]
+tests/test_hanging_piece_bullet.py ..                                    [ 41%]
+tests/test_hanging_piece_classical.py ..                                 [ 41%]
+tests/test_hanging_piece_correspondence.py ..                            [ 41%]
+tests/test_hanging_piece_rapid.py .....                                  [ 42%]
+tests/test_job_stream.py ....                                            [ 43%]
+tests/test_lichess_client.py .................................           [ 50%]
+tests/test_logging_utils.py ..                                           [ 50%]
+tests/test_mate_in_one_blitz.py ..                                       [ 50%]
+tests/test_mate_in_one_bullet.py ..                                      [ 51%]
+tests/test_mate_in_one_classical.py ...                                  [ 51%]
+tests/test_mate_in_one_correspondence.py .                               [ 51%]
+tests/test_mate_in_one_rapid.py ......                                   [ 53%]
+tests/test_mate_in_two_blitz.py ...                                      [ 53%]
+tests/test_mate_in_two_bullet.py .                                       [ 53%]
+tests/test_mate_in_two_correspondence.py .                               [ 54%]
+tests/test_mate_in_two_rapid.py ..                                       [ 54%]
+tests/test_metrics_refresh.py ....                                       [ 55%]
+tests/test_misc_coverage.py .....                                        [ 56%]
+tests/test_mock_clients.py ...........                                   [ 58%]
+tests/test_models.py .                                                   [ 58%]
+tests/test_pgn_utils_helpers.py ................                         [ 61%]
+tests/test_pin_blitz.py .                                                [ 61%]
+tests/test_pin_bullet.py .                                               [ 62%]
+tests/test_pin_classical.py .                                            [ 62%]
+tests/test_pin_correspondence.py ...                                     [ 62%]
+tests/test_pin_rapid.py .                                                [ 63%]
+tests/test_pipeline_helpers.py ..............                            [ 65%]
+tests/test_pipeline_state.py ...........................                 [ 71%]
+tests/test_position_extractor.py ....................................... [ 78%]
+...................                                                      [ 82%]
+tests/test_positions_from_db.py .                                        [ 82%]
+tests/test_postgres_status.py ....                                       [ 83%]
+tests/test_postgres_store.py ......................                      [ 87%]
+tests/test_practice_attempt_grading.py .                                 [ 87%]
+tests/test_practice_attempt_latency.py .                                 [ 88%]
+tests/test_practice_next.py .                                            [ 88%]
+tests/test_practice_queue.py ..                                          [ 88%]
+tests/test_raw_pgn_versioning.py .                                       [ 88%]
+tests/test_schema_migration.py ...                                       [ 89%]
+tests/test_skewer_blitz.py ..                                            [ 89%]
+tests/test_skewer_bullet.py .                                            [ 90%]
+tests/test_skewer_classical.py ..                                        [ 90%]
+tests/test_skewer_correspondence.py ....                                 [ 91%]
+tests/test_skewer_rapid.py ..                                            [ 91%]
+tests/test_stockfish_and_pipeline.py ...                                 [ 92%]
+tests/test_stockfish_runner.py ........                                  [ 93%]
+tests/test_tactic_detector_structure.py ..                               [ 94%]
+tests/test_tactic_detectors.py ..                                        [ 94%]
+tests/test_tactic_severity.py ....                                       [ 95%]
+tests/test_tactics_analyzer.py ...............                           [ 98%]
+tests/test_tactics_explanation.py .....                                  [ 99%]
+tests/test_utils_hasher.py ....                                          [100%]
+
+================================ tests coverage ================================
+______________ coverage: platform darwin, python 3.12.12-final-0 _______________
+
+Name                                                              Stmts   Miss  Cover   Missing
+-----------------------------------------------------------------------------------------------
+src/tactix/PostgresSettings.py                                       17      0   100%
+src/tactix/airflow_client.py                                          7      0   100%
+src/tactix/airflow_dag_helpers.py                                     3      3     0%   1-11
+src/tactix/airflow_settings.py                                       11      0   100%
+src/tactix/analyse_with_retries__pipeline.py                         28      1    96%   32
+src/tactix/analysis_progress_interval__pipeline.py                    6      0   100%
+src/tactix/analysis_signature__pipeline.py                            7      0   100%
+src/tactix/analyze_positions__pipeline.py                            18      1    94%   17
+src/tactix/analyze_positions_with_progress__pipeline.py              16      0   100%
+src/tactix/analyze_tactics__positions.py                            452      9    98%   268, 701, 714, 727, 785, 798, 811, 1021, 1023
+src/tactix/analyzer.py                                                7      7     0%   1-14
+src/tactix/api.py                                                    81      0   100%
+src/tactix/api_logger__tactix.py                                      2      0   100%
+src/tactix/apply_airflow_optional_conf__airflow_jobs.py               4      0   100%
+src/tactix/apply_backfill_filter__pipeline.py                         7      0   100%
+src/tactix/apply_client_method__chesscom_client.py                    8      0   100%
+src/tactix/apply_env_user_overrides__config.py                       12      0   100%
+src/tactix/apply_no_games_dedupe_checkpoint__pipeline.py             14      8    43%   15-22
+src/tactix/apply_settings_aliases__config.py                          8      0   100%
+src/tactix/attach_position_ids__pipeline.py                           4      0   100%
+src/tactix/base_db_store.py                                           7      0   100%
+src/tactix/black_profiles_for_source__pipeline.py                     8      1    88%   14
+src/tactix/build_airflow_conf__airflow_jobs.py                       13      0   100%
+src/tactix/build_auth_headers__chesscom_auth.py                       5      0   100%
+src/tactix/build_chess_client__pipeline.py                           12      1    92%   15
+src/tactix/build_chunk_row__pipeline.py                               7      0   100%
+src/tactix/build_client__lichess_client.py                            8      0   100%
+src/tactix/build_client_for_settings__chesscom_client.py              7      0   100%
+src/tactix/build_cursor__chesscom_cursor.py                           3      0   100%
+src/tactix/build_daily_sync_payload__pipeline.py                      5      0   100%
+src/tactix/build_dashboard_cache_key__api_cache.py                    6      0   100%
+src/tactix/build_no_games_after_dedupe_payload__pipeline.py          10      3    70%   19-26
+src/tactix/build_no_games_payload__pipeline.py                       11      0   100%
+src/tactix/build_page_url__chesscom_pagination.py                     7      0   100%
+src/tactix/build_pipeline_settings__pipeline.py                      12      0   100%
+src/tactix/check_airflow_enabled__airflow_settings.py                 3      0   100%
+src/tactix/chess_game.py                                              2      0   100%
+src/tactix/chesscom_client.py                                        18      0   100%
+src/tactix/chesscom_raw_games__pipeline.py                            6      0   100%
+src/tactix/clear_analysis_checkpoint__pipeline.py                     4      0   100%
+src/tactix/clear_dashboard_cache__api_cache.py                        5      0   100%
+src/tactix/coerce_backfill_end_ms__airflow_jobs.py                    5      0   100%
+src/tactix/coerce_cache_value__api_cache.py                           3      0   100%
+src/tactix/coerce_date_cache_value__api_cache.py                      4      0   100%
+src/tactix/coerce_date_to_datetime__datetime.py                       8      0   100%
+src/tactix/coerce_int__pipeline.py                                   12      1    92%   14
+src/tactix/coerce_perf_type__lichess_client.py                       10      0   100%
+src/tactix/coerce_pgn__pipeline.py                                    6      0   100%
+src/tactix/coerce_pgn_text__lichess_client.py                         5      0   100%
+src/tactix/coerce_str__pipeline.py                                    7      0   100%
+src/tactix/collect_game_ids__pipeline.py                              3      0   100%
+src/tactix/collect_positions_for_monitor__pipeline.py                14      0   100%
+src/tactix/compute_pgn_hashes__pipeline.py                           11      1    91%   12
+src/tactix/config.py                                                 15      0   100%
+src/tactix/const.py                                                   3      0   100%
+src/tactix/conversion_payload__pipeline.py                            4      0   100%
+src/tactix/convert_raw_pgns_to_positions__pipeline.py                18      0   100%
+src/tactix/count_hash_matches__pipeline.py                            4      0   100%
+src/tactix/cursor_allows_game__chesscom_cursor.py                     4      0   100%
+src/tactix/cursor_last_timestamp__pipeline.py                         8      2    75%   9-10
+src/tactix/dashboard_cache_state__api_cache.py                        7      0   100%
+src/tactix/db/__init__.py                                             0      0   100%
+src/tactix/db/duckdb_store.py                                       694     75    89%   147, 211, 214, 218-220, 448-450, 472-474, 727-729, 781-783, 818-819, 841, 878-880, 912-914, 961-963, 1040-1042, 1603, 1605, 1607, 1615-1617, 1680-1681, 1683, 1692, 1754, 1764, 1958, 1982-1983, 1991-2001, 2009-2040, 2049-2063
+src/tactix/db/raw_pgn_summary.py                                      8      0   100%
+src/tactix/dedupe_games__pipeline.py                                 15      0   100%
+src/tactix/define_base_db_store__db_store.py                         53      0   100%
+src/tactix/define_base_db_store_context__db_store.py                  8      0   100%
+src/tactix/define_chess_game__chess_game.py                          20      4    80%   19, 23-24, 28
+src/tactix/define_chesscom_client__chesscom_client.py               149      0   100%
+src/tactix/define_chesscom_client_context__chesscom_client.py         5      0   100%
+src/tactix/define_chesscom_settings__config.py                       14      0   100%
+src/tactix/define_config_defaults__config.py                         20      0   100%
+src/tactix/define_db_schemas__const.py                                5      0   100%
+src/tactix/define_lichess_client__lichess_client.py                  60      0   100%
+src/tactix/define_lichess_client_context__lichess_client.py           5      0   100%
+src/tactix/define_lichess_fetch_request__lichess_client.py            3      0   100%
+src/tactix/define_lichess_fetch_result__lichess_client.py             5      0   100%
+src/tactix/define_lichess_game_row__lichess_client.py                 3      0   100%
+src/tactix/define_lichess_settings__config.py                        21      1    95%   30
+src/tactix/define_lichess_token_error__lichess_client.py              2      0   100%
+src/tactix/define_mock_store__db.py                                  67      0   100%
+src/tactix/define_outcome_insert_plan__db_store.py                    7      0   100%
+src/tactix/define_pgn_upsert_plan__db_store.py                       15      0   100%
+src/tactix/define_pipeline_state__pipeline.py                        49      0   100%
+src/tactix/define_settings__config.py                               418     20    95%   159, 177, 179, 288, 304, 336, 344, 380, 388, 396, 404, 420, 436, 444, 452, 473, 481, 497, 545, 565
+src/tactix/define_stockfish_settings__config.py                      48      5    90%   19, 67, 71-73
+src/tactix/define_tactic_insert_plan__db_store.py                    12      0   100%
+src/tactix/define_time_controls__const.py                             1      0   100%
+src/tactix/detect_tactics__motifs.py                                265      6    98%   58, 120, 279, 354, 463, 528
+src/tactix/emit_backfill_window_filtered__pipeline.py                 9      4    56%   15-22
+src/tactix/emit_daily_sync_start__pipeline.py                         8      0   100%
+src/tactix/emit_fetch_progress__pipeline.py                           6      0   100%
+src/tactix/emit_positions_ready__pipeline.py                          6      0   100%
+src/tactix/emit_progress__pipeline.py                                 9      0   100%
+src/tactix/empty_conversion_payload__pipeline.py                      4      0   100%
+src/tactix/engine_result.py                                          57      5    91%   26, 42, 76, 97, 100
+src/tactix/ensure_airflow_success__airflow_jobs.py                    4      0   100%
+src/tactix/ensure_non_empty_str__chesscom_pagination.py               3      0   100%
+src/tactix/errors/__init__.py                                         2      0   100%
+src/tactix/event_stream__job_stream.py                               17      0   100%
+src/tactix/expand_pgn_rows__pipeline.py                               9      0   100%
+src/tactix/expand_single_pgn_row__pipeline.py                        11      0   100%
+src/tactix/extract_api_token__request_auth.py                        10      0   100%
+src/tactix/extract_candidate_href__chesscom_pagination.py            12      0   100%
+src/tactix/extract_positions__pgn.py                                209      0   100%
+src/tactix/extract_positions_for_new_games__pipeline.py              19      2    89%   16, 20
+src/tactix/extract_positions_for_rows__pipeline.py                   10      0   100%
+src/tactix/extract_positions_from_games__pipeline.py                 15      0   100%
+src/tactix/extract_positions_with_fallback__pgn.py                    9      0   100%
+src/tactix/extract_status_code__lichess_client.py                     9      0   100%
+src/tactix/fetch_archive_pages__chesscom_archive.py                   6      0   100%
+src/tactix/fetch_chesscom_games__pipeline.py                         17      0   100%
+src/tactix/fetch_dag_run__airflow_api.py                              6      0   100%
+src/tactix/fetch_incremental_games__chesscom_client.py                8      0   100%
+src/tactix/fetch_incremental_games__lichess_client.py                 5      0   100%
+src/tactix/fetch_incremental_games__pipeline.py                      10      0   100%
+src/tactix/fetch_json__airflow_api.py                                12      0   100%
+src/tactix/fetch_lichess_games__pipeline.py                          15      1    93%   22
+src/tactix/fetch_remote_games__chesscom_archive.py                    6      0   100%
+src/tactix/fetch_remote_games__lichess_client.py                     10      0   100%
+src/tactix/fetch_remote_games_once__lichess_client.py                 5      0   100%
+src/tactix/fetch_with_backoff__chesscom_client.py                     7      0   100%
+src/tactix/filter_backfill_games__pipeline.py                        17      0   100%
+src/tactix/filter_by_cursor__chesscom_cursor.py                       7      0   100%
+src/tactix/filter_games_by_window__pipeline.py                        7      0   100%
+src/tactix/filter_games_for_window__pipeline.py                       7      0   100%
+src/tactix/filter_positions_to_process__pipeline.py                   9      0   100%
+src/tactix/filter_unprocessed_games__pipeline.py                      4      0   100%
+src/tactix/format_sse__api_streaming.py                               4      0   100%
+src/tactix/format_tactics__explanation.py                            19      0   100%
+src/tactix/gather_auth__airflow_credentials.py                        6      0   100%
+src/tactix/gather_url__airflow_base.py                                4      0   100%
+src/tactix/get_airflow_run_id__airflow_response.py                    6      0   100%
+src/tactix/get_airflow_state__airflow_jobs.py                         5      0   100%
+src/tactix/get_auth_token__api.py                                     5      0   100%
+src/tactix/get_cached_dashboard_payload__api_cache.py                15      0   100%
+src/tactix/get_dashboard__api.py                                     46      0   100%
+src/tactix/get_dashboard_payload__pipeline.py                        15      0   100%
+src/tactix/get_first_string__chesscom_pagination.py                   8      1    88%   11
+src/tactix/get_game_detail__api.py                                   15      0   100%
+src/tactix/get_health__api.py                                         5      0   100%
+src/tactix/get_job_status__api_jobs.py                               17      1    94%   28
+src/tactix/get_material_value.py                                      7      0   100%
+src/tactix/get_postgres_analysis__api.py                             11      0   100%
+src/tactix/get_postgres_raw_pgns__api.py                              9      0   100%
+src/tactix/get_postgres_status__api.py                               13      0   100%
+src/tactix/get_practice_next__api.py                                 13      0   100%
+src/tactix/get_practice_queue__api.py                                13      0   100%
+src/tactix/get_raw_pgns_summary__api.py                              13      0   100%
+src/tactix/get_settings__config.py                                   20      0   100%
+src/tactix/get_tactics_search__api.py                                18      0   100%
+src/tactix/handle_no_games__pipeline.py                               9      0   100%
+src/tactix/handle_no_games_after_dedupe__pipeline.py                  7      2    71%   19-23
+src/tactix/init_analysis_schema_if_needed__pipeline.py                5      1    80%   8
+src/tactix/is_auth_error__lichess_client.py                           5      0   100%
+src/tactix/is_backfill_mode__pipeline.py                              3      0   100%
+src/tactix/is_latest_hash__db_store.py                                3      0   100%
+src/tactix/list_sources_for_cache_refresh__api_cache.py               8      0   100%
+src/tactix/load_fixture_games__chesscom_fixture.py                    6      0   100%
+src/tactix/load_resume_positions__pipeline.py                        21      2    90%   28-30
+src/tactix/log_raw_pgns_persisted__pipeline.py                        5      0   100%
+src/tactix/log_skipped_backfill__pipeline.py                          6      0   100%
+src/tactix/manage_lifespan__fastapi.py                                8      0   100%
+src/tactix/maybe_clear_analysis_checkpoint__pipeline.py               5      0   100%
+src/tactix/maybe_emit_analysis_progress__pipeline.py                  9      2    78%   21-22
+src/tactix/maybe_emit_window_filtered__pipeline.py                    8      1    88%   18
+src/tactix/maybe_sync_analysis_results__pipeline.py                   9      2    78%   17-18
+src/tactix/maybe_upsert_postgres_analysis__pipeline.py               12      6    50%   15-25
+src/tactix/maybe_write_analysis_checkpoint__pipeline.py               6      0   100%
+src/tactix/mock_db_store.py                                           4      0   100%
+src/tactix/models/__init__.py                                         1      0   100%
+src/tactix/models/chess_position.py                                   5      0   100%
+src/tactix/models/practice_attempt_request.py                         7      0   100%
+src/tactix/no_games_checkpoint__pipeline.py                           7      0   100%
+src/tactix/no_games_cursor__pipeline.py                               6      1    83%   8
+src/tactix/normalize_and_expand_games__pipeline.py                   11      0   100%
+src/tactix/normalize_game_row__pipeline.py                           13      0   100%
+src/tactix/normalize_pgn_text__db_store.py                            4      0   100%
+src/tactix/normalize_source__source.py                                6      0   100%
+src/tactix/normalized_profile_for_source__pipeline.py                 6      0   100%
+src/tactix/orchestrate_dag_run__airflow_trigger.py                    7      0   100%
+src/tactix/parse_cached_payload__lichess_client.py                    8      0   100%
+src/tactix/parse_cached_token__lichess_client.py                      8      0   100%
+src/tactix/parse_cursor__chesscom_cursor.py                          13      0   100%
+src/tactix/parse_retry_after__chesscom_rate_limit.py                 10      0   100%
+src/tactix/parse_retry_after_date__chesscom_rate_limit.py            12      0   100%
+src/tactix/parse_retry_after_seconds__chesscom_rate_limit.py          7      0   100%
+src/tactix/persist_and_extract_positions__pipeline.py                15      0   100%
+src/tactix/persist_raw_pgns__pipeline.py                             20      0   100%
+src/tactix/pgn_to_game_row__lichess_client.py                        14      0   100%
+src/tactix/pgn_utils.py                                               4      0   100%
+src/tactix/pipeline_state__pipeline.py                                1      0   100%
+src/tactix/position_extractor.py                                     22      0   100%
+src/tactix/post_practice_attempt__api.py                             19      0   100%
+src/tactix/postgres_store.py                                        275     18    93%   63, 366, 388, 420, 441, 447-449, 606-608, 619, 662-678, 744, 779
+src/tactix/prepare_analysis_inputs__pipeline.py                      16      0   100%
+src/tactix/prepare_dag_helpers__airflow.py                           84      6    93%   36, 48, 56-57, 81, 90
+src/tactix/prepare_error__http_status.py                              7      0   100%
+src/tactix/prepare_games_for_sync__pipeline.py                       18      0   100%
+src/tactix/prepare_pgn__chess.py                                    146      0   100%
+src/tactix/prepare_raw_pgn_context__pipeline.py                      11      0   100%
+src/tactix/prime_dashboard_cache__api_cache.py                       11      0   100%
+src/tactix/process_analysis_position__pipeline.py                    22      2    91%   33-34
+src/tactix/queue_backfill_window__job_stream.py                       7      0   100%
+src/tactix/queue_progress__job_stream.py                             10      0   100%
+src/tactix/raise_for_hash_mismatch__pipeline.py                       8      0   100%
+src/tactix/raise_on_unexpected_kwargs__config.py                      5      2    60%   6-7
+src/tactix/raise_unsupported_job__api_jobs.py                         4      0   100%
+src/tactix/read_analysis_checkpoint__pipeline.py                     12      0   100%
+src/tactix/read_cached_token__lichess_client.py                       9      0   100%
+src/tactix/read_cached_token_text__lichess_client.py                  8      0   100%
+src/tactix/read_checkpoint__lichess_client.py                        12      0   100%
+src/tactix/read_cursor__chesscom_cursor.py                            8      0   100%
+src/tactix/read_fork_severity_floor__config.py                        7      1    86%   10
+src/tactix/record_daily_sync_complete__pipeline.py                    6      0   100%
+src/tactix/refresh_dashboard_cache_async__api_cache.py               10      0   100%
+src/tactix/refresh_lichess_token__lichess_client.py                  18      0   100%
+src/tactix/refresh_metrics_result.py                                  6      0   100%
+src/tactix/refresh_raw_pgns_for_existing_positions__pipeline.py       9      0   100%
+src/tactix/request_chesscom_games__pipeline.py                        5      0   100%
+src/tactix/require_api_token__request_auth.py                        12      0   100%
+src/tactix/resolve_access_token__lichess_client.py                    8      0   100%
+src/tactix/resolve_backfill_end_ms__airflow_jobs.py                   9      0   100%
+src/tactix/resolve_chesscom_last_timestamp__pipeline.py               9      3    67%   14-16
+src/tactix/resolve_field_value__config.py                            14      1    93%   18
+src/tactix/resolve_last_timestamp_value__pipeline.py                  7      0   100%
+src/tactix/resolve_next_page_candidate__chesscom_pagination.py        8      0   100%
+src/tactix/resolve_next_page_url__chesscom_pagination.py              6      0   100%
+src/tactix/resolve_page_from_numbers__chesscom_pagination.py         11      0   100%
+src/tactix/resolve_pagination_values__chesscom_pagination.py          9      0   100%
+src/tactix/resolve_perf_value__lichess_client.py                      4      0   100%
+src/tactix/resolve_pgn_hash__db_store.py                              9      0   100%
+src/tactix/resolve_side_to_move_filter__pipeline.py                  13      0   100%
+src/tactix/resolve_timestamp__db_store.py                             5      0   100%
+src/tactix/run_airflow_daily_sync_job__job_stream.py                 19      0   100%
+src/tactix/run_analysis_and_metrics__pipeline.py                     14      0   100%
+src/tactix/run_analysis_loop__pipeline.py                            17      0   100%
+src/tactix/run_daily_game_sync__pipeline.py                          11      0   100%
+src/tactix/run_daily_game_sync_internal__pipeline.py                 38      1    97%   65
+src/tactix/run_migrations__pipeline.py                               16      1    94%   16
+src/tactix/run_monitor_new_positions__pipeline.py                    16      0   100%
+src/tactix/run_refresh_metrics__pipeline.py                          18      0   100%
+src/tactix/run_stream_job__job_stream.py                             19      0   100%
+src/tactix/set_dashboard_cache__api_cache.py                          9      0   100%
+src/tactix/should_skip_backfill__pipeline.py                          9      0   100%
+src/tactix/should_stop_archive_fetch__chesscom_archive.py             2      0   100%
+src/tactix/side_filter_for_profile__pipeline.py                       3      0   100%
+src/tactix/stockfish_engine.py                                        3      0   100%
+src/tactix/stockfish_runner.py                                      119     12    90%   82, 123-124, 127-128, 131-132, 137-138, 143, 148, 196
+src/tactix/stream_job_worker__job_stream.py                          17      0   100%
+src/tactix/stream_jobs__api.py                                       25      0   100%
+src/tactix/sync_postgres_analysis_results__pipeline.py               19      2    89%   43-44
+src/tactix/tactic_detectors.py                                        4      0   100%
+src/tactix/tactics/__init__.py                                        0      0   100%
+src/tactix/tactics_analyzer.py                                        4      0   100%
+src/tactix/tactics_explanation.py                                     4      0   100%
+src/tactix/trigger_airflow_daily_sync__airflow_jobs.py                7      0   100%
+src/tactix/trigger_daily_sync__api_jobs.py                           11      0   100%
+src/tactix/trigger_job__api_jobs.py                                  21      1    95%   17
+src/tactix/trigger_migrations__api_jobs.py                            8      0   100%
+src/tactix/trigger_refresh_metrics__api_jobs.py                      11      0   100%
+src/tactix/update_chesscom_checkpoint__pipeline.py                    9      0   100%
+src/tactix/update_daily_checkpoint__pipeline.py                      11      0   100%
+src/tactix/update_lichess_checkpoint__pipeline.py                     9      0   100%
+src/tactix/update_metrics_and_version__pipeline.py                    8      0   100%
+src/tactix/upsert_postgres_raw_pgns_if_enabled__pipeline.py          22     12    45%   26-57
+src/tactix/utils/__init__.py                                          7      0   100%
+src/tactix/utils/generate_id.py                                       3      1    67%   10
+src/tactix/utils/hasher.py                                           21      0   100%
+src/tactix/utils/logger.py                                           56      1    98%   71
+src/tactix/utils/normalize_string.py                                  3      0   100%
+src/tactix/utils/now.py                                               3      0   100%
+src/tactix/utils/to_int.py                                            9      0   100%
+src/tactix/validate_backfill_window__airflow_jobs.py                  7      0   100%
+src/tactix/validate_raw_pgn_hashes__pipeline.py                      14      1    93%   15
+src/tactix/wait_for_airflow_run__job_stream.py                       18      0   100%
+src/tactix/within_window__pipeline.py                                 5      0   100%
+src/tactix/write_analysis_checkpoint__pipeline.py                     5      0   100%
+src/tactix/write_cached_token__lichess_client.py                     14      0   100%
+src/tactix/write_checkpoint__lichess_client.py                        5      0   100%
+src/tactix/write_cursor__chesscom_cursor.py                           8      0   100%
+-----------------------------------------------------------------------------------------------
+TOTAL                                                              5781    245    96%
+Required test coverage of 95% reached. Total coverage: 95.76%
+============================= 512 passed in 55.51s =============================
+cd client && \
+		npx vitest run \
+		--coverage
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/Users/andy/tactix/client[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [32m✓[39m src/_components/PracticeSessionProgress.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 216[2mms[22m[39m
+ [32m✓[39m src/_components/MetricsGrid.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 282[2mms[22m[39m
+ [32m✓[39m src/_components/MetricCard.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 310[2mms[22m[39m
+ [32m✓[39m src/_components/RecentGamesTable.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 346[2mms[22m[39m
+ [32m✓[39m src/_components/BaseCard.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 421[2mms[22m[39m
+ [32m✓[39m src/_components/Hero.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 526[2mms[22m[39m
+ [32m✓[39m src/_components/GameDetailModal.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 198[2mms[22m[39m
+ [32m✓[39m src/_components/PracticeMoveInput.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 79[2mms[22m[39m
+ [32m✓[39m src/_components/PracticeQueue.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 92[2mms[22m[39m
+ [32m✓[39m src/_components/TacticsTable.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 90[2mms[22m[39m
+ [32m✓[39m src/_components/TimeTroubleCorrelation.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 91[2mms[22m[39m
+ [32m✓[39m src/utils/getJobStreamUrl.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+ [32m✓[39m src/_components/Text.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1490[2mms[22m[39m
+ [32m✓[39m src/_components/Badge.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32m✓[39m src/_components/PracticeAttemptButton.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m src/utils/formatPgnMoveList.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m src/_components/MetricsTrends.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m src/utils/submitPracticeAttempt.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/utils/triggerMetricsRefresh.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/_components/PositionsList.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m src/utils/triggerDashboardJob.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m src/utils/fetchPostgresResource.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/utils/fetchDashboard.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m src/utils/fetchPracticeQueue.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m src/utils/triggerMigrations.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/utils/isPiecePlayable.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m src/utils/triggerBackfill.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m src/utils/triggerPipeline.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/utils/practiceSession.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m src/utils/cardOrder.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/utils/buildPracticeFeedback.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m31 passed[39m[22m[90m (31)[39m
+[2m      Tests [22m [1m[32m100 passed[39m[22m[90m (100)[39m
+[2m   Start at [22m 09:07:15
+[2m   Duration [22m 4.54s[2m (transform 811ms, setup 3.53s, import 1.50s, tests 4.35s, environment 12.85s)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   87.46 |    74.77 |   89.62 |   92.07 |                   
+ _components       |      88 |    73.66 |   85.71 |    92.3 |                   
+  Badge.tsx        |     100 |      100 |     100 |     100 |                   
+  BaseCard.tsx     |    92.1 |    91.89 |     100 |     100 | 29,63,73          
+  BaseTable.tsx    |   80.64 |    81.81 |   63.63 |      80 | 89,197-225        
+  ...tailModal.tsx |   80.55 |    58.18 |   74.07 |    87.3 | ...85,311-347,375 
+  Hero.tsx         |     100 |    92.85 |     100 |     100 | 57                
+  MetricCard.tsx   |     100 |      100 |     100 |     100 |                   
+  MetricsGrid.tsx  |     100 |       60 |     100 |     100 | 74-115            
+  ...icsTrends.tsx |     100 |      100 |     100 |     100 |                   
+  ...tionsList.tsx |     100 |      100 |     100 |     100 |                   
+  ...mptButton.tsx |     100 |      100 |     100 |     100 |                   
+  ...MoveInput.tsx |     100 |      100 |     100 |     100 |                   
+  ...ticeQueue.tsx |     100 |      100 |     100 |     100 |                   
+  ...nProgress.tsx |     100 |      100 |     100 |     100 |                   
+  ...amesTable.tsx |     100 |      100 |     100 |     100 |                   
+  TacticsTable.tsx |     100 |      100 |     100 |     100 |                   
+  Text.tsx         |     100 |      100 |     100 |     100 |                   
+  ...rrelation.tsx |   66.66 |       50 |     100 |     100 | 14                
+  testUtils.ts     |     100 |       50 |     100 |     100 | 9                 
+ utils             |   86.71 |    77.77 |     100 |   91.73 |                   
+  ...LE_OPTIONS.ts |     100 |      100 |     100 |     100 |                   
+  ...LE_OPTIONS.ts |     100 |      100 |     100 |     100 |                   
+  ...CE_OPTIONS.ts |     100 |      100 |     100 |     100 |                   
+  ...ceFeedback.ts |     100 |      100 |     100 |     100 |                   
+  cardOrder.ts     |      90 |    59.09 |     100 |   96.96 | 61                
+  ...hDashboard.ts |     100 |      100 |     100 |     100 |                   
+  ...esResource.ts |     100 |      100 |     100 |     100 |                   
+  ...cticeQueue.ts |     100 |      100 |     100 |     100 |                   
+  ...gnMoveList.ts |   63.41 |    58.33 |     100 |   70.96 | 11-24             
+  ...bStreamUrl.ts |     100 |    92.85 |     100 |     100 | 22                
+  ...cePlayable.ts |     100 |      100 |     100 |     100 |                   
+  ...iceSession.ts |     100 |      100 |     100 |     100 |                   
+  ...iceAttempt.ts |     100 |      100 |     100 |     100 |                   
+  ...erBackfill.ts |     100 |      100 |     100 |     100 |                   
+  ...shboardJob.ts |     100 |      100 |     100 |     100 |                   
+  ...icsRefresh.ts |     100 |      100 |     100 |     100 |                   
+  ...Migrations.ts |     100 |      100 |     100 |     100 |                   
+  ...erPipeline.ts |     100 |      100 |     100 |     100 |                   
+-------------------|---------|----------|---------|---------|-------------------
+uv run xenon \
+		--max-absolute A \
+		--max-modules A \
+		--max-average A \
+		src/
+cd client && npx jscpd \
+		--format python,typescript,tsx,javascript,jsx \
+		../src ./src \
+		--min-lines 8 --min-tokens 70 --threshold 1 \
+		--reporters console \
+		--ignore "**/dist/**" \
+		--ignore "**/coverage/**" \
+		--ignore "**/node_modules/**" \
+		--ignore "**/.venv/**" \
+		--ignore "**/tests/**"
+[90m┌────────────[39m[90m┬────────────────[39m[90m┬─────────────[39m[90m┬──────────────[39m[90m┬──────────────[39m[90m┬──────────────────[39m[90m┬───────────────────┐[39m
+[90m│[39m[31m Format     [39m[90m│[39m[31m Files analyzed [39m[90m│[39m[31m Total lines [39m[90m│[39m[31m Total tokens [39m[90m│[39m[31m Clones found [39m[90m│[39m[31m Duplicated lines [39m[90m│[39m[31m Duplicated tokens [39m[90m│[39m
+[90m├────────────[39m[90m┼────────────────[39m[90m┼─────────────[39m[90m┼──────────────[39m[90m┼──────────────[39m[90m┼──────────────────[39m[90m┼───────────────────┤[39m
+[90m│[39m typescript [90m│[39m 40             [90m│[39m 1530        [90m│[39m 14285        [90m│[39m 0            [90m│[39m 0 (0%)           [90m│[39m 0 (0%)            [90m│[39m
+[90m├────────────[39m[90m┼────────────────[39m[90m┼─────────────[39m[90m┼──────────────[39m[90m┼──────────────[39m[90m┼──────────────────[39m[90m┼───────────────────┤[39m
+[90m│[39m javascript [90m│[39m 45             [90m│[39m 1616        [90m│[39m 12951        [90m│[39m 0            [90m│[39m 0 (0%)           [90m│[39m 0 (0%)            [90m│[39m
+[90m├────────────[39m[90m┼────────────────[39m[90m┼─────────────[39m[90m┼──────────────[39m[90m┼──────────────[39m[90m┼──────────────────[39m[90m┼───────────────────┤[39m
+[90m│[39m tsx        [90m│[39m 48             [90m│[39m 3764        [90m│[39m 30412        [90m│[39m 0            [90m│[39m 0 (0%)           [90m│[39m 0 (0%)            [90m│[39m
+[90m├────────────[39m[90m┼────────────────[39m[90m┼─────────────[39m[90m┼──────────────[39m[90m┼──────────────[39m[90m┼──────────────────[39m[90m┼───────────────────┤[39m
+[90m│[39m python     [90m│[39m 265            [90m│[39m 10439       [90m│[39m 77912        [90m│[39m 0            [90m│[39m 0 (0%)           [90m│[39m 0 (0%)            [90m│[39m
+[90m├────────────[39m[90m┼────────────────[39m[90m┼─────────────[39m[90m┼──────────────[39m[90m┼──────────────[39m[90m┼──────────────────[39m[90m┼───────────────────┤[39m
+[90m│[39m [1mTotal:[22m     [90m│[39m 398            [90m│[39m 17349       [90m│[39m 135560       [90m│[39m 0            [90m│[39m 0 (0%)           [90m│[39m 0 (0%)            [90m│[39m
+[90m└────────────[39m[90m┴────────────────[39m[90m┴─────────────[39m[90m┴──────────────[39m[90m┴──────────────[39m[90m┴──────────────────[39m[90m┴───────────────────┘[39m
+[90mFound 0 clones.[39m
+[3m[90mDetection time:[39m[23m: 549.394ms
+uv run vulture src/ \
+		--min-confidence 60 \
+		--ignore-decorators "@app.get,@app.post,@app.put,@app.patch,@app.delete" \
+		--ignore-names "stockfish_ponder,move_number,analyze_positions,main,_clear_dashboard_cache,DbSchemas,analysis,insert_tactics,insert_tactic_outcomes,set_level,MockChessClient,MockDbStore,convert_raw_pgns_to_positions,run_monitor_new_positions,clock_seconds,applied_options,is_legal"
+cd client && npx knip
+uv run cargo build --release
+cd client && npm run build
+
+> tactix-dashboard@0.0.1 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 150 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.78 kB │ gzip:   0.43 kB
+dist/assets/index-DJ8KIaeK.css   13.95 kB │ gzip:   3.65 kB
+dist/assets/index-MM6TqXG0.js   525.55 kB │ gzip: 158.94 kB
+✓ built in 871ms

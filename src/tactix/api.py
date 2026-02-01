@@ -26,6 +26,7 @@ from tactix.extract_api_token__request_auth import _extract_api_token
 from tactix.format_sse__api_streaming import _format_sse
 from tactix.get_airflow_run_id__airflow_response import _airflow_run_id
 from tactix.get_airflow_state__airflow_jobs import _airflow_state
+from tactix.get_auth_token__api import auth_token
 from tactix.get_cached_dashboard_payload__api_cache import _get_cached_dashboard_payload
 from tactix.get_dashboard__api import dashboard, motif_stats, trend_stats
 from tactix.get_game_detail__api import game_detail
@@ -79,6 +80,7 @@ app = FastAPI(
 )
 
 app.get("/api/health")(health)
+app.get("/api/auth/token")(auth_token)
 app.get("/api/postgres/status")(postgres_status)
 app.get("/api/postgres/analysis")(postgres_analysis)
 app.get("/api/postgres/raw_pgns")(postgres_raw_pgns)
@@ -136,6 +138,7 @@ __all__ = [
     "_validate_backfill_window",
     "_wait_for_airflow_run",
     "app",
+    "auth_token",
     "dashboard",
     "game_detail",
     "get_job_status",

@@ -1,3 +1,11 @@
+Session 2026-02-01 (test fix – App job stream)
+- Updated App stream test to wait for the source button to enable before selecting Lichess, matching the loading-disabled state.
+- Tests: `make check` (all checks passed).
+
+Session 2026-02-01 (feature 012 regression test – SSE job stream UI)
+- Added client test `client/src/App.stream.test.tsx` to assert SSE progress events render in the job progress card after clicking Run + Refresh.
+- Tests: `make check` (pre-change ok; post-change interrupted twice during pytest collection with KeyboardInterrupt).
+
 Session 2026-02-01 (regression check – feature 012 SSE job stream)
 - Manual UI automation: `node /Users/andy/tactix/verification/puppeteer_feature_012_sse_jobs_stream.js`.
 - Evidence: [verification/feature-012-sse-ui-start-2026-02-01.png](verification/feature-012-sse-ui-start-2026-02-01.png), [verification/feature-012-sse-ui-progress-2026-02-01.png](verification/feature-012-sse-ui-progress-2026-02-01.png), [verification/feature-012-sse-ui-complete-2026-02-01.png](verification/feature-012-sse-ui-complete-2026-02-01.png), [verification/feature-012-sse-airflow-2026-02-01.png](verification/feature-012-sse-airflow-2026-02-01.png).

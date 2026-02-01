@@ -109,3 +109,7 @@ Session 2026-01-30 (naming convention refactor – Python modules)
 - Converted legacy modules into shims and updated imports to use the new naming convention while preserving public APIs.
 - Fixed shim behavior for position extraction to keep pytest patching semantics intact.
 - Tests: `make check`.
+
+Session 2026-02-01 (test fix – App job stream)
+- Updated App stream test to wait for source buttons to enable before selecting Lichess, matching actual loading behavior.
+- Tests: `make check` (all checks passed).

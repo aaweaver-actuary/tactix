@@ -4,6 +4,10 @@ Session 2026-02-01 (issue 1 – chess.com bullet pipeline fixture IDs)
 - Tests: `make check`.
 - Updated feature_list.json: not modified (per pipeline-only change).
 
+Session 2026-02-01 (issue 1 – bullet pipeline test refactor)
+- Refactored chess.com bullet pipeline tests to reuse helpers for game selection and move extraction without changing expectations.
+- Tests: `make check` (pre and post).
+
 Session 2026-02-01 (feature 243 – metrics SSE stream)
 - Added metrics SSE stream endpoint in `src/tactix/stream_metrics__api.py`, wired route in `src/tactix/api.py`, and JSON-safe encoding for streamed metrics payloads.
 - Client now streams metrics updates via `/api/metrics/stream` using shared fetch SSE parsing (updated `client/src/App.tsx` + new `client/src/utils/getMetricsStreamUrl.ts`).

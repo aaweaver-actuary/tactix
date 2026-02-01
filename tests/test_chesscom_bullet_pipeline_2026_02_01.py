@@ -153,6 +153,17 @@ def _board_after_user_move(
     raise AssertionError(f"Move {move_number} not found for user {user}")
 
 
+def _game_for_result(games: tuple[ChessGame, ChessGame], user: str, result: str) -> ChessGame:
+    return next(game for game in games if _result_for_user(game, user) == result)
+
+
+def _board_after_user_move_for_result(
+    games: tuple[ChessGame, ChessGame], user: str, result: str, move_number: int
+) -> tuple[chess.Board, chess.Move]:
+    game = _game_for_result(games, user, result)
+    return _board_after_user_move(game, user, move_number)
+
+
 def _is_attacked_by(
     board: chess.Board,
     square: chess.Square,
@@ -207,12 +218,12 @@ def test_both_games_classified_as_bullet(games_data):
 
 
 def test_game_lost_had_rating_diff_gt_50(games_data):
-    loss_game = next(game for game in games_data if _result_for_user(game, USER) == "loss")
+    loss_game = _game_for_result(games_data, USER, "loss")
     assert _rating_diff(loss_game, USER) > 50
 
 
 def test_game_won_had_rating_diff_lt_20(games_data):
-    win_game = next(game for game in games_data if _result_for_user(game, USER) == "win")
+    win_game = _game_for_result(games_data, USER, "win")
     assert _rating_diff(win_game, USER) < 20
 
 
@@ -222,14 +233,12 @@ def test_user_played_one_white_and_one_black(games_data):
 
 
 def test_losing_game_user_left_knight_hanging_on_move_6(games_data):
-    loss_game = next(game for game in games_data if _result_for_user(game, USER) == "loss")
-    board, _move = _board_after_user_move(loss_game, USER, 6)
+    board, _move = _board_after_user_move_for_result(games_data, USER, "loss", 6)
     assert _is_attacked_by(board, chess.C6, chess.WHITE, chess.D5)
 
 
 def test_losing_game_move_6_knight_on_c6(games_data):
-    loss_game = next(game for game in games_data if _result_for_user(game, USER) == "loss")
-    board, _move = _board_after_user_move(loss_game, USER, 6)
+    board, _move = _board_after_user_move_for_result(games_data, USER, "loss", 6)
     piece = board.piece_at(chess.C6)
     assert piece is not None
     assert piece.color == chess.BLACK
@@ -237,7 +246,6 @@ def test_losing_game_move_6_knight_on_c6(games_data):
 
 
 def test_losing_game_user_played_6_e4_hanging_a_knight_on_c6(games_data):
-    loss_game = next(game for game in games_data if _result_for_user(game, USER) == "loss")
-    board, move = _board_after_user_move(loss_game, USER, 6)
+    board, move = _board_after_user_move_for_result(games_data, USER, "loss", 6)
     assert move.uci() == "e5e4"
     assert _is_attacked_by(board, chess.C6, chess.WHITE, chess.D5)

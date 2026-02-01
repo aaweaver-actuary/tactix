@@ -2741,7 +2741,7 @@
     "category": "functional",
     "description": "Outcome unclear recorded for hanging piece",
     "steps": ["Step 1: Compare user move to engine best line", "Step 2: Compute eval swing threshold", "Step 3: Mark outcome as unclear and store"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

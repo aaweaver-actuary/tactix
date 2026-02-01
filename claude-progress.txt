@@ -38,6 +38,13 @@ Session 2026-01-31 (feature 227 – fork unclear outcome)
 - Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_analyze_tactics_helpers.py /Users/andy/tactix/tests/test_tactics_analyzer.py -q`, `make check` (post).
 - Seeded fork unclear outcome (blitz): `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_227_seed_outcome_unclear_fork_rapid.py`.
 - UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_227_outcome_unclear_fork_manual_ui.js` (screenshot `verification/feature-227-outcome-unclear-fork-2026-01-31.png`).
+
+Session 2026-01-31 (refactor – fork severity floor helper consolidation)
+- Before → after map:
+	- `_fork_severity_floor` + `_fork_floor_for_settings` → single `_fork_floor_for_settings` resolving configured floor and bullet profile fallback.
+	- `_apply_fork_severity_floor` continues to call `_fork_floor_for_settings` (no call-site changes beyond consolidation).
+- Tests: `make check` (pre-change), `make check` (post-change).
+- Follow-ups: none.
 - CI integration check: `node /Users/andy/tactix/verification/integration_feature_227_outcome_unclear_fork.js`.
 - Updated feature_list.json: feature 227 marked passes=true.
 - Pass count: 227/502.

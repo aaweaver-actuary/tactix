@@ -85,24 +85,6 @@ def _resolve_chesscom_profile_value(settings: Settings) -> str:
     return profile_value
 
 
-def _fork_severity_floor(settings: Settings | None) -> float | None:
-    """Returns the fork severity floor from settings, if applicable.
-
-    Parameters
-    ----------
-    settings : Settings or None
-        The settings object to check, or None.
-
-    Returns
-    -------
-    float or None
-        The fork severity floor if defined in settings and applicable, otherwise None.
-    """
-    if settings is None:
-        return None
-    return settings.fork_severity_floor
-
-
 def _compute_severity__tactic(
     base_cp: int,
     delta: int,
@@ -161,9 +143,11 @@ def _apply_fork_severity_floor(
 
 
 def _fork_floor_for_settings(settings: Settings | None) -> float | None:
-    floor = _fork_severity_floor(settings)
-    if floor is not None or settings is None:
-        return floor
+    """Resolve the fork severity floor if configured or implied by profile."""
+    if settings is None:
+        return None
+    if settings.fork_severity_floor is not None:
+        return settings.fork_severity_floor
     if _is_profile_in(settings, {"bullet"}):
         return _SEVERITY_MAX
     return None

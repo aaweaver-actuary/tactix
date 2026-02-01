@@ -118,9 +118,12 @@ async function expand_card__by_title(page, title) {
 }
 
 async function fetch_dashboard__payload(apiBase) {
-  const res = await fetch(`${apiBase}/api/dashboard?source=chesscom&motif=hanging_piece`, {
-    headers: { Authorization: 'Bearer local-dev-token' },
-  });
+  const res = await fetch(
+    `${apiBase}/api/dashboard?source=chesscom&motif=hanging_piece`,
+    {
+      headers: { Authorization: 'Bearer local-dev-token' },
+    },
+  );
   if (!res.ok) {
     throw new Error(`Dashboard fetch failed: ${res.status}`);
   }

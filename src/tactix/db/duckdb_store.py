@@ -13,6 +13,7 @@ from tactix.db.raw_pgn_summary import build_raw_pgn_summary_sources
 from tactix.format_tactics__explanation import format_tactic_explanation
 from tactix.prepare_pgn__chess import extract_pgn_metadata
 from tactix.utils.logger import get_logger
+from tactix.utils.to_int import to_int
 
 logger = get_logger(__name__)
 
@@ -1537,6 +1538,62 @@ def fetch_metrics(
     )
     query = "SELECT * FROM metrics_summary" + where_clause
     return _rows_to_dicts(conn.execute(query, params))
+
+
+def fetch_motif_stats(
+    conn: duckdb.DuckDBPyConnection,
+    source: str | None = None,
+    rating_bucket: str | None = None,
+    time_control: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+) -> list[dict[str, object]]:
+    rows = fetch_metrics(
+        conn,
+        source=source,
+        rating_bucket=rating_bucket,
+        time_control=time_control,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    return [
+        _coerce_motif_stats_row(row) for row in rows if row.get("metric_type") == "motif_breakdown"
+    ]
+
+
+def _coerce_motif_stats_row(row: dict[str, object]) -> dict[str, object]:
+    total = _coerce_metric_count(row.get("total"))
+    found = _coerce_metric_count(row.get("found"))
+    missed = _coerce_metric_count(row.get("missed"))
+    failed_attempt = _coerce_metric_count(row.get("failed_attempt"))
+    unclear = _coerce_metric_count(row.get("unclear"))
+    row["total"] = total
+    row["found"] = found
+    row["missed"] = missed
+    row["failed_attempt"] = failed_attempt
+    row["unclear"] = unclear
+    row["found_rate"] = _coerce_metric_rate(row.get("found_rate"), found, total)
+    row["miss_rate"] = _coerce_metric_rate(row.get("miss_rate"), missed, total)
+    return row
+
+
+def _coerce_metric_count(value: object) -> int:
+    if value is None:
+        return 0
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, float):
+        return int(value)
+    parsed = to_int(value)
+    return parsed if parsed is not None else 0
+
+
+def _coerce_metric_rate(value: object, numerator: int, denominator: int) -> float | None:
+    if isinstance(value, (int, float)):
+        return float(value)
+    if denominator <= 0:
+        return 0.0
+    return numerator / denominator
 
 
 def fetch_recent_games(

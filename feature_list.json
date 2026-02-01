@@ -18,7 +18,7 @@
     "passes": true
   },
   {
-    "category": "functional",
+      "passes": true
     "description": "002 - Airflow Chess.com full pipeline for blitz games",
     "steps": [
       "Step 1: Trigger Airflow DAG daily_game_sync for Chess.com data",
@@ -2747,7 +2747,7 @@
     "category": "functional",
     "description": "FastAPI endpoint /api/stats/motifs returns expected schema",
     "steps": ["Step 1: Authenticate with local token", "Step 2: Call /api/stats/motifs with valid parameters", "Step 3: Validate HTTP 200 and JSON schema"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

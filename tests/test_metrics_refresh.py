@@ -5,6 +5,7 @@ from pathlib import Path
 
 from tactix.db.duckdb_store import (
     fetch_metrics,
+    fetch_motif_stats,
     get_connection,
     init_schema,
     insert_positions,
@@ -297,6 +298,71 @@ class MetricsRefreshTests(unittest.TestCase):
         self.assertAlmostEqual(float(by_control["600+5"]["miss_rate"]), 0.5, places=4)
         self.assertAlmostEqual(float(by_control["300+0"]["found_rate"]), 1.0, places=4)
         self.assertAlmostEqual(float(by_control["600+5"]["found_rate"]), -1.0, places=4)
+
+    def test_fetch_motif_stats_coerces_rates(self) -> None:
+        tmp_dir = Path(tempfile.mkdtemp())
+        db_path = tmp_dir / "metrics_stats.duckdb"
+        conn = get_connection(db_path)
+        init_schema(conn)
+
+        fixture_path = (
+            Path(__file__).resolve().parent / "fixtures" / "lichess_rapid_sample.pgn"
+        )
+        chunks = split_pgn_chunks(fixture_path.read_text())
+        rows = []
+        for chunk in chunks:
+            rows.append(
+                {
+                    "game_id": extract_game_id(chunk),
+                    "user": "lichess",
+                    "source": "lichess",
+                    "fetched_at": datetime.now(timezone.utc),
+                    "pgn": chunk,
+                    "last_timestamp_ms": extract_last_timestamp_ms(chunk),
+                }
+            )
+        upsert_raw_pgns(conn, rows)
+
+        positions = []
+        for idx, row in enumerate(rows, start=1):
+            positions.append(
+                {
+                    "game_id": row["game_id"],
+                    "user": "lichess",
+                    "source": "lichess",
+                    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+                    "ply": idx,
+                    "move_number": idx,
+                    "side_to_move": "w",
+                    "uci": "e2e4",
+                    "san": "e4",
+                    "clock_seconds": 600,
+                }
+            )
+        position_ids = insert_positions(conn, positions)
+
+        for pos, position_id in zip(positions, position_ids, strict=False):
+            upsert_tactic_with_outcome(
+                conn,
+                {
+                    "game_id": pos["game_id"],
+                    "position_id": position_id,
+                    "motif": "discovered_check",
+                    "severity": 1.2,
+                    "best_uci": "e2e4",
+                    "eval_cp": 120,
+                },
+                {"result": "found", "user_uci": "e2e4", "eval_delta": 30},
+            )
+
+        update_metrics_summary(conn)
+        stats = fetch_motif_stats(conn, source="lichess")
+        self.assertTrue(stats)
+        row = stats[0]
+        self.assertEqual(row.get("metric_type"), "motif_breakdown")
+        self.assertIsInstance(row.get("total"), int)
+        self.assertIsInstance(row.get("found_rate"), float)
+        self.assertIsInstance(row.get("miss_rate"), float)
 
 
 if __name__ == "__main__":

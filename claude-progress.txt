@@ -1,3 +1,25 @@
+Session 2026-01-31 (feature 233 – stats motifs endpoint)
+- Pre-work verification (passes=true):
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_023_stockfish_checksum.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_024_promotion_en_passant.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_025_castling.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_026_rolling_averages.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_027_time_trouble.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js`
+- Pre-change make check: `make check`.
+- Implemented /api/stats/motifs endpoint + metrics_summary motif breakdown fetch in `src/tactix/db/duckdb_store.py`, `src/tactix/get_dashboard__api.py`, and `src/tactix/api.py`.
+- Tests: `PYTHONPATH=/Users/andy/tactix /Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_api_auth.py /Users/andy/tactix/tests/test_metrics_refresh.py -q`, `make check` (post).
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_110_dashboard.js` (screenshot `verification/feature-233-stats-motifs-dashboard-2026-01-31.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_233_stats_motifs.js` (log `tmp-logs/feature_233_integration.log`).
+- Added verification script: `verification/integration_feature_233_stats_motifs.js`.
+- Updated feature_list.json: stats motifs marked passes=true.
+- Pass count: 233/502.
+
+TEST LINE
 Session 2026-01-31 (feature 232 – hanging piece unclear outcome)
 - Pre-work verification (passes=true): sampled 12 pytest files (106 tests).
 - Pre-change make check: `make check`.

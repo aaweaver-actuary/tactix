@@ -1,3 +1,11 @@
+Session 2026-02-01 (feature 012 regression rerun – SSE job stream)
+- Added Airflow-backed SSE progress steps in `src/tactix/run_airflow_daily_sync_job__job_stream.py` (start + fetch_games/raw_pgns/.../metrics_refreshed) and shortened DAG runtime by skipping non-requested source in [airflow/dags/daily_game_sync.py](airflow/dags/daily_game_sync.py).
+- Restarted services: `docker compose -f /Users/andy/tactix/compose.yml restart server airflow-scheduler airflow-webserver`.
+- Manual UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_012_rerun_manual.js`.
+- Evidence: [verification/feature-012-rerun-ui-start-2026-02-01T18-49-23-859Z.png](verification/feature-012-rerun-ui-start-2026-02-01T18-49-23-859Z.png), [verification/feature-012-rerun-ui-progress-2026-02-01T18-49-23-859Z.png](verification/feature-012-rerun-ui-progress-2026-02-01T18-49-23-859Z.png), [verification/feature-012-rerun-airflow-2026-02-01T18-49-23-859Z.png](verification/feature-012-rerun-airflow-2026-02-01T18-49-23-859Z.png), [verification/feature-012-rerun-job-progress-2026-02-01T18-49-23-859Z.txt](verification/feature-012-rerun-job-progress-2026-02-01T18-49-23-859Z.txt).
+- Integration check: `node /Users/andy/tactix/verification/integration_feature_012_sse_jobs_stream.js`.
+- Updated feature_list.json: feature 012 passes=true.
+
 Session 2026-02-01 (test fix – App job stream)
 - Updated App stream test to wait for the source button to enable before selecting Lichess, matching the loading-disabled state.
 - Tests: `make check` (all checks passed).

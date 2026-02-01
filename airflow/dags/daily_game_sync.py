@@ -40,6 +40,16 @@ def daily_game_sync_dag():
         context = get_current_context()
         logical_date = context.get("logical_date") if context else None
         dag_run = context.get("dag_run") if context else None
+        dag_conf = getattr(dag_run, "conf", None) if dag_run else None
+        requested_source = None
+        if isinstance(dag_conf, dict):
+            requested_source = dag_conf.get("source")
+        if requested_source and str(requested_source) != "lichess":
+            logger.info(
+                "Skipping Lichess pipeline; requested_source=%s",
+                requested_source,
+            )
+            return {"source": "lichess", "skipped": True, "requested_source": requested_source}
         run_type = str(getattr(dag_run, "run_type", "")) if dag_run else ""
         data_interval_start = context.get("data_interval_start") if context else None
         data_interval_end = context.get("data_interval_end") if context else None
@@ -88,6 +98,16 @@ def daily_game_sync_dag():
         context = get_current_context()
         logical_date = context.get("logical_date") if context else None
         dag_run = context.get("dag_run") if context else None
+        dag_conf = getattr(dag_run, "conf", None) if dag_run else None
+        requested_source = None
+        if isinstance(dag_conf, dict):
+            requested_source = dag_conf.get("source")
+        if requested_source and str(requested_source) != "chesscom":
+            logger.info(
+                "Skipping Chess.com pipeline; requested_source=%s",
+                requested_source,
+            )
+            return {"source": "chesscom", "skipped": True, "requested_source": requested_source}
         run_type = str(getattr(dag_run, "run_type", "")) if dag_run else ""
         data_interval_start = context.get("data_interval_start") if context else None
         data_interval_end = context.get("data_interval_end") if context else None
@@ -134,6 +154,13 @@ def daily_game_sync_dag():
     @task(task_id="log_hourly_metrics")
     def log_hourly_metrics(results: list[dict[str, object]]) -> dict[str, object]:
         for result in results:
+            if result.get("skipped"):
+                logger.info(
+                    "Hourly metrics summary skipped: source=%s requested_source=%s",
+                    result.get("source"),
+                    result.get("requested_source"),
+                )
+                continue
             logger.info(
                 "Hourly metrics summary: source=%s fetched_games=%s raw_pgns_inserted=%s raw_pgns_hashed=%s raw_pgns_matched=%s positions=%s tactics=%s metrics_version=%s",
                 result.get("source"),

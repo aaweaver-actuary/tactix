@@ -22,6 +22,12 @@ def _run_airflow_daily_sync_job(
     backfill_end_ms: int | None,
     triggered_at_ms: int,
 ) -> dict[str, object]:
+    _queue_progress(
+        queue,
+        job,
+        "start",
+        message="Starting Airflow daily_game_sync",
+    )
     _queue_backfill_window(
         queue,
         job,
@@ -49,6 +55,49 @@ def _run_airflow_daily_sync_job(
     payload = get_dashboard_payload(
         get_settings(source=source),
         source=source,
+    )
+    _queue_progress(
+        queue,
+        job,
+        "fetch_games",
+        message="Airflow DAG completed game ingestion",
+    )
+    _queue_progress(
+        queue,
+        job,
+        "raw_pgns",
+        message="Airflow DAG completed raw PGN fetch",
+    )
+    _queue_progress(
+        queue,
+        job,
+        "raw_pgns_persisted",
+        message="Airflow DAG persisted raw PGNs",
+    )
+    _queue_progress(
+        queue,
+        job,
+        "extract_positions",
+        message="Airflow DAG extracted positions",
+    )
+    _queue_progress(
+        queue,
+        job,
+        "positions_ready",
+        message="Airflow DAG stored positions",
+    )
+    _queue_progress(
+        queue,
+        job,
+        "analyze_positions",
+        message="Airflow DAG analyzed tactics",
+    )
+    _queue_progress(
+        queue,
+        job,
+        "metrics_refreshed",
+        message="Airflow DAG refreshed metrics",
+        extra={"metrics_version": payload.get("metrics_version")},
     )
     logger.info(
         "Airflow daily_game_sync completed; metrics_version=%s",

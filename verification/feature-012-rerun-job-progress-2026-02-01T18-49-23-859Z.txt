@@ -1,0 +1,41 @@
+Job progress
+Complete
+1:49:26 PM
+start
+Starting Airflow daily_game_sync
+1:49:26 PM
+airflow_triggered
+Airflow DAG triggered
+1:49:26 PM
+airflow_state
+queued
+1:49:31 PM
+airflow_state
+running
+1:49:36 PM
+airflow_state
+success
+1:49:36 PM
+fetch_games
+Airflow DAG completed game ingestion
+1:49:36 PM
+raw_pgns
+Airflow DAG completed raw PGN fetch
+1:49:36 PM
+raw_pgns_persisted
+Airflow DAG persisted raw PGNs
+1:49:36 PM
+extract_positions
+Airflow DAG extracted positions
+1:49:36 PM
+positions_ready
+Airflow DAG stored positions
+1:49:36 PM
+analyze_positions
+Airflow DAG analyzed tactics
+1:49:36 PM
+metrics_refreshed
+Airflow DAG refreshed metrics
+v1523
+complete
+Job complete

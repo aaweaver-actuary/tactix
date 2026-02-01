@@ -184,12 +184,15 @@ def test_games_are_ingested_at_all(games_data):
 
 def test_exactly_two_bullet_games_ingested_for_2026_02_01_from_chess_dot_com(games_data):
     assert len(games_data) == 2
+    sites = set()
     for game in games_data:
         headers = game.headers
         site = headers.get("Site") or ""
-        assert "chess.com" in site.lower()
+        assert "chess.com/game/live/" in site.lower()
         assert headers.get("Date") == FIXTURE_DATE
         assert headers.get("TimeControl") == FIXTURE_TIME_CONTROL
+        sites.add(site)
+    assert len(sites) == 2
 
 
 def test_one_game_won_and_one_lost(games_data):

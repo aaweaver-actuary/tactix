@@ -1,3 +1,25 @@
+Session 2026-02-01 (feature 241 – /api/health schema)
+- Pre-work verification (passes=true):
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_023_stockfish_checksum.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_024_promotion_en_passant.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_025_castling.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_026_rolling_averages.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_027_time_trouble.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_107_positions.js`
+- Pre-change make check: `make check` (log `tmp-logs/feature_241_make_check_pre.log`).
+- Expanded /api/health response schema in `src/tactix/get_health__api.py` to include service, version, and timestamp.
+- Added auth-aware schema coverage in `tests/test_api_auth.py`.
+- Manual verification (API): `/Users/andy/tactix/.venv/bin/python -m uvicorn tactix.api:app --host 0.0.0.0 --port 8012` + `TACTIX_API_URL=http://localhost:8012 TACTIX_API_TOKEN=local-dev-token node /Users/andy/tactix/verification/integration_feature_241_health_schema.js`.
+- CI integration script: `verification/integration_feature_241_health_schema.js`.
+- Tests: `make check` (post; log `tmp-logs/feature_241_make_check_post.log`).
+- Updated feature_list.json: /api/health schema marked passes=true.
+- Pass count: 241/502.
+
 Session 2026-02-01 (feature 240 – jobs stream endpoint schema)
 - Pre-work verification (passes=true):
 	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`

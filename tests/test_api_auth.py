@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi.testclient import TestClient
 
 from tactix.api import app
@@ -11,6 +13,20 @@ def test_health_is_unauthenticated():
     client = TestClient(app)
     response = client.get("/api/health")
     assert response.status_code == 200
+
+
+def test_health_returns_schema_with_auth() -> None:
+    client = TestClient(app)
+    token = get_settings().api_token
+    response = client.get("/api/health", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    payload = response.json()
+    assert set(payload.keys()) == {"status", "service", "version", "timestamp"}
+    assert payload["status"] == "ok"
+    assert payload["service"] == "tactix"
+    assert isinstance(payload["version"], str)
+    assert isinstance(payload["timestamp"], str)
+    datetime.fromisoformat(payload["timestamp"])
 
 
 def test_requires_auth_for_dashboard():

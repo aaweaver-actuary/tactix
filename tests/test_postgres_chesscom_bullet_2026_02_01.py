@@ -26,6 +26,16 @@ SOURCE = "chesscom"
 FIXTURE_DATE = date(2026, 2, 1)
 FIXTURE_DATE_TEXT = "2026-02-01"
 TIME_CONTROL = "120+1"
+BULLET_TIME_CONTROL_SQL = "split_part(time_control, '+', 1)::int <= 180"
+OUTCOME_CASE_SQL = """
+CASE
+    WHEN player_username = white_player AND result = '1-0' THEN 'win'
+    WHEN player_username = black_player AND result = '0-1' THEN 'win'
+    WHEN player_username = white_player AND result = '0-1' THEN 'loss'
+    WHEN player_username = black_player AND result = '1-0' THEN 'loss'
+    ELSE 'draw'
+END
+"""
 
 
 @dataclass(frozen=True)
@@ -449,23 +459,17 @@ def test_exactly_two_bullet_games_ingested_for_2026_02_01(pg_conn):
 def test_outcome_distribution_is_one_win_one_loss(pg_conn):
     with pg_conn.cursor() as cur:
         cur.execute(
-            """
+            f"""
             SELECT
                 SUM(CASE WHEN outcome = 'win' THEN 1 ELSE 0 END) AS wins,
                 SUM(CASE WHEN outcome = 'loss' THEN 1 ELSE 0 END) AS losses
             FROM (
                 SELECT
-                    CASE
-                        WHEN player_username = white_player AND result = '1-0' THEN 'win'
-                        WHEN player_username = black_player AND result = '0-1' THEN 'win'
-                        WHEN player_username = white_player AND result = '0-1' THEN 'loss'
-                        WHEN player_username = black_player AND result = '1-0' THEN 'loss'
-                        ELSE 'draw'
-                    END AS outcome
+                    {OUTCOME_CASE_SQL} AS outcome
                 FROM tactix_pgns.raw_pgns
                 WHERE source = %s
                   AND utc_date = %s
-                  AND split_part(time_control, '+', 1)::int <= 180
+                  AND {BULLET_TIME_CONTROL_SQL}
             ) AS outcomes
             """,
             (SOURCE, FIXTURE_DATE_TEXT),
@@ -478,7 +482,7 @@ def test_outcome_distribution_is_one_win_one_loss(pg_conn):
 def test_rating_deltas_match_expectations(pg_conn):
     with pg_conn.cursor() as cur:
         cur.execute(
-            """
+            f"""
             SELECT
                 SUM(CASE WHEN outcome = 'loss' AND rating_delta > 50 THEN 1 ELSE 0 END) AS loss_gt_50,
                 SUM(CASE WHEN outcome = 'win' AND rating_delta <= 50 THEN 1 ELSE 0 END) AS win_le_50,
@@ -491,17 +495,11 @@ def test_rating_deltas_match_expectations(pg_conn):
                         WHEN player_username = black_player THEN white_elo - black_elo
                         ELSE NULL
                     END AS rating_delta,
-                    CASE
-                        WHEN player_username = white_player AND result = '1-0' THEN 'win'
-                        WHEN player_username = black_player AND result = '0-1' THEN 'win'
-                        WHEN player_username = white_player AND result = '0-1' THEN 'loss'
-                        WHEN player_username = black_player AND result = '1-0' THEN 'loss'
-                        ELSE 'draw'
-                    END AS outcome
+                    {OUTCOME_CASE_SQL} AS outcome
                 FROM tactix_pgns.raw_pgns
                 WHERE source = %s
                   AND utc_date = %s
-                  AND split_part(time_control, '+', 1)::int <= 180
+                  AND {BULLET_TIME_CONTROL_SQL}
             ) AS ratings
             """,
             (SOURCE, FIXTURE_DATE_TEXT),

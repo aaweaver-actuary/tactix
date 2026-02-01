@@ -3,6 +3,10 @@ Session 2026-02-01 (issue 2 – postgres verification for chess.com bullet fixtu
 - Added Postgres verification tests for chess.com bullet games on 2026-02-01, with fixture seeding for raw PGNs and missed hanging-piece tactics.
 - Tests: `make check` (Postgres verification tests skipped when Postgres unavailable).
 
+Session 2026-02-01 (refactor – issue 2 cleanup)
+- Refactored postgres bullet verification SQL to reuse outcome and time-control fragments in tests.
+- Tests: `make check` (pre/post).
+
 Session 2026-02-01 (issue 1 – chess.com bullet pipeline fixture IDs)
 - Updated chess.com bullet PGN fixture to use unique game URLs in the Site headers, preventing duplicate game_id collisions.
 - Tightened bullet pipeline test assertions to expect chess.com live game URLs and verify distinct Site headers.

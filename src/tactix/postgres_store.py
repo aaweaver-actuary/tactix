@@ -138,6 +138,32 @@ def init_analysis_schema(conn: PgConnection) -> None:
         )
         cur.execute(
             f"""
+            CREATE TABLE IF NOT EXISTS {ANALYSIS_SCHEMA}.positions (
+                position_id BIGINT PRIMARY KEY,
+                game_id TEXT,
+                source TEXT,
+                fen TEXT,
+                ply INTEGER,
+                move_number INTEGER,
+                side_to_move TEXT,
+                uci TEXT,
+                san TEXT,
+                clock_seconds DOUBLE PRECISION,
+                is_legal BOOLEAN,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+            """
+        )
+        cur.execute(
+            f"CREATE INDEX IF NOT EXISTS positions_game_idx "
+            f"ON {ANALYSIS_SCHEMA}.positions (game_id)"
+        )
+        cur.execute(
+            f"CREATE INDEX IF NOT EXISTS positions_created_at_idx "
+            f"ON {ANALYSIS_SCHEMA}.positions (created_at DESC)"
+        )
+        cur.execute(
+            f"""
             CREATE TABLE IF NOT EXISTS {ANALYSIS_SCHEMA}.tactics (
                 tactic_id BIGINT PRIMARY KEY
                     DEFAULT nextval('{ANALYSIS_SCHEMA}.tactics_tactic_id_seq'),

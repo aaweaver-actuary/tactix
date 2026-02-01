@@ -1557,11 +1557,32 @@ def fetch_motif_stats(
         end_date=end_date,
     )
     return [
-        _coerce_motif_stats_row(row) for row in rows if row.get("metric_type") == "motif_breakdown"
+        _coerce_metrics_row__stats(row)
+        for row in rows
+        if row.get("metric_type") == "motif_breakdown"
     ]
 
 
-def _coerce_motif_stats_row(row: dict[str, object]) -> dict[str, object]:
+def fetch_trend_stats(
+    conn: duckdb.DuckDBPyConnection,
+    source: str | None = None,
+    rating_bucket: str | None = None,
+    time_control: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+) -> list[dict[str, object]]:
+    rows = fetch_metrics(
+        conn,
+        source=source,
+        rating_bucket=rating_bucket,
+        time_control=time_control,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    return [_coerce_metrics_row__stats(row) for row in rows if row.get("metric_type") == "trend"]
+
+
+def _coerce_metrics_row__stats(row: dict[str, object]) -> dict[str, object]:
     total = _coerce_metric_count(row.get("total"))
     found = _coerce_metric_count(row.get("found"))
     missed = _coerce_metric_count(row.get("missed"))

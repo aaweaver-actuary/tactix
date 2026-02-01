@@ -1,3 +1,26 @@
+Session 2026-02-01 (feature 234 – stats trends endpoint)
+- Pre-work verification (passes=true):
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_023_stockfish_checksum.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_024_promotion_en_passant.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_025_castling.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_026_rolling_averages.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_027_time_trouble.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_042_chesscom_bullet_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_107_positions.js`
+- Pre-change make check: `make check`.
+- Implemented /api/stats/trends endpoint and trend stats fetch in `src/tactix/db/duckdb_store.py`, `src/tactix/get_dashboard__api.py`, and `src/tactix/api.py`.
+- Tests: `uv run pytest -c /Users/andy/tactix/pyproject.toml tests/test_api_stats_motifs.py -q`, `make check` (post).
+- UI verification (manual): `TACTIX_BACKEND_RUNNING=1 node /Users/andy/tactix/verification/puppeteer_feature_dashboard_combined_filters.js` (screenshots `verification/feature-dashboard-combined-2026-02-01.png`, `verification/feature-dashboard-chesscom-2026-02-01.png`, `verification/feature-dashboard-time-control-1800-2026-02-01.png`).
+- CI integration check: `/Users/andy/tactix/.venv/bin/python -m uvicorn tactix.api:app --host 0.0.0.0 --port 8012 & PID=$!; sleep 2; TACTIX_API_URL=http://localhost:8012 TACTIX_API_TOKEN=local-dev-token node /Users/andy/tactix/verification/integration_feature_234_stats_trends_check.js; kill $PID`.
+- Added verification script: `verification/integration_feature_234_stats_trends_check.js`.
+- Updated feature_list.json: stats trends marked passes=true.
+- Pass count: 234/502.
+
 Session 2026-01-31 (feature 233 – stats motifs endpoint)
 - Pre-work verification (passes=true):
 	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`

@@ -8,7 +8,13 @@ from fastapi import Depends, Query
 from tactix.build_dashboard_cache_key__api_cache import _dashboard_cache_key
 from tactix.coerce_date_to_datetime__datetime import _coerce_date_to_datetime
 from tactix.config import Settings, get_settings
-from tactix.db.duckdb_store import fetch_motif_stats, fetch_version, get_connection, init_schema
+from tactix.db.duckdb_store import (
+    fetch_motif_stats,
+    fetch_trend_stats,
+    fetch_version,
+    get_connection,
+    init_schema,
+)
 from tactix.get_cached_dashboard_payload__api_cache import _get_cached_dashboard_payload
 from tactix.normalize_source__source import _normalize_source
 from tactix.pipeline import get_dashboard_payload
@@ -86,6 +92,29 @@ def motif_stats(
         "source": response_source,
         "metrics_version": fetch_version(conn),
         "motifs": fetch_motif_stats(
+            conn,
+            source=normalized_source,
+            rating_bucket=filters.rating_bucket,
+            time_control=filters.time_control,
+            start_date=start_datetime,
+            end_date=end_datetime,
+        ),
+    }
+
+
+def trend_stats(
+    filters: Annotated[DashboardQueryFilters, Depends()],
+) -> dict[str, object]:
+    start_datetime, end_datetime, normalized_source, settings = _resolve_dashboard_filters(
+        filters,
+    )
+    conn = get_connection(settings.duckdb_path)
+    init_schema(conn)
+    response_source = "all" if normalized_source is None else normalized_source
+    return {
+        "source": response_source,
+        "metrics_version": fetch_version(conn),
+        "trends": fetch_trend_stats(
             conn,
             source=normalized_source,
             rating_bucket=filters.rating_bucket,

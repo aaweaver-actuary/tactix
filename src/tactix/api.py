@@ -27,7 +27,7 @@ from tactix.format_sse__api_streaming import _format_sse
 from tactix.get_airflow_run_id__airflow_response import _airflow_run_id
 from tactix.get_airflow_state__airflow_jobs import _airflow_state
 from tactix.get_cached_dashboard_payload__api_cache import _get_cached_dashboard_payload
-from tactix.get_dashboard__api import dashboard, motif_stats
+from tactix.get_dashboard__api import dashboard, motif_stats, trend_stats
 from tactix.get_game_detail__api import game_detail
 from tactix.get_health__api import health
 from tactix.get_postgres_analysis__api import postgres_analysis
@@ -90,6 +90,7 @@ app.get("/api/games/{game_id}")(game_detail)
 app.post("/api/practice/attempt")(practice_attempt)
 app.get("/api/jobs/stream")(stream_jobs)
 app.get("/api/stats/motifs")(motif_stats)
+app.get("/api/stats/trends")(trend_stats)
 
 __all__ = [
     "_DASHBOARD_CACHE",
@@ -142,6 +143,7 @@ __all__ = [
     "raw_pgns_summary",
     "require_api_token",
     "stream_jobs",
+    "trend_stats",
     "trigger_daily_sync",
     "trigger_migrations",
     "trigger_refresh_metrics",

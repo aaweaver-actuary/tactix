@@ -163,11 +163,19 @@ class BaseTacticDetector(ABC):
             return False
         if board_after.is_checkmate():
             return True
-        opponent = not mover_color
-        attackers = _attackers_to_square(board_before, opponent, best_move.to_square)
-        if not attackers:
+        if _is_value_winning_capture(board_before, best_move, captured):
             return True
-        return _attackers_are_pinned(board_before, opponent, attackers)
+        opponent = not mover_color
+        return _is_unprotected_capture(board_before, opponent, best_move.to_square)
+
+    @staticmethod
+    def has_hanging_piece(board: chess.Board, mover_color: bool) -> bool:
+        for square, piece in board.piece_map().items():
+            if piece.color != mover_color or piece.piece_type not in HIGH_VALUE_PIECES:
+                continue
+            if _is_hanging_piece(board, square, mover_color):
+                return True
+        return False
 
 
 def _is_slider_piece(piece: chess.Piece, mover_color: bool, slider_types: set[int]) -> bool:
@@ -200,6 +208,50 @@ def _attackers_are_pinned(
     board: chess.Board, attacker_color: bool, attackers: Iterable[chess.Square]
 ) -> bool:
     return all(board.is_pinned(attacker_color, sq) for sq in attackers)
+
+
+def _is_value_winning_capture(
+    board_before: chess.Board,
+    best_move: chess.Move,
+    captured: chess.Piece | None,
+) -> bool:
+    capturing_piece = board_before.piece_at(best_move.from_square)
+    if not capturing_piece or not captured:
+        return False
+    captured_value = BaseTacticDetector.piece_value(captured.piece_type)
+    capturing_value = BaseTacticDetector.piece_value(capturing_piece.piece_type)
+    return captured_value > capturing_value
+
+
+def _is_unprotected_capture(
+    board_before: chess.Board, opponent: bool, square: chess.Square
+) -> bool:
+    attackers = _attackers_to_square(board_before, opponent, square)
+    return not attackers or _attackers_are_pinned(board_before, opponent, attackers)
+
+
+def _has_unpinned_attackers(board: chess.Board, attacker_color: bool, square: chess.Square) -> bool:
+    return any(
+        not board.is_pinned(attacker_color, attacker)
+        for attacker in board.attackers(attacker_color, square)
+    )
+
+
+def _has_unpinned_defenders(board: chess.Board, defender_color: bool, square: chess.Square) -> bool:
+    return any(
+        not board.is_pinned(defender_color, defender)
+        for defender in board.attackers(defender_color, square)
+    )
+
+
+def _is_hanging_piece(board: chess.Board, square: chess.Square, mover_color: bool) -> bool:
+    piece = board.piece_at(square)
+    if not piece or piece.color != mover_color or piece.piece_type not in HIGH_VALUE_PIECES:
+        return False
+    opponent = not mover_color
+    if not _has_unpinned_attackers(board, opponent, square):
+        return False
+    return not _has_unpinned_defenders(board, mover_color, square)
 
 
 def _opponent_king_square(board: chess.Board, mover_color: bool) -> chess.Square | None:

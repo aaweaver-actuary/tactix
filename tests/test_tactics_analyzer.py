@@ -76,6 +76,40 @@ class TacticsAnalyzerTests(unittest.TestCase):
         motif = suite.infer_motif(board, chess.Move.from_uci("c4e6"))
         self.assertEqual(motif, "hanging_piece")
 
+    def test_hanging_capture_when_trade_wins_material(self) -> None:
+        board = chess.Board(None)
+        board.clear()
+        board.set_piece_at(chess.D5, chess.Piece(chess.PAWN, chess.WHITE))
+        board.set_piece_at(chess.C6, chess.Piece(chess.KNIGHT, chess.BLACK))
+        board.set_piece_at(chess.B7, chess.Piece(chess.PAWN, chess.BLACK))
+        board.set_piece_at(chess.A1, chess.Piece(chess.KING, chess.WHITE))
+        board.set_piece_at(chess.H8, chess.Piece(chess.KING, chess.BLACK))
+        board.turn = chess.WHITE
+
+        move = chess.Move.from_uci("d5c6")
+        board_after = board.copy()
+        board_after.push(move)
+
+        self.assertTrue(
+            BaseTacticDetector.is_hanging_capture(board, board_after, move, mover_color=chess.WHITE)
+        )
+
+    def test_hanging_piece_exposure_after_quiet_move(self) -> None:
+        board = chess.Board(None)
+        board.clear()
+        board.set_piece_at(chess.E1, chess.Piece(chess.KING, chess.WHITE))
+        board.set_piece_at(chess.E8, chess.Piece(chess.KING, chess.BLACK))
+        board.set_piece_at(chess.D5, chess.Piece(chess.PAWN, chess.WHITE))
+        board.set_piece_at(chess.C6, chess.Piece(chess.KNIGHT, chess.BLACK))
+        board.set_piece_at(chess.E5, chess.Piece(chess.PAWN, chess.BLACK))
+        board.turn = chess.BLACK
+
+        move = chess.Move.from_uci("e5e4")
+        board_after = board.copy()
+        board_after.push(move)
+
+        self.assertTrue(BaseTacticDetector.has_hanging_piece(board_after, chess.BLACK))
+
     def test_is_profile_in_handles_chesscom_daily(self) -> None:
         chesscom_daily = Settings(source="chesscom", chesscom_profile="daily")
         self.assertTrue(_is_profile_in(chesscom_daily, {"correspondence"}))

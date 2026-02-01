@@ -274,12 +274,26 @@ def _infer_hanging_or_detected_motif(
     move: chess.Move,
     mover_color: bool,
 ) -> str:
-    if motif_board.is_capture(move):
-        user_board = motif_board.copy()
-        user_board.push(move)
-        if BaseTacticDetector.is_hanging_capture(motif_board, user_board, move, mover_color):
-            return "hanging_piece"
-    return MOTIF_DETECTORS.infer_motif(motif_board, move)
+    user_board = motif_board.copy()
+    user_board.push(move)
+    if motif_board.is_capture(move) and BaseTacticDetector.is_hanging_capture(
+        motif_board, user_board, move, mover_color
+    ):
+        return "hanging_piece"
+    motif = MOTIF_DETECTORS.infer_motif(motif_board, move)
+    if motif == "initiative" and _is_new_hanging_piece(motif_board, user_board, mover_color):
+        return "hanging_piece"
+    return motif
+
+
+def _is_new_hanging_piece(
+    board_before: chess.Board,
+    board_after: chess.Board,
+    mover_color: bool,
+) -> bool:
+    if BaseTacticDetector.has_hanging_piece(board_before, mover_color):
+        return False
+    return BaseTacticDetector.has_hanging_piece(board_after, mover_color)
 
 
 def _override_motif_for_missed(

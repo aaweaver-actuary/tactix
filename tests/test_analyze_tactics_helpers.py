@@ -76,6 +76,9 @@ class AnalyzeTacticsHelperTests(unittest.TestCase):
     def test_compute_eval_discovered_attack_unclear_threshold(self) -> None:
         self.assertEqual(impl._compute_eval__discovered_attack_unclear_threshold(None), -300)
 
+    def test_compute_eval_discovered_check_unclear_threshold(self) -> None:
+        self.assertEqual(impl._compute_eval__discovered_check_unclear_threshold(None), -300)
+
     def test_apply_outcome_failed_attempt_line_tactics_overrides(self) -> None:
         result, motif = impl._apply_outcome__failed_attempt_line_tactics(
             "unclear",
@@ -169,6 +172,17 @@ class AnalyzeTacticsHelperTests(unittest.TestCase):
             "a2a3",
             -20,
             impl._compute_eval__discovered_attack_unclear_threshold(None),
+        )
+        self.assertEqual(result, "unclear")
+
+    def test_apply_outcome_unclear_discovered_check_override(self) -> None:
+        result = impl._apply_outcome__unclear_discovered_check(
+            "missed",
+            "discovered_check",
+            "a2a4",
+            "a2a3",
+            -20,
+            impl._compute_eval__discovered_check_unclear_threshold(None),
         )
         self.assertEqual(result, "unclear")
 

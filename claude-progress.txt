@@ -1,3 +1,15 @@
+Session 2026-01-31 (feature 231 – discovered check unclear outcome)
+- Pre-work verification (passes=true): `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_auth.py tests/test_api_profile.py tests/test_api_jobs.py tests/test_api_practice.py tests/test_api_dashboard_cache.py tests/test_dashboard_filters.py tests/test_base_chess_client.py tests/test_chesscom_client.py tests/test_config_env.py tests/test_constants.py tests/test_airflow_dag.py tests/test_airflow_client.py`.
+- Pre-change make check: `make check`.
+- Added discovered check unclear swing threshold + outcome override in `src/tactix/analyze_tactics__positions.py` with helper coverage in `tests/test_analyze_tactics_helpers.py` and persistence coverage in `tests/test_discovered_check_unclear.py`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest tests/test_analyze_tactics_helpers.py tests/test_discovered_check_unclear.py`, `make check` (post).
+- Seeded unclear discovered check blitz outcome: `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_231_seed_outcome_unclear_discovered_check_blitz.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_231_outcome_unclear_discovered_check_manual_ui.js` (screenshot `verification/feature-231-outcome-unclear-discovered-check-2026-01-31.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_231_outcome_unclear_discovered_check.js`.
+- Added verification scripts: `verification/puppeteer_feature_231_outcome_unclear_discovered_check_manual_ui.js`, `verification/integration_feature_231_outcome_unclear_discovered_check.js`.
+- Updated feature_list.json: feature 231 marked passes=true.
+- Pass count: 231/502.
+
 Session 2026-01-31 (feature 230 – discovered attack unclear outcome)
 - Pre-work verification (passes=true):
 	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`

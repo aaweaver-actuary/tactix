@@ -1,0 +1,115 @@
+from io import StringIO
+from pathlib import Path
+
+import chess
+import chess.pgn
+
+from tactix.config import Settings
+from tactix.db.duckdb_store import (
+    get_connection,
+    init_schema,
+    upsert_tactic_with_outcome,
+    update_metrics_summary,
+    write_metrics_version,
+)
+from tactix.engine_result import EngineResult
+from tactix.pgn_utils import split_pgn_chunks
+from tactix.tactics_analyzer import analyze_position
+from _seed_helpers import _ensure_position
+
+
+def _first_move_position(chunk: str, game_id: str) -> dict[str, object] | None:
+    game = chess.pgn.read_game(StringIO(chunk))
+    if not game:
+        return None
+    fen = game.headers.get("FEN")
+    board = chess.Board(fen) if fen else game.board()
+    moves = list(game.mainline_moves())
+    if not moves:
+        return None
+    move = moves[0]
+    side_to_move = "white" if board.turn == chess.WHITE else "black"
+    return {
+        "game_id": game_id,
+        "user": "chesscom",
+        "source": "chesscom",
+        "fen": board.fen(),
+        "ply": board.ply(),
+        "move_number": board.fullmove_number,
+        "side_to_move": side_to_move,
+        "uci": move.uci(),
+        "san": board.san(move),
+        "clock_seconds": None,
+        "is_legal": True,
+    }
+
+
+def _discovered_check_fixture_position() -> dict[str, object]:
+    fixture_path = Path("tests/fixtures/chesscom_blitz_sample.pgn")
+    chunks = split_pgn_chunks(fixture_path.read_text())
+    for chunk in chunks:
+        game = chess.pgn.read_game(StringIO(chunk))
+        if not game:
+            continue
+        event = (game.headers.get("Event") or "").lower()
+        if "discovered check" not in event:
+            continue
+        position = _first_move_position(chunk, game_id="blitz-discovered-check-unclear")
+        if position:
+            return position
+    raise SystemExit("No discovered check fixture game found")
+
+
+def _build_unclear_result(
+    position: dict[str, object],
+    best_move: chess.Move,
+) -> tuple[dict[str, object], dict[str, object]]:
+    class StubEngine:
+        def __init__(self, best: chess.Move) -> None:
+            self.best_move = best
+
+        def analyse(self, board: chess.Board) -> EngineResult:
+            if not board.move_stack:
+                return EngineResult(best_move=self.best_move, score_cp=200, depth=12)
+            last_move = board.move_stack[-1]
+            if last_move == self.best_move:
+                return EngineResult(best_move=self.best_move, score_cp=-100, depth=12)
+            return EngineResult(best_move=self.best_move, score_cp=-200, depth=12)
+
+    result = analyze_position(position, StubEngine(best_move))
+    if result is None:
+        raise SystemExit("No result for discovered check unclear seed position")
+    tactic_row, outcome_row = result
+    if tactic_row["motif"] != "discovered_check" or outcome_row["result"] != "unclear":
+        raise SystemExit("Expected unclear discovered check outcome for seed position")
+    return tactic_row, outcome_row
+
+
+settings = Settings(
+    source="chesscom",
+    chesscom_user="chesscom",
+    chesscom_profile="blitz",
+    stockfish_path=Path("stockfish"),
+    stockfish_movetime_ms=60,
+    stockfish_depth=None,
+    stockfish_multipv=1,
+)
+settings.apply_chesscom_profile("blitz")
+
+position = _discovered_check_fixture_position()
+
+conn = get_connection(Path("data") / "tactix.duckdb")
+init_schema(conn)
+
+board = chess.Board(str(position["fen"]))
+user_move = chess.Move.from_uci(str(position["uci"]))
+best_move = next(move for move in board.legal_moves if move != user_move)
+tactic_row, outcome_row = _build_unclear_result(position, best_move)
+
+position = _ensure_position(conn, position)
+tactic_row["position_id"] = position["position_id"]
+
+upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
+update_metrics_summary(conn)
+write_metrics_version(conn)
+print("seeded discovered check (blitz) unclear outcome into data/tactix.duckdb")

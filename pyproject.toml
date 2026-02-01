@@ -46,6 +46,7 @@ requires     =["maturin>=1.0,<2.0"]
 
 [dependency-groups]
 dev=[
+    "pre-commit>=4.5.0",
     "pylint>=4.0.4",
     "pytest-cov>=7.0.0",
     "pytest>=9.0.2",

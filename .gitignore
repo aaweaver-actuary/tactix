@@ -6,6 +6,9 @@ dist/
 wheels/
 *.egg-info
 
+# Rust/Python bindings
+*.so
+
 # Virtual environments
 .venv
 target/

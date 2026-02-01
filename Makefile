@@ -69,3 +69,22 @@ dev:
 	cd client && npm run dev --host --port 5178
 
 check: lint test complexity dedup deadcode build
+
+setup:
+	@echo "Setting up the tactix repository..."
+	@echo "1. Checking for Python..."
+	@which python3 > /dev/null || (echo "Error: Python 3 not found. Please install Python 3.12+" && exit 1)
+	@python3 --version
+	@echo "2. Checking for Node.js..."
+	@which node > /dev/null || (echo "Error: Node.js not found. Please install Node.js" && exit 1)
+	@node --version
+	@echo "3. Installing uv (if not already installed)..."
+	@which uv > /dev/null || pip install uv
+	@uv --version
+	@echo "4. Running uv sync to set up Python virtual environment..."
+	@uv sync
+	@echo "5. Installing Node.js dependencies..."
+	@cd client && npm install
+	@echo "6. Installing pre-commit hooks..."
+	@uv run pre-commit install
+	@echo "✓ Setup complete! You can now run 'make check' to verify everything works."

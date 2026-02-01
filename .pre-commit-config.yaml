@@ -1,0 +1,142 @@
+# Pre-commit hooks that reproduce the Makefile checks
+repos:
+  # Python linting and formatting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.14
+    hooks:
+      - id: ruff
+        name: ruff check
+        args: [--fix]
+        files: ^src/
+      - id: ruff-format
+        name: ruff format
+        files: ^src/
+
+  # Python type checking (ty)
+  - repo: local
+    hooks:
+      - id: ty-check
+        name: ty check
+        entry: uv run ty check --error deprecated
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+
+  # Python complexity checking
+  - repo: local
+    hooks:
+      - id: xenon
+        name: xenon complexity check
+        entry: uv run xenon --max-absolute A --max-modules A --max-average A src/
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+
+  # Python dead code detection
+  - repo: local
+    hooks:
+      - id: vulture
+        name: vulture dead code check
+        entry: >
+          uv run vulture src/
+          --min-confidence 60
+          --ignore-decorators "@app.get,@app.post,@app.put,@app.patch,@app.delete"
+          --ignore-names "stockfish_ponder,move_number,analyze_positions,main,_clear_dashboard_cache,DbSchemas,analysis,insert_tactics,insert_tactic_outcomes,set_level,MockChessClient,MockDbStore,convert_raw_pgns_to_positions,run_monitor_new_positions,clock_seconds,applied_options,is_legal"
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+
+  # JavaScript/TypeScript linting
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint
+        entry: bash -c 'cd client && npx eslint --fix . --ext .js,.jsx,.ts,.tsx'
+        language: system
+        files: ^client/.*\.(js|jsx|ts|tsx)$
+        pass_filenames: false
+
+  # JavaScript/TypeScript formatting
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        entry: bash -c 'cd client && npx prettier --write --cache .'
+        language: system
+        files: ^client/.*\.(js|jsx|ts|tsx|json|css)$
+        pass_filenames: false
+
+  # JavaScript dead code detection
+  - repo: local
+    hooks:
+      - id: knip
+        name: knip dead code check
+        entry: bash -c 'cd client && npx knip'
+        language: system
+        files: ^client/
+        pass_filenames: false
+
+  # Duplicate code detection
+  - repo: local
+    hooks:
+      - id: jscpd
+        name: jscpd duplicate detection
+        entry: >
+          bash -c 'cd client && npx jscpd
+          --format python,typescript,tsx,javascript,jsx
+          ../src ./src
+          --min-lines 8 --min-tokens 70 --threshold 1
+          --reporters console
+          --ignore "**/dist/**"
+          --ignore "**/coverage/**"
+          --ignore "**/node_modules/**"
+          --ignore "**/.venv/**"
+          --ignore "**/tests/**"'
+        language: system
+        files: \.(py|js|jsx|ts|tsx)$
+        pass_filenames: false
+
+  # Rust tests (cargo test)
+  - repo: local
+    hooks:
+      - id: cargo-test
+        name: cargo test
+        entry: uv run cargo test
+        language: system
+        files: \.(rs|toml)$
+        pass_filenames: false
+
+  # Python tests with coverage
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest with coverage
+        entry: >
+          uv run pytest tests/
+          --cov=src/
+          --cov-config=./.coveragerc
+          --cov-report=term-missing
+          --cov-fail-under=95
+        language: system
+        files: ^(src/.*\.py|tests/.*\.py)$
+        pass_filenames: false
+
+  # JavaScript tests with coverage
+  - repo: local
+    hooks:
+      - id: vitest
+        name: vitest with coverage
+        entry: bash -c 'cd client && npx vitest run --coverage'
+        language: system
+        files: ^client/
+        pass_filenames: false
+
+  # Rust build (cargo build --release)
+  - repo: local
+    hooks:
+      - id: cargo-build
+        name: cargo build release
+        entry: uv run cargo build --release
+        language: system
+        files: \.(rs|toml)$
+        pass_filenames: false

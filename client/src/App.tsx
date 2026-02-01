@@ -15,12 +15,12 @@ import {
 } from './api';
 import { getAuthHeaders } from './utils/getAuthHeaders';
 import getJobStreamUrl from './utils/getJobStreamUrl';
+import getMetricsStreamUrl from './utils/getMetricsStreamUrl';
 import fetchDashboard from './utils/fetchDashboard';
 import fetchGameDetail from './utils/fetchGameDetail';
 import fetchPostgresAnalysis from './utils/fetchPostgresAnalysis';
 import fetchPostgresRawPgns from './utils/fetchPostgresRawPgns';
 import fetchPostgresStatus from './utils/fetchPostgresStatus';
-import triggerMetricsRefresh from './utils/triggerMetricsRefresh';
 import submitPracticeAttempt from './utils/submitPracticeAttempt';
 import fetchPracticeQueue from './utils/fetchPracticeQueue';
 import formatPgnMoveList from './utils/formatPgnMoveList';
@@ -366,26 +366,14 @@ export default function App() {
     resetJobState();
   }, [source, lichessProfile, chesscomProfile]);
 
-  const streamJobEvents = async (
-    job: string,
-    nextSource: ChessPlatform,
-    disconnectMessage: string,
-    nextFilters: DashboardFilters = normalizedFilters,
-    profile?: LichessProfile | ChesscomProfile,
-    backfillStartMs?: number,
-    backfillEndMs?: number,
+  const consumeEventStream = async (
+    streamUrl: string,
+    controller: AbortController,
+    handleEvent: (
+      eventName: string,
+      data: string,
+    ) => Promise<boolean | void> | boolean | void,
   ) => {
-    streamAbortRef.current?.abort();
-    const controller = new AbortController();
-    streamAbortRef.current = controller;
-
-    const streamUrl = getJobStreamUrl(
-      job,
-      nextSource,
-      profile,
-      backfillStartMs,
-      backfillEndMs,
-    );
     const response = await fetch(streamUrl, {
       headers: getAuthHeaders(),
       signal: controller.signal,
@@ -400,47 +388,7 @@ export default function App() {
     const reader = body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
-
     let streamFinished = false;
-
-    async function handleEvent(eventName: string, data: string) {
-      if (!data) return;
-      let payload: Record<string, unknown> | null = null;
-      try {
-        payload = JSON.parse(data) as Record<string, unknown>;
-      } catch (parseError) {
-        console.error(parseError);
-        return;
-      }
-
-      if (
-        eventName === 'progress' ||
-        eventName === 'error' ||
-        eventName === 'complete'
-      ) {
-        setJobProgress((prev) => [...prev, payload as JobProgressItem]);
-      }
-
-      if (eventName === 'complete') {
-        setJobStatus('complete');
-        streamFinished = true;
-        const dashboard = await fetchDashboard(nextSource, nextFilters);
-        setData(dashboard);
-        await loadPracticeQueue(nextSource, includeFailedAttempt, true);
-        setLoading(false);
-        await loadPostgres();
-        await loadPostgresAnalysis();
-      }
-
-      if (eventName === 'error') {
-        setJobStatus('error');
-        streamFinished = true;
-        setLoading(false);
-        setError(disconnectMessage);
-        await loadPostgres();
-        await loadPostgresAnalysis();
-      }
-    }
 
     async function parseChunk(chunk: string): Promise<void> {
       buffer += chunk;
@@ -458,7 +406,12 @@ export default function App() {
             data += line.replace('data:', '').trim();
           }
         }
-        await handleEvent(eventName, data);
+        if (!data) continue;
+        const shouldFinish = await handleEvent(eventName, data);
+        if (shouldFinish) {
+          streamFinished = true;
+          return;
+        }
       }
     }
 
@@ -468,18 +421,185 @@ export default function App() {
         if (done) break;
         await parseChunk(decoder.decode(value, { stream: true }));
         if (streamFinished) {
-          await reader.cancel();
           break;
         }
       }
     } catch (err) {
       if (controller.signal.aborted) return;
       throw err;
+    }
+  };
+
+  const streamJobEvents = async (
+    job: string,
+    nextSource: ChessPlatform,
+    disconnectMessage: string,
+    nextFilters: DashboardFilters = normalizedFilters,
+    profile?: LichessProfile | ChesscomProfile,
+    backfillStartMs?: number,
+    backfillEndMs?: number,
+    refreshDashboardOnComplete = true,
+  ) => {
+    streamAbortRef.current?.abort();
+    const controller = new AbortController();
+    streamAbortRef.current = controller;
+
+    const streamUrl = getJobStreamUrl(
+      job,
+      nextSource,
+      profile,
+      backfillStartMs,
+      backfillEndMs,
+    );
+    try {
+      await consumeEventStream(
+        streamUrl,
+        controller,
+        async (eventName, data) => {
+          let payload: Record<string, unknown> | null = null;
+          try {
+            payload = JSON.parse(data) as Record<string, unknown>;
+          } catch (parseError) {
+            console.error(parseError);
+            return false;
+          }
+
+          if (
+            eventName === 'progress' ||
+            eventName === 'error' ||
+            eventName === 'complete'
+          ) {
+            setJobProgress((prev) => [...prev, payload as JobProgressItem]);
+          }
+
+          if (eventName === 'metrics_update') {
+            setData((prev) => {
+              if (!prev) {
+                return payload as DashboardPayload;
+              }
+              return {
+                ...prev,
+                metrics:
+                  (payload?.metrics as DashboardPayload['metrics']) ??
+                  prev.metrics,
+                metrics_version:
+                  (payload?.metrics_version as number | undefined) ??
+                  prev.metrics_version,
+                source:
+                  (payload?.source as DashboardPayload['source']) ??
+                  prev.source,
+              };
+            });
+          }
+
+          if (eventName === 'complete') {
+            setJobStatus('complete');
+            if (refreshDashboardOnComplete) {
+              const dashboard = await fetchDashboard(nextSource, nextFilters);
+              setData(dashboard);
+              await loadPracticeQueue(nextSource, includeFailedAttempt, true);
+              await loadPostgres();
+              await loadPostgresAnalysis();
+            }
+            setLoading(false);
+            return true;
+          }
+
+          if (eventName === 'error') {
+            setJobStatus('error');
+            setLoading(false);
+            setError(disconnectMessage);
+            if (refreshDashboardOnComplete) {
+              await loadPostgres();
+              await loadPostgresAnalysis();
+            }
+            return true;
+          }
+
+          return false;
+        },
+      );
     } finally {
       if (streamAbortRef.current === controller) {
         streamAbortRef.current = null;
       }
     }
+  };
+
+  const streamMetricsEvents = async (
+    nextSource: ChessPlatform,
+    nextFilters: DashboardFilters = normalizedFilters,
+  ): Promise<boolean> => {
+    streamAbortRef.current?.abort();
+    const controller = new AbortController();
+    streamAbortRef.current = controller;
+    let succeeded = true;
+
+    const streamUrl = getMetricsStreamUrl(nextSource, nextFilters);
+    try {
+      await consumeEventStream(
+        streamUrl,
+        controller,
+        async (eventName, data) => {
+          let payload: Record<string, unknown> | null = null;
+          try {
+            payload = JSON.parse(data) as Record<string, unknown>;
+          } catch (parseError) {
+            console.error(parseError);
+            return false;
+          }
+
+          if (
+            eventName === 'progress' ||
+            eventName === 'error' ||
+            eventName === 'complete'
+          ) {
+            setJobProgress((prev) => [...prev, payload as JobProgressItem]);
+          }
+
+          if (eventName === 'metrics_update') {
+            setData((prev) => {
+              if (!prev) {
+                return payload as DashboardPayload;
+              }
+              return {
+                ...prev,
+                metrics:
+                  (payload?.metrics as DashboardPayload['metrics']) ??
+                  prev.metrics,
+                metrics_version:
+                  (payload?.metrics_version as number | undefined) ??
+                  prev.metrics_version,
+                source:
+                  (payload?.source as DashboardPayload['source']) ??
+                  prev.source,
+              };
+            });
+          }
+
+          if (eventName === 'complete') {
+            setJobStatus('complete');
+            setLoading(false);
+            return true;
+          }
+
+          if (eventName === 'error') {
+            succeeded = false;
+            setJobStatus('error');
+            setLoading(false);
+            setError('Metrics stream disconnected');
+            return true;
+          }
+
+          return false;
+        },
+      );
+    } finally {
+      if (streamAbortRef.current === controller) {
+        streamAbortRef.current = null;
+      }
+    }
+    return succeeded;
   };
 
   const handleRun = async () => {
@@ -587,12 +707,16 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const payload = await triggerMetricsRefresh(source, normalizedFilters);
-      setData(payload);
-      await loadPracticeQueue(source, includeFailedAttempt);
+      setJobProgress([]);
+      setJobStatus('running');
+      const ok = await streamMetricsEvents(source, normalizedFilters);
+      if (ok) {
+        await loadPracticeQueue(source, includeFailedAttempt);
+      }
     } catch (err) {
       console.error(err);
       setError('Metrics refresh failed');
+      setJobStatus('error');
     } finally {
       setLoading(false);
     }

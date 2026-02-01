@@ -56,6 +56,7 @@ from tactix.run_stream_job__job_stream import _run_stream_job
 from tactix.set_dashboard_cache__api_cache import _set_dashboard_cache
 from tactix.stream_job_worker__job_stream import _stream_job_worker
 from tactix.stream_jobs__api import stream_job_by_id, stream_jobs
+from tactix.stream_metrics__api import stream_metrics
 from tactix.trigger_airflow_daily_sync__airflow_jobs import _trigger_airflow_daily_sync
 from tactix.trigger_daily_sync__api_jobs import trigger_daily_sync
 from tactix.trigger_job__api_jobs import trigger_job
@@ -98,6 +99,7 @@ app.post("/api/practice/attempt")(practice_attempt)
 app.get("/api/jobs/stream")(stream_jobs)
 app.get("/api/jobs/{job_id}/stream")(stream_job_by_id)
 app.get("/api/jobs/{job_id}")(get_job_status)
+app.get("/api/metrics/stream")(stream_metrics)
 app.get("/api/stats/motifs")(motif_stats)
 app.get("/api/stats/trends")(trend_stats)
 
@@ -155,6 +157,7 @@ __all__ = [
     "require_api_token",
     "stream_job_by_id",
     "stream_jobs",
+    "stream_metrics",
     "tactics_search",
     "trend_stats",
     "trigger_daily_sync",

@@ -8,9 +8,9 @@ import fetchPostgresStatus from './utils/fetchPostgresStatus';
 import fetchPostgresAnalysis from './utils/fetchPostgresAnalysis';
 import fetchPostgresRawPgns from './utils/fetchPostgresRawPgns';
 import fetchGameDetail from './utils/fetchGameDetail';
-import triggerMetricsRefresh from './utils/triggerMetricsRefresh';
 import submitPracticeAttempt from './utils/submitPracticeAttempt';
 import getJobStreamUrl from './utils/getJobStreamUrl';
+import getMetricsStreamUrl from './utils/getMetricsStreamUrl';
 import { getAuthHeaders } from './utils/getAuthHeaders';
 
 vi.mock('./utils/fetchDashboard', () => ({ default: vi.fn() }));
@@ -19,9 +19,9 @@ vi.mock('./utils/fetchPostgresStatus', () => ({ default: vi.fn() }));
 vi.mock('./utils/fetchPostgresAnalysis', () => ({ default: vi.fn() }));
 vi.mock('./utils/fetchPostgresRawPgns', () => ({ default: vi.fn() }));
 vi.mock('./utils/fetchGameDetail', () => ({ default: vi.fn() }));
-vi.mock('./utils/triggerMetricsRefresh', () => ({ default: vi.fn() }));
 vi.mock('./utils/submitPracticeAttempt', () => ({ default: vi.fn() }));
 vi.mock('./utils/getJobStreamUrl', () => ({ default: vi.fn() }));
+vi.mock('./utils/getMetricsStreamUrl', () => ({ default: vi.fn() }));
 vi.mock('./utils/getAuthHeaders', () => ({ getAuthHeaders: vi.fn() }));
 
 const dashboardPayload = {
@@ -68,10 +68,12 @@ describe('App job stream', () => {
     vi.mocked(fetchPostgresAnalysis).mockResolvedValue(postgresAnalysis as any);
     vi.mocked(fetchPostgresRawPgns).mockResolvedValue(postgresRawPgns as any);
     vi.mocked(fetchGameDetail).mockResolvedValue({} as any);
-    vi.mocked(triggerMetricsRefresh).mockResolvedValue(dashboardPayload as any);
     vi.mocked(submitPracticeAttempt).mockResolvedValue({} as any);
     vi.mocked(getJobStreamUrl).mockReturnValue(
       '/api/jobs/stream?job=daily_game_sync',
+    );
+    vi.mocked(getMetricsStreamUrl).mockReturnValue(
+      '/api/metrics/stream?source=lichess',
     );
     vi.mocked(getAuthHeaders).mockReturnValue({});
 
@@ -119,6 +121,55 @@ describe('App job stream', () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/jobs/stream?job=daily_game_sync',
+      expect.objectContaining({
+        headers: {},
+        signal: expect.any(AbortSignal),
+      }),
+    );
+  });
+
+  it('updates metrics version from the metrics SSE stream', async () => {
+    const encoder = new TextEncoder();
+    const metricsPayload = `event: metrics_update\ndata: ${JSON.stringify({
+      step: 'metrics_update',
+      metrics_version: 5,
+      metrics: [],
+      source: 'lichess',
+    })}\n\n`;
+    const completePayload = `event: complete\ndata: ${JSON.stringify({
+      step: 'complete',
+      message: 'Metrics refresh complete',
+    })}\n\n`;
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode(metricsPayload));
+        controller.enqueue(encoder.encode(completePayload));
+        controller.close();
+      },
+    });
+
+    fetchMock.mockResolvedValue(new Response(stream, { status: 200 }));
+
+    render(<App />);
+
+    const lichessButton = screen.getByRole('button', {
+      name: 'Lichess · Rapid',
+    });
+    await waitFor(() => expect(lichessButton).toBeEnabled());
+    fireEvent.click(lichessButton);
+
+    const refreshButton = screen.getByTestId('action-refresh');
+    await waitFor(() => expect(refreshButton).toBeEnabled());
+    fireEvent.click(refreshButton);
+
+    expect(
+      await screen.findByText(
+        'Execution stamped via metrics version 5 · user test-user',
+      ),
+    ).toBeInTheDocument();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/metrics/stream?source=lichess',
       expect.objectContaining({
         headers: {},
         signal: expect.any(AbortSignal),

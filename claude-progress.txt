@@ -1,3 +1,12 @@
+Session 2026-02-01 (feature 243 – metrics SSE stream)
+- Added metrics SSE stream endpoint in `src/tactix/stream_metrics__api.py`, wired route in `src/tactix/api.py`, and JSON-safe encoding for streamed metrics payloads.
+- Client now streams metrics updates via `/api/metrics/stream` using shared fetch SSE parsing (updated `client/src/App.tsx` + new `client/src/utils/getMetricsStreamUrl.ts`).
+- Manual UI verification: `node /Users/andy/tactix/verification/puppeteer_feature_243_metrics_stream.js`.
+- Evidence: [verification/feature-243-metrics-stream-before-2026-02-01.png](verification/feature-243-metrics-stream-before-2026-02-01.png), [verification/feature-243-metrics-stream-after-2026-02-01.png](verification/feature-243-metrics-stream-after-2026-02-01.png).
+- Integration check: `node /Users/andy/tactix/verification/integration_feature_243_metrics_stream.js`.
+- Tests: `make check`.
+- Updated feature_list.json: feature 243 passes=true.
+
 Session 2026-02-01 (feature 012 regression rerun – SSE job stream)
 - Added Airflow-backed SSE progress steps in `src/tactix/run_airflow_daily_sync_job__job_stream.py` (start + fetch_games/raw_pgns/.../metrics_refreshed) and shortened DAG runtime by skipping non-requested source in [airflow/dags/daily_game_sync.py](airflow/dags/daily_game_sync.py).
 - Restarted services: `docker compose -f /Users/andy/tactix/compose.yml restart server airflow-scheduler airflow-webserver`.

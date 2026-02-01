@@ -2807,7 +2807,7 @@
     "category": "functional",
     "description": "SSE stream for metrics pushes incremental updates",
     "steps": ["Step 1: Open SSE connection", "Step 2: Emit metrics update event", "Step 3: Confirm client renders without full reload"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",

@@ -1,4 +1,13 @@
 # Pre-commit hooks that reproduce the Makefile checks
+# 
+# Usage:
+#   - Hooks run automatically on 'git commit' (fast linting/formatting by default)
+#   - For full checks including tests: pre-commit run --all-files --hook-stage manual
+#   - To skip hooks temporarily: git commit --no-verify
+#
+# Note: Test and build hooks are set to 'manual' stage to keep commits fast.
+# They should be run before pushing or in CI.
+
 repos:
   # Python linting and formatting
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -17,7 +26,7 @@ repos:
     hooks:
       - id: ty-check
         name: ty check
-        entry: uv run ty check --error deprecated
+        entry: uv run ty check --error deprecated src/
         language: system
         files: ^src/.*\.py$
         pass_filenames: false
@@ -96,7 +105,7 @@ repos:
         files: \.(py|js|jsx|ts|tsx)$
         pass_filenames: false
 
-  # Rust tests (cargo test)
+  # Rust tests (cargo test) - Manual stage only (use 'pre-commit run --hook-stage manual cargo-test')
   - repo: local
     hooks:
       - id: cargo-test
@@ -105,8 +114,17 @@ repos:
         language: system
         files: \.(rs|toml)$
         pass_filenames: false
+        stages: [manual]
 
-  # Python tests with coverage
+      - id: cargo-test-release
+        name: cargo test --release
+        entry: uv run cargo test --release
+        language: system
+        files: \.(rs|toml)$
+        pass_filenames: false
+        stages: [manual]
+
+  # Python tests with coverage - Manual stage only
   - repo: local
     hooks:
       - id: pytest
@@ -120,8 +138,9 @@ repos:
         language: system
         files: ^(src/.*\.py|tests/.*\.py)$
         pass_filenames: false
+        stages: [manual]
 
-  # JavaScript tests with coverage
+  # JavaScript tests with coverage - Manual stage only
   - repo: local
     hooks:
       - id: vitest
@@ -130,8 +149,9 @@ repos:
         language: system
         files: ^client/
         pass_filenames: false
+        stages: [manual]
 
-  # Rust build (cargo build --release)
+  # Rust build (cargo build --release) - Manual stage only
   - repo: local
     hooks:
       - id: cargo-build
@@ -140,3 +160,12 @@ repos:
         language: system
         files: \.(rs|toml)$
         pass_filenames: false
+        stages: [manual]
+
+      - id: client-build
+        name: client build
+        entry: bash -c 'cd client && npm run build'
+        language: system
+        files: ^client/
+        pass_filenames: false
+        stages: [manual]

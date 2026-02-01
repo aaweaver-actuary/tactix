@@ -17,7 +17,11 @@ from tactix.tactic_detectors import (
     build_default_motif_detector_suite,
 )
 from tactix.tactics_analyzer import _is_profile_in, analyze_position
-from tests.fixture_helpers import pin_fixture_position, skewer_fixture_position
+from tests.fixture_helpers import (
+    discovered_attack_fixture_position,
+    pin_fixture_position,
+    skewer_fixture_position,
+)
 
 
 class TacticsAnalyzerTests(unittest.TestCase):
@@ -256,6 +260,45 @@ class TacticsAnalyzerTests(unittest.TestCase):
 
         tmp_dir = Path(tempfile.mkdtemp())
         conn = get_connection(tmp_dir / "skewer_unclear.duckdb")
+        init_schema(conn)
+        position_ids = insert_positions(conn, [position])
+        tactic_row["position_id"] = position_ids[0]
+
+        tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
+        stored_outcome = conn.execute(
+            "SELECT result, user_uci FROM tactic_outcomes WHERE tactic_id = ?",
+            [tactic_id],
+        ).fetchone()
+        self.assertEqual(stored_outcome[0], "unclear")
+        self.assertEqual(stored_outcome[1], position["uci"])
+
+    def test_discovered_attack_unclear_persists(self) -> None:
+        position = discovered_attack_fixture_position()
+        board = chess.Board(str(position["fen"]))
+        user_move = chess.Move.from_uci(str(position["uci"]))
+        best_move = next(move for move in board.legal_moves if move != user_move)
+
+        class StubEngine:
+            def __init__(self, best: chess.Move) -> None:
+                self.best_move = best
+
+            def analyse(self, board: chess.Board) -> EngineResult:
+                if not board.move_stack:
+                    return EngineResult(best_move=self.best_move, score_cp=0, depth=12)
+                last_move = board.move_stack[-1]
+                if last_move == self.best_move:
+                    return EngineResult(best_move=self.best_move, score_cp=0, depth=12)
+                return EngineResult(best_move=self.best_move, score_cp=0, depth=12)
+
+        result = analyze_position(position, StubEngine(best_move))
+
+        self.assertIsNotNone(result)
+        tactic_row, outcome_row = result
+        self.assertEqual(tactic_row["motif"], "discovered_attack")
+        self.assertEqual(outcome_row["result"], "unclear")
+
+        tmp_dir = Path(tempfile.mkdtemp())
+        conn = get_connection(tmp_dir / "discovered_attack_unclear.duckdb")
         init_schema(conn)
         position_ids = insert_positions(conn, [position])
         tactic_row["position_id"] = position_ids[0]

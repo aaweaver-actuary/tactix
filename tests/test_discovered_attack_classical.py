@@ -294,6 +294,7 @@ class DiscoveredAttackClassicalTests(unittest.TestCase):
         self.assertEqual(stored_outcome[1], failed_position["uci"])
 
 
+
 class TestDiscoveredAttackCorrespondence(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_correspondence_discovered_attack_is_low_severity(self) -> None:

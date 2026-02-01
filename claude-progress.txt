@@ -1,3 +1,25 @@
+Session 2026-01-31 (feature 230 – discovered attack unclear outcome)
+- Pre-work verification (passes=true):
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_023_stockfish_checksum.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_024_promotion_en_passant.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_025_castling.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_026_rolling_averages.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_027_time_trouble.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js`
+- Pre-change make check: `make check`.
+- Added discovered attack unclear swing threshold + outcome override in `src/tactix/analyze_tactics__positions.py` with helper coverage in `tests/test_analyze_tactics_helpers.py` and unclear persistence test in `tests/test_tactics_analyzer.py`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_analyze_tactics_helpers.py /Users/andy/tactix/tests/test_tactics_analyzer.py /Users/andy/tactix/tests/test_discovered_attack_classical.py -q`, `make check` (post).
+- Seeded discovered attack unclear outcome: `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_230_seed_outcome_unclear_discovered_attack_correspondence.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_230_outcome_unclear_discovered_attack_manual_ui.js` (screenshot `verification/feature-230-outcome-unclear-discovered-attack-2026-01-31.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_230_outcome_unclear_discovered_attack.js`.
+- Added verification scripts: `verification/puppeteer_feature_230_outcome_unclear_discovered_attack_manual_ui.js`, `verification/integration_feature_230_outcome_unclear_discovered_attack.js`.
+- Updated feature_list.json: feature 230 marked passes=true.
+- Pass count: 230/502.
+
 Session 2026-01-31 (feature 229 – skewer unclear outcome)
 - Pre-work verification (passes=true):
 	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`

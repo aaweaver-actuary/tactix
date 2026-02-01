@@ -72,6 +72,24 @@ def skewer_fixture_position() -> dict[str, object]:
     raise AssertionError("No skewer fixture position found")
 
 
+def discovered_attack_fixture_position() -> dict[str, object]:
+    fixture_path = (
+        Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
+    )
+    chunks = split_pgn_chunks(fixture_path.read_text())
+    for chunk in chunks:
+        game = chess.pgn.read_game(StringIO(chunk))
+        if not game:
+            continue
+        event = (game.headers.get("Event") or "").lower()
+        if "discovered attack" not in event:
+            continue
+        position = _first_move_position(chunk)
+        if position:
+            return position
+    raise AssertionError("No discovered attack fixture position found")
+
+
 def hanging_piece_fixture_position(
     *,
     fixture_filename: str = "chesscom_blitz_sample.pgn",

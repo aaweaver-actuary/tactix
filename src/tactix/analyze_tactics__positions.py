@@ -33,6 +33,7 @@ _HANGING_PIECE_FAILED_ATTEMPT_SWING_THRESHOLD = -50
 _PIN_UNCLEAR_SWING_THRESHOLD = -300
 _FORK_UNCLEAR_SWING_THRESHOLD = -300
 _SKEWER_UNCLEAR_SWING_THRESHOLD = -300
+_DISCOVERED_ATTACK_UNCLEAR_SWING_THRESHOLD = -300
 _MATE_MISSED_SCORE_MULTIPLIER = 200
 _SEVERITY_MIN = 1.0
 _SEVERITY_MAX = 1.5
@@ -347,6 +348,11 @@ def _compute_eval__skewer_unclear_threshold(settings: Settings | None) -> int | 
     return _SKEWER_UNCLEAR_SWING_THRESHOLD
 
 
+def _compute_eval__discovered_attack_unclear_threshold(settings: Settings | None) -> int | None:
+    del settings
+    return _DISCOVERED_ATTACK_UNCLEAR_SWING_THRESHOLD
+
+
 def _select_motif__pin_target(motif: str, best_motif: str | None) -> str:
     if best_motif == "pin":
         return "pin"
@@ -566,6 +572,26 @@ def _apply_outcome__unclear_pin(
     return result
 
 
+def _apply_outcome__unclear_discovered_attack(
+    result: str,
+    motif: str,
+    best_move: str | None,
+    user_move_uci: str,
+    swing: int | None,
+    threshold: int | None,
+) -> str:
+    if _should_mark_unclear_discovered_attack(
+        result,
+        motif,
+        best_move,
+        user_move_uci,
+        swing,
+        threshold,
+    ):
+        return "unclear"
+    return result
+
+
 def _should_mark_unclear_pin(
     result: str,
     motif: str,
@@ -581,6 +607,21 @@ def _should_mark_unclear_pin(
     return _is_swing_at_least(swing, threshold)
 
 
+def _should_mark_unclear_discovered_attack(
+    result: str,
+    motif: str,
+    best_move: str | None,
+    user_move_uci: str,
+    swing: int | None,
+    threshold: int | None,
+) -> bool:
+    if swing is None or threshold is None or best_move is None:
+        return False
+    if not _is_unclear_discovered_attack_candidate(motif, best_move, user_move_uci, result):
+        return False
+    return _is_swing_at_least(swing, threshold)
+
+
 def _is_unclear_pin_candidate(
     motif: str,
     best_move: str,
@@ -588,6 +629,19 @@ def _is_unclear_pin_candidate(
     result: str,
 ) -> bool:
     if motif != "pin":
+        return False
+    if user_move_uci == best_move:
+        return False
+    return result in {"missed", "unclear"}
+
+
+def _is_unclear_discovered_attack_candidate(
+    motif: str,
+    best_move: str,
+    user_move_uci: str,
+    result: str,
+) -> bool:
+    if motif != "discovered_attack":
         return False
     if user_move_uci == best_move:
         return False
@@ -720,6 +774,14 @@ def _apply_outcome_overrides(
         user_move_uci,
         swing,
         _compute_eval__skewer_unclear_threshold(settings),
+    )
+    result = _apply_outcome__unclear_discovered_attack(
+        result,
+        motif,
+        best_move,
+        user_move_uci,
+        swing,
+        _compute_eval__discovered_attack_unclear_threshold(settings),
     )
     result = _apply_outcome__unclear_pin(
         result,

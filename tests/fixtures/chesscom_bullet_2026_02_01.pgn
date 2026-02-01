@@ -1,0 +1,28 @@
+[Event "Chess.com Bullet Fixture 2026-02-01 Loss"]
+[Site "https://www.chess.com/game/live/2026020101"]
+[UTCDate "2026.02.01"]
+[UTCTime "12:00:00"]
+[White "bulletbot"]
+[Black "chesscom"]
+[WhiteElo "1305"]
+[BlackElo "1200"]
+[TimeControl "60"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "3q2k1/4BN2/8/8/6Q1/8/8/6K1 b - - 0 1"]
+
+1... Kh7 { [%clk 0:01:00] } 2. Ne5 { [%clk 0:01:00] } Qh8 { [%clk 0:00:58] } 1-0
+
+
+[Event "Chess.com Bullet Fixture 2026-02-01 Win"]
+[Site "https://www.chess.com/game/live/2026020102"]
+[UTCDate "2026.02.01"]
+[UTCTime "11:00:00"]
+[White "opponent"]
+[Black "chesscom"]
+[WhiteElo "1210"]
+[BlackElo "1200"]
+[TimeControl "60"]
+[Result "0-1"]
+
+1. e4 { [%clk 0:01:00] } c5 { [%clk 0:01:00] } 2. Nf3 { [%clk 0:00:58] } d6 { [%clk 0:00:59] } 3. d4 { [%clk 0:00:55] } cxd4 { [%clk 0:00:58] } 4. Nxd4 { [%clk 0:00:52] } Nf6 { [%clk 0:00:57] } 5. Nc3 { [%clk 0:00:49] } a6 { [%clk 0:00:55] } 0-1

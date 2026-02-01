@@ -2813,7 +2813,7 @@
     "category": "testing",
     "description": "Github Issues #1",
     "steps": ["Step 1: Open GH issues", "Step 2: Reference issue #1 and create a new feature branch", "Step 3: Reference parent issue #6", "Step 4: Implement test as per issue description", "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available", "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes", "Step 7: Validate test passes after fix", "Step 8: Create PR referencing issue #1 and parent issue #6"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",

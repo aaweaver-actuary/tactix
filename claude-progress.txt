@@ -2843,3 +2843,32 @@ Session 2026-01-30 (regression – Airflow Trigger DAG missing in grid view)
 	- Refactored Stockfish settings/env parsing, engine result parsing, and retry/engine startup helpers to pass complexity checks.
 	- Added TYPE_CHECKING references to avoid dead-code warnings for exported utilities/models.
 	- Tests: `uv run pytest tests/test_mate_in_one_rapid.py tests/test_pin_correspondence.py tests/test_hanging_piece_correspondence.py tests/test_discovered_attack_correspondence.py tests/test_fork_correspondence.py tests/test_fork_classical.py tests/test_tactic_severity.py`, `uv run pytest tests/test_discovered_check_blitz_low.py tests/test_mate_in_one_bullet.py tests/test_tactic_severity.py`, `uv run pytest tests/test_analyze_tactics_helpers.py tests/test_tactic_severity.py`, `uv run pytest tests/test_engine_result_helpers.py`, `uv run pytest tests/test_misc_coverage.py`, `make check`.
+
+Session 2026-02-01 (Issue #1 – Chess.com bullet pipeline validation)
+- Pre-work regression verification (passes=true):
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_023_stockfish_checksum.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_024_promotion_en_passant.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_025_castling.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_026_rolling_averages.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_027_time_trouble.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js`
+	- Screenshots updated: `verification/feature-021-chesscom-pagination.png`, `verification/feature-028-practice-next-unseen.png`, `verification/feature-030-practice-session-progress.png`, `verification/feature-031-lichess-bullet-incremental-2026-01-25.png`, `verification/feature-033-lichess-blitz-incremental-2026-01-25.png`.
+- Pre-change checks: `make check`.
+- Added fixture + test for Issue #1:
+	- `tests/fixtures/chesscom_bullet_2026_02_01.pgn`
+	- `tests/test_chesscom_bullet_pipeline_2026_02_01.py`
+- Initial failure evidence:
+	- `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_chesscom_bullet_pipeline_2026_02_01.py -q` (no Chess.com rows when fixture path overwritten; missed tactics classified unclear at depth 8).
+	- Debug script: `tmp-logs/issue_1_debug_pipeline.py`.
+- Fixes:
+	- Ensure custom fixture path used after profile application.
+	- Update loss-game PGN to deterministic missed hanging knight + bishop.
+	- Increase Stockfish depth to 10 for deterministic missed classification.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_chesscom_bullet_pipeline_2026_02_01.py -q`.
+- Post-change checks: `make check`.
+- PR created: https://github.com/aaweaver-actuary/tactix/pull/7 (refs #1, #6).
+- Feature branch: `feature/issue-1-chesscom-bullet-2026-02-01`.

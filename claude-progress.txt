@@ -2894,3 +2894,26 @@ Session 2026-01-30 (regression – Airflow Trigger DAG missing in grid view)
 	- Refactored Stockfish settings/env parsing, engine result parsing, and retry/engine startup helpers to pass complexity checks.
 	- Added TYPE_CHECKING references to avoid dead-code warnings for exported utilities/models.
 	- Tests: `uv run pytest tests/test_mate_in_one_rapid.py tests/test_pin_correspondence.py tests/test_hanging_piece_correspondence.py tests/test_discovered_attack_correspondence.py tests/test_fork_correspondence.py tests/test_fork_classical.py tests/test_tactic_severity.py`, `uv run pytest tests/test_discovered_check_blitz_low.py tests/test_mate_in_one_bullet.py tests/test_tactic_severity.py`, `uv run pytest tests/test_analyze_tactics_helpers.py tests/test_tactic_severity.py`, `uv run pytest tests/test_engine_result_helpers.py`, `uv run pytest tests/test_misc_coverage.py`, `make check`.
+Session 2026-02-01 (orchestrator – GitHub issues added to feature_list)
+- Detected 6 open GitHub issues for Chess.com bullet E2E verification (issues #1-#6).
+- Added ISSUE-1 through ISSUE-6 entries to the top of feature_list.json with passes=false.
+- Next: run make check, then dispatch developer for regression checks and issue #1 pipeline verification.
+
+Session 2026-02-01 (Issue 1 – Chess.com bullet pipeline validation)
+- Pre-change make check: `make check` (clean; warnings only).
+- Regression verification (passes=true):
+	- `node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js` (screenshot `verification/feature-021-chesscom-pagination.png`).
+	- `node /Users/andy/tactix/verification/puppeteer_feature_023_stockfish_checksum.js` (screenshot `verification/feature-023-stockfish-checksum-2026-01-25.png`).
+	- `node /Users/andy/tactix/verification/puppeteer_feature_024_promotion_en_passant.js` (screenshot `verification/feature-024-promotion-en-passant-2026-01-25.png`).
+	- `node /Users/andy/tactix/verification/puppeteer_feature_025_castling.js` (screenshot `verification/feature-025-castling-2026-01-25.png`).
+	- `node /Users/andy/tactix/verification/puppeteer_feature_025a_chesscom_env.js` (screenshot `verification/feature-025a-chesscom-env-2026-01-25.png`).
+	- `node /Users/andy/tactix/verification/puppeteer_feature_025b_lichess_env.js` (screenshot `verification/feature-025b-lichess-env-2026-01-25.png`).
+	- `node /Users/andy/tactix/verification/puppeteer_feature_026_rolling_averages.js` (screenshot `verification/feature-026-rolling-averages-2026-01-25.png`).
+	- `node /Users/andy/tactix/verification/puppeteer_feature_027_time_trouble.js` (screenshot `verification/feature-027-time-trouble-correlation-2026-01-25.png`).
+	- `node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js` (screenshot `verification/feature-028-practice-next-unseen.png`).
+	- `node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js` (screenshot `verification/feature-030-practice-session-progress.png`).
+- Pipeline seed: `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/issue_1_seed_pipeline.py` (ingested `tests/fixtures/chesscom_2_bullet_games.pgn` into `data/tactix.duckdb`).
+- Manual UI verification (Issue 1): `node /Users/andy/tactix/verification/puppeteer_issue_1_pipeline_validation.js` (screenshot `verification/issue-1-chesscom-bullet-pipeline-validation-2026-02-01.png`).
+- Integration check (Issue 1): `node /Users/andy/tactix/verification/integration_issue_1_pipeline_validation.js`.
+- Post-change make check: `make check` (clean; warnings only).
+- Updated feature_list.json: ISSUE-1 marked passes=true.

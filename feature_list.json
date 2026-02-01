@@ -1,6 +1,62 @@
 [
   {
     "category": "functional",
+    "description": "ISSUE-6 - End-to-End Verification: Chess.com Bullet Games + Missed Tactics (2026-02-01) -- Canonical Scenario",
+    "steps": [
+      "Step 1: Follow the canonical scenario instructions from issue #6",
+      "Step 2: Verify end-to-end results for Chess.com bullet games and missed tactics",
+      "Step 3: Capture verification evidence and confirm outputs match the issue requirements"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "ISSUE-5 - E2E Verification: Chess.com Bullet Games + Missed Tactics (2026-02-01) -- Part 5: Client Verification (Puppeteer E2E)",
+    "steps": [
+      "Step 1: Execute the Puppeteer end-to-end verification described in issue #5",
+      "Step 2: Validate the client UI workflow for Chess.com bullet games and missed tactics",
+      "Step 3: Capture required screenshots and logs for evidence"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "ISSUE-4 - E2E Verification: Chess.com Bullet Games + Missed Tactics (2026-02-01) -- Part 4: Client Verification (Mocked, Automated)",
+    "steps": [
+      "Step 1: Run the mocked automated client verification described in issue #4",
+      "Step 2: Validate expected UI responses and data rendering",
+      "Step 3: Capture evidence artifacts required by the issue"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "ISSUE-3 - E2E Verification: Chess.com Bullet Games + Missed Tactics (2026-02-01) -- Part 3: Backend API Verification (FastAPI)",
+    "steps": [
+      "Step 1: Execute the backend API verification steps from issue #3",
+      "Step 2: Confirm FastAPI responses and data outputs match expectations",
+      "Step 3: Capture logs or evidence required by the issue"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "ISSUE-2 - E2E Verification: Chess.com Bullet Games + Missed Tactics (2026-02-01) -- Part 2: Database Verification (Postgres)",
+    "steps": ["Step 1: Execute the database verification steps from issue #2", "Step 2: Validate Postgres records and schema expectations", "Step 3: Capture evidence required by the issue"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "ISSUE-1 - E2E Verification: Chess.com Bullet Games + Missed Tactics (2026-02-01) -- Part 1: Pipeline Validation",
+    "steps": [
+      "Step 1: Run the pipeline validation workflow described in issue #1",
+      "Step 2: Confirm Chess.com bullet games ingestion and missed tactics outputs",
+      "Step 3: Capture required verification artifacts"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
     "description": "001 - Airflow Lichess full pipeline for rapid games",
     "steps": [
       "Step 1: Trigger Airflow DAG daily_game_sync for Lichess data",
@@ -2812,37 +2868,91 @@
   {
     "category": "testing",
     "description": "Github Issues #1",
-    "steps": ["Step 1: Open GH issues", "Step 2: Reference issue #1 and create a new feature branch", "Step 3: Reference parent issue #6", "Step 4: Implement test as per issue description", "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available", "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes", "Step 7: Validate test passes after fix", "Step 8: Create PR referencing issue #1 and parent issue #6"],
+    "steps": [
+      "Step 1: Open GH issues",
+      "Step 2: Reference issue #1 and create a new feature branch",
+      "Step 3: Reference parent issue #6",
+      "Step 4: Implement test as per issue description",
+      "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available",
+      "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes",
+      "Step 7: Validate test passes after fix",
+      "Step 8: Create PR referencing issue #1 and parent issue #6"
+    ],
     "passes": false
   },
   {
     "category": "testing",
     "description": "Github Issues #2",
-    "steps": ["Step 1: Open GH issues", "Step 2: Reference issue #2 and create a new feature branch", "Step 3: Reference parent issue #6", "Step 4: Implement test as per issue description", "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available", "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes", "Step 7: Validate test passes after fix", "Step 8: Create PR referencing issue #2 and parent issue #6"],
+    "steps": [
+      "Step 1: Open GH issues",
+      "Step 2: Reference issue #2 and create a new feature branch",
+      "Step 3: Reference parent issue #6",
+      "Step 4: Implement test as per issue description",
+      "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available",
+      "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes",
+      "Step 7: Validate test passes after fix",
+      "Step 8: Create PR referencing issue #2 and parent issue #6"
+    ],
     "passes": false
   },
   {
     "category": "testing",
     "description": "Github Issues #3",
-    "steps": ["Step 1: Open GH issues", "Step 2: Reference issue #3 and create a new feature branch", "Step 3: Reference parent issue #6", "Step 4: Implement test as per issue description", "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available", "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes", "Step 7: Validate test passes after fix", "Step 8: Create PR referencing issue #3 and parent issue #6"],
+    "steps": [
+      "Step 1: Open GH issues",
+      "Step 2: Reference issue #3 and create a new feature branch",
+      "Step 3: Reference parent issue #6",
+      "Step 4: Implement test as per issue description",
+      "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available",
+      "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes",
+      "Step 7: Validate test passes after fix",
+      "Step 8: Create PR referencing issue #3 and parent issue #6"
+    ],
     "passes": false
   },
   {
     "category": "testing",
     "description": "Github Issues #4",
-    "steps": ["Step 1: Open GH issues", "Step 2: Reference issue #4 and create a new feature branch", "Step 3: Reference parent issue #6", "Step 4: Implement test as per issue description", "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available", "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes", "Step 7: Validate test passes after fix", "Step 8: Create PR referencing issue #4 and parent issue #6"],
+    "steps": [
+      "Step 1: Open GH issues",
+      "Step 2: Reference issue #4 and create a new feature branch",
+      "Step 3: Reference parent issue #6",
+      "Step 4: Implement test as per issue description",
+      "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available",
+      "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes",
+      "Step 7: Validate test passes after fix",
+      "Step 8: Create PR referencing issue #4 and parent issue #6"
+    ],
     "passes": false
   },
   {
     "category": "testing",
     "description": "Github Issues #5",
-    "steps": ["Step 1: Open GH issues", "Step 2: Reference issue #5 and create a new feature branch", "Step 3: Reference parent issue #6", "Step 4: Implement test as per issue description", "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available", "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes", "Step 7: Validate test passes after fix", "Step 8: Create PR referencing issue #5 and parent issue #6"],
+    "steps": [
+      "Step 1: Open GH issues",
+      "Step 2: Reference issue #5 and create a new feature branch",
+      "Step 3: Reference parent issue #6",
+      "Step 4: Implement test as per issue description",
+      "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available",
+      "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes",
+      "Step 7: Validate test passes after fix",
+      "Step 8: Create PR referencing issue #5 and parent issue #6"
+    ],
     "passes": false
   },
   {
     "category": "testing",
     "description": "Github Issues #6",
-    "steps": ["Step 1: Open GH issues", "Step 2: Verify that completing sub-issues #1 to #5 addresses parent issue #6", "Step 3: If any functionality remains untested, create a new feature branch", "Step 4: Implement test as per issue description", "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available", "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes", "Step 7: Validate test passes after fix", "Step 8: Create PR referencing parent issue #6"],
+    "steps": [
+      "Step 1: Open GH issues",
+      "Step 2: Verify that completing sub-issues #1 to #5 addresses parent issue #6",
+      "Step 3: If any functionality remains untested, create a new feature branch",
+      "Step 4: Implement test as per issue description",
+      "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available",
+      "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes",
+      "Step 7: Validate test passes after fix",
+      "Step 8: Create PR referencing parent issue #6"
+    ],
     "passes": false
   },
   {

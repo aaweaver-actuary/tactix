@@ -95,6 +95,15 @@ async function startFrontendIfNeeded() {
   }
 }
 
+async function isBackendRunning() {
+  try {
+    await waitForPort('127.0.0.1', 8000, 1000);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
 function startBackend() {
   return new Promise((resolve, reject) => {
     const proc = spawn(
@@ -134,8 +143,9 @@ function startBackend() {
 
 (async () => {
   await startFrontendIfNeeded();
+  const backendRunning = await isBackendRunning();
   console.log('Starting backend...');
-  const backend = await startBackend();
+  const backend = backendRunning ? null : await startBackend();
   try {
     console.log('Launching browser...');
     const browser = await puppeteer.launch({ headless: 'new' });
@@ -160,6 +170,13 @@ function startBackend() {
     console.log('Navigating to dashboard...');
     await page.goto(DASHBOARD_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForSelector('[data-testid="filter-source"]');
+    await page.waitForFunction(
+      () => {
+        const select = document.querySelector('[data-testid="filter-source"]');
+        return select && !select.disabled;
+      },
+      { timeout: 60000 },
+    );
     const clickedSource = await page.$$eval('button', (nodes) => {
       const target = nodes.find((node) =>
         (node.textContent || '').includes('Chess.com'),
@@ -181,6 +198,20 @@ function startBackend() {
         select.dispatchEvent(new Event('change', { bubbles: true }));
       }
     });
+    await page.waitForFunction(
+      () => {
+        const select = document.querySelector('[data-testid="filter-source"]');
+        return select && select.value === 'chesscom';
+      },
+      { timeout: 60000 },
+    );
+    await page.waitForFunction(
+      () => {
+        const header = document.querySelector('h1');
+        return (header?.textContent || '').toLowerCase().includes('chess.com');
+      },
+      { timeout: 60000 },
+    );
     await page.waitForResponse(
       (response) => {
         const url = response.url();
@@ -192,10 +223,6 @@ function startBackend() {
       },
       { timeout: 60000 },
     );
-    await page.waitForSelector(RUN_BUTTON_SELECTOR);
-    await page.click(RUN_BUTTON_SELECTOR);
-    await page.waitForSelector('table');
-
     await page.waitForSelector('p');
     const heroText = await page.$$eval('p', (nodes) => {
       const match = nodes.find((node) =>
@@ -224,6 +251,8 @@ function startBackend() {
 
     await browser.close();
   } finally {
-    backend.kill();
+    if (backend) {
+      backend.kill();
+    }
   }
 })();

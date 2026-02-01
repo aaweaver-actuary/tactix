@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const net = require('net');
 const { spawn } = require('child_process');
 const puppeteer = require('puppeteer');
 
@@ -57,9 +58,30 @@ function startBackend() {
   });
 }
 
+function isPortOpen(host, port, timeoutMs = 1000) {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    let settled = false;
+
+    const finalize = (result) => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      resolve(result);
+    };
+
+    socket.setTimeout(timeoutMs);
+    socket.once('connect', () => finalize(true));
+    socket.once('timeout', () => finalize(false));
+    socket.once('error', () => finalize(false));
+    socket.connect(port, host);
+  });
+}
+
 (async () => {
+  const backendRunning = await isPortOpen('127.0.0.1', 8000);
   console.log('Starting backend...');
-  const backend = await startBackend();
+  const backend = backendRunning ? null : await startBackend();
   try {
     console.log('Launching browser...');
     const browser = await puppeteer.launch({ headless: 'new' });
@@ -99,6 +121,8 @@ function startBackend() {
 
     await browser.close();
   } finally {
-    backend.kill();
+    if (backend) {
+      backend.kill();
+    }
   }
 })();

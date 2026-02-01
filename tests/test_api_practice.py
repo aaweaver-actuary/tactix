@@ -127,6 +127,83 @@ def test_practice_next_returns_schema() -> None:
     assert isinstance(item["move_number"], int)
 
 
+def test_practice_attempt_requires_auth() -> None:
+    client = TestClient(app)
+    response = client.post("/api/practice/attempt", json={"tactic_id": 1})
+    assert response.status_code == 401
+
+
+def test_practice_attempt_returns_schema() -> None:
+    client = TestClient(app)
+    token = get_settings().api_token
+    payload = {
+        "tactic_id": 1,
+        "position_id": 2,
+        "attempted_uci": "e2e4",
+        "served_at_ms": 1000,
+    }
+    sample = {
+        "attempt_id": 10,
+        "tactic_id": 1,
+        "position_id": 2,
+        "source": "lichess",
+        "attempted_uci": "e2e4",
+        "best_uci": "e2e4",
+        "best_san": "e4",
+        "correct": True,
+        "success": True,
+        "motif": "fork",
+        "severity": 1.4,
+        "eval_delta": -120,
+        "message": "Correct! fork found.",
+        "explanation": "Fork on f7",
+        "latency_ms": 250,
+    }
+
+    with (
+        patch("tactix.post_practice_attempt__api.get_connection", return_value=MagicMock()),
+        patch("tactix.post_practice_attempt__api.init_schema"),
+        patch("tactix.post_practice_attempt__api.grade_practice_attempt", return_value=sample),
+    ):
+        response = client.post(
+            "/api/practice/attempt",
+            headers={"Authorization": f"Bearer {token}"},
+            json=payload,
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    required_keys = {
+        "attempt_id",
+        "tactic_id",
+        "position_id",
+        "source",
+        "attempted_uci",
+        "best_uci",
+        "best_san",
+        "correct",
+        "success",
+        "motif",
+        "severity",
+        "eval_delta",
+        "message",
+        "explanation",
+        "latency_ms",
+    }
+    assert required_keys.issubset(body.keys())
+    assert isinstance(body["attempt_id"], int)
+    assert isinstance(body["tactic_id"], int)
+    assert isinstance(body["position_id"], int)
+    assert isinstance(body["attempted_uci"], str)
+    assert isinstance(body["best_uci"], str)
+    assert isinstance(body["correct"], bool)
+    assert isinstance(body["success"], bool)
+    assert isinstance(body["motif"], str)
+    assert isinstance(body["severity"], float)
+    assert isinstance(body["eval_delta"], int)
+    assert isinstance(body["message"], str)
+
+
 def test_practice_attempt_includes_latency_and_errors() -> None:
     client = TestClient(app)
     token = get_settings().api_token

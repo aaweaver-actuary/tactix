@@ -11,9 +11,41 @@
 
 ### Quick start
 
+**Option 1: Using the Makefile (recommended)**
+
+```bash
+make setup
+```
+
+This single command will:
+- Check for Python and Node.js
+- Install `uv` if needed
+- Set up the Python virtual environment with `uv sync`
+- Install Node.js dependencies
+- Install pre-commit hooks
+
+**Option 2: Using the init.sh script**
+
 1. Make the helper executable: `chmod +x ./init.sh`
 2. Install deps (Python, JS, optional Airflow bootstrap, Rust build if present): `./init.sh`
 3. To auto-start dev servers (when app code exists): `START_SERVERS=1 ./init.sh`
+
+### Pre-commit hooks
+
+The repository includes pre-commit hooks that run linting, formatting, and code quality checks automatically on commit. After running `make setup`, these hooks are installed. The hooks include:
+
+- **Auto-run on commit**: Python linting (ruff), formatting, type checking (ty), complexity checks (xenon), dead code detection (vulture), JavaScript linting (eslint), formatting (prettier), dead code detection (knip), and duplicate code detection (jscpd)
+- **Manual-run for full validation**: Tests (pytest, cargo test, vitest) and builds (cargo build, client build)
+
+To run all checks including tests and builds:
+```bash
+pre-commit run --all-files --hook-stage manual
+```
+
+To skip hooks temporarily:
+```bash
+git commit --no-verify
+```
 
 ### Docker (recommended for consistent local setup)
 

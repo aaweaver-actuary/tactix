@@ -27,6 +27,12 @@ def test_practice_queue_returns_items() -> None:
     assert payload["items"][0]["tactic_id"] == 1
 
 
+def test_practice_next_requires_auth() -> None:
+    client = TestClient(app)
+    response = client.get("/api/practice/next")
+    assert response.status_code == 401
+
+
 def test_practice_next_returns_single_item() -> None:
     client = TestClient(app)
     token = get_settings().api_token
@@ -45,6 +51,80 @@ def test_practice_next_returns_single_item() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["item"]["tactic_id"] == 9
+
+
+def test_practice_next_returns_schema() -> None:
+    client = TestClient(app)
+    token = get_settings().api_token
+    sample = [
+        {
+            "tactic_id": 1,
+            "game_id": "game-1",
+            "position_id": 2,
+            "source": "lichess",
+            "motif": "fork",
+            "result": "missed",
+            "best_uci": "e2e4",
+            "user_uci": "e2e3",
+            "eval_delta": -120,
+            "severity": 1.2,
+            "created_at": "2026-02-01T00:00:00",
+            "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            "position_uci": "e2e4",
+            "san": "e4",
+            "ply": 1,
+            "move_number": 1,
+            "side_to_move": "white",
+            "clock_seconds": 300,
+        }
+    ]
+
+    with (
+        patch("tactix.get_practice_next__api.get_connection", return_value=MagicMock()),
+        patch("tactix.get_practice_next__api.init_schema"),
+        patch("tactix.get_practice_next__api.fetch_practice_queue", return_value=sample),
+    ):
+        response = client.get(
+            "/api/practice/next?source=lichess&include_failed_attempt=1",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert set(payload.keys()) == {"source", "include_failed_attempt", "item"}
+    assert payload["source"] == "lichess"
+    assert payload["include_failed_attempt"] is True
+    assert payload["item"] is not None
+
+    required_keys = {
+        "tactic_id",
+        "game_id",
+        "position_id",
+        "source",
+        "motif",
+        "result",
+        "best_uci",
+        "user_uci",
+        "eval_delta",
+        "severity",
+        "created_at",
+        "fen",
+        "position_uci",
+        "san",
+        "ply",
+        "move_number",
+        "side_to_move",
+        "clock_seconds",
+    }
+    item = payload["item"]
+    assert required_keys.issubset(item.keys())
+    assert isinstance(item["tactic_id"], int)
+    assert isinstance(item["position_id"], int)
+    assert isinstance(item["source"], str)
+    assert isinstance(item["motif"], str)
+    assert isinstance(item["result"], str)
+    assert isinstance(item["ply"], int)
+    assert isinstance(item["move_number"], int)
 
 
 def test_practice_attempt_includes_latency_and_errors() -> None:

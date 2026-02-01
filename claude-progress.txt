@@ -1,3 +1,26 @@
+Session 2026-02-01 (feature 236 – practice next endpoint schema)
+- Pre-work verification (passes=true):
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_023_stockfish_checksum.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_024_promotion_en_passant.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_025_castling.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_026_rolling_averages.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_027_time_trouble.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_073_mate_in_one_bullet.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_107_positions.js`
+- Pre-change make check: `make check`.
+- Added schema + auth coverage for /api/practice/next in `tests/test_api_practice.py`.
+- Tests: `make check` (post).
+- UI verification (manual): `TACTIX_SCREENSHOT_NAME=feature-236-practice-next-schema-2026-02-01.png node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js` (screenshot `verification/feature-236-practice-next-schema-2026-02-01.png`).
+- CI integration check: `TACTIX_API_URL=http://localhost:8000 TACTIX_API_TOKEN=local-dev-token node /Users/andy/tactix/verification/integration_feature_236_practice_next_schema.js`.
+- Added verification script: `verification/integration_feature_236_practice_next_schema.js`.
+- Updated feature_list.json: practice next endpoint schema marked passes=true.
+- Pass count: 236/502.
+
 Session 2026-02-01 (feature 235 – tactics search endpoint schema)
 - Pre-work verification (passes=true):
 	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`

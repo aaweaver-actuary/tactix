@@ -9,6 +9,7 @@ export type JobProgressItem = {
   metrics_version?: number;
   schema_version?: number;
   job?: string;
+  job_id?: string;
 };
 
 export type ChessPlatform = 'lichess' | 'chesscom' | 'all';

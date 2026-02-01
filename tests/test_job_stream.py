@@ -34,6 +34,21 @@ def _stream_events(client: TestClient, url: str, token: str) -> list[tuple[str, 
     return events
 
 
+def _assert_progress_schema(payload: dict[str, object], job_id: str) -> None:
+    assert payload.get("job") == job_id
+    assert payload.get("job_id") == job_id
+    assert isinstance(payload.get("step"), str)
+    assert "timestamp" in payload
+
+
+def _assert_complete_schema(payload: dict[str, object], job_id: str) -> None:
+    assert payload.get("job") == job_id
+    assert payload.get("job_id") == job_id
+    assert payload.get("step") == "complete"
+    assert isinstance(payload.get("message"), str)
+    assert isinstance(payload.get("result"), dict)
+
+
 def test_job_stream_emits_progress_and_complete():
     client = TestClient(app)
     token = get_settings().api_token
@@ -51,6 +66,31 @@ def test_job_stream_emits_progress_and_complete():
         name == "progress" and data.get("step") in {"start", "metrics_refreshed"}
         for name, data in events
     )
+
+
+def test_job_stream_by_id_requires_auth() -> None:
+    client = TestClient(app)
+    response = client.get("/api/jobs/refresh_metrics/stream")
+    assert response.status_code == 401
+
+
+def test_job_stream_by_id_returns_schema() -> None:
+    client = TestClient(app)
+    token = get_settings().api_token
+
+    events = _stream_events(
+        client,
+        "/api/jobs/refresh_metrics/stream?source=lichess",
+        token,
+    )
+
+    progress_payloads = [data for name, data in events if name == "progress"]
+    complete_payloads = [data for name, data in events if name == "complete"]
+
+    assert progress_payloads
+    assert complete_payloads
+    _assert_progress_schema(progress_payloads[0], "refresh_metrics")
+    _assert_complete_schema(complete_payloads[-1], "refresh_metrics")
 
 
 def test_daily_game_sync_stream_uses_airflow_when_enabled() -> None:

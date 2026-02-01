@@ -8,7 +8,7 @@ export default function getJobStreamUrl(
   backfillEndMs?: number,
 ): string {
   const base = API_BASE ? API_BASE.replace(/\/$/, '') : '';
-  const params = new URLSearchParams({ job });
+  const params = new URLSearchParams();
   if (source && source !== 'all') params.set('source', source);
   if (profile) params.set('profile', profile);
   if (typeof backfillStartMs === 'number') {
@@ -17,5 +17,7 @@ export default function getJobStreamUrl(
   if (typeof backfillEndMs === 'number') {
     params.set('backfill_end_ms', String(backfillEndMs));
   }
-  return `${base}/api/jobs/stream?${params.toString()}`;
+  const query = params.toString();
+  const suffix = query ? `?${query}` : '';
+  return `${base}/api/jobs/${encodeURIComponent(job)}/stream${suffix}`;
 }

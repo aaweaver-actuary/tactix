@@ -21,6 +21,7 @@ def _stream_job_worker(
 ) -> None:
     def progress(payload: dict[str, object]) -> None:
         payload["job"] = job
+        payload["job_id"] = job
         queue.put(("progress", payload))
 
     try:
@@ -42,6 +43,7 @@ def _stream_job_worker(
                 "complete",
                 {
                     "job": job,
+                    "job_id": job,
                     "step": "complete",
                     "message": "Job complete",
                     "result": result,
@@ -54,6 +56,7 @@ def _stream_job_worker(
                 "error",
                 {
                     "job": job,
+                    "job_id": job,
                     "step": "error",
                     "message": str(exc),
                 },

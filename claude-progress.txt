@@ -1,3 +1,25 @@
+Session 2026-02-01 (feature 240 – jobs stream endpoint schema)
+- Pre-work verification (passes=true):
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_023_stockfish_checksum.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_024_promotion_en_passant.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_025_castling.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_026_rolling_averages.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_027_time_trouble.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js`
+- Pre-change make check: `make check`.
+- Implemented /api/jobs/{id}/stream in `src/tactix/stream_jobs__api.py`, added job_id to stream payloads in `src/tactix/stream_job_worker__job_stream.py`, and wired the route in `src/tactix/api.py`.
+- Updated dashboard stream URL builder to use /api/jobs/{id}/stream in `client/src/utils/getJobStreamUrl.ts` + tests; extended `client/src/types.ts` for job_id.
+- Added schema + auth coverage for /api/jobs/{id}/stream in `tests/test_job_stream.py`.
+- Manual verification (API): `TACTIX_API_URL=http://localhost:8001 TACTIX_API_TOKEN=local-dev-token node /Users/andy/tactix/verification/feature_240_jobs_stream_schema.js` (server logs `tmp-logs/feature_240_uvicorn.log`).
+- CI integration script: `TACTIX_API_URL=http://localhost:8001 TACTIX_API_TOKEN=local-dev-token node /Users/andy/tactix/verification/integration_feature_240_jobs_stream_schema.js` (server logs `tmp-logs/feature_240_uvicorn_ci.log`).
+- Tests: `make check` (post; log `tmp-logs/feature_240_make_check.log`).
+- Updated feature_list.json: /api/jobs/{id}/stream schema marked passes=true.
+- Pass count: 240/502.
+
 Session 2026-02-01 (feature 239 – jobs detail endpoint schema)
 - Pre-work verification (passes=true):
 	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_dashboard.js`

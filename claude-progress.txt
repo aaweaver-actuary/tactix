@@ -1,3 +1,8 @@
+Session 2026-02-01 (dev cleanup – lint/worktree)
+- Reverted unintended local edits related to metrics stream updates (client/server/test changes) to restore clean working tree.
+- Removed stray verification/log artifacts from the workspace.
+- Tests: `make check`.
+
 Session 2026-02-01 (feature 242 – /api/auth/token schema)
 - Regression check: `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js`, `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`, `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js` (screenshot `verification/feature-030-practice-session-progress.png`).
 - Fixed stream URL regression by switching dashboard stream URLs to `/api/jobs/stream?job=...` in `client/src/utils/getJobStreamUrl.ts` + updated tests.

@@ -1,3 +1,25 @@
+Session 2026-02-01 (feature 235 – tactics search endpoint schema)
+- Pre-work verification (passes=true):
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_023_stockfish_checksum.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_024_promotion_en_passant.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_025_castling.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_026_rolling_averages.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_027_time_trouble.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js`
+- Pre-change make check: `make check`.
+- Implemented /api/tactics/search endpoint + filters in `src/tactix/get_tactics_search__api.py`, wired into `src/tactix/api.py`.
+- Tests: `make check` (post).
+- Manual verification (API): `TACTIX_API_URL=http://localhost:8001 TACTIX_API_TOKEN=local-dev-token node /Users/andy/tactix/verification/feature_235_tactics_search_manual.js` (server log `tmp-logs/feature_235_api.log`).
+- CI integration check: `TACTIX_API_URL=http://localhost:8001 TACTIX_API_TOKEN=local-dev-token node /Users/andy/tactix/verification/integration_feature_235_tactics_search.js`.
+- Added verification scripts: `verification/feature_235_tactics_search_manual.js`, `verification/integration_feature_235_tactics_search.js`.
+- Added tests: `tests/test_api_tactics_search.py`.
+- Updated feature_list.json: tactics search endpoint schema marked passes=true.
+- Pass count: 235/502.
+
 Session 2026-02-01 (feature 234 – stats trends endpoint)
 - Pre-work verification (passes=true):
 	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`

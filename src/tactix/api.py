@@ -36,6 +36,7 @@ from tactix.get_postgres_status__api import postgres_status
 from tactix.get_practice_next__api import practice_next
 from tactix.get_practice_queue__api import practice_queue
 from tactix.get_raw_pgns_summary__api import raw_pgns_summary
+from tactix.get_tactics_search__api import tactics_search
 from tactix.list_sources_for_cache_refresh__api_cache import _sources_for_cache_refresh
 from tactix.manage_lifespan__fastapi import lifespan
 from tactix.models import PracticeAttemptRequest
@@ -86,6 +87,7 @@ app.get("/api/dashboard")(dashboard)
 app.get("/api/practice/queue")(practice_queue)
 app.get("/api/practice/next")(practice_next)
 app.get("/api/raw_pgns/summary")(raw_pgns_summary)
+app.get("/api/tactics/search")(tactics_search)
 app.get("/api/games/{game_id}")(game_detail)
 app.post("/api/practice/attempt")(practice_attempt)
 app.get("/api/jobs/stream")(stream_jobs)
@@ -143,6 +145,7 @@ __all__ = [
     "raw_pgns_summary",
     "require_api_token",
     "stream_jobs",
+    "tactics_search",
     "trend_stats",
     "trigger_daily_sync",
     "trigger_migrations",

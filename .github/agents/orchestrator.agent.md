@@ -425,3 +425,4 @@ If any conflict exists:
 - Make refactoring a priority. There is currently too much code duplication and complexity in the codebase. Whenever they see an opportunity to improve code structure, modularity, or maintainability, they should take it. This includes creating utility functions or shared components to encapsulate repeated logic, simplifying complex functions, and breaking down large components into smaller, more manageable pieces.
 
 Remember, you are dispatching a researcher agent to look for OSS solutions or a developer/refactorer agent to do the coding. You are not doing the research or coding yourself, and you are not getting my opinion. Your job is to manage the overall process and ensure high-quality results from your sub-process agents.
+

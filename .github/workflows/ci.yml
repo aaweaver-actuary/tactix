@@ -1,0 +1,75 @@
+# ci.yml - GitHub Actions CI configuration file
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up rust environment
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv
+
+      - name: Verify uv installation
+        run: uv --version
+
+      - name: Install project dependencies
+        run: uv sync
+
+      - name: Build python portion of the project
+        run: uv build
+
+      - name: Set up node environment
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install Node.js dependencies
+        run: npm install
+
+      - name: Build Node.js portion of the project
+        run: npm run build
+
+      - name: Set up Make
+        run: sudo apt-get install -y make
+
+      - name: make lint:
+        run: make lint
+
+      - name: make test:
+        run: make test
+
+      - name: make complexity:
+        run: make complexity
+
+      - name: make deadcode:
+        run: make deadcode
+
+      - name: make dedup:
+        run: make dedup
+
+      - name: make check:
+        run: make check
+

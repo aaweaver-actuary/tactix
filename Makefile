@@ -86,6 +86,5 @@ setup:
 	@echo "5. Installing Node.js dependencies..."
 	@cd client && npm install
 	@echo "6. Installing pre-commit hooks..."
-	@uv run pip install pre-commit
 	@uv run pre-commit install
 	@echo "✓ Setup complete! You can now run 'make check' to verify everything works."

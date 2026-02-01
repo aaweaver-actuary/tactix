@@ -18,7 +18,7 @@
     "passes": true
   },
   {
-      "passes": true
+    "category": "functional",
     "description": "002 - Airflow Chess.com full pipeline for blitz games",
     "steps": [
       "Step 1: Trigger Airflow DAG daily_game_sync for Chess.com data",

@@ -2810,6 +2810,42 @@
     "passes": false
   },
   {
+    "category": "testing",
+    "description": "Github Issues #1",
+    "steps": ["Step 1: Open GH issues", "Step 2: Reference issue #1 and create a new feature branch", "Step 3: Reference parent issue #6", "Step 4: Implement test as per issue description", "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available", "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes", "Step 7: Validate test passes after fix", "Step 8: Create PR referencing issue #1 and parent issue #6"],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Github Issues #2",
+    "steps": ["Step 1: Open GH issues", "Step 2: Reference issue #2 and create a new feature branch", "Step 3: Reference parent issue #6", "Step 4: Implement test as per issue description", "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available", "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes", "Step 7: Validate test passes after fix", "Step 8: Create PR referencing issue #2 and parent issue #6"],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Github Issues #3",
+    "steps": ["Step 1: Open GH issues", "Step 2: Reference issue #3 and create a new feature branch", "Step 3: Reference parent issue #6", "Step 4: Implement test as per issue description", "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available", "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes", "Step 7: Validate test passes after fix", "Step 8: Create PR referencing issue #3 and parent issue #6"],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Github Issues #4",
+    "steps": ["Step 1: Open GH issues", "Step 2: Reference issue #4 and create a new feature branch", "Step 3: Reference parent issue #6", "Step 4: Implement test as per issue description", "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available", "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes", "Step 7: Validate test passes after fix", "Step 8: Create PR referencing issue #4 and parent issue #6"],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Github Issues #5",
+    "steps": ["Step 1: Open GH issues", "Step 2: Reference issue #5 and create a new feature branch", "Step 3: Reference parent issue #6", "Step 4: Implement test as per issue description", "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available", "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes", "Step 7: Validate test passes after fix", "Step 8: Create PR referencing issue #5 and parent issue #6"],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "Github Issues #6",
+    "steps": ["Step 1: Open GH issues", "Step 2: Verify that completing sub-issues #1 to #5 addresses parent issue #6", "Step 3: If any functionality remains untested, create a new feature branch", "Step 4: Implement test as per issue description", "Step 5: Validate test fails initially, or observe in the code exactly where the functionality is already available", "Step 6: Implement or fix any necessary code to ensure `make check` (including the new test) passes", "Step 7: Validate test passes after fix", "Step 8: Create PR referencing parent issue #6"],
+    "passes": false
+  },
+  {
     "category": "functional",
     "description": "SSE stream for practice pushes incremental updates",
     "steps": ["Step 1: Open SSE connection", "Step 2: Emit practice update event", "Step 3: Confirm client renders without full reload"],

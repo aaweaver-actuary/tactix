@@ -1,0 +1,13 @@
+Job progress
+Error
+12:45:41 PM
+airflow_triggered
+Airflow DAG triggered
+12:45:41 PM
+airflow_state
+queued
+12:45:46 PM
+airflow_state
+running
+error
+Airflow run timed out

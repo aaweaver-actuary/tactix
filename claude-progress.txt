@@ -1,3 +1,10 @@
+Session 2026-02-01 (regression check – feature 012 SSE job stream)
+- Manual UI automation: `node /Users/andy/tactix/verification/puppeteer_feature_012_sse_jobs_stream.js`.
+- Evidence: [verification/feature-012-sse-ui-start-2026-02-01.png](verification/feature-012-sse-ui-start-2026-02-01.png), [verification/feature-012-sse-ui-progress-2026-02-01.png](verification/feature-012-sse-ui-progress-2026-02-01.png), [verification/feature-012-sse-ui-complete-2026-02-01.png](verification/feature-012-sse-ui-complete-2026-02-01.png), [verification/feature-012-sse-airflow-2026-02-01.png](verification/feature-012-sse-airflow-2026-02-01.png).
+- Observed regression: SSE job progress shows only Airflow state updates then `Airflow run timed out`; pipeline steps (fetch_games/raw_pgns/extract_positions/analyze_positions/metrics_refreshed) never emitted. Log captured in [verification/feature-012-sse-job-progress-2026-02-01.txt](verification/feature-012-sse-job-progress-2026-02-01.txt).
+- Updated feature_list.json: feature 012 passes=false.
+- Added integration check: [verification/integration_feature_012_sse_jobs_stream.js](verification/integration_feature_012_sse_jobs_stream.js).
+
 Session 2026-02-01 (dev cleanup – lint/worktree)
 - Reverted unintended local edits related to metrics stream updates (client/server/test changes) to restore clean working tree.
 - Removed stray verification/log artifacts from the workspace.

@@ -398,19 +398,19 @@ export default function GameDetailModal({
                   className="mt-3 max-h-64 overflow-y-auto text-sm text-sand/90"
                   data-testid="game-detail-analysis"
                 >
-                  {analysisRows.length ? (
-                    <table className="min-w-full text-xs">
-                      <thead className="text-sand/60">
-                        <tr>
-                          <th className="text-left py-1">Move</th>
-                          <th className="text-left py-1">Motif</th>
-                          <th className="text-left py-1">Eval (cp)</th>
-                          <th className="text-left py-1">Delta</th>
-                          <th className="text-left py-1">Flags</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {analysisRows.map((row) => (
+                  <table className="min-w-full text-xs">
+                    <thead className="text-sand/60">
+                      <tr>
+                        <th className="text-left py-1">Move</th>
+                        <th className="text-left py-1">Motif</th>
+                        <th className="text-left py-1">Eval (cp)</th>
+                        <th className="text-left py-1">Delta</th>
+                        <th className="text-left py-1">Flags</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {analysisRows.length ? (
+                        analysisRows.map((row) => (
                           <tr key={row.key} className="border-b border-white/5">
                             <td className="py-1">
                               <div className="text-sand/70">
@@ -439,12 +439,16 @@ export default function GameDetailModal({
                               )}
                             </td>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  ) : (
-                    <div className="text-sand/60">No analysis rows found.</div>
-                  )}
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="py-2 text-sand/60">
+                            No analysis rows found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>

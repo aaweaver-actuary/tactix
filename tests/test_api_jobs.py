@@ -39,6 +39,46 @@ def test_trigger_job_requires_auth() -> None:
     assert response.status_code == 401
 
 
+def test_job_status_requires_auth() -> None:
+    client = TestClient(app)
+    response = client.get("/api/jobs/refresh_metrics")
+    assert response.status_code == 401
+
+
+def test_job_status_returns_schema() -> None:
+    client = TestClient(app)
+    token = get_settings().api_token
+
+    with patch("tactix.get_job_status__api_jobs.time_module.time", return_value=2.0):
+        response = client.get(
+            "/api/jobs/refresh_metrics?source=lichess&backfill_start_ms=1000&backfill_end_ms=2000",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert set(payload.keys()) == {
+        "status",
+        "job",
+        "job_id",
+        "source",
+        "profile",
+        "backfill_start_ms",
+        "backfill_end_ms",
+        "requested_at_ms",
+        "airflow_enabled",
+    }
+    assert payload["status"] == "ok"
+    assert payload["job"] == "refresh_metrics"
+    assert payload["job_id"] == "refresh_metrics"
+    assert payload["source"] == "lichess"
+    assert payload["profile"] is None
+    assert payload["backfill_start_ms"] == 1000
+    assert payload["backfill_end_ms"] == 2000
+    assert payload["requested_at_ms"] == 2000
+    assert isinstance(payload["airflow_enabled"], bool)
+
+
 def test_trigger_job_returns_schema_and_refreshes_cache() -> None:
     client = TestClient(app)
     token = get_settings().api_token

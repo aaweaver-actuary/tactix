@@ -30,6 +30,7 @@ from tactix.get_cached_dashboard_payload__api_cache import _get_cached_dashboard
 from tactix.get_dashboard__api import dashboard, motif_stats, trend_stats
 from tactix.get_game_detail__api import game_detail
 from tactix.get_health__api import health
+from tactix.get_job_status__api_jobs import get_job_status
 from tactix.get_postgres_analysis__api import postgres_analysis
 from tactix.get_postgres_raw_pgns__api import postgres_raw_pgns
 from tactix.get_postgres_status__api import postgres_status
@@ -93,6 +94,7 @@ app.get("/api/tactics/search")(tactics_search)
 app.get("/api/games/{game_id}")(game_detail)
 app.post("/api/practice/attempt")(practice_attempt)
 app.get("/api/jobs/stream")(stream_jobs)
+app.get("/api/jobs/{job_id}")(get_job_status)
 app.get("/api/stats/motifs")(motif_stats)
 app.get("/api/stats/trends")(trend_stats)
 
@@ -135,6 +137,7 @@ __all__ = [
     "app",
     "dashboard",
     "game_detail",
+    "get_job_status",
     "health",
     "lifespan",
     "motif_stats",

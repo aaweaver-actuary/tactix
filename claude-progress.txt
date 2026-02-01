@@ -1,3 +1,27 @@
+Session 2026-02-01 (feature 239 – jobs detail endpoint schema)
+- Pre-work verification (passes=true):
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_dashboard.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_110_dashboard.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_146_base_card.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_147_card_reorder.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_148_motif_reorder.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_game_detail_modal.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_recent_games_base_card.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_motif_filters.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_dashboard_combined_filters.js`
+- Pre-change make check: `make check`.
+- Regression fix: ensured the game detail modal analysis section always renders headers in `client/src/_components/GameDetailModal.tsx`.
+- Re-verified game detail modal: `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_game_detail_modal.js` (screenshot `verification/feature-game-detail-modal-2026-01-29.png`).
+- Implemented /api/jobs/{id} status endpoint in `src/tactix/get_job_status__api_jobs.py` and wired in `src/tactix/api.py`.
+- Added schema + auth coverage for /api/jobs/{id} in `tests/test_api_jobs.py`.
+- Added verification script: `verification/integration_feature_239_jobs_detail.js`.
+- Manual verification (API): `PYTHONPATH=/Users/andy/tactix/src /Users/andy/tactix/.venv/bin/python -m uvicorn tactix.api:app --host 0.0.0.0 --port 8012 --log-level warning & SERVER_PID=$!; sleep 2; TACTIX_API_URL=http://localhost:8012 TACTIX_API_TOKEN=local-dev-token node /Users/andy/tactix/verification/integration_feature_239_jobs_detail.js; STATUS=$?; kill $SERVER_PID; exit $STATUS`.
+- Tests: `uv run pytest tests/test_api_jobs.py`, `make check` (post).
+- Updated feature_list.json: /api/jobs/{id} schema + game detail modal marked passes=true.
+- Pass count: 239/502.
+
 Session 2026-02-01 (feature 238 – jobs trigger endpoint schema)
 - Pre-work verification (passes=true):
 	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`

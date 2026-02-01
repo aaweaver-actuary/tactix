@@ -2917,3 +2917,11 @@ Session 2026-02-01 (Issue 1 – Chess.com bullet pipeline validation)
 - Integration check (Issue 1): `node /Users/andy/tactix/verification/integration_issue_1_pipeline_validation.js`.
 - Post-change make check: `make check` (clean; warnings only).
 - Updated feature_list.json: ISSUE-1 marked passes=true.
+Session 2026-02-01 (refactorer – foundational regression automation)
+- Before/after map:
+	- verification/puppeteer_regression_feature_001.js: inline dashboard-run logic -> shared helper in verification/helpers/run_dashboard_regression.js.
+	- verification/puppeteer_regression_feature_002.js: new regression script for Chess.com blitz pipeline checks (uses shared helper).
+	- verification/puppeteer_regression_feature_003.js: new regression script for Lichess incremental since checks (uses shared helper).
+- Design principles enforced: extraction of single-responsibility test helper; reduced duplication for foundational regression verification.
+- Tests: pre-change `make check` (clean; warnings only). Post-change `make check` (clean; warnings only).
+- Follow-ups: consider routing additional puppeteer regression scripts through the shared helper for consistency.

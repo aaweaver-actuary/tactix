@@ -2,13 +2,14 @@ const { runDashboardRegression } = require('./helpers/run_dashboard_regression')
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const screenshotName =
-  process.env.TACTIX_SCREENSHOT_NAME || 'regression-001-lichess-2026-01-25.png';
+  process.env.TACTIX_SCREENSHOT_NAME ||
+  'regression-003-lichess-since-2026-02-01.png';
 
 runDashboardRegression({
   targetUrl,
   screenshotName,
   sourceValue: 'lichess',
-  waitUntil: 'domcontentloaded',
-  waitForTable: false,
-  failureMessage: 'Feature 001 regression verification failed',
+  profileTestId: 'filter-lichess-profile',
+  profileValue: 'blitz',
+  failureMessage: 'Feature 003 regression verification failed',
 });

@@ -1,3 +1,25 @@
+Session 2026-01-31 (feature 229 – skewer unclear outcome)
+- Pre-work verification (passes=true):
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_023_stockfish_checksum.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_024_promotion_en_passant.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_025_castling.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_026_rolling_averages.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_027_time_trouble.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_028_practice_next_unseen.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_030_practice_streaks.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_031_lichess_bullet_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_033_lichess_blitz_incremental.js`
+	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_073_mate_in_one_bullet.js`
+- Added skewer unclear swing threshold + outcome override in `src/tactix/analyze_tactics__positions.py` with helper coverage in `tests/test_analyze_tactics_helpers.py` and unclear persistence test in `tests/test_tactics_analyzer.py`.
+- Tests: `/Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_analyze_tactics_helpers.py /Users/andy/tactix/tests/test_tactics_analyzer.py -q`, `make check` (pre + post).
+- Seeded skewer unclear outcome: `/Users/andy/tactix/.venv/bin/python /Users/andy/tactix/tmp-logs/feature_229_seed_outcome_unclear_skewer_correspondence.py`.
+- UI verification (manual): `node /Users/andy/tactix/verification/puppeteer_feature_229_outcome_unclear_skewer_manual_ui.js` (screenshot `verification/feature-229-outcome-unclear-skewer-2026-01-31.png`).
+- CI integration check: `node /Users/andy/tactix/verification/integration_feature_229_outcome_unclear_skewer.js`.
+- Added verification scripts: `verification/puppeteer_feature_229_outcome_unclear_skewer_manual_ui.js`, `verification/integration_feature_229_outcome_unclear_skewer.js`.
+- Updated feature_list.json: feature 229 marked passes=true.
+- Pass count: 229/502.
+
 Session 2026-01-31 (feature 228 – pin unclear outcome)
 - Pre-work verification (passes=true):
 	- `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_feature_021_chesscom_pagination.js`

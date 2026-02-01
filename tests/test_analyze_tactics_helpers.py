@@ -67,6 +67,9 @@ class AnalyzeTacticsHelperTests(unittest.TestCase):
     def test_compute_eval_fork_unclear_threshold(self) -> None:
         self.assertEqual(impl._compute_eval__fork_unclear_threshold(None), -300)
 
+    def test_compute_eval_skewer_unclear_threshold(self) -> None:
+        self.assertEqual(impl._compute_eval__skewer_unclear_threshold(None), -300)
+
     def test_compute_eval_pin_unclear_threshold(self) -> None:
         self.assertEqual(impl._compute_eval__pin_unclear_threshold(None), -300)
 
@@ -130,6 +133,17 @@ class AnalyzeTacticsHelperTests(unittest.TestCase):
             "f5d6",
             -20,
             impl._compute_eval__fork_unclear_threshold(None),
+        )
+        self.assertEqual(result, "unclear")
+
+    def test_apply_outcome_unclear_skewer_override(self) -> None:
+        result = impl._apply_outcome__unclear_skewer(
+            "failed_attempt",
+            "skewer",
+            "e2e4",
+            "e2e3",
+            -20,
+            impl._compute_eval__skewer_unclear_threshold(None),
         )
         self.assertEqual(result, "unclear")
 

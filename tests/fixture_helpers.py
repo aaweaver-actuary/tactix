@@ -126,22 +126,14 @@ def find_missed_position(
     settings: Settings,
     expected_motif: str,
 ) -> tuple[dict[str, object], tuple[dict[str, object], dict[str, object]]]:
-    board = chess.Board(str(position["fen"]))
-    best_move = engine.analyse(board).best_move
-    for move in board.legal_moves:
-        if best_move is not None and move == best_move:
-            continue
-        candidate = dict(position)
-        candidate["uci"] = move.uci()
-        with suppress(Exception):
-            candidate["san"] = board.san(move)
-        result = analyze_position(candidate, engine, settings=settings)
-        if result is None:
-            continue
-        tactic_row, outcome_row = result
-        if outcome_row["result"] == "missed" and tactic_row["motif"] == expected_motif:
-            return candidate, result
-    raise AssertionError("No missed outcome found for fixture position")
+    return _find_outcome_position(
+        position,
+        engine,
+        settings,
+        expected_motif,
+        expected_result="missed",
+        error_message="No missed outcome found for fixture position",
+    )
 
 
 def find_failed_attempt_position(
@@ -150,22 +142,14 @@ def find_failed_attempt_position(
     settings: Settings,
     expected_motif: str,
 ) -> tuple[dict[str, object], tuple[dict[str, object], dict[str, object]]]:
-    board = chess.Board(str(position["fen"]))
-    best_move = engine.analyse(board).best_move
-    for move in board.legal_moves:
-        if best_move is not None and move == best_move:
-            continue
-        candidate = dict(position)
-        candidate["uci"] = move.uci()
-        with suppress(Exception):
-            candidate["san"] = board.san(move)
-        result = analyze_position(candidate, engine, settings=settings)
-        if result is None:
-            continue
-        tactic_row, outcome_row = result
-        if outcome_row["result"] == "failed_attempt" and tactic_row["motif"] == expected_motif:
-            return candidate, result
-    raise AssertionError("No failed_attempt outcome found for fixture position")
+    return _find_outcome_position(
+        position,
+        engine,
+        settings,
+        expected_motif,
+        expected_result="failed_attempt",
+        error_message="No failed_attempt outcome found for fixture position",
+    )
 
 
 def find_unclear_position(
@@ -173,6 +157,25 @@ def find_unclear_position(
     engine: StockfishEngine,
     settings: Settings,
     expected_motif: str,
+) -> tuple[dict[str, object], tuple[dict[str, object], dict[str, object]]]:
+    return _find_outcome_position(
+        position,
+        engine,
+        settings,
+        expected_motif,
+        expected_result="unclear",
+        error_message="No unclear outcome found for fixture position",
+    )
+
+
+def _find_outcome_position(
+    position: dict[str, object],
+    engine: StockfishEngine,
+    settings: Settings,
+    expected_motif: str,
+    *,
+    expected_result: str,
+    error_message: str,
 ) -> tuple[dict[str, object], tuple[dict[str, object], dict[str, object]]]:
     board = chess.Board(str(position["fen"]))
     best_move = engine.analyse(board).best_move
@@ -187,6 +190,6 @@ def find_unclear_position(
         if result is None:
             continue
         tactic_row, outcome_row = result
-        if outcome_row["result"] == "unclear" and tactic_row["motif"] == expected_motif:
+        if outcome_row["result"] == expected_result and tactic_row["motif"] == expected_motif:
             return candidate, result
-    raise AssertionError("No unclear outcome found for fixture position")
+    raise AssertionError(error_message)

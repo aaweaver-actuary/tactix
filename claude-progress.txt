@@ -2950,3 +2950,10 @@ Session 2026-02-01 (refactorer – puppeteer capture helper)
 - Design principles enforced: extraction of single-responsibility helper; reduced verification duplication.
 - Tests: pre-change `make check` (clean). Post-change `make check` (clean).
 - Follow-ups: consider migrating additional puppeteer verification scripts to the shared helper.
+
+Session 2026-02-01 (refactorer – fixture outcome helper consolidation)
+- Before → after map:
+	- tests/fixture_helpers.py: inline missed/failed_attempt/unclear outcome searches → shared `_find_outcome_position` helper.
+- Design principles enforced: single-responsibility helper extraction; reduced duplication in fixture utilities.
+- Tests: pre-change `make check` (clean; warnings only). Post-change `make check` (clean; warnings only).
+- Follow-ups: none.

@@ -2942,3 +2942,11 @@ Session 2026-02-01 (refactorer – foundational regression automation)
 - Design principles enforced: extraction of single-responsibility test helper; reduced duplication for foundational regression verification.
 - Tests: pre-change `make check` (clean; warnings only). Post-change `make check` (clean; warnings only).
 - Follow-ups: consider routing additional puppeteer regression scripts through the shared helper for consistency.
+Session 2026-02-01 (refactorer – puppeteer capture helper)
+- Before/after map:
+	- verification/puppeteer_issue_1_pipeline_validation.js: inline console capture + screenshot handling -> shared helper in verification/helpers/puppeteer_capture.js.
+	- verification/puppeteer_feature_021_chesscom_pagination.js: inline console capture + screenshot handling -> shared helper in verification/helpers/puppeteer_capture.js.
+	- verification/helpers/puppeteer_capture.js: new helper for console capture + screenshots.
+- Design principles enforced: extraction of single-responsibility helper; reduced verification duplication.
+- Tests: pre-change `make check` (clean). Post-change `make check` (clean).
+- Follow-ups: consider migrating additional puppeteer verification scripts to the shared helper.

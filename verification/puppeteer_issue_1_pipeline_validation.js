@@ -1,6 +1,9 @@
-const fs = require('fs');
 const path = require('path');
 const puppeteer = require('../client/node_modules/puppeteer');
+const {
+  attachConsoleCapture,
+  captureScreenshot,
+} = require('./helpers/puppeteer_capture');
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const screenshotName =
@@ -10,17 +13,7 @@ const screenshotName =
 (async () => {
   const browser = await puppeteer.launch({ headless: 'new' });
   const page = await browser.newPage();
-  const consoleErrors = [];
-
-  page.on('console', (msg) => {
-    if (msg.type() === 'error') consoleErrors.push(msg.text());
-  });
-  page.on('pageerror', (err) => consoleErrors.push(err.toString()));
-  page.on('requestfailed', (request) => {
-    consoleErrors.push(
-      `Request failed: ${request.url()} (${request.failure()?.errorText || 'unknown'})`,
-    );
-  });
+  const consoleErrors = attachConsoleCapture(page);
 
   try {
     await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
@@ -42,10 +35,11 @@ const screenshotName =
     await page.waitForSelector('[data-testid="recent-games-card"]');
     await page.waitForSelector('h3');
 
-    const outDir = path.resolve(__dirname);
-    fs.mkdirSync(outDir, { recursive: true });
-    const outPath = path.join(outDir, screenshotName);
-    await page.screenshot({ path: outPath, fullPage: true });
+    const outPath = await captureScreenshot(
+      page,
+      path.resolve(__dirname),
+      screenshotName,
+    );
 
     if (consoleErrors.length) {
       console.error('Console errors detected:', consoleErrors);
@@ -53,10 +47,11 @@ const screenshotName =
     }
   } catch (err) {
     try {
-      const outDir = path.resolve(__dirname);
-      fs.mkdirSync(outDir, { recursive: true });
-      const outPath = path.join(outDir, `failed-${screenshotName}`);
-      await page.screenshot({ path: outPath, fullPage: true });
+      const outPath = await captureScreenshot(
+        page,
+        path.resolve(__dirname),
+        `failed-${screenshotName}`,
+      );
       console.error('Saved failure screenshot to', outPath);
     } catch (screenshotErr) {
       console.error('Failed to capture failure screenshot:', screenshotErr);

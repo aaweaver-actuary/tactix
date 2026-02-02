@@ -1,6 +1,9 @@
 const puppeteer = require('puppeteer');
-const fs = require('fs');
 const path = require('path');
+const {
+  attachConsoleCapture,
+  captureScreenshot,
+} = require('./helpers/puppeteer_capture');
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const screenshotName =
@@ -19,17 +22,7 @@ async function clickButtonByText(page, text) {
 (async () => {
   const browser = await puppeteer.launch({ headless: 'new' });
   const page = await browser.newPage();
-  const consoleErrors = [];
-
-  page.on('console', (msg) => {
-    if (msg.type() === 'error') consoleErrors.push(msg.text());
-  });
-  page.on('pageerror', (err) => consoleErrors.push(err.toString()));
-  page.on('requestfailed', (request) => {
-    consoleErrors.push(
-      `Request failed: ${request.url()} (${request.failure()?.errorText || 'unknown'})`,
-    );
-  });
+  const consoleErrors = attachConsoleCapture(page);
 
   await page.goto(targetUrl, { waitUntil: 'networkidle0' });
   await page.waitForSelector('[data-testid="filter-source"]');
@@ -40,10 +33,7 @@ async function clickButtonByText(page, text) {
   await page.waitForSelector('table');
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
-  const outDir = path.resolve(__dirname);
-  fs.mkdirSync(outDir, { recursive: true });
-  const outPath = path.join(outDir, screenshotName);
-  await page.screenshot({ path: outPath, fullPage: true });
+  await captureScreenshot(page, path.resolve(__dirname), screenshotName);
 
   await browser.close();
 

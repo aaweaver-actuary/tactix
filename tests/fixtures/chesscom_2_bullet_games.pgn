@@ -1,5 +1,5 @@
 [Event "Live Chess"]
-[Site "https://www.chess.com/game/live/1234567890"]
+[Site "Chess.com"]
 [Date "2026.02.01"]
 [Round "-"]
 [White "naveenaar"]
@@ -28,7 +28,7 @@ Nd2 {[%clk 0:00:56]} 18... O-O-O {[%clk 0:00:53.2]} 19. Ng6 {[%clk 0:00:47.8]}
 0:00:42.2]} 21. Qh4 {[%clk 0:00:34.4]} 1-0
 
 [Event "Live Chess"]
-[Site "https://www.chess.com/game/live/9876543210"]
+[Site "Chess.com"]
 [Date "2026.02.01"]
 [Round "-"]
 [White "groborger"]

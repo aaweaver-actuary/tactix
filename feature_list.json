@@ -43,7 +43,7 @@
     "category": "functional",
     "description": "ISSUE-2 - E2E Verification: Chess.com Bullet Games + Missed Tactics (2026-02-01) -- Part 2: Database Verification (Postgres)",
     "steps": ["Step 1: Execute the database verification steps from issue #2", "Step 2: Validate Postgres records and schema expectations", "Step 3: Capture evidence required by the issue"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

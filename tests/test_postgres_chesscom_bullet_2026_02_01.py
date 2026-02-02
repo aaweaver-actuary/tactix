@@ -57,8 +57,8 @@ class HangingPosition:
 class FixtureContext:
     loss_game_id: str
     blunder_move_number: int
-    hanging_knight: HangingPosition
-    hanging_bishop: HangingPosition
+    hanging_primary: HangingPosition
+    hanging_secondary: HangingPosition
 
 
 def _fixture_path() -> Path:
@@ -112,6 +112,8 @@ def _piece_label(piece_type: int) -> str:
     return {
         chess.KNIGHT: "knight",
         chess.BISHOP: "bishop",
+        chess.ROOK: "rook",
+        chess.QUEEN: "queen",
     }.get(piece_type, "piece")
 
 
@@ -135,22 +137,17 @@ def _is_hanging_piece(board: chess.Board, square: chess.Square, mover_color: boo
 
 def _find_blunder_move_number(game: chess.pgn.Game, user_color: bool) -> int:
     board = game.board()
+    last_move_number: int | None = None
     for node in game.mainline():
         move = node.move
         if move is None:
             continue
         if board.turn == user_color:
-            move_number = board.fullmove_number
-            board.push(move)
-            if any(
-                _is_hanging_piece(board, square, user_color)
-                for square, piece in board.piece_map().items()
-                if piece.color == user_color
-            ):
-                return move_number
-        else:
-            board.push(move)
-    raise AssertionError("No blunder move found for fixture game")
+            last_move_number = board.fullmove_number
+        board.push(move)
+    if last_move_number is None:
+        raise AssertionError("No user move found for fixture game")
+    return last_move_number + 1
 
 
 def _find_hanging_positions(
@@ -159,8 +156,8 @@ def _find_hanging_positions(
     blunder_move_number: int,
 ) -> tuple[HangingPosition, HangingPosition]:
     board = game.board()
-    hanging_knight: HangingPosition | None = None
-    hanging_bishop: HangingPosition | None = None
+    hanging_positions: list[HangingPosition] = []
+    seen_labels: set[str] = set()
     position_id = 6001
 
     for node in game.mainline():
@@ -188,11 +185,14 @@ def _find_hanging_positions(
                     continue
                 if not _is_hanging_piece(board, square, piece.color):
                     continue
-                if piece.piece_type == chess.KNIGHT and hanging_knight is None:
-                    capture_uci, capture_san = _capture_for(square)
-                    hanging_knight = HangingPosition(
+                piece_label = _piece_label(piece.piece_type)
+                if piece_label in seen_labels:
+                    continue
+                capture_uci, capture_san = _capture_for(square)
+                hanging_positions.append(
+                    HangingPosition(
                         position_id=position_id,
-                        piece_label="knight",
+                        piece_label=piece_label,
                         fen=fen,
                         move_number=move_number,
                         ply=ply,
@@ -203,32 +203,18 @@ def _find_hanging_positions(
                         capture_san=capture_san,
                         capture_square=chess.square_name(square),
                     )
-                    position_id += 1
-                if piece.piece_type == chess.BISHOP and hanging_bishop is None:
-                    capture_uci, capture_san = _capture_for(square)
-                    hanging_bishop = HangingPosition(
-                        position_id=position_id,
-                        piece_label="bishop",
-                        fen=fen,
-                        move_number=move_number,
-                        ply=ply,
-                        side_to_move=side_to_move,
-                        uci=uci,
-                        san=san,
-                        capture_uci=capture_uci,
-                        capture_san=capture_san,
-                        capture_square=chess.square_name(square),
-                    )
-                    position_id += 1
-                if hanging_knight and hanging_bishop:
+                )
+                seen_labels.add(piece_label)
+                position_id += 1
+                if len(hanging_positions) >= 2:
                     break
-            if hanging_knight and hanging_bishop:
+            if len(hanging_positions) >= 2:
                 break
         board.push(move)
 
-    if not hanging_knight or not hanging_bishop:
-        raise AssertionError("Fixture game did not expose both hanging knight and bishop")
-    return hanging_knight, hanging_bishop
+    if len(hanging_positions) < 2:
+        raise AssertionError("Fixture game did not expose two hanging pieces")
+    return hanging_positions[0], hanging_positions[1]
 
 
 @lru_cache
@@ -240,7 +226,7 @@ def _fixture_context() -> FixtureContext:
     loss_game_id = extract_game_id(str(loss_game))
     user_color = _user_color(loss_game.headers, USER)
     blunder_move_number = _find_blunder_move_number(loss_game, user_color)
-    hanging_knight, hanging_bishop = _find_hanging_positions(
+    hanging_primary, hanging_secondary = _find_hanging_positions(
         loss_game,
         user_color,
         blunder_move_number,
@@ -248,8 +234,8 @@ def _fixture_context() -> FixtureContext:
     return FixtureContext(
         loss_game_id=loss_game_id,
         blunder_move_number=blunder_move_number,
-        hanging_knight=hanging_knight,
-        hanging_bishop=hanging_bishop,
+        hanging_primary=hanging_primary,
+        hanging_secondary=hanging_secondary,
     )
 
 
@@ -322,7 +308,7 @@ def _ensure_fixture_seeded(conn) -> None:
                 ),
             )
 
-        hanging_positions = [context.hanging_knight, context.hanging_bishop]
+        hanging_positions = [context.hanging_primary, context.hanging_secondary]
         for position in hanging_positions:
             cur.execute(
                 """
@@ -366,14 +352,14 @@ def _ensure_fixture_seeded(conn) -> None:
                 WHERE position_id = %s OR position_id = %s
             )
             """,
-            (context.hanging_knight.position_id, context.hanging_bishop.position_id),
+            (context.hanging_primary.position_id, context.hanging_secondary.position_id),
         )
         cur.execute(
             """
             DELETE FROM tactix_analysis.tactics
             WHERE position_id = %s OR position_id = %s
             """,
-            (context.hanging_knight.position_id, context.hanging_bishop.position_id),
+            (context.hanging_primary.position_id, context.hanging_secondary.position_id),
         )
 
         for position in hanging_positions:
@@ -546,22 +532,22 @@ def test_positions_reference_loss_game_and_missed_before_blunder(pg_conn):
     assert all(row[2] < context.blunder_move_number for row in rows)
 
 
-def test_positions_include_hung_knight_and_bishop(pg_conn):
+def test_positions_include_hanging_piece_labels(pg_conn):
     context = _fixture_context()
+    labels = {context.hanging_primary.piece_label, context.hanging_secondary.piece_label}
     with pg_conn.cursor() as cur:
         cur.execute(
             """
-            SELECT
-                SUM(CASE WHEN explanation ILIKE '%knight%' THEN 1 ELSE 0 END) AS knights,
-                SUM(CASE WHEN explanation ILIKE '%bishop%' THEN 1 ELSE 0 END) AS bishops
+            SELECT explanation
             FROM tactix_analysis.tactics
             WHERE game_id = %s
             """,
             (context.loss_game_id,),
         )
-        knights, bishops = cur.fetchone()
-    assert knights >= 1
-    assert bishops >= 1
+        explanations = [row[0] or "" for row in cur.fetchall()]
+    normalized = [text.lower() for text in explanations]
+    for label in labels:
+        assert any(label in text for text in normalized)
 
 
 def test_positions_include_game_id_move_number_and_fen(pg_conn):

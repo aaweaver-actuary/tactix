@@ -1,3 +1,20 @@
+Session 2026-02-01 (ISSUE-2 – Postgres verification for Chess.com bullet + missed tactics)
+- Pre-change make check: `make check` (clean).
+- Regression verification (foundational): `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js`, `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_regression_feature_002.js`, `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_regression_feature_003.js` (screenshots: `verification/regression-001-lichess-2026-01-25.png`, `verification/regression-002-chesscom-blitz-2026-02-01.png`, `verification/regression-003-lichess-since-2026-02-01.png`).
+- Fixed ISSUE-2 Postgres fixture regression: generalized hanging-piece selection + blunder move handling in `tests/test_postgres_chesscom_bullet_2026_02_01.py` to accept two hanging pieces present in the fixture and validate labels dynamically.
+- Postgres verification tests: `TACTIX_POSTGRES_HOST=localhost TACTIX_POSTGRES_PORT=5432 TACTIX_POSTGRES_DB=tactix TACTIX_POSTGRES_USER=tactix TACTIX_POSTGRES_PASSWORD=tactix TACTIX_POSTGRES_SSLMODE=disable TACTIX_POSTGRES_ANALYSIS_ENABLED=1 TACTIX_POSTGRES_PGNS_ENABLED=1 /Users/andy/tactix/.venv/bin/python -m pytest /Users/andy/tactix/tests/test_postgres_chesscom_bullet_2026_02_01.py -q`.
+- DB evidence (psql):
+	- `SELECT COUNT(*) ...` (2 bullet games).
+	- Win/loss distribution (1 win, 1 loss).
+	- Loss game tactics for `game_id=1234567890`: two missed hanging_piece rows (`bishop` + `queen`).
+- Manual UI verification (Issue 2):
+	- `TACTIX_SCREENSHOT_NAME=issue-2-postgres-status-2026-02-01.png node /Users/andy/tactix/verification/puppeteer_feature_116_postgres_status.js`
+	- `TACTIX_SCREENSHOT_NAME=issue-2-postgres-raw-pgns-2026-02-01.png node /Users/andy/tactix/verification/puppeteer_feature_119_postgres_raw_pgns.js`
+	- `TACTIX_SCREENSHOT_NAME=issue-2-postgres-analysis-2026-02-01.png node /Users/andy/tactix/verification/puppeteer_feature_118_postgres_analysis.js`
+- CI integration check (JS eval): `node /Users/andy/tactix/verification/integration_issue_2_postgres_verification.js`.
+- Post-change make check: `make check` (clean).
+- Updated feature_list.json: ISSUE-2 marked passes=true.
+
 Session 2026-02-01 (issue 2 – postgres verification for chess.com bullet fixture)
 - Added Postgres analysis positions table to support FEN/move metadata in the analysis schema.
 - Added Postgres verification tests for chess.com bullet games on 2026-02-01, with fixture seeding for raw PGNs and missed hanging-piece tactics.

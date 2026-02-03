@@ -1,3 +1,7 @@
+Session 2026-02-03 (dev – Pylint config baseline)
+- Added Pylint configuration in pyproject.toml to disable noisy baseline checks (docstrings, argument counts, etc.) and keep line length aligned to 100.
+- Tests: `make check` (not run here; command skipped).
+
 Session 2026-02-01 (ISSUE-2 – Postgres verification for Chess.com bullet + missed tactics)
 - Pre-change make check: `make check` (clean).
 - Regression verification (foundational): `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_regression_feature_001.js`, `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_regression_feature_002.js`, `NODE_PATH=/Users/andy/tactix/client/node_modules node /Users/andy/tactix/verification/puppeteer_regression_feature_003.js` (screenshots: `verification/regression-001-lichess-2026-01-25.png`, `verification/regression-002-chesscom-blitz-2026-02-01.png`, `verification/regression-003-lichess-since-2026-02-01.png`).

@@ -33,3 +33,6 @@ tmp-logs/feature_188_seed_outcome_*.py
 tmp-logs/feature_189_seed_outcome_*.py
 verification/puppeteer_feature_189_*.js
 .serena/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/

@@ -13,6 +13,45 @@ _DEFAULT_HANDLER.setFormatter(_DEFAULT_FORMATTER)
 
 
 def _configure_logger(logger: logging.Logger, level: int) -> None:
+    """
+    Configures a logger with the specified logging level and default handler.
+
+    If the logger's level is not set, this function sets it to the provided level.
+    It also ensures that a default handler is attached if no handlers are present,
+    and disables propagation to ancestor loggers.
+
+    Parameters
+    ----------
+    logger : logging.Logger
+        The logger instance to configure.
+    level : int
+        The logging level to set if the logger's level is not already set.
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    None
+
+    Examples
+    --------
+    >>> import logging
+    >>> from tactix.utils.logger import _configure_logger
+    >>> logger = logging.getLogger("my_logger")
+    >>> _configure_logger(logger, logging.INFO)
+    >>> logger.info("This is an info message.")
+
+    Commentary
+    ----------
+    This function provides a focused utility for logger configuration, which can be
+    useful in projects that require consistent logger setup. However, as a private
+    function (indicated by the leading underscore), it may be better suited as part
+    of a larger logging utility module rather than as a standalone function. In a
+    large project, grouping related logging configuration helpers together would
+    promote better organization and maintainability.
+    """
     if logger.level == logging.NOTSET:
         logger.setLevel(level)
     if not logger.handlers:

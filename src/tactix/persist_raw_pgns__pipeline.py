@@ -4,7 +4,7 @@ from tactix.config import Settings
 from tactix.db.duckdb_store import delete_game_rows, upsert_raw_pgns
 from tactix.define_pipeline_state__pipeline import GameRow, ProgressCallback
 from tactix.emit_progress__pipeline import _emit_progress
-from tactix.postgres_store import record_ops_event
+from tactix.record_ops_event import record_ops_event
 from tactix.validate_raw_pgn_hashes__pipeline import _validate_raw_pgn_hashes
 
 

@@ -4,8 +4,8 @@ from tactix.analyze_positions__pipeline import _analyze_positions
 from tactix.collect_positions_for_monitor__pipeline import _collect_positions_for_monitor
 from tactix.config import Settings
 from tactix.pipeline_state__pipeline import logger
-from tactix.postgres_store import record_ops_event
 from tactix.prepare_raw_pgn_context__pipeline import _prepare_raw_pgn_context
+from tactix.record_ops_event import record_ops_event
 from tactix.update_metrics_and_version__pipeline import _update_metrics_and_version
 
 

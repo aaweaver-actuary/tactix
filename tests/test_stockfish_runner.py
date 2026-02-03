@@ -8,7 +8,8 @@ import chess.engine
 import pytest
 
 from tactix.config import Settings
-from tactix.stockfish_runner import StockfishEngine, verify_stockfish_checksum
+from tactix.StockfishEngine import StockfishEngine
+from tactix.verify_stockfish_checksum import verify_stockfish_checksum
 
 
 def _sha256_for_bytes(payload: bytes) -> str:

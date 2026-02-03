@@ -3,7 +3,7 @@ from __future__ import annotations
 from tactix.config import Settings
 from tactix.emit_progress__pipeline import _emit_progress
 from tactix.pipeline_state__pipeline import ProgressCallback
-from tactix.postgres_store import record_ops_event
+from tactix.record_ops_event import record_ops_event
 
 
 def _emit_daily_sync_start(

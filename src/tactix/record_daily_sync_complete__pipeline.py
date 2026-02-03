@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from tactix.config import Settings
 from tactix.pipeline_state__pipeline import GameRow
-from tactix.postgres_store import record_ops_event
+from tactix.record_ops_event import record_ops_event
 
 
 def _record_daily_sync_complete(

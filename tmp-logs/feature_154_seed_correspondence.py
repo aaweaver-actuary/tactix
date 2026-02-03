@@ -13,7 +13,7 @@ from tactix.db.duckdb_store import (
     upsert_tactic_with_outcome,
 )
 from tactix.pgn_utils import extract_game_id, split_pgn_chunks
-from tactix.stockfish_runner import StockfishEngine
+from tactix.StockfishEngine import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 
 
@@ -110,7 +110,7 @@ def _seed_discovered_attack() -> None:
 
 
 if __name__ == "__main__":
-    _seed_discovered_attack()    
+    _seed_discovered_attack()
     print("seeded discovered attack correspondence tactic into data/tactix.duckdb")
 
 

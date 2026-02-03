@@ -18,14 +18,15 @@ from tactix.chess_clients.base_chess_client import (
     ChessFetchResult,
 )
 from tactix.chess_clients.chess_game_row import coerce_rows_for_model
-from tactix.chess_clients.fetch_helpers import load_fixture_games, use_fixture_games
+from tactix.chess_clients.fetch_helpers import use_fixture_games
 from tactix.coerce_perf_type__lichess_client import _coerce_perf_type
 from tactix.define_lichess_client_context__lichess_client import LichessClientContext
 from tactix.define_lichess_fetch_result__lichess_client import LichessFetchResult
 from tactix.define_lichess_game_row__lichess_client import LichessGameRow
 from tactix.is_auth_error__lichess_client import _is_auth_error
+from tactix.latest_timestamp import latest_timestamp
+from tactix.load_fixture_games import load_fixture_games
 from tactix.pgn_to_game_row__lichess_client import _pgn_to_game_row
-from tactix.prepare_pgn__chess import latest_timestamp
 from tactix.resolve_perf_value__lichess_client import _resolve_perf_value
 from tactix.utils.logger import get_logger
 

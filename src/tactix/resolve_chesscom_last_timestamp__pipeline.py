@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from tactix.define_pipeline_state__pipeline import FetchContext, GameRow
-from tactix.prepare_pgn__chess import latest_timestamp
+from tactix.latest_timestamp import latest_timestamp
 
 
 def _resolve_chesscom_last_timestamp(

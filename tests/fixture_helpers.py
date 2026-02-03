@@ -9,7 +9,7 @@ import chess.pgn
 
 from tactix.config import Settings
 from tactix.pgn_utils import extract_game_id, split_pgn_chunks
-from tactix.stockfish_runner import StockfishEngine
+from tactix.StockfishEngine import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 
 
@@ -73,9 +73,7 @@ def skewer_fixture_position() -> dict[str, object]:
 
 
 def discovered_attack_fixture_position() -> dict[str, object]:
-    fixture_path = (
-        Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
-    )
+    fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
     chunks = split_pgn_chunks(fixture_path.read_text())
     for chunk in chunks:
         game = chess.pgn.read_game(StringIO(chunk))

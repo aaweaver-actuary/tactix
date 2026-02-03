@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from tactix.pipeline_state__pipeline import logger
-from tactix.postgres_store import upsert_analysis_tactic_with_outcome
+from tactix.upsert_analysis_tactic_with_outcome import upsert_analysis_tactic_with_outcome
 
 
 def _maybe_upsert_postgres_analysis(

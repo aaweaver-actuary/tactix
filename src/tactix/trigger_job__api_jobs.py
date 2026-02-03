@@ -6,15 +6,12 @@ from typing import Annotated
 
 from fastapi import Query
 
+from tactix._ignore_progress import _ignore_progress
 from tactix.config import get_settings
 from tactix.list_sources_for_cache_refresh__api_cache import _sources_for_cache_refresh
 from tactix.refresh_dashboard_cache_async__api_cache import _refresh_dashboard_cache_async
 from tactix.resolve_backfill_end_ms__airflow_jobs import _resolve_backfill_end_ms
 from tactix.run_stream_job__job_stream import _run_stream_job
-
-
-def _ignore_progress(_payload: dict[str, object]) -> None:
-    return None
 
 
 def trigger_job(

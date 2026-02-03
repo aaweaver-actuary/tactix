@@ -14,7 +14,7 @@ from tactix.db.duckdb_store import (
     upsert_tactic_with_outcome,
 )
 from tactix.pgn_utils import split_pgn_chunks
-from tactix.stockfish_runner import StockfishEngine
+from tactix.StockfishEngine import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 
 
@@ -22,9 +22,7 @@ def _hanging_piece_fixture_position() -> dict[str, object]:
     fixture_path = Path("tests/fixtures/chesscom_correspondence_sample.pgn")
     chunks = split_pgn_chunks(fixture_path.read_text())
     hanging_chunk = next(
-        chunk
-        for chunk in chunks
-        if "Correspondence Fixture 12 - Hanging Piece High" in chunk
+        chunk for chunk in chunks if "Correspondence Fixture 12 - Hanging Piece High" in chunk
     )
     game = chess.pgn.read_game(StringIO(hanging_chunk))
     if not game:

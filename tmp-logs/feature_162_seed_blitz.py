@@ -14,15 +14,13 @@ from tactix.db.duckdb_store import (
     upsert_tactic_with_outcome,
 )
 from tactix.pgn_utils import extract_game_id, split_pgn_chunks
-from tactix.stockfish_runner import StockfishEngine
+from tactix.StockfishEngine import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 
 
 def _discovered_check_fixture_position(fixture_path: Path) -> dict[str, object]:
     chunks = split_pgn_chunks(fixture_path.read_text())
-    target_event = (
-        os.getenv("TACTIX_DISCOVERED_CHECK_EVENT") or "discovered check"
-    ).lower()
+    target_event = (os.getenv("TACTIX_DISCOVERED_CHECK_EVENT") or "discovered check").lower()
     for chunk in chunks:
         game = chess.pgn.read_game(StringIO(chunk))
         if not game:

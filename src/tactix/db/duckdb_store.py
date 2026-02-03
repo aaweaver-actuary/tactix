@@ -10,8 +10,8 @@ import duckdb
 
 from tactix.base_db_store import BaseDbStore, BaseDbStoreContext, PgnUpsertPlan
 from tactix.db.raw_pgn_summary import build_raw_pgn_summary_sources
+from tactix.extract_pgn_metadata import extract_pgn_metadata
 from tactix.format_tactics__explanation import format_tactic_explanation
-from tactix.prepare_pgn__chess import extract_pgn_metadata
 from tactix.utils.logger import get_logger
 from tactix.utils.to_int import to_int
 

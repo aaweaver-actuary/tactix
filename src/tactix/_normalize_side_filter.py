@@ -1,0 +1,11 @@
+from tactix._position_context_helpers import logger
+
+
+def _normalize_side_filter(side_to_move_filter: str | None) -> str | None:
+    if not side_to_move_filter:
+        return None
+    normalized = side_to_move_filter.strip().lower()
+    if normalized in {"white", "black"}:
+        return normalized
+    logger.warning("Unknown side_to_move_filter: %s", side_to_move_filter)
+    return None

@@ -10,8 +10,8 @@ from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
 from tactix.define_outcome_insert_plan__db_store import OutcomeInsertPlan
 from tactix.define_pgn_upsert_plan__db_store import PgnUpsertPlan
 from tactix.define_tactic_insert_plan__db_store import TacticInsertPlan
+from tactix.extract_pgn_metadata import extract_pgn_metadata
 from tactix.is_latest_hash__db_store import _is_latest_hash
-from tactix.prepare_pgn__chess import extract_pgn_metadata
 from tactix.resolve_pgn_hash__db_store import _resolve_pgn_hash
 from tactix.resolve_timestamp__db_store import _resolve_timestamp
 from tactix.utils import hash

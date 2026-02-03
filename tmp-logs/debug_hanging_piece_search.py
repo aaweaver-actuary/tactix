@@ -4,7 +4,7 @@ from pathlib import Path
 import chess
 
 from tactix.config import Settings
-from tactix.stockfish_runner import StockfishEngine
+from tactix.StockfishEngine import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 
 

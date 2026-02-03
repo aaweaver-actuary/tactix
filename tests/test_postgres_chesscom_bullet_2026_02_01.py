@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime, timezone
 from functools import lru_cache
 from io import StringIO
 from pathlib import Path
@@ -10,16 +10,20 @@ import chess
 import chess.pgn
 import pytest
 
+from tactix._get_game_result_for_user_from_pgn_headers import (
+    _get_game_result_for_user_from_pgn_headers,
+)
+from tactix._get_user_color_from_pgn_headers import _get_user_color_from_pgn_headers
 from tactix.base_db_store import BaseDbStore
 from tactix.config import Settings
-from tactix.postgres_store import (
-    init_analysis_schema,
-    init_pgn_schema,
-    postgres_connection,
-    postgres_enabled,
-)
-from tactix.prepare_pgn__chess import normalize_pgn
+from tactix.init_analysis_schema import init_analysis_schema
 from tactix.pgn_utils import extract_game_id, split_pgn_chunks
+from tactix.postgres_connection import postgres_connection
+from tactix.postgres_enabled import postgres_enabled
+from tactix.init_pgn_schema import (
+    init_pgn_schema,
+)
+from tactix.normalize_pgn import normalize_pgn
 
 USER = "groborger"
 SOURCE = "chesscom"
@@ -76,45 +80,14 @@ def _load_fixture_games() -> list[chess.pgn.Game]:
     return games
 
 
-def _user_color(headers: chess.pgn.Headers, user: str) -> bool:
-    white = (headers.get("White") or "").lower()
-    black = (headers.get("Black") or "").lower()
-    if white == user.lower():
-        return chess.WHITE
-    if black == user.lower():
-        return chess.BLACK
-    raise AssertionError(f"User {user} not found in headers")
-
-
-def _result_for_user(headers: chess.pgn.Headers, user: str) -> str:
-    result = headers.get("Result")
-    if result not in {"1-0", "0-1", "1/2-1/2"}:
-        return "unknown"
-    color = _user_color(headers, user)
-    if result == "1/2-1/2":
-        return "draw"
-    if color == chess.WHITE:
-        return "win" if result == "1-0" else "loss"
-    return "win" if result == "0-1" else "loss"
-
-
 def _normalize_date(header_value: str | None) -> str:
     if not header_value:
         return FIXTURE_DATE_TEXT
     try:
-        parsed = datetime.strptime(header_value, "%Y.%m.%d")
+        parsed = datetime.strptime(header_value, "%Y.%m.%d").replace(tzinfo=UTC)
         return parsed.date().isoformat()
     except ValueError:
         return FIXTURE_DATE_TEXT
-
-
-def _piece_label(piece_type: int) -> str:
-    return {
-        chess.KNIGHT: "knight",
-        chess.BISHOP: "bishop",
-        chess.ROOK: "rook",
-        chess.QUEEN: "queen",
-    }.get(piece_type, "piece")
 
 
 def _is_hanging_piece(board: chess.Board, square: chess.Square, mover_color: bool) -> bool:
@@ -125,8 +98,7 @@ def _is_hanging_piece(board: chess.Board, square: chess.Square, mover_color: boo
         return False
     opponent = not mover_color
     if not any(
-        not board.is_pinned(opponent, attacker)
-        for attacker in board.attackers(opponent, square)
+        not board.is_pinned(opponent, attacker) for attacker in board.attackers(opponent, square)
     ):
         return False
     return not any(
@@ -221,10 +193,12 @@ def _find_hanging_positions(
 def _fixture_context() -> FixtureContext:
     games = _load_fixture_games()
     loss_game = next(
-        game for game in games if _result_for_user(game.headers, USER) == "loss"
+        game
+        for game in games
+        if _get_game_result_for_user_from_pgn_headers(game.headers, USER) == "loss"
     )
     loss_game_id = extract_game_id(str(loss_game))
-    user_color = _user_color(loss_game.headers, USER)
+    user_color = _get_user_color_from_pgn_headers(loss_game.headers, USER)
     blunder_move_number = _find_blunder_move_number(loss_game, user_color)
     hanging_primary, hanging_secondary = _find_hanging_positions(
         loss_game,
@@ -252,7 +226,7 @@ def _ensure_fixture_seeded(conn) -> None:
             pgn_text = str(game)
             normalized = normalize_pgn(pgn_text)
             pgn_hash = BaseDbStore.hash_pgn(normalized)
-            user_color = _user_color(headers, USER)
+            user_color = _get_user_color_from_pgn_headers(headers, USER)
             white_elo = int(headers.get("WhiteElo") or 0)
             black_elo = int(headers.get("BlackElo") or 0)
             user_rating = black_elo if user_color == chess.BLACK else white_elo

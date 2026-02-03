@@ -1,9 +1,29 @@
 pylint:
+# Ruff for linting and formatting 	
 	uv run ruff check --fix src/
 	uv run ruff format src/
+
+# Pylint for additional linting
+	uv run pylint src/
+
+# Flake8 for style guide enforcement
+	uv run flake8 src/
+	uv run flake8-bugbear src/
+	
+# Ty for static type checking
 	uv run ty check \
 		--error deprecated \
 		src/
+
+# Mypy for additional type checking
+	uv run mypy src/
+
+# Pydocstyle for docstring style checking
+	uv run pydocstyle src/
+
+# Prospector for overall code quality analysis
+	uv run prospector src/
+
 
 jslint:
 	cd client && npx eslint --fix . --ext .js,.jsx,.ts,.tsx
@@ -12,8 +32,11 @@ jslint:
 lint: pylint jslint
 
 pytest:
+# Cargo tests for Rust code
 	uv run cargo test
 	uv run cargo test --release
+
+# Pytest for Python code with coverage
 	uv run pytest tests/ \
 		--cov=src/ \
 		--cov-config=./.coveragerc \
@@ -28,15 +51,20 @@ jstest:
 test: pytest jstest
 
 py-complexity:
+# Xenon for code complexity analysis
 	uv run xenon \
 		--max-absolute A \
 		--max-modules A \
 		--max-average A \
 		src/
 
+# pycycle for detecting circular dependencies
+	uv run pycycle src/
+
 complexity: py-complexity
 
 py-deadcode:
+# Vulture for dead code detection in Python
 	uv run vulture src/ \
 		--min-confidence 60 \
 		--ignore-decorators "@app.get,@app.post,@app.put,@app.patch,@app.delete" \
@@ -61,6 +89,13 @@ dup:
 
 dedup: dup
 
+pyguard:
+	uv run safety check --full-report
+	uv run bandit -r src/ -lll
+	uv run dodgy --max-line-complexity 10 src/
+
+guard: pyguard
+
 build:
 	uv run cargo build --release
 	cd client && npm run build
@@ -68,7 +103,7 @@ build:
 dev:
 	cd client && npm run dev --host --port 5178
 
-check: lint test complexity dedup deadcode build
+check: lint test complexity guard dedup deadcode build
 
 setup:
 	@echo "Setting up the tactix repository..."

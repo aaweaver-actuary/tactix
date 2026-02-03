@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import chess
+from tactix._best_san_from_fen import _best_san_from_fen
 
 
 def format_tactic_explanation(
@@ -13,14 +13,3 @@ def format_tactic_explanation(
     motif_label = motif or "tactic"
     explanation = f"{motif_label} tactic. Best line: {line}."
     return best_san, explanation
-
-
-def _best_san_from_fen(fen: str | None, best_uci: str) -> str | None:
-    if not fen:
-        return None
-    try:
-        board = chess.Board(str(fen))
-        move = chess.Move.from_uci(best_uci)
-        return board.san(move) if move in board.legal_moves else None
-    except Exception:
-        return None

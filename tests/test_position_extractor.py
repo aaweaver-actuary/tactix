@@ -6,8 +6,9 @@ from unittest.mock import PropertyMock, patch
 
 import chess
 
+import tactix.extract_positions
 import tactix.position_extractor as position_extractor
-from tactix.position_extractor import extract_positions
+from tactix.extract_positions import extract_positions
 
 
 def _read_fixture_games() -> list[str]:
@@ -847,7 +848,7 @@ class PositionExtractorTests(unittest.TestCase):
                 "_extract_positions_python",
                 return_value=[{"uci": "e2e4"}],
             ) as extractor:
-                result = position_extractor.extract_positions(
+                result = tactix.extract_positions.extract_positions(
                     '[Event "Test"]\n\n1. e4 e5 *',
                     user="white",
                     source="lichess",

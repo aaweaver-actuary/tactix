@@ -11,6 +11,8 @@ def _sync_postgres_analysis_results(
     settings: Settings,
     limit: int = DEFAULT_SYNC_LIMIT,
 ) -> int:
+    from tactix import pipeline as pipeline_module  # noqa: PLC0415
+
     if pg_conn is None:
         return 0
     synced = 0
@@ -32,8 +34,6 @@ def _sync_postgres_analysis_results(
             "eval_delta": row.get("eval_delta", 0),
         }
         try:
-            from tactix import pipeline as pipeline_module  # noqa: PLC0415
-
             pipeline_module.upsert_analysis_tactic_with_outcome(
                 pg_conn,
                 tactic_row,

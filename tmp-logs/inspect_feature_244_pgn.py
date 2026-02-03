@@ -2,7 +2,7 @@ import shutil
 from pathlib import Path
 
 from tactix.config import Settings
-from tactix.stockfish_runner import StockfishEngine
+from tactix.StockfishEngine import StockfishEngine
 from tests.test_chesscom_bullet_pipeline_2026_02_01 import (
     _build_loss_game,
     _build_win_game,

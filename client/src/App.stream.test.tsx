@@ -85,6 +85,14 @@ describe('App job stream', () => {
     vi.unstubAllGlobals();
   });
 
+  const selectLichessRapid = async () => {
+    const lichessButton = screen.getByRole('button', {
+      name: 'Lichess · Rapid',
+    });
+    await waitFor(() => expect(lichessButton).toBeEnabled());
+    fireEvent.click(lichessButton);
+  };
+
   it('renders progress entries from the job SSE stream', async () => {
     const encoder = new TextEncoder();
     const ssePayload = `event: progress\ndata: ${JSON.stringify({
@@ -103,11 +111,7 @@ describe('App job stream', () => {
 
     render(<App />);
 
-    const lichessButton = screen.getByRole('button', {
-      name: 'Lichess · Rapid',
-    });
-    await waitFor(() => expect(lichessButton).toBeEnabled());
-    fireEvent.click(lichessButton);
+    await selectLichessRapid();
 
     const runButton = screen.getByTestId('action-run');
     await waitFor(() => expect(runButton).toBeEnabled());
@@ -152,11 +156,7 @@ describe('App job stream', () => {
 
     render(<App />);
 
-    const lichessButton = screen.getByRole('button', {
-      name: 'Lichess · Rapid',
-    });
-    await waitFor(() => expect(lichessButton).toBeEnabled());
-    fireEvent.click(lichessButton);
+    await selectLichessRapid();
 
     const refreshButton = screen.getByTestId('action-refresh');
     await waitFor(() => expect(refreshButton).toBeEnabled());

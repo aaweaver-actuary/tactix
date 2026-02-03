@@ -5,10 +5,13 @@ from tactix.define_pipeline_state__pipeline import ProgressCallback
 from tactix.init_analysis_schema_if_needed__pipeline import _init_analysis_schema_if_needed
 from tactix.maybe_clear_analysis_checkpoint__pipeline import _maybe_clear_analysis_checkpoint
 from tactix.maybe_sync_analysis_results__pipeline import _maybe_sync_analysis_results
-from tactix.postgres_store import postgres_analysis_enabled, postgres_connection
+from tactix.postgres_analysis_enabled import postgres_analysis_enabled
+from tactix.postgres_connection import postgres_connection
 from tactix.run_analysis_loop__pipeline import _run_analysis_loop
+from tactix.utils.logger import funclogger
 
 
+@funclogger
 def _analyze_positions_with_progress(
     conn,
     settings: Settings,

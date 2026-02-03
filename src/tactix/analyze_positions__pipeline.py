@@ -4,10 +4,14 @@ from tactix.config import Settings
 from tactix.define_pipeline_state__pipeline import INDEX_OFFSET, RESUME_INDEX_START
 from tactix.init_analysis_schema_if_needed__pipeline import _init_analysis_schema_if_needed
 from tactix.maybe_sync_analysis_results__pipeline import _maybe_sync_analysis_results
-from tactix.postgres_store import postgres_analysis_enabled, postgres_connection, record_ops_event
+from tactix.postgres_analysis_enabled import postgres_analysis_enabled
+from tactix.postgres_connection import postgres_connection
+from tactix.record_ops_event import record_ops_event
 from tactix.run_analysis_loop__pipeline import _run_analysis_loop
+from tactix.utils.logger import funclogger
 
 
+@funclogger
 def _analyze_positions(
     conn,
     settings: Settings,

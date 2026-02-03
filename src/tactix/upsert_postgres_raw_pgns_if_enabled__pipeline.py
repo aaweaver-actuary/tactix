@@ -5,14 +5,14 @@ from typing import cast
 
 from tactix.config import Settings
 from tactix.emit_progress__pipeline import _emit_progress
+from tactix.init_pgn_schema import init_pgn_schema
 from tactix.pipeline_state__pipeline import GameRow, ProgressCallback, logger
-from tactix.postgres_store import (
-    init_pgn_schema,
-    postgres_connection,
-    postgres_pgns_enabled,
+from tactix.postgres_connection import postgres_connection
+from tactix.postgres_pgns_enabled import postgres_pgns_enabled
+from tactix.record_ops_event import (
     record_ops_event,
-    upsert_postgres_raw_pgns,
 )
+from tactix.upsert_postgres_raw_pgns import upsert_postgres_raw_pgns
 
 
 def _upsert_postgres_raw_pgns_if_enabled(

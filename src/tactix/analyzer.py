@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from tactix.stockfish_engine import StockfishEngine
+from tactix.StockfishEngine import StockfishEngine
 
 
 @dataclass

@@ -13,7 +13,7 @@ from tactix.db.duckdb_store import (
     fetch_recent_tactics,
 )
 from tactix.pipeline import run_daily_game_sync
-from tactix.stockfish_runner import StockfishEngine
+from tactix.StockfishEngine import StockfishEngine
 
 
 class StockfishAndPipelineTests(unittest.TestCase):
@@ -64,9 +64,7 @@ class StockfishAndPipelineTests(unittest.TestCase):
 
     def test_pipeline_writes_duckdb_tables(self) -> None:
         tmp_dir = Path(tempfile.mkdtemp())
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "lichess_rapid_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "lichess_rapid_sample.pgn"
         settings = Settings(
             user="lichess",
             source="lichess",
@@ -106,9 +104,7 @@ class StockfishAndPipelineTests(unittest.TestCase):
 
     def test_chesscom_pipeline_writes_duckdb_tables(self) -> None:
         tmp_dir = Path(tempfile.mkdtemp())
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
         settings = Settings(
             source="chesscom",
             chesscom_user="chesscom",
@@ -130,12 +126,8 @@ class StockfishAndPipelineTests(unittest.TestCase):
         self.assertGreater(result["tactics"], 0)
 
         conn = get_connection(settings.duckdb_path)
-        raw_pgns = conn.execute(
-            "SELECT source, COUNT(*) FROM raw_pgns GROUP BY source"
-        ).fetchall()
-        self.assertTrue(
-            any(source == "chesscom" and count >= 2 for source, count in raw_pgns)
-        )
+        raw_pgns = conn.execute("SELECT source, COUNT(*) FROM raw_pgns GROUP BY source").fetchall()
+        self.assertTrue(any(source == "chesscom" and count >= 2 for source, count in raw_pgns))
         positions = conn.execute(
             "SELECT COUNT(*) FROM positions WHERE source='chesscom'"
         ).fetchone()[0]

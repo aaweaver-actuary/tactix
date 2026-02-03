@@ -19,7 +19,7 @@ from tactix.db.duckdb_store import (
     upsert_tactic_with_outcome,
 )
 from tactix.pgn_utils import extract_game_id, split_pgn_chunks
-from tactix.stockfish_runner import StockfishEngine
+from tactix.StockfishEngine import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 from tests.fixture_helpers import find_failed_attempt_position, find_missed_position
 
@@ -292,7 +292,6 @@ class DiscoveredAttackClassicalTests(unittest.TestCase):
         ).fetchone()
         self.assertEqual(stored_outcome[0], "failed_attempt")
         self.assertEqual(stored_outcome[1], failed_position["uci"])
-
 
 
 class TestDiscoveredAttackCorrespondence(unittest.TestCase):

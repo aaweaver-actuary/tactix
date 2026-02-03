@@ -10,7 +10,7 @@ from tactix.db.duckdb_store import (
     insert_positions,
     upsert_tactic_with_outcome,
 )
-from tactix.stockfish_runner import StockfishEngine
+from tactix.StockfishEngine import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 from tests.fixture_helpers import (
     hanging_piece_fixture_position,

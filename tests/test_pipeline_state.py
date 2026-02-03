@@ -26,14 +26,10 @@ class PipelineStateTests(unittest.TestCase):
             Path(__file__).resolve().parent / "fixtures" / "lichess_blitz_sample.pgn"
         )
         self.classical_fixture_path = (
-            Path(__file__).resolve().parent
-            / "fixtures"
-            / "lichess_classical_sample.pgn"
+            Path(__file__).resolve().parent / "fixtures" / "lichess_classical_sample.pgn"
         )
         self.correspondence_fixture_path = (
-            Path(__file__).resolve().parent
-            / "fixtures"
-            / "lichess_correspondence_sample.pgn"
+            Path(__file__).resolve().parent / "fixtures" / "lichess_correspondence_sample.pgn"
         )
         self.chesscom_fixture_path = (
             Path(__file__).resolve().parent / "fixtures" / "chesscom_blitz_sample.pgn"
@@ -45,14 +41,10 @@ class PipelineStateTests(unittest.TestCase):
             Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
         )
         self.chesscom_classical_fixture_path = (
-            Path(__file__).resolve().parent
-            / "fixtures"
-            / "chesscom_classical_sample.pgn"
+            Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
         )
         self.chesscom_correspondence_fixture_path = (
-            Path(__file__).resolve().parent
-            / "fixtures"
-            / "chesscom_correspondence_sample.pgn"
+            Path(__file__).resolve().parent / "fixtures" / "chesscom_correspondence_sample.pgn"
         )
 
     def test_checkpoint_and_metrics_files_written(self) -> None:
@@ -123,9 +115,7 @@ class PipelineStateTests(unittest.TestCase):
 
         first = run_daily_game_sync(settings, profile="bullet")
         self.assertGreater(first["fetched_games"], 0)
-        self.assertTrue(
-            settings.checkpoint_path.name.endswith("chesscom_since_bullet.txt")
-        )
+        self.assertTrue(settings.checkpoint_path.name.endswith("chesscom_since_bullet.txt"))
         cursor_first = read_cursor(settings.checkpoint_path)
         self.assertIsNotNone(cursor_first)
 
@@ -156,12 +146,8 @@ class PipelineStateTests(unittest.TestCase):
 
         first = run_daily_game_sync(settings, profile="blitz")
         self.assertGreater(first["fetched_games"], 0)
-        self.assertTrue(
-            settings.checkpoint_path.name.endswith("chesscom_since_blitz.txt")
-        )
-        self.assertEqual(
-            settings.chesscom_fixture_pgn_path.name, "chesscom_blitz_sample.pgn"
-        )
+        self.assertTrue(settings.checkpoint_path.name.endswith("chesscom_since_blitz.txt"))
+        self.assertEqual(settings.chesscom_fixture_pgn_path.name, "chesscom_blitz_sample.pgn")
         cursor_first = read_cursor(settings.checkpoint_path)
         self.assertIsNotNone(cursor_first)
 
@@ -192,12 +178,8 @@ class PipelineStateTests(unittest.TestCase):
 
         first = run_daily_game_sync(settings, profile="rapid")
         self.assertGreater(first["fetched_games"], 0)
-        self.assertTrue(
-            settings.checkpoint_path.name.endswith("chesscom_since_rapid.txt")
-        )
-        self.assertEqual(
-            settings.chesscom_fixture_pgn_path.name, "chesscom_rapid_sample.pgn"
-        )
+        self.assertTrue(settings.checkpoint_path.name.endswith("chesscom_since_rapid.txt"))
+        self.assertEqual(settings.chesscom_fixture_pgn_path.name, "chesscom_rapid_sample.pgn")
         cursor_first = read_cursor(settings.checkpoint_path)
         self.assertIsNotNone(cursor_first)
 
@@ -228,12 +210,8 @@ class PipelineStateTests(unittest.TestCase):
 
         first = run_daily_game_sync(settings, profile="classical")
         self.assertGreater(first["fetched_games"], 0)
-        self.assertTrue(
-            settings.checkpoint_path.name.endswith("chesscom_since_classical.txt")
-        )
-        self.assertEqual(
-            settings.chesscom_fixture_pgn_path.name, "chesscom_classical_sample.pgn"
-        )
+        self.assertTrue(settings.checkpoint_path.name.endswith("chesscom_since_classical.txt"))
+        self.assertEqual(settings.chesscom_fixture_pgn_path.name, "chesscom_classical_sample.pgn")
         cursor_first = read_cursor(settings.checkpoint_path)
         self.assertIsNotNone(cursor_first)
 
@@ -266,9 +244,7 @@ class PipelineStateTests(unittest.TestCase):
 
         first = run_daily_game_sync(settings, profile="correspondence")
         self.assertGreater(first["fetched_games"], 0)
-        self.assertTrue(
-            settings.checkpoint_path.name.endswith("chesscom_since_correspondence.txt")
-        )
+        self.assertTrue(settings.checkpoint_path.name.endswith("chesscom_since_correspondence.txt"))
         self.assertEqual(
             settings.chesscom_fixture_pgn_path.name,
             "chesscom_correspondence_sample.pgn",
@@ -300,9 +276,7 @@ class PipelineStateTests(unittest.TestCase):
         )
 
         pgn_text = self.chesscom_bullet_fixture_path.read_text()
-        timestamps = [
-            extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)
-        ]
+        timestamps = [extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)]
         window_start = min(timestamps) - 1000
         window_end = max(timestamps) + 1000
 
@@ -313,12 +287,8 @@ class PipelineStateTests(unittest.TestCase):
             profile="bullet",
         )
         self.assertGreater(first["fetched_games"], 0)
-        self.assertTrue(
-            settings.checkpoint_path.name.endswith("chesscom_since_bullet.txt")
-        )
-        self.assertEqual(
-            settings.chesscom_fixture_pgn_path.name, "chesscom_bullet_sample.pgn"
-        )
+        self.assertTrue(settings.checkpoint_path.name.endswith("chesscom_since_bullet.txt"))
+        self.assertEqual(settings.chesscom_fixture_pgn_path.name, "chesscom_bullet_sample.pgn")
         cursor_after_first = read_cursor(settings.checkpoint_path)
         self.assertIsNone(cursor_after_first)
 
@@ -326,9 +296,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_before = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_before = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_before = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_before = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         run_daily_game_sync(
@@ -342,9 +310,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_after = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_after = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_after = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_after = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_after = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         self.assertEqual(raw_after, raw_before)
@@ -370,9 +336,7 @@ class PipelineStateTests(unittest.TestCase):
         )
 
         pgn_text = self.chesscom_fixture_path.read_text()
-        timestamps = [
-            extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)
-        ]
+        timestamps = [extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)]
         window_start = min(timestamps) - 1000
         window_end = max(timestamps) + 1000
 
@@ -383,12 +347,8 @@ class PipelineStateTests(unittest.TestCase):
             profile="blitz",
         )
         self.assertGreater(first["fetched_games"], 0)
-        self.assertTrue(
-            settings.checkpoint_path.name.endswith("chesscom_since_blitz.txt")
-        )
-        self.assertEqual(
-            settings.chesscom_fixture_pgn_path.name, "chesscom_blitz_sample.pgn"
-        )
+        self.assertTrue(settings.checkpoint_path.name.endswith("chesscom_since_blitz.txt"))
+        self.assertEqual(settings.chesscom_fixture_pgn_path.name, "chesscom_blitz_sample.pgn")
         self.assertEqual(settings.fixture_pgn_path.name, "chesscom_blitz_sample.pgn")
         cursor_after_first = read_cursor(settings.checkpoint_path)
         self.assertIsNone(cursor_after_first)
@@ -397,9 +357,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_before = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_before = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_before = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_before = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         run_daily_game_sync(
@@ -413,9 +371,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_after = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_after = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_after = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_after = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_after = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         self.assertEqual(raw_after, raw_before)
@@ -441,9 +397,7 @@ class PipelineStateTests(unittest.TestCase):
         )
 
         pgn_text = self.chesscom_classical_fixture_path.read_text()
-        timestamps = [
-            extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)
-        ]
+        timestamps = [extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)]
         window_start = min(timestamps) - 1000
         window_end = max(timestamps) + 1000
 
@@ -454,15 +408,9 @@ class PipelineStateTests(unittest.TestCase):
             profile="classical",
         )
         self.assertGreater(first["fetched_games"], 0)
-        self.assertTrue(
-            settings.checkpoint_path.name.endswith("chesscom_since_classical.txt")
-        )
-        self.assertEqual(
-            settings.chesscom_fixture_pgn_path.name, "chesscom_classical_sample.pgn"
-        )
-        self.assertEqual(
-            settings.fixture_pgn_path.name, "chesscom_classical_sample.pgn"
-        )
+        self.assertTrue(settings.checkpoint_path.name.endswith("chesscom_since_classical.txt"))
+        self.assertEqual(settings.chesscom_fixture_pgn_path.name, "chesscom_classical_sample.pgn")
+        self.assertEqual(settings.fixture_pgn_path.name, "chesscom_classical_sample.pgn")
         cursor_after_first = read_cursor(settings.checkpoint_path)
         self.assertIsNone(cursor_after_first)
 
@@ -470,9 +418,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_before = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_before = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_before = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_before = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         run_daily_game_sync(
@@ -486,9 +432,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_after = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_after = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_after = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_after = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_after = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         self.assertEqual(raw_after, raw_before)
@@ -514,9 +458,7 @@ class PipelineStateTests(unittest.TestCase):
         )
 
         pgn_text = self.chesscom_correspondence_fixture_path.read_text()
-        timestamps = [
-            extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)
-        ]
+        timestamps = [extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)]
         window_start = min(timestamps) - 1000
         window_end = max(timestamps) + 1000
 
@@ -527,16 +469,12 @@ class PipelineStateTests(unittest.TestCase):
             profile="correspondence",
         )
         self.assertGreater(first["fetched_games"], 0)
-        self.assertTrue(
-            settings.checkpoint_path.name.endswith("chesscom_since_correspondence.txt")
-        )
+        self.assertTrue(settings.checkpoint_path.name.endswith("chesscom_since_correspondence.txt"))
         self.assertEqual(
             settings.chesscom_fixture_pgn_path.name,
             "chesscom_correspondence_sample.pgn",
         )
-        self.assertEqual(
-            settings.fixture_pgn_path.name, "chesscom_correspondence_sample.pgn"
-        )
+        self.assertEqual(settings.fixture_pgn_path.name, "chesscom_correspondence_sample.pgn")
         cursor_after_first = read_cursor(settings.checkpoint_path)
         self.assertIsNone(cursor_after_first)
 
@@ -544,9 +482,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_before = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_before = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_before = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_before = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         run_daily_game_sync(
@@ -560,9 +496,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_after = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_after = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_after = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_after = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_after = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         self.assertEqual(raw_after, raw_before)
@@ -591,9 +525,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_first = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_first = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_first = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_first = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_first = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         metrics_version_first = fetch_version(conn)
         checkpoint_first = read_checkpoint(settings.checkpoint_path)
 
@@ -605,9 +537,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_second = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_second = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_second = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_second = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_second = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         metrics_version_second = fetch_version(conn)
         checkpoint_second = read_checkpoint(settings.checkpoint_path)
         conn.close()
@@ -641,9 +571,7 @@ class PipelineStateTests(unittest.TestCase):
 
         first = run_daily_game_sync(settings, profile="rapid")
         self.assertGreater(first["fetched_games"], 0)
-        self.assertTrue(
-            settings.checkpoint_path.name.endswith("lichess_since_rapid.txt")
-        )
+        self.assertTrue(settings.checkpoint_path.name.endswith("lichess_since_rapid.txt"))
         checkpoint_first = read_checkpoint(settings.checkpoint_path)
         self.assertGreater(checkpoint_first, 0)
 
@@ -674,9 +602,7 @@ class PipelineStateTests(unittest.TestCase):
 
         first = run_daily_game_sync(settings, profile="classical")
         self.assertGreater(first["fetched_games"], 0)
-        self.assertTrue(
-            settings.checkpoint_path.name.endswith("lichess_since_classical.txt")
-        )
+        self.assertTrue(settings.checkpoint_path.name.endswith("lichess_since_classical.txt"))
         checkpoint_first = read_checkpoint(settings.checkpoint_path)
         self.assertGreater(checkpoint_first, 0)
 
@@ -709,9 +635,7 @@ class PipelineStateTests(unittest.TestCase):
 
         first = run_daily_game_sync(settings, profile="correspondence")
         self.assertGreater(first["fetched_games"], 0)
-        self.assertTrue(
-            settings.checkpoint_path.name.endswith("lichess_since_correspondence.txt")
-        )
+        self.assertTrue(settings.checkpoint_path.name.endswith("lichess_since_correspondence.txt"))
         checkpoint_first = read_checkpoint(settings.checkpoint_path)
         self.assertGreater(checkpoint_first, 0)
 
@@ -741,9 +665,7 @@ class PipelineStateTests(unittest.TestCase):
         )
 
         pgn_text = self.correspondence_fixture_path.read_text()
-        timestamps = [
-            extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)
-        ]
+        timestamps = [extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)]
         window_start = min(timestamps) - 1000
         window_end = max(timestamps) + 1000
 
@@ -754,9 +676,7 @@ class PipelineStateTests(unittest.TestCase):
             profile="correspondence",
         )
         self.assertGreater(first["fetched_games"], 0)
-        self.assertTrue(
-            settings.checkpoint_path.name.endswith("lichess_since_correspondence.txt")
-        )
+        self.assertTrue(settings.checkpoint_path.name.endswith("lichess_since_correspondence.txt"))
         self.assertTrue(
             settings.fixture_pgn_path.name.endswith("lichess_correspondence_sample.pgn")
         )
@@ -767,9 +687,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_before = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_before = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_before = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_before = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         run_daily_game_sync(
@@ -783,9 +701,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_after = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_after = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_after = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_after = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_after = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         self.assertEqual(raw_after, raw_before)
@@ -811,9 +727,7 @@ class PipelineStateTests(unittest.TestCase):
         )
 
         pgn_text = self.classical_fixture_path.read_text()
-        timestamps = [
-            extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)
-        ]
+        timestamps = [extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)]
         window_start = min(timestamps) - 1000
         window_end = max(timestamps) + 1000
 
@@ -824,12 +738,8 @@ class PipelineStateTests(unittest.TestCase):
             profile="classical",
         )
         self.assertGreater(first["fetched_games"], 0)
-        self.assertTrue(
-            settings.checkpoint_path.name.endswith("lichess_since_classical.txt")
-        )
-        self.assertTrue(
-            settings.fixture_pgn_path.name.endswith("lichess_classical_sample.pgn")
-        )
+        self.assertTrue(settings.checkpoint_path.name.endswith("lichess_since_classical.txt"))
+        self.assertTrue(settings.fixture_pgn_path.name.endswith("lichess_classical_sample.pgn"))
         checkpoint_after_first = read_checkpoint(settings.checkpoint_path)
         self.assertEqual(checkpoint_after_first, 0)
 
@@ -837,9 +747,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_before = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_before = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_before = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_before = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         run_daily_game_sync(
@@ -853,9 +761,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_after = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_after = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_after = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_after = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_after = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         self.assertEqual(raw_after, raw_before)
@@ -881,9 +787,7 @@ class PipelineStateTests(unittest.TestCase):
         )
 
         pgn_text = self.fixture_path.read_text()
-        timestamps = [
-            extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)
-        ]
+        timestamps = [extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)]
         window_start = min(timestamps) - 1000
         window_end = max(timestamps) + 1000
 
@@ -894,12 +798,8 @@ class PipelineStateTests(unittest.TestCase):
             profile="rapid",
         )
         self.assertGreater(first["fetched_games"], 0)
-        self.assertTrue(
-            settings.checkpoint_path.name.endswith("lichess_since_rapid.txt")
-        )
-        self.assertTrue(
-            settings.fixture_pgn_path.name.endswith("lichess_rapid_sample.pgn")
-        )
+        self.assertTrue(settings.checkpoint_path.name.endswith("lichess_since_rapid.txt"))
+        self.assertTrue(settings.fixture_pgn_path.name.endswith("lichess_rapid_sample.pgn"))
         checkpoint_after_first = read_checkpoint(settings.checkpoint_path)
         self.assertEqual(checkpoint_after_first, 0)
 
@@ -907,9 +807,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_before = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_before = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_before = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_before = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         run_daily_game_sync(
@@ -923,9 +821,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_after = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_after = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_after = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_after = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_after = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         self.assertEqual(raw_after, raw_before)
@@ -952,9 +848,7 @@ class PipelineStateTests(unittest.TestCase):
 
         first = run_daily_game_sync(settings, profile="bullet")
         self.assertGreater(first["fetched_games"], 0)
-        self.assertTrue(
-            settings.checkpoint_path.name.endswith("lichess_since_bullet.txt")
-        )
+        self.assertTrue(settings.checkpoint_path.name.endswith("lichess_since_bullet.txt"))
         checkpoint_first = read_checkpoint(settings.checkpoint_path)
         self.assertGreater(checkpoint_first, 0)
 
@@ -984,9 +878,7 @@ class PipelineStateTests(unittest.TestCase):
         )
 
         pgn_text = self.bullet_fixture_path.read_text()
-        timestamps = [
-            extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)
-        ]
+        timestamps = [extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)]
         window_start = min(timestamps) - 1000
         window_end = max(timestamps) + 1000
 
@@ -1004,9 +896,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_before = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_before = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_before = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_before = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         run_daily_game_sync(
@@ -1020,9 +910,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_after = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_after = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_after = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_after = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_after = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         self.assertEqual(raw_after, raw_before)
@@ -1049,9 +937,7 @@ class PipelineStateTests(unittest.TestCase):
 
         first = run_daily_game_sync(settings, profile="blitz")
         self.assertGreater(first["fetched_games"], 0)
-        self.assertTrue(
-            settings.checkpoint_path.name.endswith("lichess_since_blitz.txt")
-        )
+        self.assertTrue(settings.checkpoint_path.name.endswith("lichess_since_blitz.txt"))
         checkpoint_first = read_checkpoint(settings.checkpoint_path)
         self.assertGreater(checkpoint_first, 0)
 
@@ -1081,9 +967,7 @@ class PipelineStateTests(unittest.TestCase):
         )
 
         pgn_text = self.blitz_fixture_path.read_text()
-        timestamps = [
-            extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)
-        ]
+        timestamps = [extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)]
         window_start = min(timestamps) - 1000
         window_end = max(timestamps) + 1000
 
@@ -1101,9 +985,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_before = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_before = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_before = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_before = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         run_daily_game_sync(
@@ -1117,9 +999,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_after = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_after = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_after = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_after = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_after = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         self.assertEqual(raw_after, raw_before)
@@ -1147,33 +1027,23 @@ class PipelineStateTests(unittest.TestCase):
         raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_before = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_before = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_before = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_before = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         checkpoint_before = read_checkpoint(settings.checkpoint_path)
         conn.close()
 
         pgn_text = self.fixture_path.read_text()
-        timestamps = [
-            extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)
-        ]
+        timestamps = [extract_last_timestamp_ms(chunk) for chunk in split_pgn_chunks(pgn_text)]
         window_start = min(timestamps) - 1000
         window_end = max(timestamps) + 1000
 
-        run_daily_game_sync(
-            settings, window_start_ms=window_start, window_end_ms=window_end
-        )
-        run_daily_game_sync(
-            settings, window_start_ms=window_start, window_end_ms=window_end
-        )
+        run_daily_game_sync(settings, window_start_ms=window_start, window_end_ms=window_end)
+        run_daily_game_sync(settings, window_start_ms=window_start, window_end_ms=window_end)
 
         conn = get_connection(settings.duckdb_path)
         raw_after = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_after = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_after = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_after = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_after = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         checkpoint_after = read_checkpoint(settings.checkpoint_path)
         conn.close()
 
@@ -1204,9 +1074,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_first = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_first = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_first = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_first = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_first = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         metrics_version_first = fetch_version(conn)
         cursor_first = read_cursor(settings.checkpoint_path)
 
@@ -1218,9 +1086,7 @@ class PipelineStateTests(unittest.TestCase):
         raw_second = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
         positions_second = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         tactics_second = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
-        outcomes_second = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        outcomes_second = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         metrics_version_second = fetch_version(conn)
         cursor_second = read_cursor(settings.checkpoint_path)
         conn.close()
@@ -1259,9 +1125,7 @@ class PipelineStateTests(unittest.TestCase):
                 raise RuntimeError("simulated analysis failure")
             return real_analyse(engine, pos, settings)
 
-        with patch(
-            "tactix.pipeline._analyse_with_retries", side_effect=fail_once_analyze
-        ):
+        with patch("tactix.pipeline._analyse_with_retries", side_effect=fail_once_analyze):
             with self.assertRaises(RuntimeError):
                 run_daily_game_sync(settings)
 
@@ -1271,12 +1135,8 @@ class PipelineStateTests(unittest.TestCase):
 
         conn = get_connection(settings.duckdb_path)
         raw_after_failure = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
-        positions_after_failure = conn.execute(
-            "SELECT COUNT(*) FROM positions"
-        ).fetchone()[0]
-        tactics_after_failure = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[
-            0
-        ]
+        positions_after_failure = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+        tactics_after_failure = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
         conn.close()
 
         self.assertGreater(raw_after_failure, 0)
@@ -1287,15 +1147,9 @@ class PipelineStateTests(unittest.TestCase):
         result = run_daily_game_sync(settings)
         conn = get_connection(settings.duckdb_path)
         raw_after_recovery = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
-        positions_after_recovery = conn.execute(
-            "SELECT COUNT(*) FROM positions"
-        ).fetchone()[0]
-        tactics_after_recovery = conn.execute(
-            "SELECT COUNT(*) FROM tactics"
-        ).fetchone()[0]
-        outcomes_after_recovery = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        positions_after_recovery = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+        tactics_after_recovery = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        outcomes_after_recovery = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         metrics_version_after = fetch_version(conn)
         conn.close()
 
@@ -1303,9 +1157,7 @@ class PipelineStateTests(unittest.TestCase):
         self.assertEqual(positions_after_recovery, positions_after_failure)
         self.assertEqual(tactics_after_recovery, outcomes_after_recovery)
         self.assertGreater(result["checkpoint_ms"], 0)
-        self.assertEqual(
-            read_checkpoint(settings.checkpoint_path), result["checkpoint_ms"]
-        )
+        self.assertEqual(read_checkpoint(settings.checkpoint_path), result["checkpoint_ms"])
         self.assertTrue(settings.metrics_version_file.exists())
         self.assertGreater(metrics_version_after, 0)
         self.assertFalse(settings.analysis_checkpoint_path.exists())
@@ -1328,7 +1180,7 @@ class PipelineStateTests(unittest.TestCase):
         )
 
         call_count = {"count": 0}
-        from tactix.stockfish_runner import StockfishEngine
+        from tactix.StockfishEngine import StockfishEngine
 
         original_analyse = StockfishEngine.analyse
 
@@ -1345,24 +1197,16 @@ class PipelineStateTests(unittest.TestCase):
         self.assertTrue(settings.analysis_checkpoint_path.exists())
 
         conn = get_connection(settings.duckdb_path)
-        tactics_after_failure = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[
-            0
-        ]
-        positions_after_failure = conn.execute(
-            "SELECT COUNT(*) FROM positions"
-        ).fetchone()[0]
+        tactics_after_failure = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        positions_after_failure = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         conn.close()
         self.assertGreater(tactics_after_failure, 0)
         self.assertLess(tactics_after_failure, positions_after_failure)
 
         result = run_daily_game_sync(settings)
         conn = get_connection(settings.duckdb_path)
-        tactics_after_recovery = conn.execute(
-            "SELECT COUNT(*) FROM tactics"
-        ).fetchone()[0]
-        outcomes_after_recovery = conn.execute(
-            "SELECT COUNT(*) FROM tactic_outcomes"
-        ).fetchone()[0]
+        tactics_after_recovery = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
+        outcomes_after_recovery = conn.execute("SELECT COUNT(*) FROM tactic_outcomes").fetchone()[0]
         conn.close()
 
         self.assertEqual(tactics_after_recovery, outcomes_after_recovery)

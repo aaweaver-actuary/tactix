@@ -46,11 +46,20 @@ requires     =["maturin>=1.0,<2.0"]
 
 [dependency-groups]
 dev=[
+    "bandit>=1.9.3",
+    "dodgy>=0.2.1",
+    "flake8-bugbear>=25.11.29",
+    "flake8>=7.3.0",
+    "mypy>=1.19.1",
     "pre-commit>=4.5.0",
+    "prospector>=1.18.0",
+    "pycycle>=0.0.8",
+    "pydocstyle>=6.3.0",
     "pylint>=4.0.4",
     "pytest-cov>=7.0.0",
     "pytest>=9.0.2",
     "ruff>=0.14.14",
+    "safety>=3.7.0",
     "ty>=0.0.13",
     "vulture>=2.14",
     "xenon>=0.9.3",

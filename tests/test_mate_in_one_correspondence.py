@@ -12,8 +12,8 @@ from tactix.db.duckdb_store import (
     upsert_tactic_with_outcome,
 )
 from tactix.pgn_utils import split_pgn_chunks
-from tactix.position_extractor import extract_positions
-from tactix.stockfish_runner import StockfishEngine
+from tactix.extract_positions import extract_positions
+from tactix.StockfishEngine import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 
 
@@ -21,14 +21,10 @@ class MateInOneCorrespondenceTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_correspondence_mate_in_one_is_high_severity(self) -> None:
         fixture_path = (
-            Path(__file__).resolve().parent
-            / "fixtures"
-            / "chesscom_correspondence_sample.pgn"
+            Path(__file__).resolve().parent / "fixtures" / "chesscom_correspondence_sample.pgn"
         )
         chunks = split_pgn_chunks(fixture_path.read_text())
-        mate_pgn = next(
-            chunk for chunk in chunks if "Correspondence Fixture 3" in chunk
-        )
+        mate_pgn = next(chunk for chunk in chunks if "Correspondence Fixture 3" in chunk)
 
         settings = Settings(
             source="chesscom",

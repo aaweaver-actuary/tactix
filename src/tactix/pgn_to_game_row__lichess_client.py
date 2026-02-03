@@ -6,7 +6,8 @@ from tactix.chess_clients.chess_game_row import build_game_row_dict
 from tactix.coerce_pgn_text__lichess_client import _coerce_pgn_text
 from tactix.config import Settings
 from tactix.define_lichess_game_row__lichess_client import LichessGameRow
-from tactix.prepare_pgn__chess import extract_game_id, extract_last_timestamp_ms
+from tactix.extract_game_id import extract_game_id
+from tactix.extract_last_timestamp_ms import extract_last_timestamp_ms
 
 
 def _pgn_to_game_row(pgn: object, settings: Settings) -> dict | None:

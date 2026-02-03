@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from tactix.postgres_store import init_analysis_schema
+from tactix.init_analysis_schema import init_analysis_schema
 
 
 def _init_analysis_schema_if_needed(pg_conn, analysis_pg_enabled: bool) -> None:

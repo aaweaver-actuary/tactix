@@ -12,8 +12,8 @@ from tactix.db.duckdb_store import (
     upsert_tactic_with_outcome,
 )
 from tactix.pgn_utils import split_pgn_chunks
-from tactix.position_extractor import extract_positions
-from tactix.stockfish_runner import StockfishEngine
+from tactix.extract_positions import extract_positions
+from tactix.StockfishEngine import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 
 
@@ -22,9 +22,7 @@ class MateInOneClassicalTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_classical_mate_in_one_is_high_severity(self) -> None:
         fixture_path = (
-            Path(__file__).resolve().parent
-            / "fixtures"
-            / "chesscom_classical_sample.pgn"
+            Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
         )
         chunks = split_pgn_chunks(fixture_path.read_text())
         mate_pgn = next(chunk for chunk in chunks if "Classical Fixture 3" in chunk)
@@ -81,9 +79,7 @@ class TestForkClassical(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_classical_fork_is_low_severity(self) -> None:
         fixture_path = (
-            Path(__file__).resolve().parent
-            / "fixtures"
-            / "chesscom_classical_sample.pgn"
+            Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
         )
         chunks = split_pgn_chunks(fixture_path.read_text())
         fork_pgn = next(chunk for chunk in chunks if "Classical Fixture 5" in chunk)
@@ -141,9 +137,7 @@ class TestForkClassical(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_classical_fork_is_high_severity(self) -> None:
         fixture_path = (
-            Path(__file__).resolve().parent
-            / "fixtures"
-            / "chesscom_classical_sample.pgn"
+            Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
         )
         chunks = split_pgn_chunks(fixture_path.read_text())
         fork_pgn = next(chunk for chunk in chunks if "Classical Fixture 5" in chunk)

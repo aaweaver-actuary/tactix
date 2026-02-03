@@ -14,8 +14,8 @@ from tactix.db.duckdb_store import (
     upsert_tactic_with_outcome,
 )
 from tactix.pgn_utils import split_pgn_chunks
-from tactix.position_extractor import extract_positions
-from tactix.stockfish_runner import StockfishEngine
+from tactix.extract_positions import extract_positions
+from tactix.StockfishEngine import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 from tests.fixture_helpers import find_failed_attempt_position, find_missed_position
 

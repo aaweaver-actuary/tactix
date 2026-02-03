@@ -5,7 +5,8 @@ from fastapi import Query
 from tactix.api_logger__tactix import logger
 from tactix.base_db_store import BaseDbStoreContext
 from tactix.config import get_settings
-from tactix.postgres_store import PostgresStore, serialize_status
+from tactix.PostgresStore import PostgresStore
+from tactix.serialize_status import serialize_status
 
 
 def postgres_status(limit: int = Query(10, ge=1, le=50)) -> dict[str, object]:

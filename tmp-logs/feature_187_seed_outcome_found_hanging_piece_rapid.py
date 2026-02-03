@@ -12,8 +12,8 @@ from tactix.db.duckdb_store import (
     write_metrics_version,
 )
 from tactix.pgn_utils import split_pgn_chunks
-from tactix.position_extractor import extract_positions
-from tactix.stockfish_runner import StockfishEngine
+from tactix.extract_positions import extract_positions
+from tactix.StockfishEngine import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 from _seed_helpers import _ensure_position
 
@@ -23,9 +23,7 @@ if not shutil.which("stockfish"):
 
 fixture_path = Path("tests/fixtures/chesscom_rapid_sample.pgn")
 chunks = split_pgn_chunks(fixture_path.read_text())
-hanging_pgn = next(
-    chunk for chunk in chunks if "Rapid Fixture 11 - Hanging Piece Low" in chunk
-)
+hanging_pgn = next(chunk for chunk in chunks if "Rapid Fixture 11 - Hanging Piece Low" in chunk)
 
 settings = Settings(
     source="chesscom",

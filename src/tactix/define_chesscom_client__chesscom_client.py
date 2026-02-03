@@ -16,17 +16,18 @@ from tactix.chess_clients.chess_game_row import (
     coerce_game_row_dict,
     coerce_rows_for_model,
 )
-from tactix.chess_clients.fetch_helpers import load_fixture_games, use_fixture_games
+from tactix.chess_clients.fetch_helpers import use_fixture_games
 from tactix.define_chesscom_client_context__chesscom_client import ChesscomClientContext
 from tactix.errors import RateLimitError
+from tactix.extract_game_id import extract_game_id
+from tactix.extract_last_timestamp_ms import extract_last_timestamp_ms
 from tactix.filter_by_cursor__chesscom_cursor import _filter_by_cursor
-from tactix.parse_cursor__chesscom_cursor import _parse_cursor
-from tactix.parse_retry_after__chesscom_rate_limit import _parse_retry_after
-from tactix.prepare_pgn__chess import (
-    extract_game_id,
-    extract_last_timestamp_ms,
+from tactix.latest_timestamp import (
     latest_timestamp,
 )
+from tactix.load_fixture_games import load_fixture_games
+from tactix.parse_cursor__chesscom_cursor import _parse_cursor
+from tactix.parse_retry_after__chesscom_rate_limit import _parse_retry_after
 from tactix.resolve_next_page_url__chesscom_pagination import _next_page_url
 from tactix.should_stop_archive_fetch__chesscom_archive import _should_stop_archive_fetch
 from tactix.utils import Logger

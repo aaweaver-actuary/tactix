@@ -16,17 +16,15 @@ from tactix.db.duckdb_store import (
     upsert_tactic_with_outcome,
 )
 from tactix.pgn_utils import split_pgn_chunks
-from tactix.position_extractor import extract_positions
-from tactix.stockfish_runner import StockfishEngine
+from tactix.extract_positions import extract_positions
+from tactix.StockfishEngine import StockfishEngine
 from tactix.tactics_analyzer import analyze_position
 
 
 class MateInTwoRapidTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_rapid_mate_in_two_is_high_severity(self) -> None:
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_rapid_sample.pgn"
         chunks = split_pgn_chunks(fixture_path.read_text())
         mate_pgn = next(chunk for chunk in chunks if "Rapid Fixture 4" in chunk)
 
@@ -89,9 +87,7 @@ class MateInTwoClassicalTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_classical_mate_in_two_is_high_severity(self) -> None:
         fixture_path = (
-            Path(__file__).resolve().parent
-            / "fixtures"
-            / "chesscom_classical_sample.pgn"
+            Path(__file__).resolve().parent / "fixtures" / "chesscom_classical_sample.pgn"
         )
         chunks = split_pgn_chunks(fixture_path.read_text())
         mate_pgn = next(chunk for chunk in chunks if "Classical Fixture 4" in chunk)
@@ -149,5 +145,3 @@ class MateInTwoClassicalTests(unittest.TestCase):
         attempt = grade_practice_attempt(conn, tactic_id, position_ids[0], "c5f2")
         self.assertIn("Best line", attempt["explanation"] or "")
         self.assertIn("f2", attempt["explanation"] or "")
-
-

@@ -1,24 +1,24 @@
 from unittest.mock import MagicMock, patch
 
+from tactix.PostgresStatus import PostgresStatus
+from tactix.PostgresStore import PostgresStore
 from tactix.base_db_store import BaseDbStoreContext
 from tactix.config import Settings
+from tactix.fetch_analysis_tactics import fetch_analysis_tactics
+from tactix.fetch_ops_events import fetch_ops_events
+from tactix.fetch_postgres_raw_pgns_summary import fetch_postgres_raw_pgns_summary
+from tactix.get_postgres_status import get_postgres_status
+from tactix.init_analysis_schema import init_analysis_schema
+from tactix.init_pgn_schema import init_pgn_schema
+from tactix.postgres_analysis_enabled import postgres_analysis_enabled
+from tactix.postgres_enabled import postgres_enabled
+from tactix.postgres_pgns_enabled import postgres_pgns_enabled
+from tactix.record_ops_event import record_ops_event
+from tactix.upsert_analysis_tactic_with_outcome import upsert_analysis_tactic_with_outcome
+from tactix.upsert_postgres_raw_pgns import upsert_postgres_raw_pgns
 from tactix.utils.logger import get_logger
-from tactix.postgres_store import (
-    PostgresStore,
-    PostgresStatus,
-    fetch_ops_events,
-    fetch_analysis_tactics,
-    fetch_postgres_raw_pgns_summary,
-    get_postgres_status,
-    init_analysis_schema,
-    init_pgn_schema,
-    postgres_analysis_enabled,
-    postgres_pgns_enabled,
-    postgres_enabled,
-    record_ops_event,
+from tactix.serialize_status import (
     serialize_status,
-    upsert_analysis_tactic_with_outcome,
-    upsert_postgres_raw_pgns,
 )
 
 
@@ -257,9 +257,7 @@ def test_postgres_store_fetch_analysis_tactics_delegates() -> None:
 
 def test_postgres_store_fetch_raw_pgns_summary_delegates() -> None:
     store = _make_store()
-    with patch(
-        "tactix.postgres_store.fetch_postgres_raw_pgns_summary"
-    ) as fetch_summary:
+    with patch("tactix.postgres_store.fetch_postgres_raw_pgns_summary") as fetch_summary:
         fetch_summary.return_value = {"status": "ok"}
         summary = store.fetch_raw_pgns_summary()
     assert summary == {"status": "ok"}

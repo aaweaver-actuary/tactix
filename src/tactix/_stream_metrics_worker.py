@@ -1,17 +1,9 @@
-from __future__ import annotations
-
 from datetime import datetime
 from queue import Queue
-from threading import Thread
-from typing import Annotated
 
-from fastapi import Depends, Query
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import StreamingResponse
 
 from tactix.config import Settings
-from tactix.event_stream__job_stream import _event_stream
-from tactix.get_dashboard__api import DashboardQueryFilters, _resolve_dashboard_filters
 from tactix.list_sources_for_cache_refresh__api_cache import _sources_for_cache_refresh
 from tactix.pipeline import get_dashboard_payload, run_refresh_metrics
 from tactix.queue_job_event__job_stream import _queue_job_event
@@ -77,35 +69,3 @@ def _stream_metrics_worker(
         )
     finally:
         queue.put(sentinel)
-
-
-def stream_metrics(
-    filters: Annotated[DashboardQueryFilters, Depends()],
-    motif: Annotated[str | None, Query()] = None,
-) -> StreamingResponse:
-    start_datetime, end_datetime, normalized_source, settings = _resolve_dashboard_filters(
-        filters,
-    )
-    queue: Queue[object] = Queue()
-    sentinel = object()
-
-    Thread(
-        target=_stream_metrics_worker,
-        args=(
-            queue,
-            sentinel,
-            settings,
-            normalized_source,
-            motif,
-            filters.rating_bucket,
-            filters.time_control,
-            start_datetime,
-            end_datetime,
-        ),
-        daemon=True,
-    ).start()
-
-    return StreamingResponse(
-        _event_stream(queue, sentinel),
-        media_type="text/event-stream",
-    )

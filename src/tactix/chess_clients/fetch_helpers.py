@@ -5,7 +5,7 @@ from typing import Any
 
 from tactix.chess_clients.base_chess_client import ChessFetchRequest, ChessFetchResult
 from tactix.chess_clients.fixture_helpers import should_use_fixture_games
-from tactix.prepare_pgn__chess import load_fixture_games
+from tactix.load_fixture_games import load_fixture_games
 
 
 def should_use_fixture_data(token: str | None, use_fixture_when_no_token: bool) -> bool:

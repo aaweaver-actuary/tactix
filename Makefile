@@ -89,23 +89,9 @@ dup:
 dedup: dup
 
 pyguard:
-	uv run safety check --full-report \
-		--ignore 77317 \
-		--ignore 79598 \
-		--ignore 42194 \
-		--ignore 73188 \
-		--ignore 74262 \
-		--ignore 74259 \
-		--ignore 73187 \
-		--ignore 51668 \
-		--ignore 82196 \
-		--ignore 71594 \
-		--ignore 73889 \
-		--ignore 73969 \
-		--ignore 71595 \
-		--ignore 62019
+	uv run safety check --full-report
 	uv run bandit -r src/ -lll
-	uv run dodgy --max-line-complexity 10 --ignore-paths airflow/webserver_config.py src/
+	uv run dodgy --max-line-complexity 10 src/
 
 guard: pyguard
 

@@ -3,21 +3,3 @@ max-line-length = 100
 per-file-ignores =
     src/tactix/chess_clients/__init__.py:F401
     src/tactix/models/__init__.py:F401
-    src/tactix/pipeline_state__pipeline.py:F401
-    src/tactix/chess_clients/chesscom_client.py:F401
-    src/tactix/_collect_tables.py:N812
-    src/tactix/_list_tables.py:N812
-    src/tactix/_schema_tables.py:N812
-    src/tactix/init_analysis_schema.py:N812
-    src/tactix/init_pgn_schema.py:N812
-    src/tactix/init_postgres_schema.py:N812
-    src/tactix/postgres_connection.py:N812
-    src/tactix/upsert_analysis_tactic_with_outcome.py:N812
-    src/tactix/upsert_postgres_raw_pgns.py:N812
-    src/tactix/run_analysis_loop__pipeline.py:N813
-    src/tactix/analyse_with_retries__pipeline.py:B014
-    src/tactix/get_postgres_analysis__api.py:B008
-    src/tactix/get_postgres_status__api.py:B008
-    src/tactix/get_practice_next__api.py:B008
-    src/tactix/get_practice_queue__api.py:B008
-    src/tactix/get_tactics_search__api.py:B008

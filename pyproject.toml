@@ -1,4 +1,3 @@
-
 [project]
 dependencies=[
     "apache-airflow==2.10.0",
@@ -68,12 +67,6 @@ dev=[
 [tool.pylint.main]
 max-line-length=100
 
-[tool.flake8]
-max-line-length=100
-per-file-ignores=[
-    "src/tactix/chess_clients/__init__.py:F401",
-    "src/tactix/models/__init__.py:F401",
-]
 
 [tool.mypy]
 ignore_missing_imports=true
@@ -113,10 +106,9 @@ target-version="py312"
     ]
 
     ignore=[
-        "PLR0913", # "too many args" (enable later if you want)
-        "S101",    # allow assert (pytest uses it)
-        "S608",    # pickle is ok in our use cases
-        "TRY003",  # long exception messages (can be noisy)
+        "S101",   # allow assert (pytest uses it)
+        "S608",   # pickle is ok in our use cases
+        "TRY003", # long exception messages (can be noisy)
     ]
 
     fixable  =["ALL"]

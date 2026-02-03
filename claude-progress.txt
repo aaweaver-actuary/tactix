@@ -1,3 +1,9 @@
+Session 2026-02-03 (refactor – conversion payload helper)
+- Before → After:
+	- _conversion_payload: inline dict assembly → _build_conversion_payload helper in src/tactix/conversion_payload__pipeline.py
+	- _empty_conversion_payload: inline dict assembly → _build_conversion_payload helper in src/tactix/empty_conversion_payload__pipeline.py
+- Tests: `make check` (pre), `make check` (post).
+
 Session 2026-02-03 (dev – Lint/test stabilization)
 - Fixed pylint errors with minimal behavior changes, restored patchable imports, and aligned lint/test tooling configs (flake8, mypy, pydocstyle, prospector, pycycle, safety, dodgy).
 - Refactored re-export modules to avoid wildcard imports and pyflakes warnings (pipeline_state__pipeline, chess_clients/chesscom_client), removed unused imports, and corrected Settings dataclass initialization usage.

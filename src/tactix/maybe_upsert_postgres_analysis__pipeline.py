@@ -21,5 +21,4 @@ def _maybe_upsert_postgres_analysis(
     except Exception as exc:
         logger.warning("Postgres analysis upsert failed: %s", exc)
         return False
-    else:
-        return True
+    return True

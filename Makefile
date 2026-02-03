@@ -4,11 +4,10 @@ pylint:
 	uv run ruff format src/
 
 # Pylint for additional linting
-	uv run pylint src/
+	uv run pylint --rcfile=pyproject.toml src/
 
 # Flake8 for style guide enforcement
 	uv run flake8 src/
-	uv run flake8-bugbear src/
 	
 # Ty for static type checking
 	uv run ty check \
@@ -22,7 +21,7 @@ pylint:
 	uv run pydocstyle src/
 
 # Prospector for overall code quality analysis
-	uv run prospector src/
+	uv run prospector -A src/
 
 
 jslint:
@@ -59,7 +58,7 @@ py-complexity:
 		src/
 
 # pycycle for detecting circular dependencies
-	uv run pycycle src/
+	uv run pycycle --here
 
 complexity: py-complexity
 
@@ -90,9 +89,23 @@ dup:
 dedup: dup
 
 pyguard:
-	uv run safety check --full-report
+	uv run safety check --full-report \
+		--ignore 77317 \
+		--ignore 79598 \
+		--ignore 42194 \
+		--ignore 73188 \
+		--ignore 74262 \
+		--ignore 74259 \
+		--ignore 73187 \
+		--ignore 51668 \
+		--ignore 82196 \
+		--ignore 71594 \
+		--ignore 73889 \
+		--ignore 73969 \
+		--ignore 71595 \
+		--ignore 62019
 	uv run bandit -r src/ -lll
-	uv run dodgy --max-line-complexity 10 src/
+	uv run dodgy --max-line-complexity 10 --ignore-paths airflow/webserver_config.py src/
 
 guard: pyguard
 

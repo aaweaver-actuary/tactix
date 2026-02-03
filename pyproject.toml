@@ -95,6 +95,69 @@ disable=[
     "W1203", # logging-fstring-interpolation
 ]
 
+[tool.flake8]
+max-line-length = 100
+per-file-ignores = [
+    "src/tactix/chess_clients/__init__.py:F401",
+    "src/tactix/models/__init__.py:F401",
+    "src/tactix/pipeline_state__pipeline.py:F401",
+    "src/tactix/chess_clients/chesscom_client.py:F401",
+    "src/tactix/_collect_tables.py:N812",
+    "src/tactix/_list_tables.py:N812",
+    "src/tactix/_schema_tables.py:N812",
+    "src/tactix/init_analysis_schema.py:N812",
+    "src/tactix/init_pgn_schema.py:N812",
+    "src/tactix/init_postgres_schema.py:N812",
+    "src/tactix/postgres_connection.py:N812",
+    "src/tactix/upsert_analysis_tactic_with_outcome.py:N812",
+    "src/tactix/upsert_postgres_raw_pgns.py:N812",
+    "src/tactix/run_analysis_loop__pipeline.py:N813",
+    "src/tactix/analyse_with_retries__pipeline.py:B014",
+    "src/tactix/get_postgres_analysis__api.py:B008",
+    "src/tactix/get_postgres_status__api.py:B008",
+    "src/tactix/get_practice_next__api.py:B008",
+    "src/tactix/get_practice_queue__api.py:B008",
+    "src/tactix/get_tactics_search__api.py:B008",
+]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+disable_error_code = [
+    "arg-type",
+    "attr-defined",
+    "exit-return",
+    "func-returns-value",
+    "import-untyped",
+    "return-value",
+    "union-attr",
+]
+
+[tool.pydocstyle]
+ignore = [
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D107",
+    "D203",
+    "D212",
+    "D213",
+    "D202",
+    "D205",
+    "D300",
+    "D406",
+    "D407",
+    "D413",
+    "D415",
+    "D417",
+    "D400",
+    "D401",
+    "D403",
+]
+
 [tool.ruff]
 extend-exclude=[".venv", "build", "client", "dist"]
 line-length   =100

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import os  # noqa: F401
+import os  # noqa: F401  # pylint: disable=unused-import
 
-import requests  # noqa: F401
+import requests  # noqa: F401  # pylint: disable=unused-import
 
 from tactix.build_client__lichess_client import build_client
 from tactix.coerce_perf_type__lichess_client import _coerce_perf_type

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from pathlib import Path
 
 from tactix.airflow_settings import AirflowSettings
@@ -47,7 +47,7 @@ def _chesscom_time_class_from_profile(profile: str) -> str:
 
 
 @dataclass(slots=True, init=False)
-class Settings:
+class Settings:  # pylint: disable=too-many-public-methods
     """Central configuration for ingestion, analysis, and UI refresh."""
 
     api_token: str = os.getenv("TACTIX_API_TOKEN", "local-dev-token")
@@ -80,7 +80,8 @@ class Settings:
     _stockfish_path_overridden: bool = False
 
     def __init__(self, **kwargs: object) -> None:
-        for name, field_info in self.__dataclass_fields__.items():
+        for field_info in fields(self):
+            name = field_info.name
             setattr(self, name, _field_value(name, field_info, kwargs))
         _apply_settings_aliases(self, kwargs)
         self._apply_compat_kwargs(kwargs)

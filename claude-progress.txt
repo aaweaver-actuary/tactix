@@ -1,3 +1,7 @@
+Session 2026-02-03 (dev – Pylint TOML config)
+- Moved Pylint config to TOML sections in pyproject.toml ([tool.pylint.main] + [tool.pylint.messages_control]) with max line length 100 and disabled R0401/R0801.
+- Tests: `make check` (failed at pylint: W0223/W0246 in PostgresStore, W0611 in lichess_client, R1705 in maybe_upsert_postgres_analysis__pipeline, E1101/R0904 in define_settings__config).
+
 Session 2026-02-03 (dev – Pylint config baseline)
 - Added Pylint configuration in pyproject.toml to disable noisy baseline checks (docstrings, argument counts, etc.) and keep line length aligned to 100.
 - Tests: `make check` (not run here; command skipped).

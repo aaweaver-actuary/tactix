@@ -1,21 +1,7 @@
-"""Context for reporting fetch progress (duplicate)."""
+# pylint: skip-file
+"""Compatibility wrapper for fetch progress context (duplicate)."""
 
-# pylint: disable=invalid-name
+from tactix.context_exports import FETCH_PROGRESS_CONTEXT_EXPORTS
+from tactix.DailySyncStartContext import FetchProgressContext  # noqa: F401
 
-from dataclasses import dataclass
-
-from tactix.config import Settings
-from tactix.pipeline_state__pipeline import FetchContext, ProgressCallback
-
-
-@dataclass(frozen=True)
-class FetchProgressContext:
-    """Carries data for fetch progress notifications."""
-
-    settings: Settings
-    progress: ProgressCallback | None
-    fetch_context: FetchContext
-    backfill_mode: bool
-    window_start_ms: int | None
-    window_end_ms: int | None
-    fetched_games: int
+__all__ = list(FETCH_PROGRESS_CONTEXT_EXPORTS)

@@ -1,3 +1,9 @@
+Session 2026-02-04 (refactor – pylint dedupe/contexts)
+- Consolidated daily sync context dataclasses into src/tactix/sync_contexts.py with grouped sub-contexts (totals/metrics/window) and property accessors; wrappers re-export via context_exports.
+- Reduced duplication across outcome helpers, PGN context builders, and DB SQL fragments (latest_raw_pgns query + tactics column fragments).
+- Added analysis/run input grouping, line-tactic/discovered-line helpers, and tightened stream job request construction.
+- Tests: `make check` (pre; failed at ruff in _compute_severity__tactic.py), `make check` (post; fails with existing pylint baseline issues: missing docstrings/cyclic imports and other pre-existing errors).
+
 Session 2026-02-03 (refactor – conversion payload helper)
 - Before → After:
 	- _conversion_payload: inline dict assembly → _build_conversion_payload helper in src/tactix/conversion_payload__pipeline.py

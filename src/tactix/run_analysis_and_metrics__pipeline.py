@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from tactix.analysis_context import AnalysisAndMetricsContext, AnalysisRunContext
+from tactix.analysis_context import (
+    AnalysisAndMetricsContext,
+    AnalysisRunContext,
+    AnalysisRunInputs,
+)
 from tactix.analyze_positions_with_progress__pipeline import _analyze_positions_with_progress
 from tactix.emit_progress__pipeline import _emit_progress
 from tactix.ops_event import OpsEvent
@@ -17,10 +21,12 @@ def _run_analysis_and_metrics(
         AnalysisRunContext(
             conn=ctx.conn,
             settings=ctx.settings,
-            positions=ctx.positions,
-            resume_index=ctx.resume_index,
-            analysis_signature=ctx.analysis_signature,
-            progress=ctx.progress,
+            run=AnalysisRunInputs(
+                positions=ctx.positions,
+                resume_index=ctx.resume_index,
+                analysis_signature=ctx.analysis_signature,
+                progress=ctx.progress,
+            ),
         )
     )
     record_ops_event(

@@ -3,7 +3,12 @@ from dataclasses import dataclass
 import chess
 
 from tactix._apply_outcome_overrides import _apply_outcome_overrides
-from tactix._build_tactic_rows import TacticRowInput, _build_tactic_rows
+from tactix._build_tactic_rows import (
+    OutcomeDetails,
+    TacticDetails,
+    TacticRowInput,
+    _build_tactic_rows,
+)
 from tactix._compare_move__best_line import BestLineContext, _compare_move__best_line
 from tactix._compute_eval__failed_attempt_threshold import (
     _compute_eval__failed_attempt_threshold,
@@ -13,7 +18,9 @@ from tactix._compute_eval__hanging_piece_unclear_threshold import (
 )
 from tactix._compute_severity__tactic import (
     SeverityContext,
+    SeverityInputs,
     _compute_severity__tactic,
+    build_severity_context,
 )
 from tactix._evaluate_engine_position import _evaluate_engine_position
 from tactix._infer_hanging_or_detected_motif import _infer_hanging_or_detected_motif
@@ -22,11 +29,12 @@ from tactix._parse_user_move import _parse_user_move
 from tactix._prepare_position_inputs import _prepare_position_inputs
 from tactix._reclassify_failed_attempt import _reclassify_failed_attempt
 from tactix._score_after_move import _score_after_move
+from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.config import Settings
-from tactix.detect_tactics__motifs import BaseTacticDetector
 from tactix.format_tactics__explanation import format_tactic_explanation
 from tactix.outcome_context import BaseOutcomeContext, OutcomeOverridesContext
 from tactix.StockfishEngine import StockfishEngine
+from tactix.utils.logger import funclogger
 
 
 @dataclass(frozen=True)
@@ -61,11 +69,7 @@ class PositionMotifContext:
 
 @dataclass(frozen=True)
 class OutcomeOverridePositionContext:
-    result: str
-    motif: str
-    best_move: str | None
-    user_move_uci: str
-    swing: int | None
+    outcome: BaseOutcomeContext
     after_cp: int
     best_motif: str | None
     mate_in_one: bool
@@ -73,6 +77,7 @@ class OutcomeOverridePositionContext:
     settings: Settings | None
 
 
+@funclogger
 def _resolve_motif_and_result(
     context: MotifResolutionContext,
 ) -> tuple[str, str, str | None]:
@@ -91,6 +96,7 @@ def _resolve_motif_and_result(
     return result, motif, best_motif
 
 
+@funclogger
 def _adjust_hanging_piece_result(
     result: str,
     motif: str,
@@ -103,6 +109,7 @@ def _adjust_hanging_piece_result(
     return result if adjusted is None else adjusted
 
 
+@funclogger
 def _should_adjust_hanging_piece(
     result: str,
     motif: str,
@@ -117,6 +124,7 @@ def _should_adjust_hanging_piece(
     )
 
 
+@funclogger
 def _resolve_hanging_piece_adjustment(
     result: str,
     swing: int | None,
@@ -134,6 +142,7 @@ def _resolve_hanging_piece_adjustment(
     return _classify_hanging_piece_result(result, swing, unclear_threshold)
 
 
+@funclogger
 def _classify_hanging_piece_result(result: str, swing: int, unclear_threshold: int) -> str:
     severe_failed_attempt_threshold = unclear_threshold * 3
     if result == "missed" and swing <= severe_failed_attempt_threshold:
@@ -145,7 +154,8 @@ def _classify_hanging_piece_result(result: str, swing: int, unclear_threshold: i
     return "unclear"
 
 
-def analyze_position(  # pylint: disable=too-many-locals
+@funclogger
+def analyze_position(
     position: dict[str, object],
     engine: StockfishEngine,
     settings: Settings | None = None,
@@ -195,11 +205,14 @@ def analyze_position(  # pylint: disable=too-many-locals
     )
     result, motif, mate_in = _apply_outcome_overrides_for_position(
         OutcomeOverridePositionContext(
-            result=result,
-            motif=motif,
-            best_move=best_move,
-            user_move_uci=user_move_uci,
-            swing=swing,
+            outcome=BaseOutcomeContext(
+                result=result,
+                motif=motif,
+                best_move=best_move,
+                user_move_uci=user_move_uci,
+                swing=swing,
+                after_cp=after_cp,
+            ),
             after_cp=after_cp,
             best_motif=best_motif,
             mate_in_one=mate_in_one,
@@ -209,33 +222,40 @@ def analyze_position(  # pylint: disable=too-many-locals
     )
     result = _finalize_hanging_piece_result(result, motif, swing, base_cp, settings)
     severity = _compute_severity_for_position(
-        SeverityContext(
-            base_cp=base_cp,
-            delta=delta,
-            motif=motif,
-            mate_in=mate_in,
-            result=result,
-            settings=settings,
+        build_severity_context(
+            SeverityInputs(
+                base_cp=base_cp,
+                delta=delta,
+                motif=motif,
+                mate_in=mate_in,
+                result=result,
+                settings=settings,
+            )
         )
     )
     best_san, explanation = format_tactic_explanation(fen, best_move or "", motif)
     return _build_tactic_rows(
         TacticRowInput(
             position=position,
-            motif=motif,
-            severity=severity,
-            best_move=best_move,
-            base_cp=base_cp,
-            mate_in=mate_in,
-            best_san=best_san,
-            explanation=explanation,
-            result=result,
-            user_move_uci=user_move_uci,
-            delta=delta,
+            details=TacticDetails(
+                motif=motif,
+                severity=severity,
+                best_move=best_move,
+                base_cp=base_cp,
+                mate_in=mate_in,
+                best_san=best_san,
+                explanation=explanation,
+            ),
+            outcome=OutcomeDetails(
+                result=result,
+                user_move_uci=user_move_uci,
+                delta=delta,
+            ),
         )
     )
 
 
+@funclogger
 def _resolve_initial_result(
     context: InitialResultContext,
 ) -> tuple[str, int]:
@@ -250,6 +270,7 @@ def _resolve_initial_result(
     return result, delta
 
 
+@funclogger
 def _resolve_motif_for_position(
     context: PositionMotifContext,
 ) -> tuple[str, str, str | None]:
@@ -270,23 +291,18 @@ def _resolve_motif_for_position(
     )
 
 
+@funclogger
 def _resolve_best_line_swing(context: BestLineContext) -> int | None:
     return _compare_move__best_line(context)
 
 
+@funclogger
 def _apply_outcome_overrides_for_position(
     context: OutcomeOverridePositionContext,
 ) -> tuple[str, str, int | None]:
     return _apply_outcome_overrides(
         OutcomeOverridesContext(
-            outcome=BaseOutcomeContext(
-                result=context.result,
-                motif=context.motif,
-                best_move=context.best_move,
-                user_move_uci=context.user_move_uci,
-                swing=context.swing,
-                after_cp=context.after_cp,
-            ),
+            outcome=context.outcome,
             best_motif=context.best_motif,
             after_cp=context.after_cp,
             mate_in_one=context.mate_in_one,
@@ -296,6 +312,7 @@ def _apply_outcome_overrides_for_position(
     )
 
 
+@funclogger
 def _finalize_hanging_piece_result(
     result: str,
     motif: str,
@@ -308,5 +325,6 @@ def _finalize_hanging_piece_result(
     return _adjust_hanging_piece_result(result, motif, swing, settings)
 
 
+@funclogger
 def _compute_severity_for_position(context: SeverityContext) -> int:
     return _compute_severity__tactic(context)

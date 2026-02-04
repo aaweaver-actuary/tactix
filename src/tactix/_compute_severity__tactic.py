@@ -1,3 +1,5 @@
+"""Compute tactic severity scores."""
+
 from dataclasses import dataclass
 from typing import cast
 
@@ -5,7 +7,10 @@ from tactix._apply_fork_severity_floor import _apply_fork_severity_floor
 from tactix._severity_for_result import _severity_for_result
 from tactix.analyze_tactics__positions import _SEVERITY_MAX
 from tactix.config import Settings
+from tactix.legacy_args import apply_legacy_args, apply_legacy_kwargs, init_legacy_values
 from tactix.utils.logger import funclogger
+
+_SEVERITY_KEYS = ("base_cp", "delta", "motif", "mate_in", "result", "settings")
 
 
 @dataclass(frozen=True)
@@ -18,15 +23,21 @@ class SeverityContext:
     settings: Settings | None
 
 
+@dataclass(frozen=True)
+class SeverityInputs:
+    """Explicit inputs for building severity contexts."""
+
+    base_cp: int
+    delta: int
+    motif: str
+    mate_in: int | None
+    result: str
+    settings: Settings | None
+
+
+@funclogger
 def _init_severity_values(params: SeverityContext | None) -> dict[str, object]:
-    values: dict[str, object] = {
-        "base_cp": None,
-        "delta": None,
-        "motif": None,
-        "mate_in": None,
-        "result": None,
-        "settings": None,
-    }
+    values = init_legacy_values(_SEVERITY_KEYS)
     if params is None:
         return values
     values.update(
@@ -42,6 +53,7 @@ def _init_severity_values(params: SeverityContext | None) -> dict[str, object]:
     return values
 
 
+@funclogger
 def _apply_severity_base_cp(values: dict[str, object], context: int | None) -> None:
     if context is None:
         return
@@ -50,26 +62,20 @@ def _apply_severity_base_cp(values: dict[str, object], context: int | None) -> N
     values["base_cp"] = context
 
 
-def _apply_severity_legacy(values: dict[str, object], legacy: dict[str, object]) -> None:
-    for key in tuple(values.keys()):
-        if key in legacy:
-            values[key] = legacy.pop(key)
-    if legacy:
-        raise TypeError(f"Unexpected keyword arguments: {', '.join(sorted(legacy))}")
+@funclogger
+def build_severity_context(inputs: SeverityInputs) -> SeverityContext:
+    """Build a severity context from explicit inputs."""
+    return SeverityContext(
+        base_cp=inputs.base_cp,
+        delta=inputs.delta,
+        motif=inputs.motif,
+        mate_in=inputs.mate_in,
+        result=inputs.result,
+        settings=inputs.settings,
+    )
 
 
-def _apply_severity_args(values: dict[str, object], args: tuple[object, ...]) -> None:
-    if not args:
-        return
-    ordered_keys = ("delta", "motif", "mate_in", "result", "settings")
-    if len(args) > len(ordered_keys):
-        raise TypeError("Too many positional arguments")
-    for key, value in zip(ordered_keys, args, strict=False):
-        if values[key] is not None:
-            raise TypeError(f"{key} provided multiple times")
-        values[key] = value
-
-
+@funclogger
 def _build_severity_context(values: dict[str, object]) -> SeverityContext:
     if values["base_cp"] is None:
         raise TypeError("base_cp, delta, motif, and result are required")
@@ -81,16 +87,19 @@ def _build_severity_context(values: dict[str, object]) -> SeverityContext:
     mate_in = cast(int | None, values["mate_in"])
     result = cast(str, values["result"])
     settings = cast(Settings | None, values["settings"])
-    return SeverityContext(
-        base_cp=base_cp,
-        delta=delta,
-        motif=motif,
-        mate_in=mate_in,
-        result=result,
-        settings=settings,
+    inputs = SeverityInputs(
+        **dict(
+            zip(
+                _SEVERITY_KEYS,
+                (base_cp, delta, motif, mate_in, result, settings),
+                strict=True,
+            )
+        )
     )
+    return build_severity_context(inputs)
 
 
+@funclogger
 def _resolve_severity_context(
     context: SeverityContext | int | None,
     args: tuple[object, ...],
@@ -101,8 +110,8 @@ def _resolve_severity_context(
         return context
     values = _init_severity_values(params)
     _apply_severity_base_cp(values, context)
-    _apply_severity_legacy(values, legacy)
-    _apply_severity_args(values, args)
+    apply_legacy_kwargs(values, _SEVERITY_KEYS, legacy)
+    apply_legacy_args(values, _SEVERITY_KEYS[1:], args)
     return _build_severity_context(values)
 
 

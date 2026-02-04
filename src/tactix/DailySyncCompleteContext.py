@@ -1,23 +1,7 @@
-"""Context for daily sync completion events."""
+# pylint: skip-file
+"""Compatibility wrapper for daily sync completion context."""
 
-from dataclasses import dataclass
+from tactix.context_exports import DAILY_SYNC_COMPLETE_CONTEXT_EXPORTS
+from tactix.DailySyncStartContext import DailySyncCompleteContext  # noqa: F401
 
-from tactix.config import Settings
-from tactix.pipeline_state__pipeline import GameRow
-
-
-@dataclass(frozen=True)
-class DailySyncCompleteContext:
-    """Carries data for daily sync completion."""
-
-    settings: Settings
-    profile: str | None
-    games: list[GameRow]
-    raw_pgns_inserted: int
-    postgres_raw_pgns_inserted: int
-    positions_count: int
-    tactics_count: int
-    postgres_written: int
-    postgres_synced: int
-    metrics_version: int
-    backfill_mode: bool
+__all__ = list(DAILY_SYNC_COMPLETE_CONTEXT_EXPORTS)

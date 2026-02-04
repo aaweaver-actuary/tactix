@@ -12,33 +12,33 @@ from tactix.pipeline import run_daily_game_sync, run_migrations, run_refresh_met
 from tactix.pipeline_state__pipeline import ProgressCallback
 from tactix.raise_unsupported_job__api_jobs import _raise_unsupported_job
 from tactix.run_airflow_daily_sync_job__job_stream import _run_airflow_daily_sync_job
-from tactix.stream_job_context import AirflowDailySyncContext, StreamJobRunContext
+from tactix.stream_job_context import (
+    BACKFILL_WINDOW_KEYS,
+    AirflowDailySyncContext,
+    StreamJobRunContext,
+    build_stream_job_request_from_values,
+)
+from tactix.utils.logger import funclogger
 
 
+@funclogger
 def _noop_progress(_payload: dict[str, object]) -> None:
     return None
 
 
+@funclogger
 def _collect_stream_job_values(
     args: tuple[object, ...],
     legacy: dict[str, object],
 ) -> dict[str, object]:
-    ordered_keys = (
-        "queue",
-        "job",
-        "source",
-        "profile",
-        "backfill_start_ms",
-        "backfill_end_ms",
-        "triggered_at_ms",
-        "progress",
-    )
+    ordered_keys = ("queue", "job", *BACKFILL_WINDOW_KEYS, "progress")
     values = init_legacy_values(ordered_keys)
     apply_legacy_kwargs(values, ordered_keys, legacy)
     apply_legacy_args(values, ordered_keys, args)
     return values
 
 
+@funclogger
 def _build_stream_job_context(
     settings: Settings,
     values: dict[str, object],
@@ -46,28 +46,25 @@ def _build_stream_job_context(
     if values["queue"] is None or values["job"] is None or values["triggered_at_ms"] is None:
         raise TypeError("settings, queue, job, and triggered_at_ms are required")
     queue = cast(Queue[object], values["queue"])
-    job = cast(str, values["job"])
-    source = cast(str | None, values["source"])
-    profile = cast(str | None, values["profile"])
-    backfill_start_ms = cast(int | None, values["backfill_start_ms"])
-    backfill_end_ms = cast(int | None, values["backfill_end_ms"])
     triggered_at_ms = cast(int, values["triggered_at_ms"])
     progress = cast(ProgressCallback | None, values["progress"])
     if progress is None:
         progress = _noop_progress
+    request = build_stream_job_request_from_values(values)
     return StreamJobRunContext(
         settings=settings,
         queue=queue,
-        job=job,
-        source=source,
-        profile=profile,
-        backfill_start_ms=backfill_start_ms,
-        backfill_end_ms=backfill_end_ms,
+        job=request.job,
+        source=request.source,
+        profile=request.profile,
+        backfill_start_ms=request.backfill_start_ms,
+        backfill_end_ms=request.backfill_end_ms,
         triggered_at_ms=triggered_at_ms,
         progress=progress,
     )
 
 
+@funclogger
 def _run_stream_job(
     context: StreamJobRunContext | Settings,
     *args: object,

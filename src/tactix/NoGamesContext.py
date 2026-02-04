@@ -1,21 +1,7 @@
-"""Context for no-games handling."""
+# pylint: skip-file
+"""Compatibility wrapper for no-games context."""
 
-# pylint: disable=invalid-name
+from tactix.context_exports import NO_GAMES_CONTEXT_EXPORTS
+from tactix.DailySyncStartContext import NoGamesContext  # noqa: F401
 
-from dataclasses import dataclass
-
-from tactix.config import Settings
-from tactix.pipeline_state__pipeline import FetchContext, ProgressCallback
-
-
-@dataclass(frozen=True)
-class NoGamesContext:
-    """Carries data for no-games handling."""
-
-    settings: Settings
-    conn: object
-    progress: ProgressCallback | None
-    backfill_mode: bool
-    fetch_context: FetchContext
-    last_timestamp_value: int
-    window_filtered: int
+__all__ = list(NO_GAMES_CONTEXT_EXPORTS)

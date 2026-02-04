@@ -1,3 +1,5 @@
+"""Convenience exports for PGN parsing utilities."""
+
 from __future__ import annotations
 
 import time

@@ -1,3 +1,5 @@
+"""Material value helpers for chess pieces."""
+
 import chess
 
 from tactix.utils import funclogger

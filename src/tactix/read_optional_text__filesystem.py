@@ -1,3 +1,5 @@
+"""Read optional filesystem text content."""
+
 from __future__ import annotations
 
 from pathlib import Path

@@ -1,3 +1,5 @@
+"""Resolve PGN game results for a specific user."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast

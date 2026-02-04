@@ -1,3 +1,5 @@
+"""Pagination helper to resolve Chess.com next page URLs."""
+
 from __future__ import annotations
 
 from tactix.resolve_next_page_candidate__chesscom_pagination import _next_page_candidate

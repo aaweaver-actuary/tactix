@@ -1,3 +1,5 @@
+"""Apply Stockfish configuration options."""
+
 from typing import Any
 
 import chess.engine
@@ -10,5 +12,6 @@ def _apply_engine_options(
     engine: chess.engine.SimpleEngine,
     options: dict[str, Any],
 ) -> dict[str, Any]:
+    """Apply supported engine options and return applied values."""
     applied_options = _filter_supported_options(engine, options)
     return _configure_engine_options(engine, applied_options)

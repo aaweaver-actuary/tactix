@@ -1,3 +1,5 @@
+"""Stream job responses over Server-Sent Events."""
+
 from collections.abc import Callable
 from queue import Queue
 from threading import Thread

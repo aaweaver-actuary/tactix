@@ -1,3 +1,10 @@
+Session 2026-02-04 (dev – pylint cleanup continuation)
+- Removed duplicated legacy definitions from BaseTacticDetector and tactic context modules; simplified hanging-capture logic to treat winning trades as hanging captures.
+- Refactored line-tactic scanning helper to reduce complexity, removed unused vars, and replaced magic numbers with a constant.
+- Fixed module docstring placement and top-level imports in pipeline/lichess helpers and DuckDB wrapper modules; added discovered-check module docstring.
+- DuckDB store: removed unused import and made fallback timestamps timezone-aware.
+- Tests: `make check`.
+
 Session 2026-02-04 (refactor – pylint dedupe/contexts)
 - Consolidated daily sync context dataclasses into src/tactix/sync_contexts.py with grouped sub-contexts (totals/metrics/window) and property accessors; wrappers re-export via context_exports.
 - Reduced duplication across outcome helpers, PGN context builders, and DB SQL fragments (latest_raw_pgns query + tactics column fragments).

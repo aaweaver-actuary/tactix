@@ -1,3 +1,5 @@
+"""Extract positions from fetched game PGNs."""
+
 from __future__ import annotations
 
 from tactix.config import Settings

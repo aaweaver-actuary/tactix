@@ -1,3 +1,5 @@
+"""Parse Retry-After header values in seconds."""
+
 from __future__ import annotations
 
 

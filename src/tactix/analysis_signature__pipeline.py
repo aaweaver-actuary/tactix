@@ -1,8 +1,11 @@
+"""Build analysis signature hashes."""
+
 from __future__ import annotations
 
 import json
 
-from tactix.utils import funclogger, hash
+from tactix.utils import funclogger
+from tactix.utils import hash as hash_value
 
 
 @funclogger
@@ -30,4 +33,4 @@ def _analysis_signature(game_ids: list[str], positions_count: int, source: str) 
         "source": source,
     }
     serialized = json.dumps(payload, sort_keys=True)
-    return hash(serialized)
+    return hash_value(serialized)

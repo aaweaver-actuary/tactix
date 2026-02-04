@@ -1,3 +1,5 @@
+"""Ensure chess.com PGNs use a canonical Site URL."""
+
 from io import StringIO
 
 import chess.pgn
@@ -6,6 +8,7 @@ from tactix.extract_game_id import extract_game_id
 
 
 def _ensure_chesscom_site_url(pgn: str) -> str:
+    """Return PGN text with normalized chess.com Site header."""
     game = chess.pgn.read_game(StringIO(pgn))
     if not game:
         return pgn

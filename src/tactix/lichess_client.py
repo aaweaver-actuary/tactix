@@ -1,3 +1,5 @@
+"""Convenience exports for Lichess client helpers."""
+
 from __future__ import annotations
 
 import os
@@ -59,4 +61,5 @@ __all__ = [
 
 
 def refresh_lichess_token(settings) -> None:
+    """Refresh the cached Lichess OAuth token."""
     _refresh_lichess_token(settings)

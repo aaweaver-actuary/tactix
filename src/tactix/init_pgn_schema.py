@@ -1,9 +1,12 @@
+"""Initialize Postgres schema for PGN storage."""
+
 from psycopg2.extensions import connection as PgConnection  # noqa: N812
 
-from tactix.PGN_SCHEMA import PGN_SCHEMA
+from tactix.pgn_schema import PGN_SCHEMA
 
 
 def init_pgn_schema(conn: PgConnection) -> None:
+    """Ensure the PGN schema and tables exist."""
     with conn.cursor() as cur:
         cur.execute(f"CREATE SCHEMA IF NOT EXISTS {PGN_SCHEMA}")
         cur.execute(f"CREATE SEQUENCE IF NOT EXISTS {PGN_SCHEMA}.raw_pgns_raw_pgn_id_seq")

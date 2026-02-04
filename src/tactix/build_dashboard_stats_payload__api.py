@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from tactix._resolve_dashboard_filters import _resolve_dashboard_filters
-from tactix.DashboardQueryFilters import DashboardQueryFilters
+from tactix.dashboard_query_filters import DashboardQueryFilters
 from tactix.db.duckdb_store import fetch_version, get_connection, init_schema
 
 

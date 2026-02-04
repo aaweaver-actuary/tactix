@@ -1,3 +1,5 @@
+"""Emit backfill window filter metrics when needed."""
+
 from __future__ import annotations
 
 from tactix.DailySyncStartContext import WindowFilterContext

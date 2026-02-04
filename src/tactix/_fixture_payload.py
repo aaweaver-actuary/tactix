@@ -1,3 +1,5 @@
+"""Build fixture payload rows for PGN inputs."""
+
 from datetime import UTC, datetime
 
 from tactix._ensure_chesscom_site_url import _ensure_chesscom_site_url

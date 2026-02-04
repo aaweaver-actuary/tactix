@@ -1,3 +1,5 @@
+"""Emit daily sync start events."""
+
 from __future__ import annotations
 
 from tactix.DailySyncStartContext import DailySyncStartContext
@@ -9,6 +11,7 @@ from tactix.record_ops_event import record_ops_event
 def _emit_daily_sync_start(
     ctx: DailySyncStartContext,
 ) -> None:
+    """Emit progress and ops events for a sync start."""
     _emit_progress(
         ctx.progress,
         "start",

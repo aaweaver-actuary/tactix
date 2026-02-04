@@ -14,6 +14,7 @@ from tenacity import (
     wait_exponential,
 )
 
+from tactix.chess_clients import game_fetching
 from tactix.config import Settings
 from tactix.utils.logger import get_logger
 
@@ -40,7 +41,5 @@ def _fetch_remote_games(
     Returns:
         Remote game rows.
     """
-
-    from tactix.chess_clients import game_fetching  # noqa: PLC0415
 
     return game_fetching._fetch_remote_games(settings, since_ms, until_ms)

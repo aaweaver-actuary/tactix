@@ -1,3 +1,5 @@
+"""Fetch latest raw PGN rows from DuckDB."""
+
 import duckdb
 
 from tactix.db._rows_to_dicts import _rows_to_dicts
@@ -10,6 +12,7 @@ def fetch_latest_raw_pgns(
     source: str | None = None,
     limit: int | None = None,
 ) -> list[dict[str, object]]:
+    """Return the latest raw PGN rows by game and source."""
     params: list[object] = []
     filters = []
     if source:

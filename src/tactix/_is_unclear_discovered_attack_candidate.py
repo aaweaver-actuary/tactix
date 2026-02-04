@@ -1,3 +1,6 @@
+"""Identify discovered attack candidates for unclear outcomes."""
+
+
 def _is_unclear_discovered_attack_candidate(
     motif: str,
     best_move: str,

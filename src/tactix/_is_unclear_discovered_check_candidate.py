@@ -1,3 +1,6 @@
+"""Identify discovered check candidates for unclear outcomes."""
+
+
 def _is_unclear_discovered_check_candidate(
     motif: str,
     best_move: str,

@@ -1,3 +1,5 @@
+"""Extract the first non-empty string from pagination payloads."""
+
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping

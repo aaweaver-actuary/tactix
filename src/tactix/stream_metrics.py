@@ -9,7 +9,7 @@ from fastapi.responses import StreamingResponse
 
 from tactix._resolve_dashboard_filters import _resolve_dashboard_filters
 from tactix._stream_metrics_worker import _stream_metrics_worker
-from tactix.DashboardQueryFilters import DashboardQueryFilters
+from tactix.dashboard_query_filters import DashboardQueryFilters
 from tactix.event_stream__job_stream import _event_stream
 
 

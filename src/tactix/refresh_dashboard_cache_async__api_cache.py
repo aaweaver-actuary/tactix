@@ -1,3 +1,5 @@
+"""Refresh dashboard cache in a background thread."""
+
 from __future__ import annotations
 
 from threading import Thread
@@ -12,7 +14,7 @@ def _refresh_dashboard_cache_async(sources: list[str | None]) -> None:
         for source in sources:
             try:
                 _prime_dashboard_cache(DashboardQuery(source=source))
-            except Exception:  # pragma: no cover - defensive
+            except (RuntimeError, ValueError, TypeError):  # pragma: no cover - defensive
                 logger.exception("Failed to prime dashboard cache", extra={"source": source})
 
     Thread(target=worker, daemon=True).start()

@@ -1,5 +1,8 @@
+"""Fetch incremental Lichess games using shared helpers."""
+
 from __future__ import annotations
 
+from tactix.chess_clients import game_fetching
 from tactix.config import Settings
 
 
@@ -16,7 +19,5 @@ def fetch_incremental_games(
     Returns:
         List of game rows.
     """
-
-    from tactix.chess_clients import game_fetching  # noqa: PLC0415
 
     return game_fetching.fetch_incremental_games(settings, since_ms, until_ms)

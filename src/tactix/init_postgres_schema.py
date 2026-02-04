@@ -1,7 +1,10 @@
+"""Initialize Postgres ops schema."""
+
 from psycopg2.extensions import connection as PgConnection  # noqa: N812
 
 
 def init_postgres_schema(conn: PgConnection) -> None:
+    """Ensure the ops_events table exists."""
     with conn.cursor() as cur:
         cur.execute("CREATE SCHEMA IF NOT EXISTS tactix_ops")
         cur.execute(

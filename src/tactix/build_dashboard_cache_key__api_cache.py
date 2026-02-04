@@ -1,3 +1,5 @@
+"""Build cache keys for dashboard payloads."""
+
 from __future__ import annotations
 
 from datetime import datetime

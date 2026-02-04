@@ -1,3 +1,5 @@
+"""Resolve cursors when no games are returned."""
+
 from __future__ import annotations
 
 from tactix.pipeline_state__pipeline import FetchContext

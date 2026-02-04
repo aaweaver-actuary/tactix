@@ -1,3 +1,6 @@
+"""Identify pin candidates for unclear outcomes."""
+
+
 def _is_unclear_pin_candidate(
     motif: str,
     best_move: str,

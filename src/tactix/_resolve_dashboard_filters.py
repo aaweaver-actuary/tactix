@@ -4,7 +4,7 @@ from datetime import datetime
 
 from tactix.coerce_date_to_datetime__datetime import _coerce_date_to_datetime
 from tactix.config import Settings, get_settings
-from tactix.DashboardQueryFilters import DashboardQueryFilters
+from tactix.dashboard_query_filters import DashboardQueryFilters
 from tactix.normalize_source__source import _normalize_source
 
 

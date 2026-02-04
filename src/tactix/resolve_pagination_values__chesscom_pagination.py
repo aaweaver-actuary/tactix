@@ -1,3 +1,5 @@
+"""Resolve pagination values from chess.com responses."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping

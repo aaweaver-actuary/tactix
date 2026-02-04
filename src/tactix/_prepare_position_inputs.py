@@ -1,3 +1,5 @@
+"""Prepare analysis inputs from a position row."""
+
 import chess
 
 from tactix.utils.logger import funclogger
@@ -7,6 +9,7 @@ from tactix.utils.logger import funclogger
 def _prepare_position_inputs(
     position: dict[str, object],
 ) -> tuple[str, str, chess.Board, chess.Board, bool]:
+    """Return normalized analysis inputs from a position mapping."""
     fen = str(position["fen"])
     user_move_uci = str(position["uci"])
     board = chess.Board(fen)

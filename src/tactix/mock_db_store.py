@@ -1,3 +1,5 @@
+"""Compatibility re-exports for the mock database store."""
+
 from __future__ import annotations
 
 from tactix import define_mock_store__db as _impl

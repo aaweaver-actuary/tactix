@@ -1,7 +1,11 @@
+"""Upsert raw PGNs into Postgres when enabled."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping
 from typing import cast
+
+import psycopg2
 
 from tactix.config import Settings
 from tactix.emit_progress__pipeline import _emit_progress
@@ -35,7 +39,7 @@ def _upsert_postgres_raw_pgns_if_enabled(
                     pg_conn,
                     cast(list[Mapping[str, object]], games_to_process),
                 )
-            except Exception as exc:
+            except psycopg2.Error as exc:
                 logger.warning("Postgres raw PGN upsert failed: %s", exc)
     _emit_progress(
         progress,

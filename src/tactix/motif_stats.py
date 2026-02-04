@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import Depends
 
 from tactix.build_dashboard_stats_payload__api import _build_dashboard_stats_payload
-from tactix.DashboardQueryFilters import DashboardQueryFilters
+from tactix.dashboard_query_filters import DashboardQueryFilters
 from tactix.db.duckdb_store import fetch_motif_stats
 
 

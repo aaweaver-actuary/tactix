@@ -1,3 +1,5 @@
+"""Chess piece data model."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -27,6 +29,7 @@ class ChessPiece:
 
     @classmethod
     def from_fen_char(cls, fen_char: str) -> ChessPiece:
+        """Build a chess piece from a FEN character."""
         if not ChessFenChar.is_valid(fen_char):
             raise ValueError(f"Invalid FEN character: {fen_char}")
         color = ChessPlayerColor.from_fen_char(fen_char)

@@ -1,9 +1,12 @@
+"""Parse cached Lichess token payloads."""
+
 from __future__ import annotations
 
 from tactix.parse_cached_payload__lichess_client import _parse_cached_payload
 
 
 def _parse_cached_token(raw: str) -> str | None:
+    """Return the access token from cached JSON payloads."""
     payload = _parse_cached_payload(raw)
     if payload is None:
         return raw

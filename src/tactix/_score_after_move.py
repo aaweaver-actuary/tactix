@@ -1,3 +1,5 @@
+"""Score positions after a move with the engine."""
+
 import chess
 
 from tactix.detect_tactics__motifs import BaseTacticDetector

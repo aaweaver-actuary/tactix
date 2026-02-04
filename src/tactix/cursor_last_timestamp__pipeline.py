@@ -1,3 +1,5 @@
+"""Parse last timestamps from cursor values."""
+
 from __future__ import annotations
 
 

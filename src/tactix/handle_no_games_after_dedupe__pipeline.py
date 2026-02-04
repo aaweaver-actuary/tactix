@@ -5,9 +5,9 @@ from tactix.build_no_games_after_dedupe_payload__pipeline import (
 )
 from tactix.DailySyncStartContext import (
     NoGamesAfterDedupeContext,
-    NoGamesAfterDedupePayloadContext,
 )
 from tactix.define_pipeline_state__pipeline import logger
+from tactix.no_games_payload_contexts import build_no_games_after_dedupe_payload_context
 
 
 def _handle_no_games_after_dedupe(
@@ -18,13 +18,5 @@ def _handle_no_games_after_dedupe(
         context.settings.source,
     )
     return _build_no_games_after_dedupe_payload(
-        NoGamesAfterDedupePayloadContext(
-            settings=context.settings,
-            conn=context.conn,
-            backfill_mode=context.backfill_mode,
-            fetch_context=context.fetch_context,
-            last_timestamp_value=context.last_timestamp_value,
-            games=context.games,
-            window_filtered=context.window_filtered,
-        )
+        build_no_games_after_dedupe_payload_context(context)
     )

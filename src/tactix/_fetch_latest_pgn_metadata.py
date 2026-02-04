@@ -1,6 +1,6 @@
 """Fetch the latest PGN metadata for a game."""
 
-from tactix.PGN_SCHEMA import PGN_SCHEMA
+from tactix.pgn_schema import PGN_SCHEMA
 
 
 def _fetch_latest_pgn_metadata(

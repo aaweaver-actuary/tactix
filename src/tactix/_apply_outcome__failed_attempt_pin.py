@@ -1,3 +1,5 @@
+"""Apply failed-attempt overrides for pin motifs."""
+
 from tactix._select_motif__pin_target import _select_motif__pin_target
 from tactix._should_override__pin_failed_attempt import _should_override__pin_failed_attempt
 

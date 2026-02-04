@@ -1,3 +1,5 @@
+"""Filter fixture PGNs by timestamp window."""
+
 from tactix._fixture_payload import _fixture_payload
 from tactix._should_include_fixture import _should_include_fixture
 from tactix.extract_last_timestamp_ms import extract_last_timestamp_ms

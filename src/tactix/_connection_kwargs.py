@@ -1,3 +1,5 @@
+"""Build Postgres connection keyword arguments."""
+
 from typing import Any
 
 from tactix.config import Settings

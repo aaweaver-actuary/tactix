@@ -1,7 +1,10 @@
+"""Parse UTC start timestamps from PGN metadata."""
+
 from datetime import UTC, datetime
 
 
 def _parse_utc_start_ms(utc_date: str | None, utc_time: str | None) -> int | None:
+    """Return a UTC start timestamp in milliseconds."""
     if not utc_date or not utc_time:
         return None
     for fmt in ("%Y-%m-%d %H:%M:%S", "%Y.%m.%d %H:%M:%S"):

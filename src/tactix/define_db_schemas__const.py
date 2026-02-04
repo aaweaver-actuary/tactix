@@ -1,3 +1,5 @@
+"""Database schema name definitions."""
+
 from dataclasses import dataclass
 
 

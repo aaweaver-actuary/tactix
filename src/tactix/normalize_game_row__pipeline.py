@@ -1,3 +1,5 @@
+"""Normalize raw game rows for pipeline ingestion."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping

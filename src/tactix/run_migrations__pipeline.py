@@ -1,3 +1,5 @@
+"""Run DuckDB schema migrations."""
+
 from __future__ import annotations
 
 from tactix.config import Settings, get_settings
@@ -11,6 +13,7 @@ def run_migrations(
     source: str | None = None,
     progress: ProgressCallback | None = None,
 ) -> dict[str, object]:
+    """Run migrations and return the resulting schema version."""
     settings = settings or get_settings(source=source)
     if source:
         settings.source = source

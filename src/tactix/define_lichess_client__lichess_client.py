@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from importlib import import_module
 
 import berserk
 from berserk.types.common import PerfType
@@ -144,8 +145,6 @@ class LichessClient(BaseChessClient):
         except Exception as exc:
             if self._should_refresh_token(exc):
                 self.logger.warning("Refreshing Lichess OAuth token after auth failure")
-                from importlib import import_module  # noqa: PLC0415
-
                 lichess_shim = import_module("tactix.lichess_client")
                 lichess_shim.refresh_lichess_token(self.settings)
                 return self._fetch_remote_games_once(since_ms, until_ms)
@@ -173,8 +172,6 @@ class LichessClient(BaseChessClient):
         Returns:
             Remote game rows.
         """
-
-        from importlib import import_module  # noqa: PLC0415
 
         lichess_shim = import_module("tactix.lichess_client")
         client = lichess_shim.build_client(self.settings)

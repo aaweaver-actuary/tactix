@@ -1,3 +1,5 @@
+"""Fetch positions without analysis entries."""
+
 import duckdb
 
 from tactix.db._rows_to_dicts import _rows_to_dicts
@@ -10,6 +12,7 @@ def fetch_unanalyzed_positions(
     source: str | None = None,
     limit: int | None = None,
 ) -> list[dict[str, object]]:
+    """Return positions that have not yet been analyzed."""
     params: list[object] = []
     filters: list[str] = ["t.position_id IS NULL"]
     if game_ids:

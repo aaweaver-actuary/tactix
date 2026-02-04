@@ -1,3 +1,5 @@
+"""Run analysis and refresh metrics."""
+
 from __future__ import annotations
 
 from tactix.analysis_context import (
@@ -16,6 +18,7 @@ from tactix.update_metrics_and_version__pipeline import _update_metrics_and_vers
 def _run_analysis_and_metrics(
     ctx: AnalysisAndMetricsContext,
 ) -> DailyAnalysisResult:
+    """Run analysis and metrics refresh for a batch."""
     total_positions = len(ctx.positions)
     tactics_count, postgres_written, postgres_synced = _analyze_positions_with_progress(
         AnalysisRunContext(

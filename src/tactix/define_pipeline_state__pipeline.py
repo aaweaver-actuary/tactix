@@ -1,3 +1,5 @@
+"""Shared pipeline state types and constants."""
+
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
@@ -28,6 +30,8 @@ CHESSCOM_BLACK_PROFILES = {
 
 
 class GameRow(TypedDict):
+    """Typed dictionary for raw game rows."""
+
     game_id: str
     user: str
     source: str
@@ -41,6 +45,8 @@ ProgressCallback = Callable[[dict[str, object]], None]
 
 @dataclass(slots=True)
 class FetchContext:
+    """Inputs describing fetched game batches."""
+
     raw_games: list[Mapping[str, object]]
     since_ms: int
     cursor_before: str | None = None
@@ -52,6 +58,8 @@ class FetchContext:
 
 @dataclass(slots=True)
 class AnalysisPrepResult:
+    """Outputs from preparing analysis inputs."""
+
     positions: list[dict[str, object]]
     resume_index: int
     analysis_signature: str
@@ -63,6 +71,8 @@ class AnalysisPrepResult:
 
 @dataclass(slots=True)
 class DailyAnalysisResult:
+    """Summary of a daily analysis run."""
+
     total_positions: int
     tactics_count: int
     postgres_written: int

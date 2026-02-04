@@ -1,3 +1,5 @@
+"""Compatibility exports for Stockfish engine helpers."""
+
 from __future__ import annotations
 
 from tactix.engine_result import EngineResult

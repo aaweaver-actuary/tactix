@@ -1,3 +1,5 @@
+"""Refresh metrics summaries and version metadata."""
+
 from __future__ import annotations
 
 from tactix.config import Settings, get_settings
@@ -18,6 +20,7 @@ def run_refresh_metrics(
     source: str | None = None,
     progress: ProgressCallback | None = None,
 ) -> dict[str, object]:
+    """Refresh metrics summary rows and return metadata."""
     settings = settings or get_settings(source=source)
     if source:
         settings.source = source

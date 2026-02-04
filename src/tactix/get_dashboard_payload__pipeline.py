@@ -1,3 +1,5 @@
+"""Build dashboard payloads for API responses."""
+
 from __future__ import annotations
 
 from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
@@ -12,6 +14,7 @@ def get_dashboard_payload(
     settings: Settings | None = None,
     store: BaseDbStore | None = None,
 ) -> dict[str, object]:
+    """Return dashboard payload data for the given query."""
     query = query or DashboardQuery()
     normalized_source = None if query.source in (None, "all") else query.source
     settings = _resolve_dashboard_settings(settings, normalized_source)

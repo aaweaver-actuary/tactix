@@ -1,3 +1,5 @@
+"""Fetch incremental games for the pipeline."""
+
 from __future__ import annotations
 
 from tactix.chess_clients.base_chess_client import BaseChessClient
@@ -14,6 +16,7 @@ def _fetch_incremental_games(
     window_start_ms: int | None,
     window_end_ms: int | None,
 ) -> FetchContext:
+    """Fetch incremental games for the configured source."""
     if settings.source == "chesscom":
         return _fetch_chesscom_games(settings, client, backfill_mode)
     return _fetch_lichess_games(

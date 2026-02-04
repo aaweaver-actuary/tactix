@@ -1,3 +1,5 @@
+"""Skewer-specific failed-attempt override helper."""
+
 from tactix.should_override_failed_attempt__tactics import _should_override_failed_attempt
 
 

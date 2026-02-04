@@ -1,3 +1,5 @@
+"""Write chess.com cursor tokens to disk."""
+
 from __future__ import annotations
 
 from pathlib import Path

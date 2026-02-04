@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -39,9 +40,6 @@ from tactix.db._normalize_filter import _normalize_filter
 from tactix.db._rating_bucket_clause import _rating_bucket_clause
 from tactix.db._resolve_dashboard_query import _resolve_dashboard_query
 from tactix.db._rows_to_dicts import _rows_to_dicts
-from tactix.db.fetch_metrics import fetch_metrics
-from tactix.db.get_connection import get_connection
-from tactix.db.init_schema import init_schema
 from tactix.db.raw_pgns_queries import latest_raw_pgns_query
 from tactix.db.RawPgnInsertInputs import RawPgnInsertInputs
 from tactix.db.record_training_attempt import record_training_attempt
@@ -176,6 +174,72 @@ CREATE TABLE IF NOT EXISTS schema_version (
 SCHEMA_VERSION = 6
 
 
+def get_connection(db_path: Path | str) -> duckdb.DuckDBPyConnection:
+    """Open a DuckDB connection, recovering from WAL errors when needed."""
+    db_path = Path(db_path)
+    wal_path = db_path.with_name(f"{db_path.name}.wal")
+    try:
+        return duckdb.connect(str(db_path))
+    except duckdb.InternalException:
+        if wal_path.exists():
+            wal_path.unlink()
+            return duckdb.connect(str(db_path))
+        raise
+
+
+def hash_pgn(pgn: str) -> str:
+    """Return the canonical hash for PGN content."""
+    return BaseDbStore.hash_pgn(pgn)
+
+
+def get_schema_version(conn: duckdb.DuckDBPyConnection) -> int:
+    """Return the current schema version."""
+    conn.execute(SCHEMA_VERSION_SCHEMA)
+    row = conn.execute(
+        "SELECT version FROM schema_version ORDER BY updated_at DESC LIMIT 1"
+    ).fetchone()
+    return int(row[0]) if row else 0
+
+
+def migrate_schema(conn: duckdb.DuckDBPyConnection) -> None:
+    """Run schema migrations to the latest version."""
+    conn.execute(SCHEMA_VERSION_SCHEMA)
+    _ensure_raw_pgns_versioned(conn)
+    current_version = get_schema_version(conn)
+    for version, migration in _SCHEMA_MIGRATIONS:
+        if version <= current_version:
+            continue
+        migration(conn)
+        conn.execute(
+            "INSERT INTO schema_version (version, updated_at) VALUES (?, CURRENT_TIMESTAMP)",
+            [version],
+        )
+
+
+def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
+    """Ensure all required tables exist and migrations are applied."""
+    migrate_schema(conn)
+
+
+def _ensure_raw_pgns_versioned(conn: duckdb.DuckDBPyConnection) -> None:
+    """Ensure raw PGN rows include versioning columns."""
+    columns = {row[1] for row in conn.execute("PRAGMA table_info('raw_pgns')").fetchall()}
+    if not columns:
+        return
+    if "raw_pgn_id" not in columns or "pgn_version" not in columns:
+        _migrate_raw_pgns_legacy(conn)
+
+
+def _rating_bucket_for_rating(rating: int | None) -> str | None:
+    """Return the rating bucket label for a rating."""
+    if rating is None:
+        return "unknown"
+    bucket_size = 200
+    start = (rating // bucket_size) * bucket_size
+    end = start + bucket_size - 1
+    return f"{start}-{end}"
+
+
 class DuckDbStore(BaseDbStore):
     """DuckDB-backed store implementation."""
 
@@ -249,6 +313,7 @@ _SCHEMA_MIGRATIONS = [
 
 
 def _migrate_raw_pgns_legacy(conn: duckdb.DuckDBPyConnection) -> None:
+    """Migrate legacy raw PGN tables into the versioned schema."""
     conn.execute("BEGIN TRANSACTION")
     try:
         _drop_table_if_exists(conn, "raw_pgns_legacy")
@@ -285,7 +350,7 @@ def _migrate_raw_pgns_legacy(conn: duckdb.DuckDBPyConnection) -> None:
             )
         conn.execute("DROP TABLE raw_pgns_legacy")
         conn.execute("COMMIT")
-    except Exception:
+    except duckdb.Error:
         conn.execute("ROLLBACK")
         raise
 
@@ -293,6 +358,7 @@ def _migrate_raw_pgns_legacy(conn: duckdb.DuckDBPyConnection) -> None:
 def _ensure_column(
     conn: duckdb.DuckDBPyConnection, table: str, column: str, definition: str
 ) -> None:
+    """Add a column to a table when missing."""
     columns = {row[1] for row in conn.execute(f"PRAGMA table_info('{table}')").fetchall()}
     if column not in columns:
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
@@ -302,6 +368,7 @@ def upsert_raw_pgns(
     conn: duckdb.DuckDBPyConnection,
     rows: Iterable[Mapping[str, object]],
 ) -> int:
+    """Insert raw PGN rows with version tracking."""
     rows_list = list(rows)
     if not rows_list:
         return 0
@@ -309,7 +376,7 @@ def upsert_raw_pgns(
     try:
         inserted = _upsert_raw_pgn_rows(conn, rows_list)
         conn.execute("COMMIT")
-    except Exception:
+    except duckdb.Error:
         conn.execute("ROLLBACK")
         raise
     return inserted
@@ -319,6 +386,7 @@ def _upsert_raw_pgn_rows(
     conn: duckdb.DuckDBPyConnection,
     rows_list: list[Mapping[str, object]],
 ) -> int:
+    """Insert raw PGN rows and return insert count."""
     next_id = _fetch_next_raw_pgn_id(conn)
     latest_cache: dict[tuple[str, str], tuple[str | None, int]] = {}
     inserted = 0
@@ -344,7 +412,239 @@ def _upsert_raw_pgn_rows(
     return inserted
 
 
+def fetch_latest_pgn_hashes(
+    conn: duckdb.DuckDBPyConnection,
+    game_ids: list[str],
+    source: str | None,
+) -> dict[str, str]:
+    """Fetch latest PGN hashes for the provided game ids."""
+    if not game_ids:
+        return {}
+    placeholders = ", ".join(["?"] * len(game_ids))
+    params: list[object] = list(game_ids)
+    sql = f"""
+        WITH latest_pgns AS (
+            {latest_raw_pgns_query(f"WHERE game_id IN ({placeholders})")}
+        )
+        SELECT game_id, pgn_hash
+        FROM latest_pgns
+    """
+    if source:
+        sql += " WHERE source = ?"
+        params.append(source)
+    rows = conn.execute(sql, params).fetchall()
+    return {str(game_id): str(pgn_hash) for game_id, pgn_hash in rows if pgn_hash}
+
+
+def fetch_position_counts(
+    conn: duckdb.DuckDBPyConnection,
+    game_ids: list[str],
+    source: str | None,
+) -> dict[str, int]:
+    """Return position counts keyed by game id."""
+    if not game_ids:
+        return {}
+    placeholders = ", ".join(["?"] * len(game_ids))
+    params: list[object] = list(game_ids)
+    sql = f"SELECT game_id, COUNT(*) FROM positions WHERE game_id IN ({placeholders})"
+    if source:
+        sql += " AND source = ?"
+        params.append(source)
+    sql += " GROUP BY game_id"
+    rows = conn.execute(sql, params).fetchall()
+    return {str(game_id): int(count) for game_id, count in rows}
+
+
+def fetch_positions_for_games(
+    conn: duckdb.DuckDBPyConnection,
+    game_ids: list[str],
+) -> list[dict[str, object]]:
+    """Return stored positions for the provided games."""
+    if not game_ids:
+        return []
+    placeholders = ", ".join(["?"] * len(game_ids))
+    result = conn.execute(
+        f"SELECT * FROM positions WHERE game_id IN ({placeholders}) ORDER BY position_id",
+        game_ids,
+    )
+    return _rows_to_dicts(result)
+
+
+def insert_positions(
+    conn: duckdb.DuckDBPyConnection,
+    positions: list[Mapping[str, object]],
+) -> list[int]:
+    """Insert position rows and return new ids."""
+    if not positions:
+        return []
+    row = conn.execute("SELECT MAX(position_id) FROM positions").fetchone()
+    next_id = int(row[0] or 0) if row else 0
+    ids: list[int] = []
+    for pos in positions:
+        next_id += 1
+        conn.execute(
+            """
+            INSERT INTO positions (
+                position_id,
+                game_id,
+                user,
+                source,
+                fen,
+                ply,
+                move_number,
+                side_to_move,
+                uci,
+                san,
+                clock_seconds,
+                is_legal
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                next_id,
+                pos.get("game_id"),
+                pos.get("user"),
+                pos.get("source"),
+                pos.get("fen"),
+                pos.get("ply"),
+                pos.get("move_number"),
+                pos.get("side_to_move"),
+                pos.get("uci"),
+                pos.get("san"),
+                pos.get("clock_seconds"),
+                pos.get("is_legal", True),
+            ],
+        )
+        ids.append(next_id)
+    return ids
+
+
+def insert_tactics(
+    conn: duckdb.DuckDBPyConnection,
+    rows: list[Mapping[str, object]],
+) -> list[int]:
+    """Insert tactic rows and return ids."""
+    if not rows:
+        return []
+    row = conn.execute("SELECT MAX(tactic_id) FROM tactics").fetchone()
+    next_id = int(row[0] or 0) if row else 0
+    ids: list[int] = []
+    for tactic in rows:
+        next_id += 1
+        conn.execute(
+            """
+            INSERT INTO tactics (
+                tactic_id,
+                game_id,
+                position_id,
+                motif,
+                severity,
+                best_uci,
+                best_san,
+                explanation,
+                eval_cp
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                next_id,
+                tactic.get("game_id"),
+                tactic.get("position_id"),
+                tactic.get("motif"),
+                tactic.get("severity"),
+                tactic.get("best_uci"),
+                tactic.get("best_san"),
+                tactic.get("explanation"),
+                tactic.get("eval_cp"),
+            ],
+        )
+        ids.append(next_id)
+    return ids
+
+
+def insert_tactic_outcomes(
+    conn: duckdb.DuckDBPyConnection,
+    rows: list[Mapping[str, object]],
+) -> list[int]:
+    """Insert tactic outcome rows and return ids."""
+    if not rows:
+        return []
+    row = conn.execute("SELECT MAX(outcome_id) FROM tactic_outcomes").fetchone()
+    next_id = int(row[0] or 0) if row else 0
+    ids: list[int] = []
+    for outcome in rows:
+        next_id += 1
+        conn.execute(
+            """
+            INSERT INTO tactic_outcomes (
+                outcome_id,
+                tactic_id,
+                result,
+                user_uci,
+                eval_delta
+            ) VALUES (?, ?, ?, ?, ?)
+            """,
+            [
+                next_id,
+                outcome.get("tactic_id"),
+                outcome.get("result"),
+                outcome.get("user_uci"),
+                outcome.get("eval_delta"),
+            ],
+        )
+        ids.append(next_id)
+    return ids
+
+
+def upsert_tactic_with_outcome(
+    conn: duckdb.DuckDBPyConnection,
+    tactic_row: Mapping[str, object],
+    outcome_row: Mapping[str, object],
+) -> int:
+    """Insert a tactic with its outcome and return the tactic id."""
+    BaseDbStore.require_position_id(
+        tactic_row,
+        "position_id is required when inserting tactics",
+    )
+    tactic_ids = insert_tactics(conn, [tactic_row])
+    tactic_id = tactic_ids[0]
+    insert_tactic_outcomes(
+        conn,
+        [{"tactic_id": tactic_id, **outcome_row}],
+    )
+    return tactic_id
+
+
+def delete_game_rows(conn: duckdb.DuckDBPyConnection, game_ids: list[str]) -> None:
+    """Delete position, tactic, and outcome rows for the provided games."""
+    if not game_ids:
+        return
+    placeholders = ", ".join(["?"] * len(game_ids))
+    tactic_ids = conn.execute(
+        f"SELECT tactic_id FROM tactics WHERE game_id IN ({placeholders})",
+        game_ids,
+    ).fetchall()
+    tactic_id_values = [row[0] for row in tactic_ids]
+    if tactic_id_values:
+        outcome_placeholders = ", ".join(["?"] * len(tactic_id_values))
+        conn.execute(
+            f"DELETE FROM tactic_outcomes WHERE tactic_id IN ({outcome_placeholders})",
+            tactic_id_values,
+        )
+    conn.execute(
+        f"DELETE FROM tactics WHERE game_id IN ({placeholders})",
+        game_ids,
+    )
+    conn.execute(
+        f"DELETE FROM positions WHERE game_id IN ({placeholders})",
+        game_ids,
+    )
+    conn.execute(
+        f"DELETE FROM raw_pgns WHERE game_id IN ({placeholders})",
+        game_ids,
+    )
+
+
 def _coerce_metric_count(value: object) -> int:
+    """Coerce metric counts into integers."""
     if value is None:
         return 0
     if isinstance(value, bool):
@@ -356,11 +656,302 @@ def _coerce_metric_count(value: object) -> int:
 
 
 def _coerce_metric_rate(value: object, numerator: int, denominator: int) -> float | None:
+    """Coerce metric rates into floats."""
     if isinstance(value, (int, float)):
         return float(value)
     if denominator <= 0:
         return 0.0
     return numerator / denominator
+
+
+def update_metrics_summary(conn: duckdb.DuckDBPyConnection) -> None:
+    """Recompute metrics summary rows."""
+    init_schema(conn)
+    conn.execute("DELETE FROM metrics_summary")
+    metric_rows = _build_metrics_summary_rows(conn)
+    if not metric_rows:
+        return
+    conn.executemany(
+        """
+        INSERT INTO metrics_summary (
+            source,
+            metric_type,
+            motif,
+            window_days,
+            trend_date,
+            rating_bucket,
+            time_control,
+            total,
+            found,
+            missed,
+            failed_attempt,
+            unclear,
+            found_rate,
+            miss_rate,
+            updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        """,
+        metric_rows,
+    )
+
+
+def _build_metrics_summary_rows(
+    conn: duckdb.DuckDBPyConnection,
+) -> list[tuple[object, ...]]:
+    rows = _fetch_metric_inputs(conn)
+    if not rows:
+        return []
+    metrics: list[tuple[object, ...]] = []
+    metrics.extend(_build_motif_breakdowns(rows))
+    metrics.extend(_build_trend_rows(rows, window_days=7))
+    metrics.extend(_build_trend_rows(rows, window_days=30))
+    metrics.extend(_build_time_trouble_rows(rows))
+    return metrics
+
+
+def _fetch_metric_inputs(conn: duckdb.DuckDBPyConnection) -> list[dict[str, object]]:
+    latest_query = latest_raw_pgns_query()
+    result = conn.execute(
+        f"""
+        WITH latest_pgns AS (
+            {latest_query}
+        )
+        SELECT
+            t.game_id,
+            t.motif,
+            COALESCE(o.result, 'unclear') AS result,
+            p.source,
+            p.clock_seconds,
+            p.created_at,
+            r.user_rating,
+            r.time_control,
+            r.last_timestamp_ms
+        FROM tactics t
+        LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
+        LEFT JOIN positions p ON p.position_id = t.position_id
+        LEFT JOIN latest_pgns r ON r.game_id = p.game_id AND r.source = p.source
+        """
+    )
+    raw_rows = _rows_to_dicts(result)
+    for row in raw_rows:
+        rating = row.get("user_rating")
+        row["rating_bucket"] = _rating_bucket_for_rating(
+            int(rating) if rating is not None else None
+        )
+        row["trend_date"] = _trend_date_from_row(row)
+    return raw_rows
+
+
+def _trend_date_from_row(row: Mapping[str, object]) -> datetime.date | None:
+    timestamp_ms = row.get("last_timestamp_ms")
+    if isinstance(timestamp_ms, (int, float)) and timestamp_ms > 0:
+        return datetime.fromtimestamp(int(timestamp_ms) / 1000, tz=UTC).date()
+    created_at = row.get("created_at")
+    if isinstance(created_at, datetime):
+        return created_at.date()
+    return None
+
+
+def _build_motif_breakdowns(rows: list[dict[str, object]]) -> list[tuple[object, ...]]:
+    grouped: dict[tuple[object, ...], list[dict[str, object]]] = defaultdict(list)
+    for row in rows:
+        key = (
+            row.get("source"),
+            row.get("motif"),
+            row.get("rating_bucket"),
+            row.get("time_control"),
+        )
+        grouped[key].append(row)
+    metric_rows: list[tuple[object, ...]] = []
+    for (source, motif, rating_bucket, time_control), items in grouped.items():
+        total = len(items)
+        found = sum(1 for row in items if row.get("result") == "found")
+        missed = sum(1 for row in items if row.get("result") == "missed")
+        failed_attempt = sum(1 for row in items if row.get("result") == "failed_attempt")
+        unclear = sum(1 for row in items if row.get("result") == "unclear")
+        found_rate = _coerce_metric_rate(None, found, total)
+        miss_rate = _coerce_metric_rate(None, missed, total)
+        metric_rows.append(
+            (
+                source,
+                "motif_breakdown",
+                motif,
+                0,
+                None,
+                rating_bucket,
+                time_control,
+                total,
+                found,
+                missed,
+                failed_attempt,
+                unclear,
+                found_rate,
+                miss_rate,
+            )
+        )
+    return metric_rows
+
+
+def _build_trend_rows(
+    rows: list[dict[str, object]],
+    *,
+    window_days: int,
+) -> list[tuple[object, ...]]:
+    grouped: dict[tuple[object, ...], list[dict[str, object]]] = defaultdict(list)
+    for row in rows:
+        key = (
+            row.get("source"),
+            row.get("motif"),
+            row.get("rating_bucket"),
+            row.get("time_control"),
+        )
+        grouped[key].append(row)
+    metric_rows: list[tuple[object, ...]] = []
+    for (source, motif, rating_bucket, time_control), items in grouped.items():
+        sorted_items = sorted(
+            items,
+            key=lambda item: (
+                item.get("last_timestamp_ms") or 0,
+                item.get("created_at") or datetime.min.replace(tzinfo=UTC),
+            ),
+        )
+        results = [1 if item.get("result") == "found" else 0 for item in sorted_items]
+        misses = [1 if item.get("result") == "missed" else 0 for item in sorted_items]
+        for idx, item in enumerate(sorted_items):
+            window = results[max(0, idx - window_days + 1) : idx + 1]
+            miss_window = misses[max(0, idx - window_days + 1) : idx + 1]
+            found_rate = sum(window) / len(window) if window else 0.0
+            miss_rate = sum(miss_window) / len(miss_window) if miss_window else 0.0
+            result = item.get("result")
+            metric_rows.append(
+                (
+                    source,
+                    "trend",
+                    motif,
+                    window_days,
+                    item.get("trend_date"),
+                    rating_bucket,
+                    time_control,
+                    1,
+                    1 if result == "found" else 0,
+                    1 if result == "missed" else 0,
+                    1 if result == "failed_attempt" else 0,
+                    1 if result == "unclear" else 0,
+                    found_rate,
+                    miss_rate,
+                )
+            )
+    return metric_rows
+
+
+def _build_time_trouble_rows(rows: list[dict[str, object]]) -> list[tuple[object, ...]]:
+    grouped: dict[tuple[object, ...], list[dict[str, object]]] = defaultdict(list)
+    for row in rows:
+        key = (row.get("source"), row.get("time_control"))
+        grouped[key].append(row)
+    metric_rows: list[tuple[object, ...]] = []
+    for (source, time_control), items in grouped.items():
+        total = len(items)
+        found = sum(1 for item in items if item.get("result") == "found")
+        missed = sum(1 for item in items if item.get("result") == "missed")
+        failed_attempt = sum(1 for item in items if item.get("result") == "failed_attempt")
+        unclear = sum(1 for item in items if item.get("result") == "unclear")
+        miss_rate = _coerce_metric_rate(None, missed, total)
+        trouble_threshold = 30
+        trouble_items = [
+            item
+            for item in items
+            if isinstance(item.get("clock_seconds"), (int, float))
+            and item.get("clock_seconds") is not None
+            and item.get("clock_seconds") <= trouble_threshold
+        ]
+        safe_items = [item for item in items if item not in trouble_items]
+        trouble_found = sum(1 for item in trouble_items if item.get("result") == "found")
+        safe_found = sum(1 for item in safe_items if item.get("result") == "found")
+        trouble_rate = trouble_found / len(trouble_items) if trouble_items else 0.0
+        safe_rate = safe_found / len(safe_items) if safe_items else 0.0
+        found_rate = safe_rate - trouble_rate
+        metric_rows.append(
+            (
+                source,
+                "time_trouble_correlation",
+                None,
+                0,
+                None,
+                None,
+                time_control,
+                total,
+                found,
+                missed,
+                failed_attempt,
+                unclear,
+                found_rate,
+                miss_rate,
+            )
+        )
+    return metric_rows
+
+
+def fetch_metrics(
+    conn: duckdb.DuckDBPyConnection,
+    query: DashboardQuery | str | None = None,
+    *,
+    filters: DashboardQuery | None = None,
+    **legacy: object,
+) -> list[dict[str, object]]:
+    """Fetch metrics summary rows with optional filters."""
+    resolved = _resolve_dashboard_query(query, filters=filters, legacy=legacy)
+    sql = "SELECT * FROM metrics_summary"
+    params: list[object] = []
+    conditions: list[str] = []
+    if resolved.source:
+        conditions.append("source = ?")
+        params.append(resolved.source)
+    _append_optional_filter(conditions, params, "motif = ?", resolved.motif)
+    _append_optional_filter(conditions, params, "rating_bucket = ?", resolved.rating_bucket)
+    _append_optional_filter(conditions, params, "time_control = ?", resolved.time_control)
+    _append_date_range_filters(
+        conditions,
+        params,
+        resolved.start_date,
+        resolved.end_date,
+        "trend_date",
+    )
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
+    result = conn.execute(sql, params)
+    return _rows_to_dicts(result)
+
+
+def fetch_motif_stats(
+    conn: duckdb.DuckDBPyConnection,
+    *,
+    source: str | None = None,
+) -> list[dict[str, object]]:
+    """Return motif breakdown metrics."""
+    rows = fetch_metrics(conn, source=source)
+    return [row for row in rows if row.get("metric_type") == "motif_breakdown"]
+
+
+def fetch_trend_stats(
+    conn: duckdb.DuckDBPyConnection,
+    *,
+    source: str | None = None,
+) -> list[dict[str, object]]:
+    """Return trend metrics rows."""
+    rows = fetch_metrics(conn, source=source)
+    return [row for row in rows if row.get("metric_type") == "trend"]
+
+
+def write_metrics_version(conn: duckdb.DuckDBPyConnection) -> int:
+    """Increment and persist the metrics version."""
+    current = fetch_version(conn)
+    new_version = current + 1
+    conn.execute(
+        "INSERT INTO metrics_version (version, updated_at) VALUES (?, CURRENT_TIMESTAMP)",
+        [new_version],
+    )
+    return new_version
 
 
 def fetch_recent_games(
@@ -510,6 +1101,7 @@ def _resolve_recent_game_result(
     user: str,
     fallback: object,
 ) -> object:
+    """Resolve the result of a recent game from PGN headers."""
     if not pgn_text.strip().startswith("["):
         return fallback
     try:
@@ -517,7 +1109,7 @@ def _resolve_recent_game_result(
         if headers is None:
             return fallback
         return str(_get_game_result_for_user_from_pgn_headers(headers, user))
-    except Exception:
+    except (ValueError, TypeError):
         return fallback
 
 
@@ -724,6 +1316,7 @@ def fetch_game_detail(
     user: str,
     source: str | None = None,
 ) -> dict[str, object]:
+    """Fetch a detailed game payload including analysis rows."""
     row, result = _fetch_latest_pgn_row(conn, game_id, source)
     if not row:
         return {
@@ -750,6 +1343,7 @@ def fetch_game_detail(
 def fetch_practice_tactic(
     conn: duckdb.DuckDBPyConnection, tactic_id: int
 ) -> dict[str, object] | None:
+    """Fetch a single tactic for practice flows."""
     result = conn.execute(
         f"""
         SELECT
@@ -779,6 +1373,7 @@ def _require_practice_tactic(
     tactic_id: int,
     position_id: int,
 ) -> dict[str, object]:
+    """Return the tactic for a position or raise a ValueError."""
     tactic = fetch_practice_tactic(conn, tactic_id)
     if not tactic or tactic.get("position_id") != position_id:
         raise ValueError("Tactic not found for position")
@@ -786,6 +1381,7 @@ def _require_practice_tactic(
 
 
 def _normalize_attempted_uci(attempted_uci: str) -> str:
+    """Normalize and validate an attempted UCI move."""
     trimmed = attempted_uci.strip()
     if not trimmed:
         raise ValueError("attempted_uci is required")
@@ -793,6 +1389,7 @@ def _normalize_attempted_uci(attempted_uci: str) -> str:
 
 
 def _normalize_best_uci(tactic: Mapping[str, object]) -> str:
+    """Return the normalized best UCI move for a tactic."""
     best_uci_raw = tactic.get("best_uci")
     return str(best_uci_raw).strip() if best_uci_raw is not None else ""
 
@@ -801,6 +1398,7 @@ def _resolve_practice_explanation(
     tactic: Mapping[str, object],
     best_uci: str,
 ) -> tuple[str | None, str | None]:
+    """Resolve explanation fields for practice payloads."""
     fen = _string_or_none(tactic.get("fen"))
     motif = _string_or_none(tactic.get("motif"))
     best_san = _string_or_none(tactic.get("best_san"))
@@ -810,6 +1408,7 @@ def _resolve_practice_explanation(
 
 
 def _string_or_none(value: object) -> str | None:
+    """Return a stripped string or None for empty values."""
     if value is None:
         return None
     text = str(value).strip()
@@ -822,6 +1421,7 @@ def _resolve_explanation(
     generated_san: str | None,
     generated_explanation: str | None,
 ) -> tuple[str | None, str | None]:
+    """Pick the best available SAN and explanation strings."""
     if not best_san:
         best_san = generated_san or None
     if not explanation:
@@ -831,6 +1431,8 @@ def _resolve_explanation(
 
 @dataclass(frozen=True)
 class PracticeAttemptInputs:
+    """Grouped inputs for practice attempt payloads."""
+
     tactic: Mapping[str, object]
     tactic_id: int
     position_id: int
@@ -843,6 +1445,7 @@ class PracticeAttemptInputs:
 def _build_practice_attempt_payload(
     inputs: PracticeAttemptInputs,
 ) -> dict[str, object]:
+    """Build the practice attempt payload for persistence."""
     return {
         "tactic_id": inputs.tactic_id,
         "position_id": inputs.position_id,
@@ -863,6 +1466,7 @@ def _build_practice_message(
     tactic: Mapping[str, object],
     best_uci: str,
 ) -> str:
+    """Return the user-facing practice message."""
     if correct:
         return f"Correct! {tactic.get('motif', 'tactic')} found."
     return f"Missed it. Best move was {best_uci or '--'}."
@@ -875,6 +1479,7 @@ def grade_practice_attempt(
     attempted_uci: str,
     latency_ms: int | None = None,
 ) -> dict[str, object]:
+    """Grade a practice attempt and persist the result."""
     tactic = _require_practice_tactic(conn, tactic_id, position_id)
     trimmed_attempt = _normalize_attempted_uci(attempted_uci)
     best_uci = _normalize_best_uci(tactic)
@@ -919,6 +1524,7 @@ def fetch_practice_queue(
     include_failed_attempt: bool = False,
     exclude_seen: bool = False,
 ) -> list[dict[str, object]]:
+    """Return a queue of practice tactics."""
     results = ["missed"]
     if include_failed_attempt:
         results.append("failed_attempt")
@@ -957,5 +1563,6 @@ def fetch_practice_queue(
 
 
 def fetch_version(conn: duckdb.DuckDBPyConnection) -> int:
+    """Fetch the latest metrics version."""
     version_row = conn.execute("SELECT version FROM metrics_version").fetchone()
     return int(version_row[0]) if version_row else 0

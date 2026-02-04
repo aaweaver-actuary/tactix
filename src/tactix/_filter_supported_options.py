@@ -1,3 +1,5 @@
+"""Filter Stockfish options to supported keys."""
+
 from typing import Any
 
 import chess.engine

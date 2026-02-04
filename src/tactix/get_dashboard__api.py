@@ -7,7 +7,7 @@ from fastapi import Depends, Query
 from tactix._resolve_dashboard_filters import _resolve_dashboard_filters
 from tactix.build_dashboard_cache_key__api_cache import _dashboard_cache_key
 from tactix.dashboard_query import DashboardQuery
-from tactix.DashboardQueryFilters import DashboardQueryFilters
+from tactix.dashboard_query_filters import DashboardQueryFilters
 from tactix.get_cached_dashboard_payload__api_cache import _get_cached_dashboard_payload
 from tactix.pipeline import get_dashboard_payload
 from tactix.set_dashboard_cache__api_cache import _set_dashboard_cache

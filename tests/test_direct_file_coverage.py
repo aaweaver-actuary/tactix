@@ -21,8 +21,12 @@ def test_direct_file_execution() -> None:
         "__file__": str(stream_jobs_path),
         "__name__": "stream_jobs__api_exec",
     }
-    exec(compile(stream_jobs_path.read_text(), str(stream_jobs_path), "exec"), stream_jobs_namespace)
-    stream_jobs_namespace["_stream_job_response"] = lambda *_args, **_kwargs: StreamingResponse(iter(()))
+    exec(
+        compile(stream_jobs_path.read_text(), str(stream_jobs_path), "exec"), stream_jobs_namespace
+    )
+    stream_jobs_namespace["_stream_job_response"] = lambda *_args, **_kwargs: StreamingResponse(
+        iter(())
+    )
     stream_jobs_namespace["stream_jobs"]()
 
     streaming_response_path = root / "src/tactix/streaming_response__job_stream.py"

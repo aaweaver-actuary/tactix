@@ -17,8 +17,6 @@ def test_stream_jobs_uses_stream_job_response(monkeypatch) -> None:
         assert request.job == "daily_game_sync"
         return sentinel
 
-    monkeypatch.setattr(
-        stream_jobs_api_reloaded, "_stream_job_response", fake_stream_job_response
-    )
+    monkeypatch.setattr(stream_jobs_api_reloaded, "_stream_job_response", fake_stream_job_response)
     response = stream_jobs_api_reloaded.stream_jobs()
     assert response is sentinel

@@ -68,53 +68,10 @@ dev=[
 [tool.pylint.main]
 max-line-length=100
 
-[tool.pylint.messages_control]
-disable=[
-    "broad-exception-caught",
-    "duplicate-code",
-    "fixme",
-    "import-outside-toplevel",
-    "invalid-name",
-    "missing-class-docstring",
-    "missing-function-docstring",
-    "missing-module-docstring",
-    "no-name-in-module",
-    "redefined-builtin",
-    "redefined-outer-name",
-    "too-few-public-methods",
-    "too-many-arguments",
-    "too-many-instance-attributes",
-    "too-many-positional-arguments",
-]
-
 
 [tool.mypy]
-ignore_missing_imports=true
-python_version        ="3.12"
+python_version="3.12"
 
-[tool.pydocstyle]
-ignore=[
-    "D100",
-    "D101",
-    "D102",
-    "D103",
-    "D104",
-    "D107",
-    "D202",
-    "D203",
-    "D205",
-    "D212",
-    "D213",
-    "D300",
-    "D400",
-    "D401",
-    "D403",
-    "D406",
-    "D407",
-    "D413",
-    "D415",
-    "D417",
-]
 
 [tool.ruff]
 extend-exclude=[".venv", "build", "client", "dist"]

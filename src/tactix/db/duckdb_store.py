@@ -29,6 +29,7 @@ from tactix.db._drop_table_if_exists import _drop_table_if_exists
 from tactix.db._fetch_next_raw_pgn_id import _fetch_next_raw_pgn_id
 from tactix.db._insert_raw_pgn_plan import _insert_raw_pgn_plan
 from tactix.db._migration_add_columns import _migration_add_columns
+from tactix.db._migration_add_pipeline_views import _migration_add_pipeline_views
 from tactix.db._migration_add_position_legality import _migration_add_position_legality
 from tactix.db._migration_add_tactic_explanations import _migration_add_tactic_explanations
 from tactix.db._migration_add_training_attempt_latency import (
@@ -90,6 +91,7 @@ CREATE TABLE IF NOT EXISTS positions (
     ply INTEGER,
     move_number INTEGER,
     side_to_move TEXT,
+    user_to_move BOOLEAN DEFAULT TRUE,
     uci TEXT,
     san TEXT,
     clock_seconds DOUBLE,
@@ -228,7 +230,10 @@ def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
 
 def _ensure_raw_pgns_versioned(conn: duckdb.DuckDBPyConnection) -> None:
     """Ensure raw PGN rows include versioning columns."""
-    columns = {row[1] for row in conn.execute("PRAGMA table_info('raw_pgns')").fetchall()}
+    try:
+        columns = {row[1] for row in conn.execute("PRAGMA table_info('raw_pgns')").fetchall()}
+    except duckdb.Error:
+        return
     if not columns:
         return
     if "raw_pgn_id" not in columns or "pgn_version" not in columns:
@@ -314,6 +319,7 @@ _SCHEMA_MIGRATIONS = [
     (4, _migration_add_training_attempt_latency),
     (5, _migration_add_position_legality),
     (6, _migration_add_tactic_explanations),
+    (7, _migration_add_pipeline_views),
 ]
 
 
@@ -498,6 +504,133 @@ def fetch_raw_pgns_summary(
     )
 
 
+def fetch_pipeline_table_counts(
+    conn: duckdb.DuckDBPyConnection,
+    query: DashboardQuery | str | None = None,
+    *,
+    filters: DashboardQuery | None = None,
+    **legacy: object,
+) -> dict[str, int]:
+    """Return per-table counts for pipeline verification."""
+    resolved = _resolve_dashboard_query(query, filters=filters, legacy=legacy)
+    sql = """
+        WITH games_filtered AS (
+            SELECT *
+            FROM games r
+    """
+    params: list[object] = []
+    conditions: list[str] = []
+    if resolved.source:
+        conditions.append("r.source = ?")
+        params.append(resolved.source)
+    _append_time_control_filter(conditions, params, resolved.time_control, "r.time_control")
+    normalized_rating = _normalize_filter(resolved.rating_bucket)
+    if normalized_rating:
+        conditions.append(_rating_bucket_clause(normalized_rating))
+    _append_date_range_filters(
+        conditions,
+        params,
+        resolved.start_date,
+        resolved.end_date,
+        "to_timestamp(r.last_timestamp_ms / 1000)",
+    )
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
+    sql += """
+        )
+        SELECT
+            (SELECT COUNT(*) FROM games_filtered) AS games,
+            (
+                SELECT COUNT(*)
+                FROM positions p
+                INNER JOIN games_filtered r
+                    ON p.game_id = r.game_id AND p.source = r.source
+            ) AS positions,
+            (
+                SELECT COUNT(*)
+                FROM user_moves u
+                INNER JOIN games_filtered r
+                    ON u.game_id = r.game_id AND u.source = r.source
+            ) AS user_moves,
+            (
+                SELECT COUNT(*)
+                FROM opportunities o
+                INNER JOIN games_filtered r
+                    ON o.game_id = r.game_id AND o.source = r.source
+            ) AS opportunities,
+            (
+                SELECT COUNT(*)
+                FROM conversions c
+                INNER JOIN games_filtered r
+                    ON c.game_id = r.game_id AND c.source = r.source
+            ) AS conversions,
+            (
+                SELECT COUNT(*)
+                FROM practice_queue q
+                INNER JOIN games_filtered r
+                    ON q.game_id = r.game_id AND q.source = r.source
+            ) AS practice_queue
+    """
+    result = conn.execute(sql, params)
+    row = result.fetchone()
+    if not row:
+        return {
+            "games": 0,
+            "positions": 0,
+            "user_moves": 0,
+            "opportunities": 0,
+            "conversions": 0,
+            "practice_queue": 0,
+        }
+    columns = [desc[0] for desc in result.description]
+    return {column: int(value or 0) for column, value in zip(columns, row, strict=False)}
+
+
+def fetch_opportunity_motif_counts(
+    conn: duckdb.DuckDBPyConnection,
+    query: DashboardQuery | str | None = None,
+    *,
+    filters: DashboardQuery | None = None,
+    **legacy: object,
+) -> dict[str, int]:
+    """Return motif counts for opportunities in the dashboard range."""
+    resolved = _resolve_dashboard_query(query, filters=filters, legacy=legacy)
+    sql = """
+        WITH games_filtered AS (
+            SELECT *
+            FROM games r
+    """
+    params: list[object] = []
+    conditions: list[str] = []
+    if resolved.source:
+        conditions.append("r.source = ?")
+        params.append(resolved.source)
+    _append_time_control_filter(conditions, params, resolved.time_control, "r.time_control")
+    normalized_rating = _normalize_filter(resolved.rating_bucket)
+    if normalized_rating:
+        conditions.append(_rating_bucket_clause(normalized_rating))
+    _append_date_range_filters(
+        conditions,
+        params,
+        resolved.start_date,
+        resolved.end_date,
+        "to_timestamp(r.last_timestamp_ms / 1000)",
+    )
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
+    sql += """
+        )
+        SELECT o.motif, COUNT(*) AS total
+        FROM opportunities o
+        INNER JOIN games_filtered r
+            ON o.game_id = r.game_id AND o.source = r.source
+        GROUP BY o.motif
+        ORDER BY o.motif
+    """
+    rows = _rows_to_dicts(conn.execute(sql, params))
+    return {str(row.get("motif")): int(row.get("total") or 0) for row in rows}
+
+
 def fetch_position_counts(
     conn: duckdb.DuckDBPyConnection,
     game_ids: list[str],
@@ -670,7 +803,7 @@ def upsert_tactic_with_outcome(
     tactic_id = tactic_ids[0]
     insert_tactic_outcomes(
         conn,
-        [{"tactic_id": tactic_id, **outcome_row}],
+        [{**outcome_row, "tactic_id": tactic_id}],
     )
     return tactic_id
 

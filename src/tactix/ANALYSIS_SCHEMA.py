@@ -1,10 +1,9 @@
-"""Schema name for Postgres analysis tables.
+"""Schema name for Postgres analysis tables."""
 
-Legacy shim for analysis schema constant.
-"""
+from __future__ import annotations
 
 # pylint: disable=invalid-name
 
-from tactix.analysis_schema import ANALYSIS_SCHEMA
+ANALYSIS_SCHEMA = "tactix_analysis"
 
 __all__ = ["ANALYSIS_SCHEMA"]

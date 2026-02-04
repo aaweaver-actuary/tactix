@@ -7,7 +7,7 @@ from tactix.ANALYSIS_SCHEMA import ANALYSIS_SCHEMA
 from tactix.config import Settings
 from tactix.init_analysis_schema import init_analysis_schema
 from tactix.init_pgn_schema import init_pgn_schema
-from tactix.pgn_schema import PGN_SCHEMA
+from tactix.PGN_SCHEMA import PGN_SCHEMA
 
 
 def _collect_tables(conn: PgConnection, settings: Settings) -> list[str]:

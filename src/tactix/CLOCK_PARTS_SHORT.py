@@ -1,7 +1,9 @@
-"""Legacy shim for short time-control clock parts."""
+"""Short time-control clock part count."""
+
+from __future__ import annotations
 
 # pylint: disable=invalid-name
 
-from tactix.clock_parts_short import CLOCK_PARTS_SHORT
+CLOCK_PARTS_SHORT = 2
 
 __all__ = ["CLOCK_PARTS_SHORT"]

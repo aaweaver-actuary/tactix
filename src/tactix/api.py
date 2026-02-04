@@ -31,6 +31,7 @@ from tactix.get_airflow_state__airflow_jobs import _airflow_state
 from tactix.get_auth_token__api import auth_token
 from tactix.get_cached_dashboard_payload__api_cache import _get_cached_dashboard_payload
 from tactix.get_dashboard__api import get_dashboard as dashboard
+from tactix.get_dashboard_summary__api import dashboard_summary
 from tactix.get_game_detail__api import game_detail
 from tactix.get_health__api import health
 from tactix.get_job_status__api_jobs import get_job_status
@@ -55,6 +56,7 @@ from tactix.refresh_dashboard_cache_async__api_cache import _refresh_dashboard_c
 from tactix.require_api_token__request_auth import require_api_token
 from tactix.resolve_backfill_end_ms__airflow_jobs import _resolve_backfill_end_ms
 from tactix.run_airflow_daily_sync_job__job_stream import _run_airflow_daily_sync_job
+from tactix.run_pipeline__api import run_pipeline
 from tactix.run_stream_job__job_stream import _run_stream_job
 from tactix.set_dashboard_cache__api_cache import _set_dashboard_cache
 from tactix.stream_job_by_id import stream_job_by_id
@@ -94,7 +96,9 @@ app.post("/api/jobs/daily_game_sync")(trigger_daily_sync)
 app.post("/api/jobs/refresh_metrics")(trigger_refresh_metrics)
 app.post("/api/jobs/migrations")(trigger_migrations)
 app.post("/api/jobs/trigger")(trigger_job)
+app.post("/api/pipeline/run")(run_pipeline)
 app.get("/api/dashboard")(dashboard)
+app.get("/api/dashboard/summary")(dashboard_summary)
 app.get("/api/practice/queue")(practice_queue)
 app.get("/api/practice/next")(practice_next)
 app.get("/api/raw_pgns/summary")(raw_pgns_summary)
@@ -147,6 +151,7 @@ __all__ = [
     "app",
     "auth_token",
     "dashboard",
+    "dashboard_summary",
     "game_detail",
     "get_job_status",
     "health",
@@ -160,6 +165,7 @@ __all__ = [
     "practice_queue",
     "raw_pgns_summary",
     "require_api_token",
+    "run_pipeline",
     "stream_job_by_id",
     "stream_jobs",
     "stream_metrics",

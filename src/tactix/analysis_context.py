@@ -111,3 +111,48 @@ class AnalysisPositionContext:
     meta: AnalysisPositionMeta
     persistence: AnalysisPositionPersistence
     progress: ProgressCallback | None
+
+    @property
+    def pos(self) -> dict[str, object]:
+        """Return the position payload."""
+        return self.meta.pos
+
+    @property
+    def idx(self) -> int:
+        """Return the position index."""
+        return self.meta.idx
+
+    @property
+    def resume_index(self) -> int:
+        """Return the resume index for analysis."""
+        return self.meta.resume_index
+
+    @property
+    def total_positions(self) -> int:
+        """Return the total positions count."""
+        return self.meta.total_positions
+
+    @property
+    def progress_every(self) -> int:
+        """Return the progress interval for analysis updates."""
+        return self.meta.progress_every
+
+    @property
+    def analysis_checkpoint_path(self) -> object:
+        """Return the analysis checkpoint path."""
+        return self.persistence.analysis_checkpoint_path
+
+    @property
+    def analysis_signature(self) -> str:
+        """Return the analysis signature."""
+        return self.persistence.analysis_signature
+
+    @property
+    def pg_conn(self) -> object:
+        """Return the Postgres connection for analysis writes."""
+        return self.persistence.pg_conn
+
+    @property
+    def analysis_pg_enabled(self) -> bool:
+        """Return whether Postgres analysis writes are enabled."""
+        return self.persistence.analysis_pg_enabled

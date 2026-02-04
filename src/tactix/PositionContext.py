@@ -16,6 +16,7 @@ class PositionContext:  # pylint: disable=too-many-instance-attributes
     ply: int
     move_number: int
     side_to_move: str
+    user_to_move: bool
     uci: str
     san: str
     clock_seconds: float | None

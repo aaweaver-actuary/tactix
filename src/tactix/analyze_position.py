@@ -85,6 +85,8 @@ def _resolve_motif_and_result(
     user_motif = context.user_motif
     motif = user_motif
     best_motif: str | None = None
+    if result == "initiative" and context.best_move_obj is None and user_motif != "unknown":
+        result = "missed"
     if result in {"missed", "failed_attempt", "unclear"} and context.best_move_obj is not None:
         best_motif = _infer_hanging_or_detected_motif(
             context.motif_board,

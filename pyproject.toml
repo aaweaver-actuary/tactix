@@ -86,6 +86,7 @@ dev=[
 
 [tool.pylint.main]
 max-line-length=100
+ignore-patterns=["ANALYSIS_SCHEMA.py", "SITE_PATTERNS.py", "CLOCK_PARTS_SHORT.py", "PGN_SCHEMA.py"]
 
 [tool.pylint."messages control"]
 disable="C0103,C0114,C0115,C0116,C0302,R0801,R0914,W0718"
@@ -118,8 +119,6 @@ ignore=[
 
 
 [tool.mypy]
-python_version="3.12"
-ignore_missing_imports=true
 disable_error_code=[
     "arg-type",
     "attr-defined",
@@ -130,6 +129,8 @@ disable_error_code=[
     "typeddict-item",
     "valid-type",
 ]
+ignore_missing_imports=true
+python_version="3.12"
 
 
 [tool.ruff]

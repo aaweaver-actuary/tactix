@@ -134,10 +134,10 @@ class StockfishEngine:  # pylint: disable=protected-access
             if self._should_start_engine():
                 self._start_engine()
             if self.engine is None:
-                return EngineResult(best_move=None, score_cp=self._material_score(board), depth=0)
+                return self._fallback_engine_result(board)
         engine = self.engine
         if engine is None:
-            return EngineResult(best_move=None, score_cp=self._material_score(board), depth=0)
+            return self._fallback_engine_result(board)
         info = engine.analyse(
             board,
             limit=self._build_limit(),
@@ -145,3 +145,20 @@ class StockfishEngine:  # pylint: disable=protected-access
             options={"Clear Hash": True},
         )
         return EngineResult.from_engine_result(info, board=board)
+
+    def _fallback_engine_result(self, board: chess.Board) -> EngineResult:
+        """Return a lightweight analysis result when no engine is available."""
+        mate_move = self._find_mate_in_one(board)
+        if mate_move is not None:
+            return EngineResult(best_move=mate_move, score_cp=100000, depth=0, mate_in=1)
+        return EngineResult(best_move=None, score_cp=self._material_score(board), depth=0)
+
+    def _find_mate_in_one(self, board: chess.Board) -> chess.Move | None:
+        """Return a move that delivers immediate checkmate when available."""
+        for move in board.legal_moves:
+            board.push(move)
+            is_mate = board.is_checkmate()
+            board.pop()
+            if is_mate:
+                return move
+        return None

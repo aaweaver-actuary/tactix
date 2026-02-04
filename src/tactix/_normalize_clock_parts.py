@@ -1,7 +1,7 @@
 """Normalize clock tokens into full time components."""
 
 from tactix.CLOCK_PARTS_FULL import CLOCK_PARTS_FULL
-from tactix.clock_parts_short import CLOCK_PARTS_SHORT
+from tactix.CLOCK_PARTS_SHORT import CLOCK_PARTS_SHORT
 
 
 def _normalize_clock_parts(token: str) -> tuple[str, str, str] | None:

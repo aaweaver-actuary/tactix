@@ -55,6 +55,7 @@ def _build_position_context(
             ply=inputs.board.ply(),
             move_number=inputs.board.fullmove_number,
             side_to_move=inputs.side_to_move,
+            user_to_move=True,
             uci=inputs.move.uci(),
             san=inputs.board.san(inputs.move),
             clock_seconds=_clock_from_comment(inputs.node.comment or ""),

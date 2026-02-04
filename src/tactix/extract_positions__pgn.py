@@ -54,12 +54,17 @@ def _call_rust_extractor(
     request: ExtractorRequest,
 ) -> list[dict[str, object]]:
     try:
-        return rust_extractor(
+        result = rust_extractor(
             request.pgn,
             request.user,
             request.source,
             request.game_id,
             request.side_to_move_filter,
+        )
+        return (
+            _extract_positions_fallback(request)
+            if not result and "[SetUp" in request.pgn
+            else result
         )
     except (RuntimeError, TypeError, ValueError) as exc:  # pragma: no cover - rust fallback
         logger.warning("Rust extractor failed; falling back to Python: %s", exc)

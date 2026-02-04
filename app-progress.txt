@@ -1,3 +1,11 @@
+Session summary (2026-02-04):
+- Consolidated shim imports to canonical modules for Postgres, tactics search, and analysis contexts.
+- Mirrored legacy shim modules into review-for-deletion for follow-up cleanup.
+- Tests run: `make check` (before + after).
+- Before→After map:
+	- tactix.PostgresStore/PostgresStatus/ProgressCallback/TacticsSearchFilters imports → tactix.postgres_store_impl, tactix.postgres_status, tactix.pipeline_state__pipeline, tactix.tactics_search_filters.
+	- Shim modules (dashboard.py, DashboardQueryFilters.py, TacticsSearchFilters.py, PostgresStore.py, PostgresStatus.py, ProgressCallback.py) → review-for-deletion/ copies.
+
 Session summary (2026-02-05):
 - Completed Feature 001: chess.com bullet pipeline end-to-end.
 - Evidence: screenshot at verification/feature-001-chesscom-bullet-pipeline-2026-02-04.png.

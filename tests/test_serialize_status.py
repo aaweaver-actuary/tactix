@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tactix.PostgresStatus import PostgresStatus
+from tactix.postgres_status import PostgresStatus
 from tactix.serialize_status import serialize_status
 
 

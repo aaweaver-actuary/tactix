@@ -1,7 +1,10 @@
 Session summary (2026-02-05):
-- Completed chess.com bullet pipeline end-to-end verification with fixture coverage for hanging piece and mate motifs.
-- Validated pipeline counts and dashboard summary with the integration script.
-- Marked the chess.com bullet pipeline feature as passing in feature_list.json.
+- Completed Feature 001: chess.com bullet pipeline end-to-end.
+- Evidence: screenshot at verification/feature-001-chesscom-bullet-pipeline-2026-02-04.png.
+- Evidence: test scripts at verification/puppeteer_feature_001_chesscom_bullet_pipeline.js and verification/integration_feature_001_chesscom_bullet_pipeline.js.
+- Tests run: manual UI walkthrough (screenshot) + integration script.
+- Current pass count: 1/100.
+- Next action: Feature 2 (lichess blitz pipeline).
 
 Next steps:
 - Implement and verify the lichess blitz end-to-end pipeline feature.

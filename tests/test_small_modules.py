@@ -55,13 +55,13 @@ class NoGamesCheckpointTests(unittest.TestCase):
 
 class StreamJobsModuleTests(unittest.TestCase):
     def test_stream_jobs_module_exports(self) -> None:
-        import tactix.stream_jobs as stream_jobs_module
+        import tactix.job_stream as stream_jobs_module
 
-        self.assertEqual(stream_jobs_module.__all__, ["stream_jobs"])
+        self.assertIn("stream_jobs", stream_jobs_module.__all__)
         self.assertTrue(callable(stream_jobs_module.stream_jobs))
 
     def test_stream_jobs_api_exports(self) -> None:
-        import tactix.stream_jobs__api as stream_jobs_api
+        import tactix.job_stream as stream_jobs_api
 
         self.assertIn("stream_jobs", stream_jobs_api.__all__)
-        self.assertIn("get_settings", stream_jobs_api.__all__)
+        self.assertIn("stream_job_by_id", stream_jobs_api.__all__)

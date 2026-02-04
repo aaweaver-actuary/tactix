@@ -23,7 +23,6 @@ from tactix.dashboard_cache_state__api_cache import (
     _DASHBOARD_CACHE_TTL_S,
 )
 from tactix.ensure_airflow_success__airflow_jobs import _ensure_airflow_success
-from tactix.event_stream__job_stream import _event_stream
 from tactix.extract_api_token__request_auth import _extract_api_token
 from tactix.format_sse__api_streaming import _format_sse
 from tactix.get_airflow_run_id__airflow_response import _airflow_run_id
@@ -42,6 +41,18 @@ from tactix.get_practice_next__api import practice_next
 from tactix.get_practice_queue__api import practice_queue
 from tactix.get_raw_pgns_summary__api import raw_pgns_summary
 from tactix.get_tactics_search__api import tactics_search
+from tactix.job_stream import (
+    _event_stream,
+    _queue_backfill_window,
+    _queue_progress,
+    _run_airflow_daily_sync_job,
+    _run_stream_job,
+    _stream_job_worker,
+    _wait_for_airflow_run,
+    stream_job_by_id,
+    stream_jobs,
+    stream_metrics,
+)
 from tactix.list_sources_for_cache_refresh__api_cache import _sources_for_cache_refresh
 from tactix.manage_lifespan__fastapi import lifespan
 from tactix.models import PracticeAttemptRequest
@@ -49,20 +60,12 @@ from tactix.motif_stats import motif_stats
 from tactix.normalize_source__source import _normalize_source
 from tactix.post_practice_attempt__api import practice_attempt
 from tactix.prime_dashboard_cache__api_cache import _prime_dashboard_cache
-from tactix.queue_backfill_window__job_stream import _queue_backfill_window
-from tactix.queue_progress__job_stream import _queue_progress
 from tactix.raise_unsupported_job__api_jobs import _raise_unsupported_job
 from tactix.refresh_dashboard_cache_async__api_cache import _refresh_dashboard_cache_async
 from tactix.require_api_token__request_auth import require_api_token
 from tactix.resolve_backfill_end_ms__airflow_jobs import _resolve_backfill_end_ms
-from tactix.run_airflow_daily_sync_job__job_stream import _run_airflow_daily_sync_job
 from tactix.run_pipeline__api import run_pipeline
-from tactix.run_stream_job__job_stream import _run_stream_job
 from tactix.set_dashboard_cache__api_cache import _set_dashboard_cache
-from tactix.stream_job_by_id import stream_job_by_id
-from tactix.stream_job_worker__job_stream import _stream_job_worker
-from tactix.stream_jobs__api import stream_jobs
-from tactix.stream_metrics import stream_metrics
 from tactix.trend_stats import trend_stats
 from tactix.trigger_airflow_daily_sync__airflow_jobs import _trigger_airflow_daily_sync
 from tactix.trigger_daily_sync__api_jobs import trigger_daily_sync
@@ -70,7 +73,6 @@ from tactix.trigger_job__api_jobs import trigger_job
 from tactix.trigger_migrations__api_jobs import trigger_migrations
 from tactix.trigger_refresh_metrics__api_jobs import trigger_refresh_metrics
 from tactix.validate_backfill_window__airflow_jobs import _validate_backfill_window
-from tactix.wait_for_airflow_run__job_stream import _wait_for_airflow_run
 
 app = FastAPI(
     title="TACTIX",

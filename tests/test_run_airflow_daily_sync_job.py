@@ -5,8 +5,7 @@ from __future__ import annotations
 from queue import Queue
 
 from tactix.config import get_settings
-from tactix.run_airflow_daily_sync_job__job_stream import _run_airflow_daily_sync_job
-from tactix.stream_job_context import AirflowDailySyncContext
+from tactix.job_stream import BackfillWindow, AirflowDailySyncContext, _run_airflow_daily_sync_job
 
 
 def test_run_airflow_daily_sync_job(monkeypatch) -> None:
@@ -16,31 +15,31 @@ def test_run_airflow_daily_sync_job(monkeypatch) -> None:
         events.append((phase, message, extra))
 
     monkeypatch.setattr(
-        "tactix.run_airflow_daily_sync_job__job_stream._queue_progress",
+        "tactix.job_stream._queue_progress",
         fake_queue_progress,
     )
     monkeypatch.setattr(
-        "tactix.run_airflow_daily_sync_job__job_stream._queue_backfill_window",
+        "tactix.job_stream._queue_backfill_window",
         lambda *args, **kwargs: None,
     )
     monkeypatch.setattr(
-        "tactix.run_airflow_daily_sync_job__job_stream._trigger_airflow_daily_sync",
+        "tactix.job_stream._trigger_airflow_daily_sync",
         lambda *args, **kwargs: "run-123",
     )
     monkeypatch.setattr(
-        "tactix.run_airflow_daily_sync_job__job_stream._wait_for_airflow_run",
+        "tactix.job_stream._wait_for_airflow_run",
         lambda *args, **kwargs: "success",
     )
     monkeypatch.setattr(
-        "tactix.run_airflow_daily_sync_job__job_stream._ensure_airflow_success",
+        "tactix.job_stream._ensure_airflow_success",
         lambda *_: None,
     )
     monkeypatch.setattr(
-        "tactix.run_airflow_daily_sync_job__job_stream.get_dashboard_payload",
+        "tactix.job_stream.get_dashboard_payload",
         lambda *args, **kwargs: {"metrics_version": "v1"},
     )
     monkeypatch.setattr(
-        "tactix.run_airflow_daily_sync_job__job_stream.get_settings",
+        "tactix.job_stream.get_settings",
         lambda **kwargs: get_settings(),
     )
 
@@ -48,11 +47,13 @@ def test_run_airflow_daily_sync_job(monkeypatch) -> None:
         settings=get_settings(),
         queue=Queue(),
         job="daily_game_sync",
-        source=None,
-        profile=None,
-        backfill_start_ms=None,
-        backfill_end_ms=None,
-        triggered_at_ms=123,
+        window=BackfillWindow(
+            source=None,
+            profile=None,
+            backfill_start_ms=None,
+            backfill_end_ms=None,
+            triggered_at_ms=123,
+        ),
     )
 
     result = _run_airflow_daily_sync_job(ctx)

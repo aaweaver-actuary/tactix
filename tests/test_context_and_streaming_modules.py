@@ -138,11 +138,11 @@ def test_context_modules_import_and_instantiation() -> None:
 
 
 def test_stream_jobs_api_returns_streaming_response(monkeypatch) -> None:
-    stream_jobs_api = importlib.import_module("tactix.stream_jobs__api")
+    stream_jobs_api = importlib.import_module("tactix.job_stream")
 
-    def fake_stream_job_response(request, get_settings):
+    def fake_stream_job_response(request, settings_factory):
         assert request.job == "daily_game_sync"
-        assert get_settings() == "settings"
+        assert settings_factory() == "settings"
         return StreamingResponse(iter(()))
 
     monkeypatch.setattr(stream_jobs_api, "_stream_job_response", fake_stream_job_response)
@@ -179,7 +179,7 @@ def test_apply_engine_options_exec(monkeypatch) -> None:
 
 
 def test_streaming_response_job_stream(monkeypatch) -> None:
-    streaming_module = importlib.import_module("tactix.streaming_response__job_stream")
+    streaming_module = importlib.import_module("tactix.job_stream")
 
     def fake_event_stream(queue, sentinel):
         assert queue is not None

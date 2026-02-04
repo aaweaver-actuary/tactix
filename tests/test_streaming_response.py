@@ -7,7 +7,7 @@ from queue import Queue
 
 from fastapi.responses import StreamingResponse
 
-import tactix.streaming_response__job_stream as streaming_response_module
+import tactix.job_stream as streaming_response_module
 
 
 def test_streaming_response_returns_streaming_response() -> None:

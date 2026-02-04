@@ -122,7 +122,9 @@ def test_pipeline_emissions(monkeypatch: pytest.MonkeyPatch) -> None:
     emissions.emit_backfill_window_filtered(settings, progress, 2, 1, 2)
     assert payloads[-1]["step"] == "backfill_window_filtered"
 
-    emissions.maybe_emit_analysis_progress(progress, settings, idx=2, total_positions=3, progress_every=10)
+    emissions.maybe_emit_analysis_progress(
+        progress, settings, idx=2, total_positions=3, progress_every=10
+    )
     assert payloads[-1]["step"] == "analyze_positions"
 
     emissions.maybe_emit_window_filtered(

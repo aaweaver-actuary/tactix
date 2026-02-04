@@ -6,14 +6,14 @@ import importlib
 
 from fastapi.responses import StreamingResponse
 
-import tactix.stream_jobs__api as stream_jobs_api
+import tactix.job_stream as stream_jobs_api
 
 
 def test_stream_jobs_uses_stream_job_response(monkeypatch) -> None:
     stream_jobs_api_reloaded = importlib.reload(stream_jobs_api)
     sentinel = StreamingResponse(iter(()))
 
-    def fake_stream_job_response(request, *, get_settings):
+    def fake_stream_job_response(request, *, settings_factory):
         assert request.job == "daily_game_sync"
         return sentinel
 

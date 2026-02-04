@@ -1,6 +1,9 @@
+"""Retry wrapper for Stockfish analysis."""
+
 from __future__ import annotations
 
 import time
+from importlib import import_module
 
 import chess.engine
 
@@ -38,6 +41,7 @@ def analyse_with_retries(
     position: dict[str, object],
     settings: Settings,
 ) -> tuple[dict[str, object], dict[str, object]] | None:
+    """Analyze a position with Stockfish retry logic."""
     return _analyse_with_retries(engine, position, settings)
 
 
@@ -61,8 +65,6 @@ def _analyse_position__pipeline(
             A tuple containing the analysis results and additional information as dictionaries,
             or None if the analysis could not be performed.
     """
-    from importlib import import_module  # noqa: PLC0415
-
     pipeline_module = import_module("tactix.pipeline")
     analyze_fn = getattr(pipeline_module, "analyze_position", analyze_position)
     return analyze_fn(position, engine, settings=settings)

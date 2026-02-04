@@ -1,3 +1,5 @@
+"""Route extraction to Rust when available, otherwise use fallback."""
+
 from __future__ import annotations
 
 from tactix.extractor_context import ExtractorDependencies, ExtractorRequest

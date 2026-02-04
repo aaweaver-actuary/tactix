@@ -1,12 +1,7 @@
-from datetime import date
+"""Legacy shim for tactics search filters."""
 
-from pydantic import BaseModel
+# pylint: disable=invalid-name
 
+from tactix.tactics_search_filters import TacticsSearchFilters
 
-class TacticsSearchFilters(BaseModel):
-    source: str | None = None
-    motif: str | None = None
-    rating_bucket: str | None = None
-    time_control: str | None = None
-    start_date: date | None = None
-    end_date: date | None = None
+__all__ = ["TacticsSearchFilters"]

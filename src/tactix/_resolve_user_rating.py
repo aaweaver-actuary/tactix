@@ -1,3 +1,6 @@
+"""Resolve which rating belongs to the user."""
+
+
 def _resolve_user_rating(
     user: str,
     white: str | None,
@@ -5,6 +8,7 @@ def _resolve_user_rating(
     white_elo: int | None,
     black_elo: int | None,
 ) -> int | None:
+    """Return the user's rating when present in the headers."""
     user_lower = user.lower()
     white_lower = (white or "").lower()
     black_lower = (black or "").lower()

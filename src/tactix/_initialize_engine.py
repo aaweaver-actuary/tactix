@@ -1,3 +1,5 @@
+"""Initialize the Stockfish engine process."""
+
 from pathlib import Path
 
 import chess.engine
@@ -10,6 +12,7 @@ logger = get_logger(__name__)
 
 
 def _initialize_engine(command: str, settings: Settings) -> chess.engine.SimpleEngine | None:
+    """Return a configured Stockfish engine instance or None on failure."""
     try:
         verify_stockfish_checksum(
             Path(command),
@@ -17,6 +20,6 @@ def _initialize_engine(command: str, settings: Settings) -> chess.engine.SimpleE
             mode=settings.stockfish_checksum_mode,
         )
         return chess.engine.SimpleEngine.popen_uci(command)
-    except Exception as exc:  # pragma: no cover - fallback handles failures
+    except (OSError, ValueError, RuntimeError, chess.engine.EngineError) as exc:  # pragma: no cover
         logger.warning("Stockfish failed to start: %s", exc)
         return None

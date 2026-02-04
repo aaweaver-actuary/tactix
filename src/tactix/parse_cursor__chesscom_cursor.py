@@ -1,3 +1,5 @@
+"""Parse Chess.com cursor tokens."""
+
 from __future__ import annotations
 
 

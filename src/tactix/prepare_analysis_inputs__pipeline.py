@@ -1,3 +1,5 @@
+"""Prepare analysis inputs for the pipeline."""
+
 from __future__ import annotations
 
 from tactix.config import Settings
@@ -23,6 +25,7 @@ def _prepare_analysis_inputs(
     progress: ProgressCallback | None,
     profile: str | None,
 ) -> AnalysisPrepResult:
+    """Return prepared analysis inputs and metrics."""
     game_ids = [game["game_id"] for game in games_to_process]
     analysis_checkpoint_path = settings.analysis_checkpoint_path
     positions, resume_index, analysis_signature = _load_resume_positions(

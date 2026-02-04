@@ -1,3 +1,5 @@
+"""Fetch raw PGN summary payloads from Postgres."""
+
 from typing import Any
 
 from psycopg2.extras import RealDictCursor
@@ -14,6 +16,7 @@ from tactix.postgres_pgns_enabled import postgres_pgns_enabled
 
 
 def fetch_postgres_raw_pgns_summary(settings: Settings) -> dict[str, Any]:
+    """Return Postgres raw PGN summary payload."""
     with postgres_connection(settings) as conn:
         if conn is None or not postgres_pgns_enabled(settings):
             return _disabled_raw_pgn_summary()

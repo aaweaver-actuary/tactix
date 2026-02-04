@@ -1,3 +1,5 @@
+"""Resolve Postgres connectivity status."""
+
 import time
 
 import psycopg2
@@ -12,6 +14,7 @@ from tactix.PostgresStatus import PostgresStatus
 
 
 def get_postgres_status(settings: Settings) -> PostgresStatus:
+    """Return the Postgres status for the provided settings."""
     if not postgres_enabled(settings):
         return PostgresStatus(enabled=False, status="disabled")
     kwargs = _connection_kwargs(settings)
@@ -20,7 +23,7 @@ def get_postgres_status(settings: Settings) -> PostgresStatus:
     start = time.monotonic()
     try:
         conn = psycopg2.connect(**kwargs)
-    except Exception as exc:
+    except psycopg2.Error as exc:
         return PostgresStatus(
             enabled=True,
             status="unreachable",

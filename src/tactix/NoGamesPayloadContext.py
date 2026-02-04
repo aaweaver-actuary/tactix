@@ -1,18 +1,7 @@
-"""Context for no-games payload."""
+"""Legacy shim for no-games payload context."""
 
-from dataclasses import dataclass
+# pylint: disable=invalid-name
 
-from tactix.config import Settings
-from tactix.pipeline_state__pipeline import FetchContext
+from tactix.sync_contexts import NoGamesPayloadContext
 
-
-@dataclass(frozen=True)
-class NoGamesPayloadContext:
-    """Carries data for no-games payloads."""
-
-    settings: Settings
-    conn: object
-    backfill_mode: bool
-    fetch_context: FetchContext
-    last_timestamp_value: int
-    window_filtered: int
+__all__ = ["NoGamesPayloadContext"]

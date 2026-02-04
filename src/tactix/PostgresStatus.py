@@ -1,11 +1,7 @@
-from dataclasses import dataclass
+"""Legacy shim for Postgres status model."""
 
+# pylint: disable=invalid-name
 
-@dataclass(slots=True)
-class PostgresStatus:
-    enabled: bool
-    status: str
-    latency_ms: float | None = None
-    error: str | None = None
-    schema: str | None = None
-    tables: list[str] | None = None
+from tactix.postgres_status import PostgresStatus
+
+__all__ = ["PostgresStatus"]

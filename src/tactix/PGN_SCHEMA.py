@@ -1,4 +1,7 @@
-"""Schema name for Postgres PGN tables."""
+"""Legacy shim for PGN schema constant."""
 
-PGN_SCHEMA = "tactix_pgns"
-PGN_SCHEMA = "tactix_pgns"
+# pylint: disable=invalid-name
+
+from tactix.pgn_schema import PGN_SCHEMA
+
+__all__ = ["PGN_SCHEMA"]

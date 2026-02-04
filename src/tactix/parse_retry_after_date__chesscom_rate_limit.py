@@ -1,3 +1,5 @@
+"""Parse Retry-After HTTP dates for Chess.com rate limits."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -16,7 +18,7 @@ def _parse_retry_after_date(value: str) -> float | None:
 
     try:
         dt = parsedate_to_datetime(value)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return None
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=UTC)

@@ -1,3 +1,5 @@
+"""API endpoint for DuckDB raw PGN summaries."""
+
 from __future__ import annotations
 
 from typing import Annotated
@@ -12,6 +14,7 @@ from tactix.normalize_source__source import _normalize_source
 def raw_pgns_summary(
     source: Annotated[str | None, Query()] = None,
 ) -> dict[str, object]:
+    """Return raw PGN summary payload for the given source."""
     normalized_source = _normalize_source(source)
     settings = get_settings(source=normalized_source)
     conn = get_connection(settings.duckdb_path)

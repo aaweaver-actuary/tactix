@@ -1,3 +1,5 @@
+"""API endpoint to stream a job by id."""
+
 from typing import Annotated
 
 from fastapi import Query
@@ -14,6 +16,7 @@ def stream_job_by_id(
     backfill_start_ms: Annotated[int | None, Query(ge=0)] = None,
     backfill_end_ms: Annotated[int | None, Query(ge=0)] = None,
 ) -> StreamingResponse:
+    """Return a streaming response for the requested job id."""
     return _stream_job_response(
         StreamJobRequest(
             job=job_id,

@@ -1,7 +1,9 @@
-import re
+"""Regular expression patterns for PGN site IDs."""
 
-SITE_PATTERNS = [
-    re.compile(r"lichess\.org/([A-Za-z0-9]{8})"),
-    re.compile(r"chess\.com/(?:game/live|game|live/game)/(\d+)", re.IGNORECASE),
-    re.compile(r"chess\.com/.*/(\d{6,})", re.IGNORECASE),
-]
+"""Legacy shim for PGN site patterns."""
+
+# pylint: disable=invalid-name
+
+from tactix.site_patterns import SITE_PATTERNS
+
+__all__ = ["SITE_PATTERNS"]

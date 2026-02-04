@@ -1,19 +1,7 @@
-"""Context for no-games-after-dedupe payload (duplicate)."""
+"""Legacy shim for no-games-after-dedupe payload context."""
 
-from dataclasses import dataclass
+# pylint: disable=invalid-name
 
-from tactix.config import Settings
-from tactix.pipeline_state__pipeline import FetchContext, GameRow
+from tactix.sync_contexts import NoGamesAfterDedupePayloadContext
 
-
-@dataclass(frozen=True)
-class NoGamesAfterDedupePayloadContext:
-    """Carries data for no-games-after-dedupe payloads."""
-
-    settings: Settings
-    conn: object
-    backfill_mode: bool
-    fetch_context: FetchContext
-    last_timestamp_value: int
-    games: list[GameRow]
-    window_filtered: int
+__all__ = ["NoGamesAfterDedupePayloadContext"]

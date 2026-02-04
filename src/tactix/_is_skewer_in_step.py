@@ -1,3 +1,5 @@
+"""Detect a skewer along a single step."""
+
 import chess
 
 from tactix._is_line_tactic import _is_line_tactic

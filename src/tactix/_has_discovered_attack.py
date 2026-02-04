@@ -1,3 +1,5 @@
+"""Detect discovered attack motifs."""
+
 from tactix._has_discovered_line import (
     _has_discovered_line,
     build_discovered_line_context,

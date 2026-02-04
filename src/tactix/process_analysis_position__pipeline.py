@@ -1,4 +1,8 @@
+"""Process a single analysis position within the pipeline."""
+
 from __future__ import annotations
+
+from importlib import import_module
 
 from tactix.analysis_context import AnalysisPositionContext
 from tactix.db.duckdb_store import upsert_tactic_with_outcome
@@ -10,10 +14,9 @@ from tactix.maybe_write_analysis_checkpoint__pipeline import _maybe_write_analys
 def _process_analysis_position(
     context: AnalysisPositionContext,
 ) -> tuple[int, int]:
+    """Analyze a position and persist results, returning row counts."""
     if context.idx <= context.resume_index:
         return 0, 0
-    from importlib import import_module  # noqa: PLC0415
-
     pipeline_module = import_module("tactix.pipeline")
     result = pipeline_module.analyse_with_retries(
         context.engine,

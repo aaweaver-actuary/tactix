@@ -1,3 +1,5 @@
+"""Resolve a next page URL candidate from pagination payloads."""
+
 from __future__ import annotations
 
 from tactix.extract_candidate_href__chesscom_pagination import _extract_candidate_href

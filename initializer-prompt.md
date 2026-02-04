@@ -11,7 +11,7 @@ before proceeding.
 
 ### CRITICAL FIRST TASK: Create feature_list.json
 
-Based on `app-spec.txt`, create a file called `feature_list.json` with 400 detailed end-to-end test cases. This file is the single source of truth for what
+Based on `app-spec.txt`, create a file called `feature_list.json` with 100 detailed end-to-end test cases. This file is the single source of truth for what
 needs to be built.
 
 **Format:**
@@ -43,7 +43,7 @@ needs to be built.
 
 **Requirements for feature_list.json:**
 
-- Minimum 400 features total with testing steps for each
+- Minimum 100 features total with testing steps for each
 - Both "functional" and "style" categories
 - Mix of narrow tests (2-5 steps) and comprehensive tests (10+ steps)
 - At least 25 tests MUST have 10+ steps each
@@ -58,31 +58,18 @@ Features can ONLY be marked as passing (change "passes": false to "passes": true
 Never remove features, never edit descriptions, never modify testing steps.
 This ensures no functionality is missed.
 
-### SECOND TASK: Create init.sh
-
-Create a script called `init.sh` that future agents can use to quickly
-set up and run the development environment. The script should:
-
-1. Install any required dependencies
-2. Start any necessary servers or services
-3. Print helpful information about how to access the running application
-
-Base the script on the technology stack specified in `app-spec.txt`.
-
-### THIRD TASK: Initialize Git
+### SECOND TASK: Initialize Git
 
 Create a git repository and make your first commit with:
 
-- feature_list.json (complete with all 400+ features)
-- init.sh (environment setup script)
+- feature_list.json (complete with all 100+ features)
 - README.md (project overview and setup instructions)
 
-Commit message: "Initial setup: feature_list.json, init.sh, and project structure"
+Commit message: "Initial setup: feature_list.json and project structure"
 
-### FOURTH TASK: Create Project Structure
+### THIRD TASK: Create Project Structure
 
 Set up the basic project structure based on what's specified in `app-spec.txt`.
-Folders have already been created for the airflow component, the UI client, and the src/ folder for the main backend code.
 
 ### OPTIONAL: Start Implementation
 

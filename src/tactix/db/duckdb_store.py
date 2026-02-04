@@ -40,6 +40,11 @@ from tactix.db._normalize_filter import _normalize_filter
 from tactix.db._rating_bucket_clause import _rating_bucket_clause
 from tactix.db._resolve_dashboard_query import _resolve_dashboard_query
 from tactix.db._rows_to_dicts import _rows_to_dicts
+from tactix.db.fetch_latest_raw_pgns import fetch_latest_raw_pgns as _fetch_latest_raw_pgns
+from tactix.db.raw_pgn_summary import (
+    build_raw_pgn_summary_payload,
+    coerce_raw_pgn_summary_rows,
+)
 from tactix.db.raw_pgns_queries import latest_raw_pgns_query
 from tactix.db.RawPgnInsertInputs import RawPgnInsertInputs
 from tactix.db.record_training_attempt import record_training_attempt
@@ -434,6 +439,63 @@ def fetch_latest_pgn_hashes(
         params.append(source)
     rows = conn.execute(sql, params).fetchall()
     return {str(game_id): str(pgn_hash) for game_id, pgn_hash in rows if pgn_hash}
+
+
+def fetch_latest_raw_pgns(
+    conn: duckdb.DuckDBPyConnection,
+    source: str | None,
+    limit: int,
+) -> list[dict[str, object]]:
+    """Fetch the latest raw PGN rows for a source."""
+    return _fetch_latest_raw_pgns(conn, source, limit)
+
+
+def fetch_raw_pgns_summary(
+    conn: duckdb.DuckDBPyConnection,
+    *,
+    source: str | None = None,
+) -> dict[str, object]:
+    """Return raw PGN summary payload for the given source."""
+    where_clause = ""
+    params: list[object] = []
+    if source:
+        where_clause = "WHERE source = ?"
+        params.append(source)
+    sources_result = conn.execute(
+        f"""
+        SELECT
+            source,
+            COUNT(*) AS total_rows,
+            COUNT(DISTINCT game_id) AS distinct_games,
+            MAX(ingested_at) AS latest_ingested_at
+        FROM raw_pgns
+        {where_clause}
+        GROUP BY source
+        ORDER BY source
+        """,
+        params,
+    )
+    sources = _rows_to_dicts(sources_result)
+    totals_result = conn.execute(
+        f"""
+        SELECT
+            COUNT(*) AS total_rows,
+            COUNT(DISTINCT game_id) AS distinct_games,
+            MAX(ingested_at) AS latest_ingested_at
+        FROM raw_pgns
+        {where_clause}
+        """,
+        params,
+    )
+    totals_row = totals_result.fetchone()
+    totals_dict = {}
+    if totals_row:
+        columns = [desc[0] for desc in totals_result.description]
+        totals_dict = dict(zip(columns, totals_row, strict=False))
+    return build_raw_pgn_summary_payload(
+        sources=coerce_raw_pgn_summary_rows(sources),
+        totals=totals_dict,
+    )
 
 
 def fetch_position_counts(

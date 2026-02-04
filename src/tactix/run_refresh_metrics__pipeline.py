@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from tactix.app.use_cases.pipeline_support import _emit_progress
 from tactix.config import Settings, get_settings
 from tactix.dashboard_query import DashboardQuery
 from tactix.db.duckdb_store import (
@@ -11,7 +12,6 @@ from tactix.db.duckdb_store import (
     update_metrics_summary,
     write_metrics_version,
 )
-from tactix.emit_progress__pipeline import _emit_progress
 from tactix.pipeline_state__pipeline import ProgressCallback
 
 

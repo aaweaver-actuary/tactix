@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from tactix.analysis_signature__pipeline import _analysis_signature
-from tactix.clear_analysis_checkpoint__pipeline import _clear_analysis_checkpoint
+from tactix.app.use_cases.pipeline_support import (
+    _clear_analysis_checkpoint,
+    _read_analysis_checkpoint,
+)
 from tactix.db.duckdb_store import fetch_positions_for_games
 from tactix.define_pipeline_state__pipeline import RESUME_INDEX_START, logger
-from tactix.read_analysis_checkpoint__pipeline import _read_analysis_checkpoint
 
 
 def _load_resume_positions(

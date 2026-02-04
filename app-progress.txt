@@ -31,3 +31,13 @@ Session summary (2026-02-04):
 - Before→After map:
 	- AnalysisRunContext/AnalysisAndMetricsContext properties → `_AnalysisRunAccessors` mixin.
 	- NoGames* context window/games validation + accessors → `_resolve_no_games_window_from_kwargs`, `_require_no_games_payload_games`, `_NoGamesWindowAccessors`.
+
+Session summary (2026-02-04):
+- Consolidated 33 pipeline helper modules into `app/use_cases/pipeline_support.py` with object-backed helpers.
+- Migrated pipeline call sites to `PipelineCoercions`, `PipelineProfileFilters`, `PipelineEmissions`, `PipelineNoGames`, `PipelineAnalysisCheckpoint`, and `PipelineCheckpointUpdates`.
+- Added unit tests covering the new pipeline support objects.
+- Tests run: `make check` (pytest + coverage, lint, type, security, client build).
+- Python file count (src/): 611 → 579 (-32).
+- Before→After map:
+	- coerce_* / emit_* / no_games_* / checkpoint + timestamp helpers → `app/use_cases/pipeline_support.py` objects.
+	- tests/test_small_modules.py no-games checkpoint import → tests/test_pipeline_support.py coverage for new objects.

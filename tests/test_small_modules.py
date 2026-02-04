@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 
 from tactix.FetchContext import FetchContext
 from tactix.config import Settings
-from tactix.no_games_checkpoint__pipeline import _no_games_checkpoint
+from tactix.app.use_cases.pipeline_support import _no_games_checkpoint
 from tactix.utils.now import Now
 
 

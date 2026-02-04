@@ -7,8 +7,8 @@ from typing import cast
 
 import psycopg2
 
+from tactix.app.use_cases.pipeline_support import _emit_progress
 from tactix.config import Settings
-from tactix.emit_progress__pipeline import _emit_progress
 from tactix.GameRow import GameRow
 from tactix.init_pgn_schema import init_pgn_schema
 from tactix.ops_event import OpsEvent

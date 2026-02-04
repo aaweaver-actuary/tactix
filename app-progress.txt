@@ -7,6 +7,13 @@ Session summary (2026-02-05):
 - Next action: Feature 2 (lichess blitz pipeline).
 
 Session summary (2026-02-04):
+- Audited legacy job stream module references after consolidation.
+- Confirmed remaining job streaming references are all in `job_stream.py` and test coverage only.
+- Tests run: `make check` (before + after).
+- Before→After map:
+	- Legacy job stream imports/usages → verified none outside `job_stream.py` and tests; no legacy modules left in src/tactix.
+
+Session summary (2026-02-04):
 - Refactored duplicated BackfillWindow accessors into a shared mixin for job-stream contexts.
 - Tests run: `make check` (before + after).
 - Before→After map:

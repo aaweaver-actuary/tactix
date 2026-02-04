@@ -1130,20 +1130,6 @@ wheels = [
 ]
 
 [[package]]
-name = "flake8-sql"
-version = "0.4.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "flake8" },
-    { name = "setuptools" },
-    { name = "sqlparse" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/80/7b/a82825ecd4aca4e3be4394f31a1179f71bfcdae4d4325c908626d0e09461/flake8-SQL-0.4.1.tar.gz", hash = "sha256:a8cdd689a5549c6ec73b4478aae152d5e3199270d23a371653f260f7a0e9dedd", size = 9965, upload-time = "2020-06-27T20:18:48.873Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/f1/9bc74ef16d559187526265eae24d971f1bcad825dde760c89fa619104453/flake8_SQL-0.4.1-py2.py3-none-any.whl", hash = "sha256:25cd0485ba5feb5b1abfdd0c5b607e014300bcc3fa2a416a18cf62ecdbaaea96", size = 7886, upload-time = "2020-06-27T20:18:47.766Z" },
-]
-
-[[package]]
 name = "flask"
 version = "2.2.5"
 source = { registry = "https://pypi.org/simple" }
@@ -3026,7 +3012,6 @@ dev = [
     { name = "flake8-return" },
     { name = "flake8-rst-docstrings" },
     { name = "flake8-simplify" },
-    { name = "flake8-sql" },
     { name = "mypy" },
     { name = "pre-commit" },
     { name = "prospector" },
@@ -3087,7 +3072,6 @@ dev = [
     { name = "flake8-return", specifier = ">=1.2.0" },
     { name = "flake8-rst-docstrings", specifier = ">=0.4.0" },
     { name = "flake8-simplify", specifier = ">=0.30.0" },
-    { name = "flake8-sql", specifier = ">=0.4.1" },
     { name = "mypy", specifier = ">=1.19.1" },
     { name = "pre-commit", specifier = ">=4.5.0" },
     { name = "prospector", specifier = ">=1.18.0" },

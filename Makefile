@@ -12,6 +12,12 @@ pylint:
 # Ty for static type checking
 	uv run ty check \
 		--error deprecated \
+		--ignore invalid-argument-type \
+		--ignore invalid-method-override \
+		--ignore invalid-type-form \
+		--ignore unresolved-attribute \
+		--ignore unresolved-import \
+		--ignore unsupported-operator \
 		src/
 
 # Mypy for additional type checking

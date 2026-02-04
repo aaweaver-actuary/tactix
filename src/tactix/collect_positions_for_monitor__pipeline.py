@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from tactix.config import Settings
-from tactix.db.duckdb_store import fetch_unanalyzed_positions
+from tactix.db.fetch_unanalyzed_positions import fetch_unanalyzed_positions
 from tactix.extract_positions_for_new_games__pipeline import _extract_positions_for_new_games
 
 

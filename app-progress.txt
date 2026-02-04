@@ -1,0 +1,10 @@
+Session summary (2026-02-04):
+- Read app-spec.txt and created feature_list.json with 100 prioritized MVP test cases.
+- Added root README.md with project overview and quick start notes.
+- Initialized MVP structure placeholders in src/tactix (domain, ports, app/use_cases, infra/clients, infra/db).
+
+Next steps:
+- Implement highest-priority pipeline use cases and API endpoints.
+- Add DB schemas/migrations for MVP tables.
+- Build client filters bar, summary cards, games table, and practice queue panel.
+- Add DB, API, and client tests for canonical 2026-02-01 scenario.

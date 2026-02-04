@@ -1,4 +1,11 @@
 Session summary (2026-02-04):
+- Removed legacy shim modules from src/tactix now that review-for-deletion copies are in place.
+- Call sites already use canonical modules (tactix.dashboard_query_filters, tactix.tactics_search_filters, tactix.postgres_store_impl, tactix.postgres_status, tactix.get_dashboard__api).
+- Tests run: `make check` (before + after).
+- Before→After map:
+	- src/tactix/DashboardQueryFilters.py, TacticsSearchFilters.py, PostgresStore.py, PostgresStatus.py, dashboard.py → review-for-deletion/ copies (src removed).
+
+Session summary (2026-02-04):
 - Consolidated shim imports to canonical modules for Postgres, tactics search, and analysis contexts.
 - Mirrored legacy shim modules into review-for-deletion for follow-up cleanup.
 - Tests run: `make check` (before + after).

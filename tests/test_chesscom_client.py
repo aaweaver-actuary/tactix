@@ -11,7 +11,7 @@ from urllib.parse import parse_qs, urlparse
 import chess.pgn
 
 from tactix.config import Settings, get_settings
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 from tactix.chess_clients.chesscom_client import (
     ARCHIVES_URL,
     ChesscomClient,

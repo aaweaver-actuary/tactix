@@ -7,8 +7,9 @@ from typing import cast
 
 from tactix.chess_clients.base_chess_client import BaseChessClient
 from tactix.config import Settings
+from tactix.FetchContext import FetchContext
 from tactix.lichess_client import LichessFetchRequest, read_checkpoint
-from tactix.pipeline_state__pipeline import ZERO_COUNT, FetchContext
+from tactix.pipeline_state__pipeline import ZERO_COUNT
 
 
 def _fetch_lichess_games(

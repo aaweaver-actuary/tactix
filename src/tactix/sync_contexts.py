@@ -6,7 +6,9 @@ from dataclasses import dataclass
 
 from tactix.chess_clients.base_chess_client import BaseChessClient
 from tactix.config import Settings
-from tactix.pipeline_state__pipeline import FetchContext, GameRow, ProgressCallback
+from tactix.FetchContext import FetchContext
+from tactix.GameRow import GameRow
+from tactix.pipeline_state__pipeline import ProgressCallback
 
 
 @dataclass(frozen=True)
@@ -96,7 +98,59 @@ class DailySyncTotals:
     metrics_version: int
 
 
-@dataclass(frozen=True)
+def _validate_allowed_kwargs(kwargs: dict[str, object], allowed_keys: set[str]) -> None:
+    unknown = sorted(set(kwargs) - allowed_keys)
+    if unknown:
+        raise TypeError(f"Unexpected keyword arguments: {', '.join(unknown)}")
+
+
+def _resolve_required_kwargs(
+    kwargs: dict[str, object],
+    required_keys: set[str],
+) -> dict[str, object]:
+    required_fields = {key: kwargs.get(key) for key in required_keys}
+    missing = [name for name, value in required_fields.items() if value is None]
+    if missing:
+        raise TypeError(f"Missing required arguments: {', '.join(sorted(missing))}")
+    return required_fields
+
+
+def _collect_unexpected_kwargs(kwargs: dict[str, object], keys: set[str]) -> list[str]:
+    return [name for name in keys if kwargs.get(name) is not None]
+
+
+def _resolve_daily_sync_totals(
+    totals: DailySyncTotals | None,
+    totals_kwargs: dict[str, object],
+) -> DailySyncTotals:
+    allowed_keys = {
+        "raw_pgns_inserted",
+        "postgres_raw_pgns_inserted",
+        "positions_count",
+        "tactics_count",
+        "postgres_written",
+        "postgres_synced",
+        "metrics_version",
+    }
+    _validate_allowed_kwargs(totals_kwargs, allowed_keys)
+    if totals is None:
+        required_fields = _resolve_required_kwargs(totals_kwargs, allowed_keys)
+        return DailySyncTotals(
+            raw_pgns_inserted=required_fields["raw_pgns_inserted"],
+            postgres_raw_pgns_inserted=required_fields["postgres_raw_pgns_inserted"],
+            positions_count=required_fields["positions_count"],
+            tactics_count=required_fields["tactics_count"],
+            postgres_written=required_fields["postgres_written"],
+            postgres_synced=required_fields["postgres_synced"],
+            metrics_version=required_fields["metrics_version"],
+        )
+    unexpected = _collect_unexpected_kwargs(totals_kwargs, allowed_keys)
+    if unexpected:
+        raise TypeError(f"Unexpected keyword arguments: {', '.join(sorted(unexpected))}")
+    return totals
+
+
+@dataclass(frozen=True, init=False)
 class DailySyncCompleteContext:
     """Context describing a completed daily sync run."""
 
@@ -105,6 +159,25 @@ class DailySyncCompleteContext:
     games: list[GameRow]
     totals: DailySyncTotals
     backfill_mode: bool
+
+    def __init__(
+        self,
+        settings: Settings,
+        profile: str | None,
+        games: list[GameRow],
+        totals: DailySyncTotals | None = None,
+        **totals_kwargs: object,
+    ) -> None:
+        backfill_mode = bool(totals_kwargs.pop("backfill_mode", False))
+        totals = _resolve_daily_sync_totals(
+            totals,
+            totals_kwargs,
+        )
+        object.__setattr__(self, "settings", settings)
+        object.__setattr__(self, "profile", profile)
+        object.__setattr__(self, "games", games)
+        object.__setattr__(self, "totals", totals)
+        object.__setattr__(self, "backfill_mode", backfill_mode)
 
     @property
     def raw_pgns_inserted(self) -> int:
@@ -223,7 +296,60 @@ class DailySyncPayloadMetrics:
         return self.checkpoint.last_timestamp_value
 
 
-@dataclass(frozen=True)
+def _resolve_daily_sync_payload_metrics(
+    metrics: DailySyncPayloadMetrics | None,
+    metrics_kwargs: dict[str, object],
+) -> DailySyncPayloadMetrics:
+    allowed_keys = {
+        "raw_pgns_inserted",
+        "raw_pgns_hashed",
+        "raw_pgns_matched",
+        "postgres_raw_pgns_inserted",
+        "positions_count",
+        "tactics_count",
+        "metrics_version",
+        "checkpoint_value",
+        "last_timestamp_value",
+    }
+    _validate_allowed_kwargs(metrics_kwargs, allowed_keys)
+    if metrics is None:
+        required_fields = _resolve_required_kwargs(
+            metrics_kwargs,
+            {
+                "raw_pgns_inserted",
+                "raw_pgns_hashed",
+                "raw_pgns_matched",
+                "postgres_raw_pgns_inserted",
+                "positions_count",
+                "tactics_count",
+                "metrics_version",
+                "last_timestamp_value",
+            },
+        )
+        return DailySyncPayloadMetrics(
+            raw_pgns=RawPgnMetrics(
+                raw_pgns_inserted=required_fields["raw_pgns_inserted"],
+                raw_pgns_hashed=required_fields["raw_pgns_hashed"],
+                raw_pgns_matched=required_fields["raw_pgns_matched"],
+                postgres_raw_pgns_inserted=required_fields["postgres_raw_pgns_inserted"],
+            ),
+            analysis=AnalysisMetrics(
+                positions_count=required_fields["positions_count"],
+                tactics_count=required_fields["tactics_count"],
+                metrics_version=required_fields["metrics_version"],
+            ),
+            checkpoint=DailySyncCheckpoint(
+                checkpoint_value=metrics_kwargs.get("checkpoint_value"),
+                last_timestamp_value=required_fields["last_timestamp_value"],
+            ),
+        )
+    unexpected = _collect_unexpected_kwargs(metrics_kwargs, allowed_keys)
+    if unexpected:
+        raise TypeError(f"Unexpected keyword arguments: {', '.join(sorted(unexpected))}")
+    return metrics
+
+
+@dataclass(frozen=True, init=False)
 class DailySyncPayloadContext:
     """Context describing the daily sync payload."""
 
@@ -232,6 +358,25 @@ class DailySyncPayloadContext:
     games: list[GameRow]
     metrics: DailySyncPayloadMetrics
     backfill_mode: bool
+
+    def __init__(
+        self,
+        settings: Settings,
+        fetch_context: FetchContext,
+        games: list[GameRow],
+        metrics: DailySyncPayloadMetrics | None = None,
+        **metrics_kwargs: object,
+    ) -> None:
+        backfill_mode = bool(metrics_kwargs.pop("backfill_mode", False))
+        metrics = _resolve_daily_sync_payload_metrics(
+            metrics,
+            metrics_kwargs,
+        )
+        object.__setattr__(self, "settings", settings)
+        object.__setattr__(self, "fetch_context", fetch_context)
+        object.__setattr__(self, "games", games)
+        object.__setattr__(self, "metrics", metrics)
+        object.__setattr__(self, "backfill_mode", backfill_mode)
 
     @property
     def raw_pgns_inserted(self) -> int:
@@ -288,7 +433,42 @@ class NoGamesWindowContext:
     window_filtered: int
 
 
-@dataclass(frozen=True)
+def _resolve_no_games_window_context(
+    window: NoGamesWindowContext | None,
+    *,
+    fetch_context: FetchContext | None,
+    last_timestamp_value: int | None,
+    window_filtered: int | None,
+) -> NoGamesWindowContext:
+    required_keys = {"fetch_context", "last_timestamp_value", "window_filtered"}
+    if window is None:
+        _resolve_required_kwargs(
+            {
+                "fetch_context": fetch_context,
+                "last_timestamp_value": last_timestamp_value,
+                "window_filtered": window_filtered,
+            },
+            required_keys,
+        )
+        return NoGamesWindowContext(
+            fetch_context=fetch_context,
+            last_timestamp_value=last_timestamp_value,
+            window_filtered=window_filtered,
+        )
+    unexpected = _collect_unexpected_kwargs(
+        {
+            "fetch_context": fetch_context,
+            "last_timestamp_value": last_timestamp_value,
+            "window_filtered": window_filtered,
+        },
+        required_keys,
+    )
+    if unexpected:
+        raise TypeError(f"Unexpected keyword arguments: {', '.join(sorted(unexpected))}")
+    return window
+
+
+@dataclass(frozen=True, init=False)
 class NoGamesPayloadContext:
     """Payload context when no games are returned."""
 
@@ -296,6 +476,29 @@ class NoGamesPayloadContext:
     conn: object
     backfill_mode: bool
     window: NoGamesWindowContext
+
+    def __init__(
+        self,
+        settings: Settings,
+        conn: object,
+        backfill_mode: bool,
+        window: NoGamesWindowContext | None = None,
+        **window_kwargs: object,
+    ) -> None:
+        allowed_keys = {"fetch_context", "last_timestamp_value", "window_filtered"}
+        unknown = sorted(set(window_kwargs) - allowed_keys)
+        if unknown:
+            raise TypeError(f"Unexpected keyword arguments: {', '.join(unknown)}")
+        window = _resolve_no_games_window_context(
+            window,
+            fetch_context=window_kwargs.get("fetch_context"),
+            last_timestamp_value=window_kwargs.get("last_timestamp_value"),
+            window_filtered=window_kwargs.get("window_filtered"),
+        )
+        object.__setattr__(self, "settings", settings)
+        object.__setattr__(self, "conn", conn)
+        object.__setattr__(self, "backfill_mode", backfill_mode)
+        object.__setattr__(self, "window", window)
 
     @property
     def fetch_context(self) -> FetchContext:
@@ -313,7 +516,7 @@ class NoGamesPayloadContext:
         return self.window.window_filtered
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class NoGamesAfterDedupePayloadContext:
     """Payload context when games vanish after de-dupe."""
 
@@ -323,6 +526,33 @@ class NoGamesAfterDedupePayloadContext:
     games: list[GameRow]
     window: NoGamesWindowContext
 
+    def __init__(
+        self,
+        settings: Settings,
+        conn: object,
+        backfill_mode: bool,
+        window: NoGamesWindowContext | None = None,
+        **window_kwargs: object,
+    ) -> None:
+        allowed_keys = {"fetch_context", "last_timestamp_value", "window_filtered", "games"}
+        unknown = sorted(set(window_kwargs) - allowed_keys)
+        if unknown:
+            raise TypeError(f"Unexpected keyword arguments: {', '.join(unknown)}")
+        games = window_kwargs.get("games")
+        if games is None:
+            raise TypeError("Missing required arguments: games")
+        window = _resolve_no_games_window_context(
+            window,
+            fetch_context=window_kwargs.get("fetch_context"),
+            last_timestamp_value=window_kwargs.get("last_timestamp_value"),
+            window_filtered=window_kwargs.get("window_filtered"),
+        )
+        object.__setattr__(self, "settings", settings)
+        object.__setattr__(self, "conn", conn)
+        object.__setattr__(self, "backfill_mode", backfill_mode)
+        object.__setattr__(self, "games", games)
+        object.__setattr__(self, "window", window)
+
     @property
     def fetch_context(self) -> FetchContext:
         """Return the fetch context."""
@@ -339,7 +569,7 @@ class NoGamesAfterDedupePayloadContext:
         return self.window.window_filtered
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class NoGamesContext:
     """Context for no-games handling."""
 
@@ -349,6 +579,31 @@ class NoGamesContext:
     backfill_mode: bool
     window: NoGamesWindowContext
 
+    def __init__(
+        self,
+        settings: Settings,
+        conn: object,
+        progress: ProgressCallback | None,
+        window: NoGamesWindowContext | None = None,
+        **window_kwargs: object,
+    ) -> None:
+        backfill_mode = bool(window_kwargs.pop("backfill_mode", False))
+        allowed_keys = {"fetch_context", "last_timestamp_value", "window_filtered"}
+        unknown = sorted(set(window_kwargs) - allowed_keys)
+        if unknown:
+            raise TypeError(f"Unexpected keyword arguments: {', '.join(unknown)}")
+        window = _resolve_no_games_window_context(
+            window,
+            fetch_context=window_kwargs.get("fetch_context"),
+            last_timestamp_value=window_kwargs.get("last_timestamp_value"),
+            window_filtered=window_kwargs.get("window_filtered"),
+        )
+        object.__setattr__(self, "settings", settings)
+        object.__setattr__(self, "conn", conn)
+        object.__setattr__(self, "progress", progress)
+        object.__setattr__(self, "backfill_mode", backfill_mode)
+        object.__setattr__(self, "window", window)
+
     @property
     def fetch_context(self) -> FetchContext:
         """Return the fetch context."""
@@ -365,7 +620,7 @@ class NoGamesContext:
         return self.window.window_filtered
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class NoGamesAfterDedupeContext:
     """Context for handling no-games after de-dupe."""
 
@@ -375,6 +630,35 @@ class NoGamesAfterDedupeContext:
     backfill_mode: bool
     games: list[GameRow]
     window: NoGamesWindowContext
+
+    def __init__(
+        self,
+        settings: Settings,
+        conn: object,
+        progress: ProgressCallback | None,
+        window: NoGamesWindowContext | None = None,
+        **window_kwargs: object,
+    ) -> None:
+        backfill_mode = bool(window_kwargs.pop("backfill_mode", False))
+        allowed_keys = {"fetch_context", "last_timestamp_value", "window_filtered", "games"}
+        unknown = sorted(set(window_kwargs) - allowed_keys)
+        if unknown:
+            raise TypeError(f"Unexpected keyword arguments: {', '.join(unknown)}")
+        games = window_kwargs.get("games")
+        if games is None:
+            raise TypeError("Missing required arguments: games")
+        window = _resolve_no_games_window_context(
+            window,
+            fetch_context=window_kwargs.get("fetch_context"),
+            last_timestamp_value=window_kwargs.get("last_timestamp_value"),
+            window_filtered=window_kwargs.get("window_filtered"),
+        )
+        object.__setattr__(self, "settings", settings)
+        object.__setattr__(self, "conn", conn)
+        object.__setattr__(self, "progress", progress)
+        object.__setattr__(self, "backfill_mode", backfill_mode)
+        object.__setattr__(self, "games", games)
+        object.__setattr__(self, "window", window)
 
     @property
     def fetch_context(self) -> FetchContext:

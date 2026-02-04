@@ -32,7 +32,8 @@ from tactix._compute_eval__hanging_piece_unclear_threshold import (
 )
 from tactix._compute_eval__pin_unclear_threshold import _compute_eval__pin_unclear_threshold
 from tactix._compute_eval__skewer_unclear_threshold import _compute_eval__skewer_unclear_threshold
-from tactix.outcome_context import MateOutcomeContext, OutcomeOverridesContext
+from tactix.mate_outcome import MateOutcome
+from tactix.outcome_context import OutcomeOverridesContext
 
 
 def _apply_outcome_overrides(
@@ -85,7 +86,7 @@ def _apply_outcome_overrides(
         _compute_eval__pin_unclear_threshold(ctx.settings),
     )
     outcome = replace(outcome, result=result)
-    mate_context = MateOutcomeContext(
+    mate_context = MateOutcome(
         outcome=outcome,
         after_cp=ctx.after_cp,
         mate_in_one=ctx.mate_in_one,

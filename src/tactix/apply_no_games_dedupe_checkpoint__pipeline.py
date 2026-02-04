@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from tactix.chess_clients.chesscom_client import write_cursor as write_chesscom_cursor
 from tactix.config import Settings
-from tactix.define_pipeline_state__pipeline import FetchContext
+from tactix.FetchContext import FetchContext
 from tactix.lichess_client import write_checkpoint
 
 

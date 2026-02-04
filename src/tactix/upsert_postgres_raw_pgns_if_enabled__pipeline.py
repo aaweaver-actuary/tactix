@@ -9,9 +9,10 @@ import psycopg2
 
 from tactix.config import Settings
 from tactix.emit_progress__pipeline import _emit_progress
+from tactix.GameRow import GameRow
 from tactix.init_pgn_schema import init_pgn_schema
 from tactix.ops_event import OpsEvent
-from tactix.pipeline_state__pipeline import GameRow, ProgressCallback, logger
+from tactix.pipeline_state__pipeline import ProgressCallback, logger
 from tactix.postgres_connection import postgres_connection
 from tactix.postgres_pgns_enabled import postgres_pgns_enabled
 from tactix.record_ops_event import (

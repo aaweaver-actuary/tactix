@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tactix.pipeline_state__pipeline import FetchContext
+from tactix.FetchContext import FetchContext
 
 
 def _no_games_cursor(backfill_mode: bool, fetch_context: FetchContext) -> str | None:

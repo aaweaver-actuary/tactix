@@ -13,11 +13,11 @@ from tactix.config import Settings
 from tactix.dashboard_query import DashboardQuery
 from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
 from tactix.define_outcome_insert_plan__db_store import OutcomeInsertPlan
-from tactix.define_pgn_upsert_plan__db_store import PgnUpsertPlan
 from tactix.define_tactic_insert_plan__db_store import TacticInsertPlan
 from tactix.extract_pgn_metadata import extract_pgn_metadata
 from tactix.is_latest_hash__db_store import _is_latest_hash
-from tactix.PgnUpsertInputs import PgnUpsertInputs
+from tactix.PgnUpsertInputs import PgnUpsertHashing, PgnUpsertInputs, PgnUpsertTimestamps
+from tactix.PgnUpsertPlan import PgnUpsertPlan
 from tactix.resolve_pgn_hash__db_store import _resolve_pgn_hash
 from tactix.resolve_timestamp__db_store import _resolve_timestamp
 from tactix.utils import hash
@@ -102,11 +102,15 @@ class BaseDbStore:
             user=cast(str, values["user"]),
             latest_hash=cast(str | None, values["latest_hash"]),
             latest_version=cast(int, values["latest_version"]),
-            normalize_pgn=cast(Callable[[str], str] | None, values["normalize_pgn"]),
-            hash_pgn=cast(Callable[[str], str] | None, values["hash_pgn"]),
-            fetched_at=cast(datetime | None, values["fetched_at"]),
-            ingested_at=cast(datetime | None, values["ingested_at"]),
-            last_timestamp_ms=cast(int, values["last_timestamp_ms"]),
+            hashing=PgnUpsertHashing(
+                normalize_pgn=cast(Callable[[str], str] | None, values["normalize_pgn"]),
+                hash_pgn=cast(Callable[[str], str] | None, values["hash_pgn"]),
+            ),
+            timestamps=PgnUpsertTimestamps(
+                fetched_at=cast(datetime | None, values["fetched_at"]),
+                ingested_at=cast(datetime | None, values["ingested_at"]),
+                last_timestamp_ms=cast(int, values["last_timestamp_ms"]),
+            ),
             cursor=values["cursor"],
         )
 

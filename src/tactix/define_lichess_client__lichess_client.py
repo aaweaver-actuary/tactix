@@ -31,9 +31,9 @@ from tactix.latest_timestamp import latest_timestamp
 from tactix.load_fixture_games import FixtureGamesRequest, load_fixture_games
 from tactix.pgn_to_game_row__lichess_client import _pgn_to_game_row
 from tactix.resolve_perf_value__lichess_client import _resolve_perf_value
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 
-logger = get_logger(__name__)
+logger = Logger(__name__)
 
 
 class LichessClient(BaseChessClient):

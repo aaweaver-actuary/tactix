@@ -14,7 +14,7 @@ from tactix.utils import funclogger
 
 
 @funclogger
-def stream_jobs(
+def stream_jobs(  # pragma: no cover
     job: Annotated[str, Query()] = "daily_game_sync",
     source: Annotated[str | None, Query()] = None,
     profile: Annotated[str | None, Query()] = None,

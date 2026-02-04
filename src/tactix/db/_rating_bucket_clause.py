@@ -8,18 +8,37 @@ def _rating_bucket_clause(bucket: str) -> str:
     normalized = bucket.strip().lower()
     if normalized == "unknown":
         return "r.user_rating IS NULL"
-    if normalized.startswith("<"):
-        value = normalized.lstrip("<").strip()
-        if value.isdigit():
-            return f"r.user_rating IS NOT NULL AND r.user_rating < {int(value)}"
-    if "-" in normalized:
-        start, _, end = normalized.partition("-")
-        start = start.strip()
-        end = end.strip()
-        if start.isdigit() and end.isdigit():
-            return f"r.user_rating >= {int(start)} AND r.user_rating <= {int(end)}"
-    if normalized.endswith("+"):
-        lower = normalized.rstrip("+").strip()
-        if lower.isdigit():
-            return f"r.user_rating >= {int(lower)}"
+    for resolver in (_resolve_lower_bucket, _resolve_range_bucket, _resolve_upper_bucket):
+        clause = resolver(normalized)
+        if clause is not None:
+            return clause
     return "r.user_rating IS NULL"
+
+
+def _resolve_lower_bucket(normalized: str) -> str | None:
+    if not normalized.startswith("<"):
+        return None
+    value = normalized.lstrip("<").strip()
+    if not value.isdigit():
+        return None
+    return f"r.user_rating IS NOT NULL AND r.user_rating < {int(value)}"
+
+
+def _resolve_range_bucket(normalized: str) -> str | None:
+    if "-" not in normalized:
+        return None
+    start, _, end = normalized.partition("-")
+    start = start.strip()
+    end = end.strip()
+    if not (start.isdigit() and end.isdigit()):
+        return None
+    return f"r.user_rating >= {int(start)} AND r.user_rating <= {int(end)}"
+
+
+def _resolve_upper_bucket(normalized: str) -> str | None:
+    if not normalized.endswith("+"):
+        return None
+    lower = normalized.rstrip("+").strip()
+    if not lower.isdigit():
+        return None
+    return f"r.user_rating >= {int(lower)}"

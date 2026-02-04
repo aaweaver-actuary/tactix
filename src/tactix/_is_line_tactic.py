@@ -2,11 +2,24 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 import chess
 
 from tactix.LineTacticContext import LineTacticContext
 
 BOARD_SQUARES = 64
+_STEP_RULES = {
+    1: (1, 0),
+    -1: (1, 0),
+    8: (0, 1),
+    -8: (0, 1),
+    7: (1, 1),
+    -7: (1, 1),
+    9: (1, 1),
+    -9: (1, 1),
+}
+_LINE_PIECES_TARGET = 2
 
 
 def _is_line_tactic(context: LineTacticContext) -> bool:
@@ -29,17 +42,45 @@ def _is_line_tactic(context: LineTacticContext) -> bool:
 
 def _step_square(square: chess.Square, step: int) -> chess.Square | None:
     next_square = square + step
-    if next_square < 0 or next_square >= BOARD_SQUARES:
+    if not _is_square_in_bounds(next_square):
         return None
-    file_diff = abs(chess.square_file(next_square) - chess.square_file(square))
-    rank_diff = abs(chess.square_rank(next_square) - chess.square_rank(square))
-    if step in (1, -1) and rank_diff != 0:
-        return None
-    if step in (8, -8) and file_diff != 0:
-        return None
-    if step in (7, -7, 9, -9) and (file_diff != 1 or rank_diff != 1):
+    if not _matches_step_rule(square, next_square, step):
         return None
     return chess.Square(next_square)
+
+
+def _is_square_in_bounds(square: int) -> bool:
+    return 0 <= square < BOARD_SQUARES
+
+
+def _matches_step_rule(
+    square: chess.Square,
+    next_square: int,
+    step: int,
+) -> bool:
+    expected = _STEP_RULES.get(step)
+    if expected is None:
+        return False
+    expected_file, expected_rank = expected
+    file_diff = abs(chess.square_file(next_square) - chess.square_file(square))
+    rank_diff = abs(chess.square_rank(next_square) - chess.square_rank(square))
+    return file_diff == expected_file and rank_diff == expected_rank
+
+
+def _iter_line_pieces(
+    board: chess.Board,
+    start: chess.Square,
+    step: int,
+) -> Iterable[chess.Piece]:
+    current = start
+    while True:
+        next_square = _step_square(current, step)
+        if next_square is None:
+            return
+        current = next_square
+        piece = board.piece_at(current)
+        if piece is not None:
+            yield piece
 
 
 def _find_two_opponent_pieces(
@@ -48,19 +89,11 @@ def _find_two_opponent_pieces(
     step: int,
     opponent: bool,
 ) -> tuple[chess.Piece | None, chess.Piece | None]:
-    current = start
-    first_piece: chess.Piece | None = None
-    while True:
-        next_square = _step_square(current, step)
-        if next_square is None:
-            return None, None
-        current = next_square
-        piece = board.piece_at(current)
-        if piece is None:
-            continue
+    found: list[chess.Piece] = []
+    for piece in _iter_line_pieces(board, start, step):
         if piece.color != opponent:
             return None, None
-        if first_piece is None:
-            first_piece = piece
-            continue
-        return first_piece, piece
+        found.append(piece)
+        if len(found) == _LINE_PIECES_TARGET:
+            return found[0], found[1]
+    return None, None

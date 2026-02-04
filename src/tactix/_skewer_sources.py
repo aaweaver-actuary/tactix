@@ -6,6 +6,11 @@ import chess
 
 ORTHOGONAL_STEPS = (1, -1, 8, -8)
 DIAGONAL_STEPS = (7, -7, 9, -9)
+SKEWER_PIECE_STEPS = {
+    chess.ROOK: ORTHOGONAL_STEPS,
+    chess.BISHOP: DIAGONAL_STEPS,
+    chess.QUEEN: ORTHOGONAL_STEPS + DIAGONAL_STEPS,
+}
 
 
 def _skewer_sources(
@@ -17,10 +22,7 @@ def _skewer_sources(
     for square, piece in board.piece_map().items():
         if piece.color != mover_color:
             continue
-        if piece.piece_type == chess.ROOK:
-            sources.append((square, ORTHOGONAL_STEPS))
-        elif piece.piece_type == chess.BISHOP:
-            sources.append((square, DIAGONAL_STEPS))
-        elif piece.piece_type == chess.QUEEN:
-            sources.append((square, ORTHOGONAL_STEPS + DIAGONAL_STEPS))
+        steps = SKEWER_PIECE_STEPS.get(piece.piece_type)
+        if steps is not None:
+            sources.append((square, steps))
     return sources

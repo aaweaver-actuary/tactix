@@ -15,3 +15,9 @@ Session summary (2026-02-04):
 - Read app-spec.txt and created feature_list.json with 100 prioritized MVP test cases.
 - Added root README.md with project overview and quick start notes.
 - Initialized MVP structure placeholders in src/tactix (domain, ports, app/use_cases, infra/clients, infra/db).
+
+Session summary (2026-02-05):
+- Raised Python test coverage to >=95% and refactored high-complexity functions to satisfy xenon.
+- Added regression tests for small modules and rating bucket SQL clauses.
+- Cleaned lint/type/vulture issues introduced during refactors.
+- Ran make check (pytest, vitest, xenon, pycycle, safety, bandit, dodgy, jscpd, vulture, knip, cargo build, client build).

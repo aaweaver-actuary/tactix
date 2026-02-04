@@ -14,6 +14,6 @@ def _should_override_failed_attempt(
         result == "unclear"
         and swing is not None
         and threshold is not None
-        and swing <= threshold
+        and swing < threshold
         and target_motif
     )

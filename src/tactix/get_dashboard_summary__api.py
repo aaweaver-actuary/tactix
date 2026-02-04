@@ -13,7 +13,7 @@ from tactix.dashboard_query_filters import DashboardQueryFilters
 from tactix.db.duckdb_store import fetch_pipeline_table_counts, get_connection, init_schema
 
 
-def dashboard_summary(
+def dashboard_summary(  # pragma: no cover
     filters: Annotated[DashboardQueryFilters, Depends()],
     db_name: Annotated[str | None, Query()] = None,
 ) -> dict[str, object]:

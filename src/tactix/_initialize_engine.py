@@ -5,10 +5,10 @@ from pathlib import Path
 import chess.engine
 
 from tactix.config import Settings
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 from tactix.verify_stockfish_checksum import verify_stockfish_checksum
 
-logger = get_logger(__name__)
+logger = Logger(__name__)
 
 
 def _initialize_engine(command: str, settings: Settings) -> chess.engine.SimpleEngine | None:

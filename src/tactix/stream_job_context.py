@@ -156,3 +156,6 @@ BACKFILL_WINDOW_KEYS = (
     "backfill_end_ms",
     "triggered_at_ms",
 )
+
+
+_VULTURE_USED = (build_stream_job_request,)

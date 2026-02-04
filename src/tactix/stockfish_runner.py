@@ -7,8 +7,8 @@ from pathlib import Path
 
 from tactix.engine_result import EngineResult
 from tactix.StockfishEngine import StockfishEngine
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 
-logger = get_logger(__name__)
+logger = Logger(__name__)
 
 __all__ = ["EngineResult", "Path", "StockfishEngine", "logger", "shutil"]

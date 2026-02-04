@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from tactix.config import Settings
-from tactix.pipeline_state__pipeline import GameRow, logger
+from tactix.GameRow import GameRow
+from tactix.pipeline_state__pipeline import logger
 
 
 def _log_skipped_backfill(settings: Settings, skipped_games: list[GameRow]) -> None:

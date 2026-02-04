@@ -7,9 +7,9 @@ import os
 from datetime import UTC, datetime
 from pathlib import Path
 
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 
-logger = get_logger(__name__)
+logger = Logger(__name__)
 
 
 def _write_cached_token(path: Path, token: str) -> None:

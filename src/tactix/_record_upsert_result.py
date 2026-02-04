@@ -1,6 +1,6 @@
 """Record upsert results into the cache."""
 
-from tactix.base_db_store import PgnUpsertPlan
+from tactix.PgnUpsertPlan import PgnUpsertPlan
 
 
 def _record_upsert_result(

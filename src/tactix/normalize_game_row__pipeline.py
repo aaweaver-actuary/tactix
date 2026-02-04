@@ -9,7 +9,7 @@ from tactix.coerce_int__pipeline import _coerce_int
 from tactix.coerce_pgn__pipeline import _coerce_pgn
 from tactix.coerce_str__pipeline import _coerce_str
 from tactix.config import Settings
-from tactix.pipeline_state__pipeline import GameRow
+from tactix.GameRow import GameRow
 
 
 def _normalize_game_row(row: Mapping[str, object], settings: Settings) -> GameRow:

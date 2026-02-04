@@ -1,5 +1,5 @@
 """Shared API logger instance."""
 
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 
-logger = get_logger("tactix.api")
+logger = Logger("tactix.api")

@@ -8,9 +8,9 @@ import chess.pgn
 from tactix._clock_from_comment import _clock_from_comment
 from tactix.PgnContext import PgnContext
 from tactix.PositionContext import PositionContext
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 
-logger = get_logger(__name__)
+logger = Logger(__name__)
 
 
 @dataclass(frozen=True)

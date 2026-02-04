@@ -8,7 +8,7 @@ import chess.pgn
 import berserk
 
 from tactix.config import Settings
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 from tactix.chess_clients.lichess_client import (
     LichessClient,
     LichessClientContext,

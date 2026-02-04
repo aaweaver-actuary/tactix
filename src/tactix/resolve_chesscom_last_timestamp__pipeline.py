@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from tactix.define_pipeline_state__pipeline import FetchContext, GameRow
+from tactix.FetchContext import FetchContext
+from tactix.GameRow import GameRow
 from tactix.latest_timestamp import latest_timestamp
 
 

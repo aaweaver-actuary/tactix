@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from tactix.pipeline_state__pipeline import GameRow
+from tactix.GameRow import GameRow
 
 
 def _dedupe_games(rows: list[GameRow]) -> list[GameRow]:

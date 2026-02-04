@@ -33,7 +33,7 @@ from tactix.db.duckdb_store import (
     upsert_tactic_with_outcome,
     update_metrics_summary,
 )
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 
 
 PGN_BASE = """[Event \"Test\"]
@@ -624,9 +624,7 @@ class DuckdbStoreHelperTests(unittest.TestCase):
 
     def test_grade_practice_attempt_errors(self) -> None:
         with self.assertRaises(ValueError):
-            grade_practice_attempt(
-                self.conn, tactic_id=999, position_id=1, attempted_uci="e2e4"
-            )
+            grade_practice_attempt(self.conn, tactic_id=999, position_id=1, attempted_uci="e2e4")
 
         pgn = PGN_BASE.format(white_elo=1200, black_elo=1400, time_control="300+0")
         upsert_raw_pgns(
@@ -684,9 +682,7 @@ class DuckdbStoreHelperTests(unittest.TestCase):
 
     def test_upsert_tactic_requires_position_id(self) -> None:
         with self.assertRaises(ValueError):
-            upsert_tactic_with_outcome(
-                self.conn, {"game_id": "g7"}, {"result": "found"}
-            )
+            upsert_tactic_with_outcome(self.conn, {"game_id": "g7"}, {"result": "found"})
 
     def test_ensure_raw_pgns_versioned_legacy(self) -> None:
         legacy_conn = get_connection(self.tmp_dir / "legacy.duckdb")
@@ -703,8 +699,7 @@ class DuckdbStoreHelperTests(unittest.TestCase):
         _ensure_raw_pgns_versioned(legacy_conn)
 
         columns = {
-            row[1]
-            for row in legacy_conn.execute("PRAGMA table_info('raw_pgns')").fetchall()
+            row[1] for row in legacy_conn.execute("PRAGMA table_info('raw_pgns')").fetchall()
         }
         self.assertIn("raw_pgn_id", columns)
         count = legacy_conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]

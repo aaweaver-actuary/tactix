@@ -8,9 +8,9 @@ from tactix.analysis_context import (
     AnalysisRunInputs,
 )
 from tactix.analyze_positions_with_progress__pipeline import _analyze_positions_with_progress
+from tactix.DailyAnalysisResult import DailyAnalysisResult
 from tactix.emit_progress__pipeline import _emit_progress
 from tactix.ops_event import OpsEvent
-from tactix.pipeline_state__pipeline import DailyAnalysisResult
 from tactix.record_ops_event import record_ops_event
 from tactix.update_metrics_and_version__pipeline import _update_metrics_and_version
 

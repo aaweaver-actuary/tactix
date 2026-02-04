@@ -2,7 +2,6 @@
 
 import chess
 
-from tactix.detect_tactics__motifs import BaseTacticDetector
 from tactix.utils.logger import funclogger
 
 
@@ -13,6 +12,18 @@ def _is_new_hanging_piece(
     mover_color: bool,
 ) -> bool:
     """Return True if a hanging piece appears after the move."""
-    if BaseTacticDetector.has_hanging_piece(board_before, mover_color):
+    opponent = not mover_color
+
+    def opponent_has_hanging_piece(board: chess.Board) -> bool:
+        for square, piece in board.piece_map().items():
+            if piece.color != opponent:
+                continue
+            if board.is_attacked_by(mover_color, square) and not board.is_attacked_by(
+                opponent, square
+            ):
+                return True
         return False
-    return BaseTacticDetector.has_hanging_piece(board_after, mover_color)
+
+    if opponent_has_hanging_piece(board_before):
+        return False
+    return opponent_has_hanging_piece(board_after)

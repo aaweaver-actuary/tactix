@@ -23,7 +23,7 @@ def get_postgres_status(settings: Settings) -> PostgresStatus:
     start = time.monotonic()
     try:
         conn = psycopg2.connect(**kwargs)
-    except psycopg2.Error as exc:
+    except Exception as exc:  # noqa: BLE001
         return PostgresStatus(
             enabled=True,
             status="unreachable",

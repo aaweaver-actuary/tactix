@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from tactix.define_pipeline_state__pipeline import GameRow
 from tactix.filter_games_by_window__pipeline import _filter_games_by_window
+from tactix.GameRow import GameRow
 
 
 def _filter_games_for_window(

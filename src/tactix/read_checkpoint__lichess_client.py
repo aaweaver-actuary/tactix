@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 
-logger = get_logger(__name__)
+logger = Logger(__name__)
 
 
 def read_checkpoint(path: Path) -> int:

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from tactix.config import Settings
-from tactix.define_pipeline_state__pipeline import FetchContext, GameRow
+from tactix.FetchContext import FetchContext
+from tactix.GameRow import GameRow
 from tactix.update_chesscom_checkpoint__pipeline import _update_chesscom_checkpoint
 from tactix.update_lichess_checkpoint__pipeline import _update_lichess_checkpoint
 

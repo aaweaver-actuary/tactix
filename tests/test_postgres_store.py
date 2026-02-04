@@ -16,7 +16,7 @@ from tactix.postgres_pgns_enabled import postgres_pgns_enabled
 from tactix.record_ops_event import record_ops_event
 from tactix.upsert_analysis_tactic_with_outcome import upsert_analysis_tactic_with_outcome
 from tactix.upsert_postgres_raw_pgns import upsert_postgres_raw_pgns
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 from tactix.serialize_status import (
     serialize_status,
 )

@@ -7,7 +7,8 @@ from dataclasses import dataclass
 from typing import cast
 
 from tactix._apply_outcome__unclear import _apply_outcome__unclear
-from tactix.outcome_context import BaseOutcomeContext, MateOutcomeContext
+from tactix.mate_outcome import MateOutcome
+from tactix.outcome_context import BaseOutcomeContext
 
 
 @dataclass(frozen=True)
@@ -37,12 +38,12 @@ def _build_mate_outcome(
 
 
 def _should_shift_mate_in_arg(
-    context: MateOutcomeContext | str,
+    context: MateOutcome | str,
     args: MateOutcomeArgs,
 ) -> bool:
     return all(
         (
-            isinstance(context, MateOutcomeContext),
+            isinstance(context, MateOutcome),
             args.mate_in is None,
             args.user_move_uci is None,
             args.after_cp is None,
@@ -52,17 +53,17 @@ def _should_shift_mate_in_arg(
 
 
 def _resolve_mate_context(
-    context: MateOutcomeContext | str,
+    context: MateOutcome | str,
     best_move: str | None,
     user_move_uci: str | None,
     after_cp: int | None,
-) -> MateOutcomeContext:
-    if isinstance(context, MateOutcomeContext):
+) -> MateOutcome:
+    if isinstance(context, MateOutcome):
         return context
     if user_move_uci is None or after_cp is None:
         raise TypeError("result, user_move_uci, and after_cp are required")
     outcome = _build_mate_outcome(context, best_move, user_move_uci, after_cp)
-    return MateOutcomeContext(
+    return MateOutcome(
         outcome=outcome,
         after_cp=after_cp,
         mate_in_one=False,
@@ -72,7 +73,7 @@ def _resolve_mate_context(
 
 def _apply_outcome__unclear_mate(
     should_mark: Callable[[BaseOutcomeContext, int | None], bool],
-    context: MateOutcomeContext | str,
+    context: MateOutcome | str,
     args: MateOutcomeArgs | None = None,
 ) -> str:
     if args is None:

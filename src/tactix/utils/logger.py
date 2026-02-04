@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import builtins
 import logging
 import sys
 import time
@@ -68,6 +69,9 @@ def get_logger(name: str | None = None, level: int = _DEFAULT_LOG_LEVEL) -> logg
     return logger
 
 
+builtins.get_logger = get_logger
+
+
 def set_level(level: int, logger_names: list[str] | None = None) -> None:
     """Set the log level for one or more logger names."""
     names = logger_names or [_DEFAULT_LOGGER_NAME, "airflow", "uvicorn"]
@@ -75,12 +79,9 @@ def set_level(level: int, logger_names: list[str] | None = None) -> None:
         logging.getLogger(name).setLevel(level)
 
 
-class Logger(logging.Logger):
-    """Custom Logger class for Tactix."""
-
-    def __init__(self, name: str = _DEFAULT_LOGGER_NAME, level: int = _DEFAULT_LOG_LEVEL) -> None:
-        super().__init__(name, level)
-        _configure_logger(self, level)
+def Logger(name: str = _DEFAULT_LOGGER_NAME, level: int = _DEFAULT_LOG_LEVEL) -> logging.Logger:
+    """Return a configured logger instance."""
+    return get_logger(name, level)
 
 
 def funclogger(func):  # noqa: PLR0915
@@ -98,7 +99,7 @@ def funclogger(func):  # noqa: PLR0915
         full_name = f"{module_name}.{function_name}"
         function_path = full_name.replace("<", "").replace(">", "")
 
-        logger = get_logger(function_path)
+        logger = Logger(function_path)
 
         logger.debug("Path: %s", function_path)
         logger.debug("Module: %s", module_name)

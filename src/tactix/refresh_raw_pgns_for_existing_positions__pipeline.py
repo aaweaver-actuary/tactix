@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from tactix.config import Settings
-from tactix.define_pipeline_state__pipeline import GameRow, ProgressCallback
+from tactix.define_pipeline_state__pipeline import ProgressCallback
+from tactix.GameRow import GameRow
 from tactix.persist_raw_pgns__pipeline import PersistRawPgnsContext, _persist_raw_pgns
 from tactix.upsert_postgres_raw_pgns_if_enabled__pipeline import (
     _upsert_postgres_raw_pgns_if_enabled,

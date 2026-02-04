@@ -6,9 +6,9 @@ from psycopg2.extensions import connection as PgConnection  # noqa: N812
 
 from tactix._connection_kwargs import _connection_kwargs
 from tactix.config import Settings
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 
-logger = get_logger(__name__)
+logger = Logger(__name__)
 
 
 @contextmanager

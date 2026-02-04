@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 
-from tactix.base_db_store import PgnUpsertPlan
 from tactix.PGN_SCHEMA import PGN_SCHEMA
+from tactix.PgnUpsertPlan import PgnUpsertPlan
 
 
 def _insert_raw_pgn_row(

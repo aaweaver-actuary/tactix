@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from tactix.db.duckdb_store import hash_pgn
-from tactix.define_pipeline_state__pipeline import GameRow
+from tactix.GameRow import GameRow
 
 
 def _compute_pgn_hashes(rows: list[GameRow], source: str) -> dict[str, str]:

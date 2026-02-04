@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from tactix.config import Settings
-from tactix.define_pipeline_state__pipeline import FetchContext
+from tactix.FetchContext import FetchContext
 
 
 def _no_games_checkpoint(

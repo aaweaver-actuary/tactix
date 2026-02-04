@@ -61,10 +61,10 @@ from tactix.sql_tactics import (
     TACTIC_COLUMNS,
     TACTIC_QUEUE_COLUMNS,
 )
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 from tactix.utils.to_int import to_int
 
-logger = get_logger(__name__)
+logger = Logger(__name__)
 
 
 RAW_PGNS_SCHEMA = """
@@ -203,7 +203,7 @@ def fetch_unanalyzed_positions(
 def _should_attempt_wal_recovery(exc: BaseException) -> bool:
     """Return True when WAL recovery is allowed for the given exception."""
     message = str(exc).lower()
-    if "wal replay failed" not in message:
+    if "wal replay failed" not in message and "wal error" not in message:
         return False
     return (
         bool(os.environ.get("PYTEST_CURRENT_TEST"))
@@ -261,12 +261,16 @@ def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
     migrate_schema(conn)
 
 
+def _get_raw_pgn_columns(conn: duckdb.DuckDBPyConnection) -> set[str]:
+    try:
+        return {row[1] for row in conn.execute("PRAGMA table_info('raw_pgns')").fetchall()}
+    except duckdb.Error:
+        return set()
+
+
 def _ensure_raw_pgns_versioned(conn: duckdb.DuckDBPyConnection) -> None:
     """Ensure raw PGN rows include versioning columns."""
-    try:
-        columns = {row[1] for row in conn.execute("PRAGMA table_info('raw_pgns')").fetchall()}
-    except duckdb.Error:
-        return
+    columns = _get_raw_pgn_columns(conn)
     if not columns:
         return
     if "raw_pgn_id" not in columns or "pgn_version" not in columns:
@@ -301,7 +305,7 @@ class DuckDbStore(BaseDbStore):
         filters: DashboardQuery | None = None,
         **legacy: object,
     ) -> dict[str, object]:
-        query = _resolve_dashboard_query(query, filters=filters, legacy=legacy)
+        query = _resolve_dashboard_query(query, filters=filters, **legacy)
         conn = get_connection(self._db_path)
         init_schema(conn)
         active_source = None if query.source in (None, "all") else query.source
@@ -482,8 +486,8 @@ def fetch_latest_pgn_hashes(
 
 def fetch_latest_raw_pgns(
     conn: duckdb.DuckDBPyConnection,
-    source: str | None,
-    limit: int,
+    source: str | None = None,
+    limit: int | None = None,
 ) -> list[dict[str, object]]:
     """Fetch the latest raw PGN rows for a source."""
     return _fetch_latest_raw_pgns(conn, source, limit)
@@ -545,32 +549,9 @@ def fetch_pipeline_table_counts(
     **legacy: object,
 ) -> dict[str, int]:
     """Return per-table counts for pipeline verification."""
-    resolved = _resolve_dashboard_query(query, filters=filters, legacy=legacy)
-    sql = """
-        WITH games_filtered AS (
-            SELECT *
-            FROM games r
-    """
-    params: list[object] = []
-    conditions: list[str] = []
-    if resolved.source:
-        conditions.append("r.source = ?")
-        params.append(resolved.source)
-    _append_time_control_filter(conditions, params, resolved.time_control, "r.time_control")
-    normalized_rating = _normalize_filter(resolved.rating_bucket)
-    if normalized_rating:
-        conditions.append(_rating_bucket_clause(normalized_rating))
-    _append_date_range_filters(
-        conditions,
-        params,
-        resolved.start_date,
-        resolved.end_date,
-        "to_timestamp(r.last_timestamp_ms / 1000)",
-    )
-    if conditions:
-        sql += " WHERE " + " AND ".join(conditions)
+    resolved = _resolve_dashboard_query(query, filters=filters, **legacy)
+    sql, params = _build_games_filtered_query(resolved)
     sql += """
-        )
         SELECT
             (SELECT COUNT(*) FROM games_filtered) AS games,
             (
@@ -627,7 +608,23 @@ def fetch_opportunity_motif_counts(
     **legacy: object,
 ) -> dict[str, int]:
     """Return motif counts for opportunities in the dashboard range."""
-    resolved = _resolve_dashboard_query(query, filters=filters, legacy=legacy)
+    resolved = _resolve_dashboard_query(query, filters=filters, **legacy)
+    sql, params = _build_games_filtered_query(resolved)
+    sql += """
+        SELECT o.motif, COUNT(*) AS total
+        FROM opportunities o
+        INNER JOIN games_filtered r
+            ON o.game_id = r.game_id AND o.source = r.source
+        GROUP BY o.motif
+        ORDER BY o.motif
+    """
+    rows = _rows_to_dicts(conn.execute(sql, params))
+    return {str(row.get("motif")): int(row.get("total") or 0) for row in rows}
+
+
+def _build_games_filtered_query(
+    resolved: DashboardQuery,
+) -> tuple[str, list[object]]:
     sql = """
         WITH games_filtered AS (
             SELECT *
@@ -653,15 +650,8 @@ def fetch_opportunity_motif_counts(
         sql += " WHERE " + " AND ".join(conditions)
     sql += """
         )
-        SELECT o.motif, COUNT(*) AS total
-        FROM opportunities o
-        INNER JOIN games_filtered r
-            ON o.game_id = r.game_id AND o.source = r.source
-        GROUP BY o.motif
-        ORDER BY o.motif
     """
-    rows = _rows_to_dicts(conn.execute(sql, params))
-    return {str(row.get("motif")): int(row.get("total") or 0) for row in rows}
+    return sql, params
 
 
 def fetch_position_counts(
@@ -980,6 +970,105 @@ def _trend_date_from_row(row: Mapping[str, object]) -> datetime.date | None:
     return None
 
 
+def _count_result_types(items: list[dict[str, object]]) -> dict[str, int]:
+    counts = {
+        "found": 0,
+        "missed": 0,
+        "failed_attempt": 0,
+        "unclear": 0,
+    }
+    for item in items:
+        result = item.get("result")
+        if isinstance(result, str) and result in counts:
+            counts[result] += 1
+    return counts
+
+
+def _window_rate(values: list[int], idx: int, window_days: int) -> float:
+    start = max(0, idx - window_days + 1)
+    window = values[start : idx + 1]
+    return sum(window) / len(window) if window else 0.0
+
+
+def _sorted_trend_items(items: list[dict[str, object]]) -> list[dict[str, object]]:
+    return sorted(
+        items,
+        key=lambda item: (
+            item.get("last_timestamp_ms") or 0,
+            item.get("created_at") or datetime.min.replace(tzinfo=UTC),
+        ),
+    )
+
+
+def _result_flag(item: dict[str, object], expected: str) -> int:
+    return 1 if item.get("result") == expected else 0
+
+
+def _build_trend_row(
+    group: tuple[object, object, object, object],
+    item: dict[str, object],
+    window_days: int,
+    found_rate: float,
+    miss_rate: float,
+) -> tuple[object, ...]:
+    source, motif, rating_bucket, time_control = group
+    result = item.get("result")
+    return (
+        source,
+        "trend",
+        motif,
+        window_days,
+        item.get("trend_date"),
+        rating_bucket,
+        time_control,
+        1,
+        1 if result == "found" else 0,
+        1 if result == "missed" else 0,
+        1 if result == "failed_attempt" else 0,
+        1 if result == "unclear" else 0,
+        found_rate,
+        miss_rate,
+    )
+
+
+def _build_trend_rows_for_group(
+    group: tuple[object, object, object, object],
+    items: list[dict[str, object]],
+    window_days: int,
+) -> list[tuple[object, ...]]:
+    sorted_items = _sorted_trend_items(items)
+    results = [_result_flag(item, "found") for item in sorted_items]
+    misses = [_result_flag(item, "missed") for item in sorted_items]
+    metric_rows: list[tuple[object, ...]] = []
+    for idx, item in enumerate(sorted_items):
+        found_rate = _window_rate(results, idx, window_days)
+        miss_rate = _window_rate(misses, idx, window_days)
+        metric_rows.append(_build_trend_row(group, item, window_days, found_rate, miss_rate))
+    return metric_rows
+
+
+def _is_time_trouble_item(item: dict[str, object], threshold: int) -> bool:
+    clock_seconds = item.get("clock_seconds")
+    if clock_seconds is None:
+        return False
+    if not isinstance(clock_seconds, (int, float)):
+        return False
+    return clock_seconds <= threshold
+
+
+def _split_time_trouble_items(
+    items: list[dict[str, object]],
+    threshold: int,
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    trouble_items = [item for item in items if _is_time_trouble_item(item, threshold)]
+    safe_items = [item for item in items if item not in trouble_items]
+    return trouble_items, safe_items
+
+
+def _count_found(items: list[dict[str, object]]) -> int:
+    return sum(1 for item in items if item.get("result") == "found")
+
+
 def _build_motif_breakdowns(rows: list[dict[str, object]]) -> list[tuple[object, ...]]:
     grouped: dict[tuple[object, ...], list[dict[str, object]]] = defaultdict(list)
     for row in rows:
@@ -993,12 +1082,9 @@ def _build_motif_breakdowns(rows: list[dict[str, object]]) -> list[tuple[object,
     metric_rows: list[tuple[object, ...]] = []
     for (source, motif, rating_bucket, time_control), items in grouped.items():
         total = len(items)
-        found = sum(1 for row in items if row.get("result") == "found")
-        missed = sum(1 for row in items if row.get("result") == "missed")
-        failed_attempt = sum(1 for row in items if row.get("result") == "failed_attempt")
-        unclear = sum(1 for row in items if row.get("result") == "unclear")
-        found_rate = _coerce_metric_rate(None, found, total)
-        miss_rate = _coerce_metric_rate(None, missed, total)
+        counts = _count_result_types(items)
+        found_rate = _coerce_metric_rate(None, counts["found"], total)
+        miss_rate = _coerce_metric_rate(None, counts["missed"], total)
         metric_rows.append(
             (
                 source,
@@ -1009,10 +1095,10 @@ def _build_motif_breakdowns(rows: list[dict[str, object]]) -> list[tuple[object,
                 rating_bucket,
                 time_control,
                 total,
-                found,
-                missed,
-                failed_attempt,
-                unclear,
+                counts["found"],
+                counts["missed"],
+                counts["failed_attempt"],
+                counts["unclear"],
                 found_rate,
                 miss_rate,
             )
@@ -1036,39 +1122,13 @@ def _build_trend_rows(
         grouped[key].append(row)
     metric_rows: list[tuple[object, ...]] = []
     for (source, motif, rating_bucket, time_control), items in grouped.items():
-        sorted_items = sorted(
-            items,
-            key=lambda item: (
-                item.get("last_timestamp_ms") or 0,
-                item.get("created_at") or datetime.min.replace(tzinfo=UTC),
-            ),
-        )
-        results = [1 if item.get("result") == "found" else 0 for item in sorted_items]
-        misses = [1 if item.get("result") == "missed" else 0 for item in sorted_items]
-        for idx, item in enumerate(sorted_items):
-            window = results[max(0, idx - window_days + 1) : idx + 1]
-            miss_window = misses[max(0, idx - window_days + 1) : idx + 1]
-            found_rate = sum(window) / len(window) if window else 0.0
-            miss_rate = sum(miss_window) / len(miss_window) if miss_window else 0.0
-            result = item.get("result")
-            metric_rows.append(
-                (
-                    source,
-                    "trend",
-                    motif,
-                    window_days,
-                    item.get("trend_date"),
-                    rating_bucket,
-                    time_control,
-                    1,
-                    1 if result == "found" else 0,
-                    1 if result == "missed" else 0,
-                    1 if result == "failed_attempt" else 0,
-                    1 if result == "unclear" else 0,
-                    found_rate,
-                    miss_rate,
-                )
+        metric_rows.extend(
+            _build_trend_rows_for_group(
+                (source, motif, rating_bucket, time_control),
+                items=items,
+                window_days=window_days,
             )
+        )
     return metric_rows
 
 
@@ -1079,45 +1139,41 @@ def _build_time_trouble_rows(rows: list[dict[str, object]]) -> list[tuple[object
         grouped[key].append(row)
     metric_rows: list[tuple[object, ...]] = []
     for (source, time_control), items in grouped.items():
-        total = len(items)
-        found = sum(1 for item in items if item.get("result") == "found")
-        missed = sum(1 for item in items if item.get("result") == "missed")
-        failed_attempt = sum(1 for item in items if item.get("result") == "failed_attempt")
-        unclear = sum(1 for item in items if item.get("result") == "unclear")
-        miss_rate = _coerce_metric_rate(None, missed, total)
-        trouble_threshold = 30
-        trouble_items = [
-            item
-            for item in items
-            if isinstance(item.get("clock_seconds"), (int, float))
-            and item.get("clock_seconds") is not None
-            and item.get("clock_seconds") <= trouble_threshold
-        ]
-        safe_items = [item for item in items if item not in trouble_items]
-        trouble_found = sum(1 for item in trouble_items if item.get("result") == "found")
-        safe_found = sum(1 for item in safe_items if item.get("result") == "found")
-        trouble_rate = trouble_found / len(trouble_items) if trouble_items else 0.0
-        safe_rate = safe_found / len(safe_items) if safe_items else 0.0
-        found_rate = safe_rate - trouble_rate
-        metric_rows.append(
-            (
-                source,
-                "time_trouble_correlation",
-                None,
-                0,
-                None,
-                None,
-                time_control,
-                total,
-                found,
-                missed,
-                failed_attempt,
-                unclear,
-                found_rate,
-                miss_rate,
-            )
-        )
+        metric_rows.append(_build_time_trouble_row(source, time_control, items))
     return metric_rows
+
+
+def _build_time_trouble_row(
+    source: object,
+    time_control: object,
+    items: list[dict[str, object]],
+) -> tuple[object, ...]:
+    total = len(items)
+    counts = _count_result_types(items)
+    miss_rate = _coerce_metric_rate(None, counts["missed"], total)
+    trouble_threshold = 30
+    trouble_items, safe_items = _split_time_trouble_items(items, trouble_threshold)
+    trouble_found = _count_found(trouble_items)
+    safe_found = _count_found(safe_items)
+    trouble_rate = trouble_found / len(trouble_items) if trouble_items else 0.0
+    safe_rate = safe_found / len(safe_items) if safe_items else 0.0
+    found_rate = safe_rate - trouble_rate
+    return (
+        source,
+        "time_trouble_correlation",
+        None,
+        0,
+        None,
+        None,
+        time_control,
+        total,
+        counts["found"],
+        counts["missed"],
+        counts["failed_attempt"],
+        counts["unclear"],
+        found_rate,
+        miss_rate,
+    )
 
 
 def fetch_metrics(
@@ -1128,7 +1184,7 @@ def fetch_metrics(
     **legacy: object,
 ) -> list[dict[str, object]]:
     """Fetch metrics summary rows with optional filters."""
-    resolved = _resolve_dashboard_query(query, filters=filters, legacy=legacy)
+    resolved = _resolve_dashboard_query(query, filters=filters, **legacy)
     sql = "SELECT * FROM metrics_summary"
     params: list[object] = []
     conditions: list[str] = []
@@ -1153,21 +1209,25 @@ def fetch_metrics(
 
 def fetch_motif_stats(
     conn: duckdb.DuckDBPyConnection,
+    query: DashboardQuery | str | None = None,
     *,
-    source: str | None = None,
+    filters: DashboardQuery | None = None,
+    **legacy: object,
 ) -> list[dict[str, object]]:
     """Return motif breakdown metrics."""
-    rows = fetch_metrics(conn, source=source)
+    rows = fetch_metrics(conn, query, filters=filters, **legacy)
     return [row for row in rows if row.get("metric_type") == "motif_breakdown"]
 
 
 def fetch_trend_stats(
     conn: duckdb.DuckDBPyConnection,
+    query: DashboardQuery | str | None = None,
     *,
-    source: str | None = None,
+    filters: DashboardQuery | None = None,
+    **legacy: object,
 ) -> list[dict[str, object]]:
     """Return trend metrics rows."""
-    rows = fetch_metrics(conn, source=source)
+    rows = fetch_metrics(conn, query, filters=filters, **legacy)
     return [row for row in rows if row.get("metric_type") == "trend"]
 
 
@@ -1190,7 +1250,7 @@ def fetch_recent_games(
     user: str | None = None,
     **legacy: object,
 ) -> list[dict[str, object]]:
-    resolved = _resolve_dashboard_query(query, legacy=legacy)
+    resolved = _resolve_dashboard_query(query, **legacy)
     final_query, params = _build_recent_games_query(limit, resolved)
     rows = _rows_to_dicts(conn.execute(final_query, params))
     return [_format_recent_game_row(row, user) for row in rows]
@@ -1370,7 +1430,7 @@ def fetch_recent_positions(
     limit: int = 20,
     **legacy: object,
 ) -> list[dict[str, object]]:
-    resolved = _resolve_dashboard_query(query, legacy=legacy)
+    resolved = _resolve_dashboard_query(query, **legacy)
     normalized_rating = _normalize_filter(resolved.rating_bucket)
     sql = f"""
         WITH latest_pgns AS (
@@ -1415,7 +1475,7 @@ def fetch_recent_tactics(
     limit: int = 20,
     **legacy: object,
 ) -> list[dict[str, object]]:
-    resolved = _resolve_dashboard_query(query, legacy=legacy)
+    resolved = _resolve_dashboard_query(query, **legacy)
     sql, params = _build_recent_tactics_query(limit, resolved)
     return _rows_to_dicts(conn.execute(sql, params))
 
@@ -1792,5 +1852,10 @@ def fetch_practice_queue(
 
 def fetch_version(conn: duckdb.DuckDBPyConnection) -> int:
     """Fetch the latest metrics version."""
-    version_row = conn.execute("SELECT version FROM metrics_version").fetchone()
-    return int(version_row[0]) if version_row else 0
+    version_row = conn.execute("SELECT MAX(version) FROM metrics_version").fetchone()
+    if not version_row or version_row[0] is None:
+        return 0
+    return int(version_row[0])
+
+
+_VULTURE_USED = (SCHEMA_VERSION, _ensure_column, _coerce_metric_count)

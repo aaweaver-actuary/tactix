@@ -3,9 +3,9 @@
 import hashlib
 from pathlib import Path
 
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 
-logger = get_logger(__name__)
+logger = Logger(__name__)
 
 
 def verify_stockfish_checksum(path: Path, expected: str | None, mode: str = "warn") -> bool:

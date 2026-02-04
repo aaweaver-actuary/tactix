@@ -6,7 +6,7 @@ from tactix.chess_clients.base_chess_client import (
     ChessFetchRequest,
 )
 from tactix.config import Settings
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 
 
 class DummyClient(BaseChessClient):
@@ -23,9 +23,7 @@ class BaseChessClientTests(unittest.TestCase):
             checkpoint_path="/tmp/since.txt",
             metrics_version_file="/tmp/metrics.txt",
         )
-        self.context = BaseChessClientContext(
-            settings=self.settings, logger=get_logger("test")
-        )
+        self.context = BaseChessClientContext(settings=self.settings, logger=get_logger("test"))
 
     def test_build_game_row_uses_settings(self) -> None:
         client = DummyClient(self.context)

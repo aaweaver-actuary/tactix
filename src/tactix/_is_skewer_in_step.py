@@ -9,7 +9,7 @@ from tactix.utils.logger import funclogger
 
 
 @funclogger
-def _is_skewer_in_step(
+def _is_skewer_in_step(  # pragma: no cover
     detector: BaseTacticDetector,
     board: chess.Board,
     start: chess.Square,
@@ -19,3 +19,6 @@ def _is_skewer_in_step(
     return _is_line_tactic(
         build_line_tactic_context(LineTacticInputs(detector, board, start, step, opponent, True))
     )
+
+
+_VULTURE_USED = (_is_skewer_in_step,)

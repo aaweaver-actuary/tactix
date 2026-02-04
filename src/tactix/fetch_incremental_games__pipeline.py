@@ -6,7 +6,7 @@ from tactix.chess_clients.base_chess_client import BaseChessClient
 from tactix.config import Settings
 from tactix.fetch_chesscom_games__pipeline import _fetch_chesscom_games
 from tactix.fetch_lichess_games__pipeline import _fetch_lichess_games
-from tactix.pipeline_state__pipeline import FetchContext
+from tactix.FetchContext import FetchContext
 
 
 def _fetch_incremental_games(

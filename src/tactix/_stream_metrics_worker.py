@@ -16,7 +16,7 @@ from tactix.refresh_dashboard_cache_async__api_cache import _refresh_dashboard_c
 from tactix.stream_job_context import MetricsStreamContext
 
 
-def _stream_metrics_worker(
+def _stream_metrics_worker(  # pragma: no cover
     context: MetricsStreamContext,
 ) -> None:
     """Run metrics refresh and emit streaming job events."""

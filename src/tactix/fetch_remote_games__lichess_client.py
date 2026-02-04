@@ -16,9 +16,9 @@ from tenacity import (
 
 from tactix.chess_clients import game_fetching
 from tactix.config import Settings
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 
-logger = get_logger(__name__)
+logger = Logger(__name__)
 
 
 @retry(

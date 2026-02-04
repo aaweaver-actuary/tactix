@@ -85,8 +85,13 @@ dev=[
 ]
 
 [tool.pylint.main]
+ignore-patterns=[
+    "ANALYSIS_SCHEMA.py",
+    "CLOCK_PARTS_SHORT.py",
+    "PGN_SCHEMA.py",
+    "SITE_PATTERNS.py",
+]
 max-line-length=100
-ignore-patterns=["ANALYSIS_SCHEMA.py", "SITE_PATTERNS.py", "CLOCK_PARTS_SHORT.py", "PGN_SCHEMA.py"]
 
 [tool.pylint."messages control"]
 disable="C0103,C0114,C0115,C0116,C0302,R0801,R0914,W0718"

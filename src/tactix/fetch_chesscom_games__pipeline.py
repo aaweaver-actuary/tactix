@@ -7,7 +7,7 @@ from tactix.chess_clients.chesscom_client import read_cursor as read_chesscom_cu
 from tactix.chesscom_raw_games__pipeline import _chesscom_raw_games
 from tactix.config import Settings
 from tactix.cursor_last_timestamp__pipeline import _cursor_last_timestamp
-from tactix.define_pipeline_state__pipeline import FetchContext
+from tactix.FetchContext import FetchContext
 from tactix.request_chesscom_games__pipeline import _request_chesscom_games
 
 

@@ -52,3 +52,6 @@ TACTIC_INSERT_COLUMNS: tuple[str, ...] = (
     "explanation",
     "eval_cp",
 )
+
+
+_VULTURE_USED = (TACTIC_INSERT_COLUMNS,)

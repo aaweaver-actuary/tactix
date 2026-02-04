@@ -1,6 +1,7 @@
-"""Regular expression patterns for PGN site IDs."""
+"""Regular expression patterns for PGN site IDs.
 
-"""Legacy shim for PGN site patterns."""
+Legacy shim for PGN site patterns.
+"""
 
 # pylint: disable=invalid-name
 

@@ -1,6 +1,7 @@
-"""Schema name for Postgres analysis tables."""
+"""Schema name for Postgres analysis tables.
 
-"""Legacy shim for analysis schema constant."""
+Legacy shim for analysis schema constant.
+"""
 
 # pylint: disable=invalid-name
 

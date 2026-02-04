@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import chess
-
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.TacticContext import TacticContext
 

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import chess
-
 from tactix._has_pin_in_steps import _has_pin_in_steps
 from tactix._skewer_sources import _skewer_sources
 from tactix.BaseTacticDetector import BaseTacticDetector

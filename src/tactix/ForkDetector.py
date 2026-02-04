@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import chess
-
 from tactix._forks_meet_threshold import _forks_meet_threshold
 from tactix._is_fork_piece import _is_fork_piece
 from tactix.BaseTacticDetector import BaseTacticDetector

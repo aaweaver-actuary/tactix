@@ -21,63 +21,47 @@ class AnalysisRunInputs:
     progress: ProgressCallback | None
 
 
+class _AnalysisRunAccessors:
+    run: AnalysisRunInputs
+
+    @property
+    def positions(self) -> list[dict[str, object]]:
+        """Return the positions to analyze."""
+        return self.run.positions
+
+    @property
+    def resume_index(self) -> int:
+        """Return the resume index."""
+        return self.run.resume_index
+
+    @property
+    def analysis_signature(self) -> str:
+        """Return the analysis signature."""
+        return self.run.analysis_signature
+
+    @property
+    def progress(self) -> ProgressCallback | None:
+        """Return the progress callback."""
+        return self.run.progress
+
+
 @dataclass(frozen=True)
-class AnalysisRunContext:
+class AnalysisRunContext(_AnalysisRunAccessors):
     """Inputs for analysis runs that operate on stored positions."""
 
     conn: duckdb.DuckDBPyConnection
     settings: Settings
     run: AnalysisRunInputs
 
-    @property
-    def positions(self) -> list[dict[str, object]]:
-        """Return the positions to analyze."""
-        return self.run.positions
-
-    @property
-    def resume_index(self) -> int:
-        """Return the resume index."""
-        return self.run.resume_index
-
-    @property
-    def analysis_signature(self) -> str:
-        """Return the analysis signature."""
-        return self.run.analysis_signature
-
-    @property
-    def progress(self) -> ProgressCallback | None:
-        """Return the progress callback."""
-        return self.run.progress
-
 
 @dataclass(frozen=True)
-class AnalysisAndMetricsContext:
+class AnalysisAndMetricsContext(_AnalysisRunAccessors):
     """Inputs for analysis runs that also refresh metrics."""
 
     conn: duckdb.DuckDBPyConnection
     settings: Settings
     run: AnalysisRunInputs
     profile: str | None
-
-    @property
-    def positions(self) -> list[dict[str, object]]:
-        """Return the positions to analyze."""
-        return self.run.positions
-
-    @property
-    def resume_index(self) -> int:
-        """Return the resume index."""
-        return self.run.resume_index
-
-    @property
-    def analysis_signature(self) -> str:
-        """Return the analysis signature."""
-        return self.run.analysis_signature
-
-    @property
-    def progress(self) -> ProgressCallback | None:
-        """Return the progress callback."""
-        return self.run.progress
 
 
 @dataclass(frozen=True)

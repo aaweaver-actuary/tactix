@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 from tactix.chess_clients.base_chess_client import BaseChessClient
 from tactix.config import Settings
@@ -117,6 +118,10 @@ def _resolve_required_kwargs(
 
 def _collect_unexpected_kwargs(kwargs: dict[str, object], keys: set[str]) -> list[str]:
     return [name for name in keys if kwargs.get(name) is not None]
+
+
+_NO_GAMES_WINDOW_KEYS = {"fetch_context", "last_timestamp_value", "window_filtered"}
+_NO_GAMES_WINDOW_GAMES_KEYS = _NO_GAMES_WINDOW_KEYS | {"games"}
 
 
 def _resolve_daily_sync_totals(
@@ -440,7 +445,6 @@ def _resolve_no_games_window_context(
     last_timestamp_value: int | None,
     window_filtered: int | None,
 ) -> NoGamesWindowContext:
-    required_keys = {"fetch_context", "last_timestamp_value", "window_filtered"}
     if window is None:
         _resolve_required_kwargs(
             {
@@ -448,7 +452,7 @@ def _resolve_no_games_window_context(
                 "last_timestamp_value": last_timestamp_value,
                 "window_filtered": window_filtered,
             },
-            required_keys,
+            _NO_GAMES_WINDOW_KEYS,
         )
         return NoGamesWindowContext(
             fetch_context=fetch_context,
@@ -461,44 +465,37 @@ def _resolve_no_games_window_context(
             "last_timestamp_value": last_timestamp_value,
             "window_filtered": window_filtered,
         },
-        required_keys,
+        _NO_GAMES_WINDOW_KEYS,
     )
     if unexpected:
         raise TypeError(f"Unexpected keyword arguments: {', '.join(sorted(unexpected))}")
     return window
 
 
-@dataclass(frozen=True, init=False)
-class NoGamesPayloadContext:
-    """Payload context when no games are returned."""
+def _resolve_no_games_window_from_kwargs(
+    window: NoGamesWindowContext | None,
+    window_kwargs: dict[str, object],
+    *,
+    allowed_keys: set[str],
+) -> NoGamesWindowContext:
+    _validate_allowed_kwargs(window_kwargs, allowed_keys)
+    return _resolve_no_games_window_context(
+        window,
+        fetch_context=window_kwargs.get("fetch_context"),
+        last_timestamp_value=window_kwargs.get("last_timestamp_value"),
+        window_filtered=window_kwargs.get("window_filtered"),
+    )
 
-    settings: Settings
-    conn: object
-    backfill_mode: bool
+
+def _require_no_games_payload_games(window_kwargs: dict[str, object]) -> list[GameRow]:
+    games = window_kwargs.get("games")
+    if games is None:
+        raise TypeError("Missing required arguments: games")
+    return cast(list[GameRow], games)
+
+
+class _NoGamesWindowAccessors:
     window: NoGamesWindowContext
-
-    def __init__(
-        self,
-        settings: Settings,
-        conn: object,
-        backfill_mode: bool,
-        window: NoGamesWindowContext | None = None,
-        **window_kwargs: object,
-    ) -> None:
-        allowed_keys = {"fetch_context", "last_timestamp_value", "window_filtered"}
-        unknown = sorted(set(window_kwargs) - allowed_keys)
-        if unknown:
-            raise TypeError(f"Unexpected keyword arguments: {', '.join(unknown)}")
-        window = _resolve_no_games_window_context(
-            window,
-            fetch_context=window_kwargs.get("fetch_context"),
-            last_timestamp_value=window_kwargs.get("last_timestamp_value"),
-            window_filtered=window_kwargs.get("window_filtered"),
-        )
-        object.__setattr__(self, "settings", settings)
-        object.__setattr__(self, "conn", conn)
-        object.__setattr__(self, "backfill_mode", backfill_mode)
-        object.__setattr__(self, "window", window)
 
     @property
     def fetch_context(self) -> FetchContext:
@@ -517,7 +514,35 @@ class NoGamesPayloadContext:
 
 
 @dataclass(frozen=True, init=False)
-class NoGamesAfterDedupePayloadContext:
+class NoGamesPayloadContext(_NoGamesWindowAccessors):
+    """Payload context when no games are returned."""
+
+    settings: Settings
+    conn: object
+    backfill_mode: bool
+    window: NoGamesWindowContext
+
+    def __init__(
+        self,
+        settings: Settings,
+        conn: object,
+        backfill_mode: bool,
+        window: NoGamesWindowContext | None = None,
+        **window_kwargs: object,
+    ) -> None:
+        window = _resolve_no_games_window_from_kwargs(
+            window,
+            window_kwargs,
+            allowed_keys=_NO_GAMES_WINDOW_KEYS,
+        )
+        object.__setattr__(self, "settings", settings)
+        object.__setattr__(self, "conn", conn)
+        object.__setattr__(self, "backfill_mode", backfill_mode)
+        object.__setattr__(self, "window", window)
+
+
+@dataclass(frozen=True, init=False)
+class NoGamesAfterDedupePayloadContext(_NoGamesWindowAccessors):
     """Payload context when games vanish after de-dupe."""
 
     settings: Settings
@@ -534,18 +559,11 @@ class NoGamesAfterDedupePayloadContext:
         window: NoGamesWindowContext | None = None,
         **window_kwargs: object,
     ) -> None:
-        allowed_keys = {"fetch_context", "last_timestamp_value", "window_filtered", "games"}
-        unknown = sorted(set(window_kwargs) - allowed_keys)
-        if unknown:
-            raise TypeError(f"Unexpected keyword arguments: {', '.join(unknown)}")
-        games = window_kwargs.get("games")
-        if games is None:
-            raise TypeError("Missing required arguments: games")
-        window = _resolve_no_games_window_context(
+        games = _require_no_games_payload_games(window_kwargs)
+        window = _resolve_no_games_window_from_kwargs(
             window,
-            fetch_context=window_kwargs.get("fetch_context"),
-            last_timestamp_value=window_kwargs.get("last_timestamp_value"),
-            window_filtered=window_kwargs.get("window_filtered"),
+            window_kwargs,
+            allowed_keys=_NO_GAMES_WINDOW_GAMES_KEYS,
         )
         object.__setattr__(self, "settings", settings)
         object.__setattr__(self, "conn", conn)
@@ -553,24 +571,9 @@ class NoGamesAfterDedupePayloadContext:
         object.__setattr__(self, "games", games)
         object.__setattr__(self, "window", window)
 
-    @property
-    def fetch_context(self) -> FetchContext:
-        """Return the fetch context."""
-        return self.window.fetch_context
-
-    @property
-    def last_timestamp_value(self) -> int:
-        """Return the last timestamp value."""
-        return self.window.last_timestamp_value
-
-    @property
-    def window_filtered(self) -> int:
-        """Return the filtered window count."""
-        return self.window.window_filtered
-
 
 @dataclass(frozen=True, init=False)
-class NoGamesContext:
+class NoGamesContext(_NoGamesWindowAccessors):
     """Context for no-games handling."""
 
     settings: Settings
@@ -588,15 +591,10 @@ class NoGamesContext:
         **window_kwargs: object,
     ) -> None:
         backfill_mode = bool(window_kwargs.pop("backfill_mode", False))
-        allowed_keys = {"fetch_context", "last_timestamp_value", "window_filtered"}
-        unknown = sorted(set(window_kwargs) - allowed_keys)
-        if unknown:
-            raise TypeError(f"Unexpected keyword arguments: {', '.join(unknown)}")
-        window = _resolve_no_games_window_context(
+        window = _resolve_no_games_window_from_kwargs(
             window,
-            fetch_context=window_kwargs.get("fetch_context"),
-            last_timestamp_value=window_kwargs.get("last_timestamp_value"),
-            window_filtered=window_kwargs.get("window_filtered"),
+            window_kwargs,
+            allowed_keys=_NO_GAMES_WINDOW_KEYS,
         )
         object.__setattr__(self, "settings", settings)
         object.__setattr__(self, "conn", conn)
@@ -604,24 +602,9 @@ class NoGamesContext:
         object.__setattr__(self, "backfill_mode", backfill_mode)
         object.__setattr__(self, "window", window)
 
-    @property
-    def fetch_context(self) -> FetchContext:
-        """Return the fetch context."""
-        return self.window.fetch_context
-
-    @property
-    def last_timestamp_value(self) -> int:
-        """Return the last timestamp value."""
-        return self.window.last_timestamp_value
-
-    @property
-    def window_filtered(self) -> int:
-        """Return the filtered window count."""
-        return self.window.window_filtered
-
 
 @dataclass(frozen=True, init=False)
-class NoGamesAfterDedupeContext:
+class NoGamesAfterDedupeContext(_NoGamesWindowAccessors):
     """Context for handling no-games after de-dupe."""
 
     settings: Settings
@@ -640,18 +623,11 @@ class NoGamesAfterDedupeContext:
         **window_kwargs: object,
     ) -> None:
         backfill_mode = bool(window_kwargs.pop("backfill_mode", False))
-        allowed_keys = {"fetch_context", "last_timestamp_value", "window_filtered", "games"}
-        unknown = sorted(set(window_kwargs) - allowed_keys)
-        if unknown:
-            raise TypeError(f"Unexpected keyword arguments: {', '.join(unknown)}")
-        games = window_kwargs.get("games")
-        if games is None:
-            raise TypeError("Missing required arguments: games")
-        window = _resolve_no_games_window_context(
+        games = _require_no_games_payload_games(window_kwargs)
+        window = _resolve_no_games_window_from_kwargs(
             window,
-            fetch_context=window_kwargs.get("fetch_context"),
-            last_timestamp_value=window_kwargs.get("last_timestamp_value"),
-            window_filtered=window_kwargs.get("window_filtered"),
+            window_kwargs,
+            allowed_keys=_NO_GAMES_WINDOW_GAMES_KEYS,
         )
         object.__setattr__(self, "settings", settings)
         object.__setattr__(self, "conn", conn)
@@ -659,18 +635,3 @@ class NoGamesAfterDedupeContext:
         object.__setattr__(self, "backfill_mode", backfill_mode)
         object.__setattr__(self, "games", games)
         object.__setattr__(self, "window", window)
-
-    @property
-    def fetch_context(self) -> FetchContext:
-        """Return the fetch context."""
-        return self.window.fetch_context
-
-    @property
-    def last_timestamp_value(self) -> int:
-        """Return the last timestamp value."""
-        return self.window.last_timestamp_value
-
-    @property
-    def window_filtered(self) -> int:
-        """Return the filtered window count."""
-        return self.window.window_filtered

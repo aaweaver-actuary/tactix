@@ -24,3 +24,10 @@ Session summary (2026-02-05):
 
 Session summary (2026-02-04):
 - Fixed lint failures (E501, PLR0913) in PGN upsert helpers with small refactors.
+
+Session summary (2026-02-04):
+- Refactored duplicated analysis context accessors into `_AnalysisRunAccessors`.
+- Refactored no-games context initialization and window accessors into shared helpers/mixin.
+- Before→After map:
+	- AnalysisRunContext/AnalysisAndMetricsContext properties → `_AnalysisRunAccessors` mixin.
+	- NoGames* context window/games validation + accessors → `_resolve_no_games_window_from_kwargs`, `_require_no_games_payload_games`, `_NoGamesWindowAccessors`.

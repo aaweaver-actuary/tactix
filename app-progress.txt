@@ -52,3 +52,13 @@ Session summary (2026-02-04):
 	- *_chesscom_* helpers (cursor/pagination/rate limit/fixtures/archive) → `infra/clients/chesscom_client.py`.
 	- *_lichess_client.py helpers + game_fetching → `infra/clients/lichess_client.py`.
 	- pipeline client typing (`BaseChessClient`) → `ports.GameSourceClient`.
+
+Session summary (2026-02-04):
+- Consolidated job streaming into `src/tactix/job_stream.py` with `BackfillWindow` and `MetricsFilters` contexts.
+- Broke Airflow trigger cycle by moving `AirflowDailySyncTriggerContext` to `src/tactix/airflow_daily_sync_context.py`.
+- Moved legacy job stream modules into review-for-deletion/ for validation before removal.
+- Updated job stream tests and API trigger paths to the new context shape.
+- Tests run: `make check` (green).
+- Before→After map:
+	- stream_jobs__api / stream_job_* / streaming_response__job_stream → `job_stream.py`.
+	- Airflow trigger context → `airflow_daily_sync_context.py`.

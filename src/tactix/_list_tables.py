@@ -1,4 +1,4 @@
-from psycopg2.extensions import connection as PgConnection
+from psycopg2.extensions import connection as PgConnection  # noqa: N812
 
 
 def _list_tables(conn: PgConnection, schema: str) -> list[str]:

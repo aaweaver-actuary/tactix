@@ -1,3 +1,5 @@
+"""Coerce Lichess PGN payloads to text."""
+
 from __future__ import annotations
 
 

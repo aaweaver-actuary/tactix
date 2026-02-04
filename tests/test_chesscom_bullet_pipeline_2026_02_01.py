@@ -5,13 +5,18 @@
 
 import shutil
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 import chess
 import pytest
 
 from tactix.config import Settings
-from tactix.db.duckdb_store import get_connection
+from tactix.db.duckdb_store import (
+    fetch_practice_queue,
+    fetch_recent_games,
+    get_connection,
+)
 from tactix.define_chess_game__chess_game import ChessGame
 from tactix.pgn_utils import extract_last_timestamp_ms, split_pgn_chunks
 from tactix.pipeline import run_daily_game_sync
@@ -174,7 +179,14 @@ def _is_attacked_by(
 
 
 @pytest.fixture(scope="module")
-def games_data() -> tuple[ChessGame, ChessGame]:
+def pipeline_db_path() -> Path:
+    """DuckDB path produced by the 2026-02-01 chess.com bullet fixture pipeline."""
+    _ensure_stockfish_available()
+    return _run_fixture_pipeline()
+
+
+@pytest.fixture(scope="module")
+def games_data(pipeline_db_path: Path) -> tuple[ChessGame, ChessGame]:
     """ChessGame objects:
     1. Extracted from Airflow pipeline for
     2. chess.com
@@ -184,9 +196,7 @@ def games_data() -> tuple[ChessGame, ChessGame]:
     Importantly, these games are identical to those in tests/fixtures/chesscom_2_bullet_games.pgn,
     but are obtained via the actual data pipeline to ensure end-to-end integrity.
     """
-    _ensure_stockfish_available()
-    db_path = _run_fixture_pipeline()
-    return _load_games_from_db(db_path)
+    return _load_games_from_db(pipeline_db_path)
 
 
 def test_games_are_ingested_at_all(games_data):
@@ -249,3 +259,46 @@ def test_losing_game_user_played_6_e4_hanging_a_knight_on_c6(games_data):
     board, move = _board_after_user_move_for_result(games_data, USER, "loss", 6)
     assert move.uci() == "e5e4"
     assert _is_attacked_by(board, chess.C6, chess.WHITE, chess.D5)
+
+
+def test_canonical_practice_queue_contains_two_missed_hanging_pieces(
+    pipeline_db_path: Path,
+) -> None:
+    conn = get_connection(pipeline_db_path)
+    start_date = datetime(2026, 2, 1, tzinfo=timezone.utc)
+    end_date = datetime(2026, 2, 1, 23, 59, 59, tzinfo=timezone.utc)
+    try:
+        recent_games = fetch_recent_games(
+            conn,
+            source="chesscom",
+            time_control="bullet",
+            start_date=start_date,
+            end_date=end_date,
+        )
+        assert len(recent_games) == 2
+        losses = [row for row in recent_games if row.get("result") == "loss"]
+        assert len(losses) == 1
+        loss_game_id = losses[0].get("game_id")
+        assert loss_game_id
+
+        practice_queue = fetch_practice_queue(
+            conn,
+            source="chesscom",
+            include_failed_attempt=False,
+            limit=10,
+        )
+        assert len(practice_queue) == 2
+        assert {row.get("game_id") for row in practice_queue} == {loss_game_id}
+        assert all(row.get("motif") == "hanging_piece" for row in practice_queue)
+        assert all(row.get("result") == "missed" for row in practice_queue)
+        assert len({row.get("position_id") for row in practice_queue}) == 2
+
+        explanations = conn.execute(
+            "SELECT explanation FROM tactics WHERE game_id = ?",
+            [loss_game_id],
+        ).fetchall()
+        lowered = [row[0].lower() for row in explanations if row[0]]
+        for label in ("knight", "bishop"):
+            assert any(label in text for text in lowered)
+    finally:
+        conn.close()

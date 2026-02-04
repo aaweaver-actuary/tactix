@@ -1,3 +1,5 @@
+"""Compute thresholds for failed attempt eval swings."""
+
 from tactix.analyze_tactics__positions import (
     _DISCOVERED_ATTACK_FAILED_ATTEMPT_SWING_THRESHOLD,
     _DISCOVERED_CHECK_FAILED_ATTEMPT_SWING_THRESHOLD,
@@ -14,6 +16,7 @@ def _compute_eval__failed_attempt_threshold(
     motif: str,
     settings: Settings | None,
 ) -> int | None:
+    """Return the failed-attempt threshold for the given motif."""
     del settings
     thresholds = {
         "pin": _PIN_FAILED_ATTEMPT_SWING_THRESHOLD,

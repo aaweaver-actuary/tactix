@@ -1,3 +1,7 @@
+"""Define default configuration values and environment aliases."""
+
+# pylint: disable=fixme
+
 from __future__ import annotations
 
 import os

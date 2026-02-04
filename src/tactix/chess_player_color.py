@@ -1,3 +1,5 @@
+"""Chess player color helpers and result mappings."""
+
 from __future__ import annotations
 
 from enum import Enum
@@ -40,6 +42,7 @@ class ChessPlayerColor(Enum):
 
     @classmethod
     def from_str(cls, color_str: str) -> ChessPlayerColor:
+        """Parse a color string into a `ChessPlayerColor`."""
         color_str = color_str.lower()
         if color_str in ["white", "w"]:
             return cls.WHITE
@@ -49,14 +52,17 @@ class ChessPlayerColor(Enum):
 
     @classmethod
     def from_fen_char(cls, fen_char: str) -> ChessPlayerColor:
+        """Infer the color from a FEN piece character."""
         if fen_char.isupper():
             return cls.WHITE
         return cls.BLACK
 
     def is_white(self) -> bool:
+        """Return True when this color is white."""
         return self == ChessPlayerColor.WHITE
 
     def is_black(self) -> bool:
+        """Return True when this color is black."""
         return self == ChessPlayerColor.BLACK
 
     @property
@@ -87,6 +93,7 @@ class ChessPlayerColor(Enum):
         }
 
     def result_mapping(self) -> dict[str, ChessGameResult]:
+        """Return the result mapping adjusted for the player's color."""
         if self.is_white():
             return self._result_mapping_if_white
         return self._result_mapping_if_black

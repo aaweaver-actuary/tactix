@@ -1,8 +1,11 @@
+"""Insert analysis tactic rows into Postgres."""
+
 from tactix.ANALYSIS_SCHEMA import ANALYSIS_SCHEMA
 from tactix.base_db_store import TacticInsertPlan
 
 
 def _insert_analysis_tactic(cur, tactic_plan: TacticInsertPlan) -> int:
+    """Insert a tactic row and return its id."""
     cur.execute(
         f"""
         INSERT INTO {ANALYSIS_SCHEMA}.tactics (

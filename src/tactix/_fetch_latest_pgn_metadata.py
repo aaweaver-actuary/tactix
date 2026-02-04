@@ -1,3 +1,5 @@
+"""Fetch the latest PGN metadata for a game."""
+
 from tactix.PGN_SCHEMA import PGN_SCHEMA
 
 
@@ -6,6 +8,7 @@ def _fetch_latest_pgn_metadata(
     game_id: str,
     source: str,
 ) -> tuple[str | None, int]:
+    """Return latest PGN hash/version for a game and source."""
     cur.execute(
         f"""
         SELECT pgn_hash, pgn_version

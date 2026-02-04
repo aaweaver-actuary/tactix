@@ -8,4 +8,4 @@ def _is_unclear_hanging_piece_candidate(
         return False
     if user_move_uci == best_move:
         return False
-    return result in {"missed", "failed_attempt", "unclear"}
+    return result in {"failed_attempt", "unclear"}

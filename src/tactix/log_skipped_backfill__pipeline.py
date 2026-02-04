@@ -1,3 +1,5 @@
+"""Log when backfill games are skipped."""
+
 from __future__ import annotations
 
 from tactix.config import Settings

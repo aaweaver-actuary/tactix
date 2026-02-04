@@ -8,7 +8,7 @@ from tactix.config import get_settings
 from tactix.PostgresStore import PostgresStore
 
 
-def postgres_analysis(limit: int = Query(10, ge=1, le=200)) -> dict[str, object]:
+def postgres_analysis(limit: int = Query(10, ge=1, le=200)) -> dict[str, object]:  # noqa: B008
     settings = get_settings()
     store = PostgresStore(BaseDbStoreContext(settings=settings, logger=logger))
     tactics = store.fetch_analysis_tactics(limit=limit)

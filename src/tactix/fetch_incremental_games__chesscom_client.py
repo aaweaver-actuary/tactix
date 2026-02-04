@@ -1,3 +1,5 @@
+"""Incremental fetch helpers for Chess.com games."""
+
 from __future__ import annotations
 
 from tactix.build_client_for_settings__chesscom_client import _client_for_settings

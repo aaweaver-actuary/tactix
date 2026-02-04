@@ -1,3 +1,5 @@
+"""Batch analysis helpers for chess positions."""
+
 from collections.abc import Iterable
 
 from tactix import analyze_tactics__positions as tactics_impl
@@ -9,6 +11,7 @@ def analyze_positions(
     positions: Iterable[dict[str, object]],
     settings: Settings,
 ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    """Analyze a batch of positions and return tactics/outcomes rows."""
     tactics_rows: list[dict[str, object]] = []
     outcomes_rows: list[dict[str, object]] = []
 

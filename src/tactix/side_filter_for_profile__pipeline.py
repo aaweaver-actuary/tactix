@@ -1,3 +1,5 @@
+"""Resolve side-to-move filters for a profile."""
+
 from __future__ import annotations
 
 

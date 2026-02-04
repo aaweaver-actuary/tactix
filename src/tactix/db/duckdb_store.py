@@ -1,17 +1,30 @@
+"""DuckDB-backed data store implementation."""
+
+# pylint: disable=too-many-lines,missing-function-docstring,missing-class-docstring
+# pylint: disable=fixme,broad-exception-caught
+
 from __future__ import annotations
 
 import os
 from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
 from datetime import UTC, datetime
+from io import StringIO
 from pathlib import Path
 from typing import cast
 
+import chess.pgn
 import duckdb
 
+from tactix._get_game_result_for_user_from_pgn_headers import (
+    _get_game_result_for_user_from_pgn_headers,
+)
 from tactix.base_db_store import BaseDbStore, BaseDbStoreContext, PgnUpsertPlan
+from tactix.dashboard_query import DashboardQuery, resolve_dashboard_query
 from tactix.db.raw_pgn_summary import build_raw_pgn_summary_sources
 from tactix.extract_pgn_metadata import extract_pgn_metadata
 from tactix.format_tactics__explanation import format_tactic_explanation
+from tactix.PgnUpsertInputs import PgnUpsertInputs
 from tactix.utils.logger import get_logger
 from tactix.utils.to_int import to_int
 
@@ -148,54 +161,61 @@ class DuckDbStore(BaseDbStore):
 
     def get_dashboard_payload(
         self,
-        source: str | None = None,
-        motif: str | None = None,
-        rating_bucket: str | None = None,
-        time_control: str | None = None,
-        start_date: datetime | None = None,
-        end_date: datetime | None = None,
+        query: DashboardQuery | str | None = None,
+        *,
+        filters: DashboardQuery | None = None,
+        **legacy: object,
     ) -> dict[str, object]:
+        query = _resolve_dashboard_query(query, filters=filters, legacy=legacy)
         conn = get_connection(self._db_path)
         init_schema(conn)
-        active_source = None if source in (None, "all") else source
+        active_source = None if query.source in (None, "all") else query.source
         response_source = "all" if active_source is None else active_source
         return {
             "source": response_source,
             "user": self.settings.user,
             "metrics": fetch_metrics(
                 conn,
-                source=active_source,
-                motif=motif,
-                rating_bucket=rating_bucket,
-                time_control=time_control,
-                start_date=start_date,
-                end_date=end_date,
+                DashboardQuery(
+                    source=active_source,
+                    motif=query.motif,
+                    rating_bucket=query.rating_bucket,
+                    time_control=query.time_control,
+                    start_date=query.start_date,
+                    end_date=query.end_date,
+                ),
             ),
             "recent_games": fetch_recent_games(
                 conn,
-                source=active_source,
-                rating_bucket=rating_bucket,
-                time_control=time_control,
-                start_date=start_date,
-                end_date=end_date,
+                DashboardQuery(
+                    source=active_source,
+                    rating_bucket=query.rating_bucket,
+                    time_control=query.time_control,
+                    start_date=query.start_date,
+                    end_date=query.end_date,
+                ),
                 user=self.settings.user,
             ),
             "positions": fetch_recent_positions(
                 conn,
-                source=active_source,
-                rating_bucket=rating_bucket,
-                time_control=time_control,
-                start_date=start_date,
-                end_date=end_date,
+                DashboardQuery(
+                    source=active_source,
+                    rating_bucket=query.rating_bucket,
+                    time_control=query.time_control,
+                    start_date=query.start_date,
+                    end_date=query.end_date,
+                ),
             ),
             "tactics": fetch_recent_tactics(
                 conn,
-                source=active_source,
-                motif=motif,
-                rating_bucket=rating_bucket,
-                time_control=time_control,
-                start_date=start_date,
-                end_date=end_date,
+                DashboardQuery(
+                    source=active_source,
+                    motif=query.motif,
+                    rating_bucket=query.rating_bucket,
+                    time_control=query.time_control,
+                    start_date=query.start_date,
+                    end_date=query.end_date,
+                ),
             ),
             "metrics_version": fetch_version(conn),
         }
@@ -489,7 +509,16 @@ def _upsert_raw_pgn_rows(
         if plan is None:
             continue
         next_id += 1
-        _insert_raw_pgn_plan(conn, next_id, game_id, source, row, plan)
+        _insert_raw_pgn_plan(
+            conn,
+            RawPgnInsertInputs(
+                raw_pgn_id=next_id,
+                game_id=game_id,
+                source=source,
+                row=row,
+                plan=plan,
+            ),
+        )
         latest_cache[(game_id, source)] = (plan.pgn_hash, plan.pgn_version)
         inserted += 1
     return inserted
@@ -539,26 +568,33 @@ def _build_raw_pgn_upsert_plan(
         latest_cache,
     )
     plan = BaseDbStore.build_pgn_upsert_plan(
-        pgn_text=pgn_text,
-        user=str(row["user"]),
-        latest_hash=latest_hash,
-        latest_version=latest_version,
-        fetched_at=cast(datetime | None, row.get("fetched_at")),
-        last_timestamp_ms=cast(int, row.get("last_timestamp_ms", 0)),
-        cursor=row.get("cursor"),
+        PgnUpsertInputs(
+            pgn_text=pgn_text,
+            user=str(row["user"]),
+            latest_hash=latest_hash,
+            latest_version=latest_version,
+            fetched_at=cast(datetime | None, row.get("fetched_at")),
+            last_timestamp_ms=cast(int, row.get("last_timestamp_ms", 0)),
+            cursor=row.get("cursor"),
+        )
     )
     if plan is None:
         latest_cache[(game_id, source)] = (latest_hash, latest_version)
     return plan
 
 
+@dataclass(frozen=True)
+class RawPgnInsertInputs:
+    raw_pgn_id: int
+    game_id: str
+    source: str
+    row: Mapping[str, object]
+    plan: PgnUpsertPlan
+
+
 def _insert_raw_pgn_plan(
     conn: duckdb.DuckDBPyConnection,
-    raw_pgn_id: int,
-    game_id: str,
-    source: str,
-    row: Mapping[str, object],
-    plan: PgnUpsertPlan,
+    inputs: RawPgnInsertInputs,
 ) -> None:
     conn.execute(
         """
@@ -580,19 +616,19 @@ def _insert_raw_pgn_plan(
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            raw_pgn_id,
-            game_id,
-            row["user"],
-            source,
-            plan.fetched_at,
-            plan.pgn_text,
-            plan.pgn_hash,
-            plan.pgn_version,
-            plan.metadata.get("user_rating"),
-            plan.metadata.get("time_control"),
-            plan.ingested_at,
-            plan.last_timestamp_ms,
-            plan.cursor,
+            inputs.raw_pgn_id,
+            inputs.game_id,
+            inputs.row["user"],
+            inputs.source,
+            inputs.plan.fetched_at,
+            inputs.plan.pgn_text,
+            inputs.plan.pgn_hash,
+            inputs.plan.pgn_version,
+            inputs.plan.metadata.get("user_rating"),
+            inputs.plan.metadata.get("time_control"),
+            inputs.plan.ingested_at,
+            inputs.plan.last_timestamp_ms,
+            inputs.plan.cursor,
         ),
     )
 
@@ -1426,6 +1462,42 @@ def _normalize_filter(value: str | None) -> str | None:
     return trimmed
 
 
+def _time_control_class_sql(column: str) -> str:
+    return f"""
+        CASE
+            WHEN {column} IS NULL THEN 'unknown'
+            WHEN lower({column}) IN ('bullet', 'blitz', 'rapid', 'classical', 'correspondence')
+                THEN lower({column})
+            WHEN lower({column}) = 'daily' THEN 'correspondence'
+            WHEN try_cast(split_part({column}, '+', 1) AS INTEGER) <= 180 THEN 'bullet'
+            WHEN try_cast(split_part({column}, '+', 1) AS INTEGER) <= 600 THEN 'blitz'
+            WHEN try_cast(split_part({column}, '+', 1) AS INTEGER) <= 1800 THEN 'rapid'
+            WHEN try_cast(split_part({column}, '+', 1) AS INTEGER) <= 7200 THEN 'classical'
+            ELSE 'correspondence'
+        END
+    """
+
+
+def _append_time_control_filter(
+    conditions: list[str],
+    params: list[object],
+    time_control: str | None,
+    column: str,
+) -> None:
+    normalized = _normalize_filter(time_control)
+    if normalized is None:
+        return
+    normalized = normalized.lower()
+    if normalized == "daily":
+        normalized = "correspondence"
+    if normalized in {"bullet", "blitz", "rapid", "classical", "correspondence"}:
+        conditions.append(f"{_time_control_class_sql(column)} = ?")
+        params.append(normalized)
+        return
+    conditions.append(f"lower({column}) = ?")
+    params.append(normalized)
+
+
 def _append_date_range_filters(
     conditions: list[str],
     params: list[object],
@@ -1472,19 +1544,13 @@ def _build_trend_date_filters(
 
 
 def _build_metrics_filters(
-    source: str | None,
-    motif: str | None,
-    rating_bucket: str | None,
-    time_control: str | None,
-    start_date: datetime | None,
-    end_date: datetime | None,
+    query: DashboardQuery,
 ) -> tuple[str, list[object]]:
-    normalized_motif = _normalize_filter(motif)
-    normalized_rating = _normalize_filter(rating_bucket)
-    normalized_time = _normalize_filter(time_control)
+    normalized_motif = _normalize_filter(query.motif)
+    normalized_rating = _normalize_filter(query.rating_bucket)
     params: list[object] = []
     conditions: list[str] = []
-    _append_optional_filter(conditions, params, "source = ?", source)
+    _append_optional_filter(conditions, params, "source = ?", query.source)
     _append_optional_filter(conditions, params, "motif = ?", normalized_motif)
     _append_optional_filter(
         conditions,
@@ -1492,13 +1558,8 @@ def _build_metrics_filters(
         "rating_bucket = ?",
         normalized_rating,
     )
-    _append_optional_filter(
-        conditions,
-        params,
-        "COALESCE(time_control, 'unknown') = ?",
-        normalized_time,
-    )
-    date_filters = _build_trend_date_filters(start_date, end_date, params)
+    _append_time_control_filter(conditions, params, query.time_control, "time_control")
+    date_filters = _build_trend_date_filters(query.start_date, query.end_date, params)
     if date_filters:
         conditions.append(f"(metric_type != 'trend' OR ({' AND '.join(date_filters)}))")
     where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
@@ -1519,43 +1580,32 @@ def _rating_bucket_clause(bucket: str) -> str:
     return _RATING_BUCKET_CLAUSES.get(bucket, "1 = 1")
 
 
+def _resolve_dashboard_query(
+    query: DashboardQuery | str | None,
+    *,
+    filters: DashboardQuery | None = None,
+    legacy: dict[str, object] | None = None,
+) -> DashboardQuery:
+    return resolve_dashboard_query(query, filters=filters, **(legacy or {}))
+
+
 def fetch_metrics(
     conn: duckdb.DuckDBPyConnection,
-    source: str | None = None,
-    motif: str | None = None,
-    rating_bucket: str | None = None,
-    time_control: str | None = None,
-    start_date: datetime | None = None,
-    end_date: datetime | None = None,
+    query: DashboardQuery | str | None = None,
+    **legacy: object,
 ) -> list[dict[str, object]]:
-    where_clause, params = _build_metrics_filters(
-        source,
-        motif,
-        rating_bucket,
-        time_control,
-        start_date,
-        end_date,
-    )
-    query = "SELECT * FROM metrics_summary" + where_clause
-    return _rows_to_dicts(conn.execute(query, params))
+    resolved = _resolve_dashboard_query(query, legacy=legacy)
+    where_clause, params = _build_metrics_filters(resolved)
+    query_sql = "SELECT * FROM metrics_summary" + where_clause
+    return _rows_to_dicts(conn.execute(query_sql, params))
 
 
 def fetch_motif_stats(
     conn: duckdb.DuckDBPyConnection,
-    source: str | None = None,
-    rating_bucket: str | None = None,
-    time_control: str | None = None,
-    start_date: datetime | None = None,
-    end_date: datetime | None = None,
+    query: DashboardQuery | str | None = None,
+    **legacy: object,
 ) -> list[dict[str, object]]:
-    rows = fetch_metrics(
-        conn,
-        source=source,
-        rating_bucket=rating_bucket,
-        time_control=time_control,
-        start_date=start_date,
-        end_date=end_date,
-    )
+    rows = fetch_metrics(conn, query, **legacy)
     return [
         _coerce_metrics_row__stats(row)
         for row in rows
@@ -1565,20 +1615,10 @@ def fetch_motif_stats(
 
 def fetch_trend_stats(
     conn: duckdb.DuckDBPyConnection,
-    source: str | None = None,
-    rating_bucket: str | None = None,
-    time_control: str | None = None,
-    start_date: datetime | None = None,
-    end_date: datetime | None = None,
+    query: DashboardQuery | str | None = None,
+    **legacy: object,
 ) -> list[dict[str, object]]:
-    rows = fetch_metrics(
-        conn,
-        source=source,
-        rating_bucket=rating_bucket,
-        time_control=time_control,
-        start_date=start_date,
-        end_date=end_date,
-    )
+    rows = fetch_metrics(conn, query, **legacy)
     return [_coerce_metrics_row__stats(row) for row in rows if row.get("metric_type") == "trend"]
 
 
@@ -1619,37 +1659,24 @@ def _coerce_metric_rate(value: object, numerator: int, denominator: int) -> floa
 
 def fetch_recent_games(
     conn: duckdb.DuckDBPyConnection,
+    query: DashboardQuery | str | None = None,
+    *,
     limit: int = 20,
-    source: str | None = None,
-    rating_bucket: str | None = None,
-    time_control: str | None = None,
-    start_date: datetime | None = None,
-    end_date: datetime | None = None,
     user: str | None = None,
+    **legacy: object,
 ) -> list[dict[str, object]]:
-    final_query, params = _build_recent_games_query(
-        limit,
-        source,
-        rating_bucket,
-        time_control,
-        start_date,
-        end_date,
-    )
+    resolved = _resolve_dashboard_query(query, legacy=legacy)
+    final_query, params = _build_recent_games_query(limit, resolved)
     rows = _rows_to_dicts(conn.execute(final_query, params))
     return [_format_recent_game_row(row, user) for row in rows]
 
 
 def _build_recent_games_query(
     limit: int,
-    source: str | None,
-    rating_bucket: str | None,
-    time_control: str | None,
-    start_date: datetime | None,
-    end_date: datetime | None,
+    query: DashboardQuery,
 ) -> tuple[str, list[object]]:
-    normalized_rating = _normalize_filter(rating_bucket)
-    normalized_time = _normalize_filter(time_control)
-    query = """
+    normalized_rating = _normalize_filter(query.rating_bucket)
+    sql = """
         WITH latest_pgns AS (
             SELECT * EXCLUDE (rn)
             FROM (
@@ -1676,32 +1703,30 @@ def _build_recent_games_query(
     """
     params: list[object] = []
     conditions: list[str] = []
-    if normalized_time:
-        conditions.append("COALESCE(r.time_control, 'unknown') = ?")
-        params.append(normalized_time)
+    _append_time_control_filter(conditions, params, query.time_control, "r.time_control")
     if normalized_rating:
         conditions.append(_rating_bucket_clause(normalized_rating))
     _append_date_range_filters(
         conditions,
         params,
-        start_date,
-        end_date,
+        query.start_date,
+        query.end_date,
         "to_timestamp(r.last_timestamp_ms / 1000)",
     )
     if conditions:
-        query += " WHERE " + " AND ".join(conditions)
-    query += "\n        )\n    "
-    if source:
-        params.append(source)
+        sql += " WHERE " + " AND ".join(conditions)
+    sql += "\n        )\n    "
+    if query.source:
+        params.append(query.source)
         final_query = (
-            query
+            sql
             + "SELECT * FROM filtered WHERE source = ? "
             + "ORDER BY last_timestamp_ms DESC, game_id LIMIT ?"
         )
         params.append(limit)
         return final_query, params
     final_query = (
-        query
+        sql
         + """
         , ranked AS (
             SELECT
@@ -1766,14 +1791,38 @@ def _resolve_played_at(
 
 def _format_recent_game_row(row: Mapping[str, object], user: str | None) -> dict[str, object]:
     raw_user = _resolve_recent_game_user(row, user)
-    metadata = extract_pgn_metadata(str(row.get("pgn") or ""), raw_user)
+    pgn_text = str(row.get("pgn") or "")
+    metadata = extract_pgn_metadata(pgn_text, raw_user)
     opponent, user_color = _resolve_opponent_and_color(
         raw_user.lower(),
         metadata.get("white_player"),
         metadata.get("black_player"),
     )
     played_at = _resolve_played_at(metadata, row)
-    return _recent_game_payload(row, metadata, opponent, user_color, played_at)
+    result = _resolve_recent_game_result(pgn_text, raw_user, metadata.get("result"))
+    return _recent_game_payload(
+        row,
+        {**metadata, "result": result},
+        opponent,
+        user_color,
+        played_at,
+    )
+
+
+def _resolve_recent_game_result(
+    pgn_text: str,
+    user: str,
+    fallback: object,
+) -> object:
+    if not pgn_text.strip().startswith("["):
+        return fallback
+    try:
+        headers = chess.pgn.read_headers(StringIO(pgn_text))
+        if headers is None:
+            return fallback
+        return str(_get_game_result_for_user_from_pgn_headers(headers, user))
+    except Exception:  # noqa: BLE001
+        return fallback
 
 
 def _resolve_recent_game_user(row: Mapping[str, object], user: str | None) -> str:
@@ -1800,16 +1849,14 @@ def _recent_game_payload(
 
 def fetch_recent_positions(
     conn: duckdb.DuckDBPyConnection,
+    query: DashboardQuery | str | None = None,
+    *,
     limit: int = 20,
-    source: str | None = None,
-    rating_bucket: str | None = None,
-    time_control: str | None = None,
-    start_date: datetime | None = None,
-    end_date: datetime | None = None,
+    **legacy: object,
 ) -> list[dict[str, object]]:
-    normalized_rating = _normalize_filter(rating_bucket)
-    normalized_time = _normalize_filter(time_control)
-    query = """
+    resolved = _resolve_dashboard_query(query, legacy=legacy)
+    normalized_rating = _normalize_filter(resolved.rating_bucket)
+    sql = """
         WITH latest_pgns AS (
             SELECT * EXCLUDE (rn)
             FROM (
@@ -1829,64 +1876,51 @@ def fetch_recent_positions(
     """
     params: list[object] = []
     conditions: list[str] = []
-    if source:
+    if resolved.source:
         conditions.append("p.source = ?")
-        params.append(source)
-    if normalized_time:
-        conditions.append("COALESCE(r.time_control, 'unknown') = ?")
-        params.append(normalized_time)
+        params.append(resolved.source)
+    _append_time_control_filter(
+        conditions,
+        params,
+        resolved.time_control,
+        "r.time_control",
+    )
     if normalized_rating:
         conditions.append(_rating_bucket_clause(normalized_rating))
     _append_date_range_filters(
         conditions,
         params,
-        start_date,
-        end_date,
+        resolved.start_date,
+        resolved.end_date,
         "p.created_at",
     )
     if conditions:
-        query += " WHERE " + " AND ".join(conditions)
-    query += " ORDER BY p.created_at DESC LIMIT ?"
+        sql += " WHERE " + " AND ".join(conditions)
+    sql += " ORDER BY p.created_at DESC LIMIT ?"
     params.append(limit)
-    result = conn.execute(query, params)
+    result = conn.execute(sql, params)
     return _rows_to_dicts(result)
 
 
 def fetch_recent_tactics(
     conn: duckdb.DuckDBPyConnection,
+    query: DashboardQuery | str | None = None,
+    *,
     limit: int = 20,
-    source: str | None = None,
-    motif: str | None = None,
-    rating_bucket: str | None = None,
-    time_control: str | None = None,
-    start_date: datetime | None = None,
-    end_date: datetime | None = None,
+    **legacy: object,
 ) -> list[dict[str, object]]:
-    query, params = _build_recent_tactics_query(
-        limit,
-        source,
-        motif,
-        rating_bucket,
-        time_control,
-        start_date,
-        end_date,
-    )
-    return _rows_to_dicts(conn.execute(query, params))
+    resolved = _resolve_dashboard_query(query, legacy=legacy)
+    sql, params = _build_recent_tactics_query(limit, resolved)
+    return _rows_to_dicts(conn.execute(sql, params))
 
 
 def _build_recent_tactics_query(
     limit: int,
-    source: str | None,
-    motif: str | None,
-    rating_bucket: str | None,
-    time_control: str | None,
-    start_date: datetime | None,
-    end_date: datetime | None,
+    query: DashboardQuery,
 ) -> tuple[str, list[object]]:
-    normalized_motif = _normalize_filter(motif)
-    normalized_rating = _normalize_filter(rating_bucket)
-    normalized_time = _normalize_filter(time_control)
-    query = """
+    normalized_motif = _normalize_filter(query.motif)
+    normalized_rating = _normalize_filter(query.rating_bucket)
+    sql = """
         WITH latest_pgns AS (
             SELECT * EXCLUDE (rn)
             FROM (
@@ -1911,45 +1945,34 @@ def _build_recent_tactics_query(
     _append_recent_tactics_filters(
         conditions,
         params,
-        source,
+        query,
         normalized_motif,
-        normalized_time,
         normalized_rating,
-        start_date,
-        end_date,
     )
     if conditions:
-        query += " WHERE " + " AND ".join(conditions)
-    query += " ORDER BY t.created_at DESC LIMIT ?"
+        sql += " WHERE " + " AND ".join(conditions)
+    sql += " ORDER BY t.created_at DESC LIMIT ?"
     params.append(limit)
-    return query, params
+    return sql, params
 
 
 def _append_recent_tactics_filters(
     conditions: list[str],
     params: list[object],
-    source: str | None,
+    query: DashboardQuery,
     normalized_motif: str | None,
-    normalized_time: str | None,
     normalized_rating: str | None,
-    start_date: datetime | None,
-    end_date: datetime | None,
 ) -> None:
-    _append_optional_filter(conditions, params, "p.source = ?", source)
+    _append_optional_filter(conditions, params, "p.source = ?", query.source)
     _append_optional_filter(conditions, params, "t.motif = ?", normalized_motif)
-    _append_optional_filter(
-        conditions,
-        params,
-        "COALESCE(r.time_control, 'unknown') = ?",
-        normalized_time,
-    )
+    _append_time_control_filter(conditions, params, query.time_control, "r.time_control")
     if normalized_rating:
         conditions.append(_rating_bucket_clause(normalized_rating))
     _append_date_range_filters(
         conditions,
         params,
-        start_date,
-        end_date,
+        query.start_date,
+        query.end_date,
         "t.created_at",
     )
 
@@ -2161,27 +2184,32 @@ def _resolve_explanation(
     return best_san, explanation
 
 
+@dataclass(frozen=True)
+class PracticeAttemptInputs:
+    tactic: Mapping[str, object]
+    tactic_id: int
+    position_id: int
+    attempted_uci: str
+    best_uci: str
+    correct: bool
+    latency_ms: int | None
+
+
 def _build_practice_attempt_payload(
-    tactic: Mapping[str, object],
-    tactic_id: int,
-    position_id: int,
-    attempted_uci: str,
-    best_uci: str,
-    correct: bool,
-    latency_ms: int | None,
+    inputs: PracticeAttemptInputs,
 ) -> dict[str, object]:
     return {
-        "tactic_id": tactic_id,
-        "position_id": position_id,
-        "source": tactic.get("source"),
-        "attempted_uci": attempted_uci,
-        "correct": correct,
-        "success": correct,
-        "best_uci": best_uci,
-        "motif": tactic.get("motif", "unknown"),
-        "severity": tactic.get("severity", 0.0),
-        "eval_delta": tactic.get("eval_delta", 0) or 0,
-        "latency_ms": latency_ms,
+        "tactic_id": inputs.tactic_id,
+        "position_id": inputs.position_id,
+        "source": inputs.tactic.get("source"),
+        "attempted_uci": inputs.attempted_uci,
+        "correct": inputs.correct,
+        "success": inputs.correct,
+        "best_uci": inputs.best_uci,
+        "motif": inputs.tactic.get("motif", "unknown"),
+        "severity": inputs.tactic.get("severity", 0.0),
+        "eval_delta": inputs.tactic.get("eval_delta", 0) or 0,
+        "latency_ms": inputs.latency_ms,
     }
 
 
@@ -2208,13 +2236,15 @@ def grade_practice_attempt(
     correct = bool(best_uci) and trimmed_attempt.lower() == best_uci.lower()
     best_san, explanation = _resolve_practice_explanation(tactic, best_uci)
     attempt_payload = _build_practice_attempt_payload(
-        tactic,
-        tactic_id,
-        position_id,
-        trimmed_attempt,
-        best_uci,
-        correct,
-        latency_ms,
+        PracticeAttemptInputs(
+            tactic=tactic,
+            tactic_id=tactic_id,
+            position_id=position_id,
+            attempted_uci=trimmed_attempt,
+            best_uci=best_uci,
+            correct=correct,
+            latency_ms=latency_ms,
+        )
     )
     attempt_id = record_training_attempt(conn, attempt_payload)
     message = _build_practice_message(correct, tactic, best_uci)

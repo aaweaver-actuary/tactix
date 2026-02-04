@@ -1,3 +1,5 @@
+"""Score the best line after a move is applied."""
+
 import chess
 
 from tactix._score_after_move import _score_after_move
@@ -12,6 +14,7 @@ def _score_best_line__after_move(
     engine: StockfishEngine,
     mover_color: bool,
 ) -> int | None:
+    """Return the evaluation score after applying the best move."""
     if best_move is None:
         return None
     best_board = board.copy()

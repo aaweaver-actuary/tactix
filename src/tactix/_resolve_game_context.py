@@ -1,3 +1,5 @@
+"""Resolve a parsed PGN game context for extraction."""
+
 import chess
 import chess.pgn
 

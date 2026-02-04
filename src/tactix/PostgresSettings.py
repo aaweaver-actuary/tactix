@@ -1,9 +1,13 @@
+"""Postgres connection settings definition."""
+
+# pylint: disable=invalid-name
+
 import os
 from dataclasses import dataclass
 
 
 @dataclass(slots=True)
-class PostgresSettings:
+class PostgresSettings:  # pylint: disable=invalid-name,too-many-instance-attributes
     """PostgreSQL connection settings."""
 
     dsn: str | None = os.getenv("TACTIX_POSTGRES_DSN")

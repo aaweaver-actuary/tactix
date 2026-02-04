@@ -1,3 +1,5 @@
+"""API handler for game detail retrieval."""
+
 from __future__ import annotations
 
 from typing import Annotated
@@ -13,6 +15,7 @@ def game_detail(
     game_id: str,
     source: Annotated[str | None, Query()] = None,
 ) -> dict[str, object]:
+    """Return game detail payload for a game id."""
     normalized_source = _normalize_source(source)
     settings = get_settings(source=normalized_source)
     conn = get_connection(settings.duckdb_path)

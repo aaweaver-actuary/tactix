@@ -9,7 +9,7 @@ from tactix.PostgresStore import PostgresStore
 from tactix.serialize_status import serialize_status
 
 
-def postgres_status(limit: int = Query(10, ge=1, le=50)) -> dict[str, object]:
+def postgres_status(limit: int = Query(10, ge=1, le=50)) -> dict[str, object]:  # noqa: B008
     settings = get_settings()
     store = PostgresStore(BaseDbStoreContext(settings=settings, logger=logger))
     status = store.get_status()

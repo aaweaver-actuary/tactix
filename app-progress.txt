@@ -118,3 +118,9 @@ Session 2026-02-01 (refactor – SSE job/metrics stream)
 - Added shared `_queue_job_event()` helper to reduce duplication across job and metrics SSE stream handlers.
 - Metrics/job streaming behavior unchanged; only payload enqueueing deduped.
 - Tests: `make check` (before + after).
+
+Session 2026-02-03 (orchestrator – make check failure + dirty tree)
+- Detected uncommitted refactor changes across backend/client/tests plus new helpers; deleted legacy pipeline file pending cleanup.
+- `make check` failing on pylint PLR0913 (too many arguments) across multiple modules (DuckDB/Postgres stores, pipeline helpers, tactics analysis, stream workers, etc.).
+- Action required: developer to refactor argument-heavy functions (introduce parameter objects, dataclasses, context structs) without removing any checks, add docstrings, and restore full lint/test compliance; commit and update progress notes.
+- Resume: fix PLR0913 failures, re-run `make check`, then proceed with regression verification and feature work.

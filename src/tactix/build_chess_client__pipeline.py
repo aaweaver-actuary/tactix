@@ -1,3 +1,5 @@
+"""Build chess client instances for pipeline use."""
+
 from __future__ import annotations
 
 from tactix.chess_clients.base_chess_client import BaseChessClient
@@ -11,6 +13,7 @@ def _build_chess_client(
     settings: Settings,
     client: BaseChessClient | None,
 ) -> BaseChessClient:
+    """Return an existing client or build one based on settings."""
     if client is not None:
         return client
     if settings.source == "chesscom":

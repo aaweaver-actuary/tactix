@@ -1,3 +1,5 @@
+"""Public exports for tactics analysis helpers."""
+
 from __future__ import annotations
 
 from tactix import analyze_tactics__positions as _impl

@@ -8,6 +8,7 @@ from tactix._normalize_side_filter import _normalize_side_filter
 from tactix._position_context_helpers import logger
 from tactix._resolve_game_context import _resolve_game_context
 from tactix.extract_positions_with_fallback__pgn import _extract_positions_with_fallback
+from tactix.extractor_context import ExtractorDependencies, ExtractorRequest
 from tactix.PgnContext import PgnContext
 
 
@@ -52,32 +53,33 @@ def extract_positions(
     game_id: str | None = None,
     side_to_move_filter: str | None = None,
 ) -> list[dict[str, object]]:
+    request = ExtractorRequest(
+        pgn=pgn,
+        user=user,
+        source=source,
+        game_id=game_id,
+        side_to_move_filter=side_to_move_filter,
+    )
     return _extract_positions_with_fallback(
-        pgn,
-        user,
-        source,
-        game_id,
-        side_to_move_filter,
-        getenv=os.getenv,
-        load_rust_extractor=_load_rust_extractor,
-        call_rust_extractor=_call_rust_extractor,
-        extract_positions_fallback=_extract_positions_fallback,
+        request,
+        ExtractorDependencies(
+            getenv=os.getenv,
+            load_rust_extractor=_load_rust_extractor,
+            call_rust_extractor=_call_rust_extractor,
+            extract_positions_fallback=_extract_positions_fallback,
+        ),
     )
 
 
 def _extract_positions_fallback(
-    pgn: str,
-    user: str,
-    source: str,
-    game_id: str | None,
-    side_to_move_filter: str | None,
+    request: ExtractorRequest,
 ) -> list[dict[str, object]]:
     return _extract_positions_python(
-        pgn,
-        user,
-        source,
-        game_id,
-        side_to_move_filter=side_to_move_filter,
+        request.pgn,
+        request.user,
+        request.source,
+        request.game_id,
+        side_to_move_filter=request.side_to_move_filter,
     )
 
 
@@ -91,14 +93,16 @@ def _load_rust_extractor():
 
 def _call_rust_extractor(
     rust_extractor,
-    pgn: str,
-    user: str,
-    source: str,
-    game_id: str | None,
-    side_to_move_filter: str | None,
+    request: ExtractorRequest,
 ) -> list[dict[str, object]]:
     try:
-        return rust_extractor(pgn, user, source, game_id, side_to_move_filter)
+        return rust_extractor(
+            request.pgn,
+            request.user,
+            request.source,
+            request.game_id,
+            request.side_to_move_filter,
+        )
     except Exception as exc:  # pragma: no cover - rust fallback
         logger.warning("Rust extractor failed; falling back to Python: %s", exc)
-        return _extract_positions_fallback(pgn, user, source, game_id, side_to_move_filter)
+        return _extract_positions_fallback(request)

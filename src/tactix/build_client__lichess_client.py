@@ -1,3 +1,5 @@
+"""Build Lichess API clients."""
+
 from __future__ import annotations
 
 import berserk

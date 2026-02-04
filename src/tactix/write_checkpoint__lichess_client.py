@@ -1,3 +1,5 @@
+"""Persist Lichess checkpoint timestamps to disk."""
+
 from __future__ import annotations
 
 from pathlib import Path

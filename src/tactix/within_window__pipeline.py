@@ -1,3 +1,5 @@
+"""Check whether a game falls within a time window."""
+
 from __future__ import annotations
 
 from tactix.define_pipeline_state__pipeline import GameRow

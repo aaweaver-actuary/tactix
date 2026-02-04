@@ -1,3 +1,5 @@
+"""Define the Lichess fetch request dataclass."""
+
 from __future__ import annotations
 
 from tactix.chess_clients.base_chess_client import ChessFetchRequest

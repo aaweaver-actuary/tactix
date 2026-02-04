@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from tactix.read_optional_text__filesystem import _read_optional_text
+
 
 def read_cursor(path: Path) -> str | None:
     """Read a cursor token from disk.
@@ -13,8 +15,4 @@ def read_cursor(path: Path) -> str | None:
         Cursor token or None.
     """
 
-    try:
-        raw = path.read_text().strip()
-    except FileNotFoundError:
-        return None
-    return raw or None
+    return _read_optional_text(path)

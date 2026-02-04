@@ -1,3 +1,5 @@
+"""Evaluate a position using the engine and derive metadata."""
+
 import chess
 
 from tactix.analyze_tactics__positions import MATE_IN_TWO
@@ -13,6 +15,7 @@ def _evaluate_engine_position(
     mover_color: bool,
     motif_board: chess.Board,
 ) -> tuple[chess.Move | None, str | None, int, bool, bool]:
+    """Return engine analysis results and mate flags for a position."""
     engine_result = engine.analyse(board)
     best_move_obj = engine_result.best_move
     best_move = best_move_obj.uci() if best_move_obj else None

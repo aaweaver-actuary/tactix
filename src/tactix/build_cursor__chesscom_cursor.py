@@ -1,3 +1,5 @@
+"""Cursor builder for Chess.com pagination."""
+
 from __future__ import annotations
 
 

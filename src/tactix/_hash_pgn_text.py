@@ -1,3 +1,5 @@
+"""Hash PGN text using the base store helper."""
+
 from tactix.base_db_store import BaseDbStore
 
 

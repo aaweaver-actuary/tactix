@@ -1,3 +1,5 @@
+"""Fetch recent analysis tactics from Postgres."""
+
 from typing import Any
 
 from psycopg2.extras import RealDictCursor
@@ -10,6 +12,7 @@ from tactix.postgres_connection import postgres_connection
 
 
 def fetch_analysis_tactics(settings: Settings, limit: int = 10) -> list[dict[str, Any]]:
+    """Return recent tactics for the given settings."""
     with postgres_connection(settings) as conn:
         if conn is None or not postgres_analysis_enabled(settings):
             return []

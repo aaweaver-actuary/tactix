@@ -1,55 +1,15 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from tactix.extractor_context import ExtractorDependencies, ExtractorRequest
 
 
 def _extract_positions_with_fallback(
-    pgn: str,
-    user: str,
-    source: str,
-    game_id: str | None,
-    side_to_move_filter: str | None,
-    *,
-    getenv: Callable[[str], str | None],
-    load_rust_extractor: Callable[[], object | None],
-    call_rust_extractor: Callable[
-        [
-            object,
-            str,
-            str,
-            str,
-            str | None,
-            str | None,
-        ],
-        list[dict[str, object]],
-    ],
-    extract_positions_fallback: Callable[
-        [str, str, str, str | None, str | None],
-        list[dict[str, object]],
-    ],
+    request: ExtractorRequest,
+    deps: ExtractorDependencies,
 ) -> list[dict[str, object]]:
-    if getenv("PYTEST_CURRENT_TEST"):
-        return extract_positions_fallback(
-            pgn,
-            user,
-            source,
-            game_id,
-            side_to_move_filter,
-        )
-    rust_extractor = load_rust_extractor()
+    if deps.getenv("PYTEST_CURRENT_TEST"):
+        return deps.extract_positions_fallback(request)
+    rust_extractor = deps.load_rust_extractor()
     if rust_extractor is None:
-        return extract_positions_fallback(
-            pgn,
-            user,
-            source,
-            game_id,
-            side_to_move_filter,
-        )
-    return call_rust_extractor(
-        rust_extractor,
-        pgn,
-        user,
-        source,
-        game_id,
-        side_to_move_filter,
-    )
+        return deps.extract_positions_fallback(request)
+    return deps.call_rust_extractor(rust_extractor, request)

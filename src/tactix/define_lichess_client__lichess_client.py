@@ -1,3 +1,5 @@
+"""Define the Lichess client implementation."""
+
 from __future__ import annotations
 
 import logging
@@ -25,7 +27,7 @@ from tactix.define_lichess_fetch_result__lichess_client import LichessFetchResul
 from tactix.define_lichess_game_row__lichess_client import LichessGameRow
 from tactix.is_auth_error__lichess_client import _is_auth_error
 from tactix.latest_timestamp import latest_timestamp
-from tactix.load_fixture_games import load_fixture_games
+from tactix.load_fixture_games import FixtureGamesRequest, load_fixture_games
 from tactix.pgn_to_game_row__lichess_client import _pgn_to_game_row
 from tactix.resolve_perf_value__lichess_client import _resolve_perf_value
 from tactix.utils.logger import get_logger
@@ -95,13 +97,15 @@ class LichessClient(BaseChessClient):
         """
 
         return load_fixture_games(
-            fixture_path=self.settings.fixture_pgn_path,
-            user=self.settings.user,
-            source=self.settings.source,
-            since_ms=since_ms,
-            until_ms=until_ms,
-            logger=self.logger,
-            coerce_rows=coerce_rows_for_model(LichessGameRow),
+            FixtureGamesRequest(
+                fixture_path=self.settings.fixture_pgn_path,
+                user=self.settings.user,
+                source=self.settings.source,
+                since_ms=since_ms,
+                until_ms=until_ms,
+                logger=self.logger,
+                coerce_rows=coerce_rows_for_model(LichessGameRow),
+            )
         )
 
     @retry(
@@ -140,9 +144,10 @@ class LichessClient(BaseChessClient):
         except Exception as exc:
             if self._should_refresh_token(exc):
                 self.logger.warning("Refreshing Lichess OAuth token after auth failure")
-                import tactix.lichess_client as lichess_client_module  # noqa: PLC0415
+                from importlib import import_module  # noqa: PLC0415
 
-                lichess_client_module._refresh_lichess_token(self.settings)
+                lichess_shim = import_module("tactix.lichess_client")
+                lichess_shim.refresh_lichess_token(self.settings)
                 return self._fetch_remote_games_once(since_ms, until_ms)
             raise
 
@@ -169,9 +174,10 @@ class LichessClient(BaseChessClient):
             Remote game rows.
         """
 
-        import tactix.lichess_client as lichess_client_module  # noqa: PLC0415
+        from importlib import import_module  # noqa: PLC0415
 
-        client = lichess_client_module.build_client(self.settings)
+        lichess_shim = import_module("tactix.lichess_client")
+        client = lichess_shim.build_client(self.settings)
         perf_type = _coerce_perf_type(_resolve_perf_value(self.settings))
         return self._collect_remote_games(client, since_ms, until_ms, perf_type)
 

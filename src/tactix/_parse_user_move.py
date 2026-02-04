@@ -1,3 +1,5 @@
+"""Parse user move UCI strings into chess moves."""
+
 import chess
 
 from tactix.analyze_tactics__positions import logger

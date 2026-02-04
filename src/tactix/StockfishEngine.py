@@ -1,3 +1,7 @@
+"""Stockfish engine wrapper used by analysis pipelines."""
+
+# pylint: disable=invalid-name
+
 from __future__ import annotations
 
 import shutil
@@ -17,24 +21,27 @@ from tactix.config import Settings
 from tactix.engine_result import EngineResult
 
 
-class StockfishEngine:
+class StockfishEngine:  # pylint: disable=protected-access
     """Thin wrapper around python-chess engine handling config and fallbacks."""
 
     def __init__(self, settings: Settings) -> None:
+        """Initialize the engine wrapper with settings."""
         self.settings = settings
         self.engine: chess.engine.SimpleEngine | None = None
         self.applied_options: dict[str, Any] = {}
 
     def __enter__(self) -> StockfishEngine:
+        """Enter context by starting the engine if needed."""
         if self.engine is None and self._should_start_engine():
             self._start_engine()
         return self
 
-    def __exit__(self, _exc_type, _exc, _tb) -> bool:
+    def __exit__(self, _exc_type, _exc, _tb) -> None:
+        """Exit context by closing the engine."""
         self.close()
-        return False
 
     def close(self) -> None:
+        """Shut down the engine if running."""
         if self.engine is None:
             return
         with suppress(chess.engine.EngineError):
@@ -42,6 +49,7 @@ class StockfishEngine:
         self.engine = None
 
     def restart(self) -> None:
+        """Restart the engine process."""
         if self.engine is not None:
             with suppress(chess.engine.EngineError):
                 self.engine.quit()
@@ -49,6 +57,7 @@ class StockfishEngine:
         self._start_engine()
 
     def _resolve_command(self) -> str:
+        """Resolve the stockfish binary path."""
         if self.settings.stockfish_path.exists():
             return str(self.settings.stockfish_path)
         resolved = shutil.which(str(self.settings.stockfish_path)) or shutil.which("stockfish")
@@ -58,11 +67,13 @@ class StockfishEngine:
         return str(self.settings.stockfish_path)
 
     def _build_limit(self) -> chess.engine.Limit:
+        """Build the analysis limit for the engine."""
         if self.settings.stockfish_depth:
             return chess.engine.Limit(depth=self.settings.stockfish_depth)
         return chess.engine.Limit(time=self.settings.stockfish_movetime_ms / 1000)
 
     def _material_score(self, board: chess.Board) -> int:
+        """Compute a basic material score for the board."""
         piece_values = {
             chess.PAWN: 100,
             chess.KNIGHT: 320,
@@ -78,6 +89,7 @@ class StockfishEngine:
         return score
 
     def _configure_options(self) -> dict[str, Any]:
+        """Return the configured engine options."""
         options: dict[str, Any] = {
             "Threads": self.settings.stockfish_threads,
             "Hash": self.settings.stockfish_hash_mb,
@@ -92,9 +104,11 @@ class StockfishEngine:
         return {name: value for name, value in options.items() if value is not None}
 
     def _should_start_engine(self) -> bool:
+        """Return True when the engine should start."""
         return bool(self.settings._stockfish_path_overridden)
 
     def _start_engine(self) -> None:
+        """Start the engine process if available."""
         if not self._should_start_engine():
             self._reset_engine_state()
             return
@@ -110,10 +124,12 @@ class StockfishEngine:
         self.applied_options = _apply_engine_options(engine, self._configure_options())
 
     def _reset_engine_state(self) -> None:
+        """Clear engine state to defaults."""
         self.engine = None
         self.applied_options = {}
 
     def analyse(self, board: chess.Board) -> EngineResult:
+        """Analyze a board and return an engine result."""
         if self.engine is None:
             if self._should_start_engine():
                 self._start_engine()

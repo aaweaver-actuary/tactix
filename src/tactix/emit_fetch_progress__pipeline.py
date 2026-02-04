@@ -1,27 +1,20 @@
 from __future__ import annotations
 
-from tactix.config import Settings
+from tactix.DailySyncStartContext import FetchProgressContext
 from tactix.emit_progress__pipeline import _emit_progress
-from tactix.pipeline_state__pipeline import FetchContext, ProgressCallback
 
 
 def _emit_fetch_progress(
-    settings: Settings,
-    progress: ProgressCallback | None,
-    fetch_context: FetchContext,
-    backfill_mode: bool,
-    window_start_ms: int | None,
-    window_end_ms: int | None,
-    fetched_games: int,
+    ctx: FetchProgressContext,
 ) -> None:
     _emit_progress(
-        progress,
+        ctx.progress,
         "fetch_games",
-        source=settings.source,
-        fetched_games=fetched_games,
-        since_ms=fetch_context.since_ms,
-        cursor=fetch_context.next_cursor or fetch_context.cursor_value,
-        backfill=backfill_mode,
-        backfill_start_ms=window_start_ms,
-        backfill_end_ms=window_end_ms,
+        source=ctx.settings.source,
+        fetched_games=ctx.fetched_games,
+        since_ms=ctx.fetch_context.since_ms,
+        cursor=ctx.fetch_context.next_cursor or ctx.fetch_context.cursor_value,
+        backfill=ctx.backfill_mode,
+        backfill_start_ms=ctx.window_start_ms,
+        backfill_end_ms=ctx.window_end_ms,
     )

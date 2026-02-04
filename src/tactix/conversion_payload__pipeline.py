@@ -1,3 +1,5 @@
+"""Build conversion payloads for raw PGN ingestion."""
+
 from __future__ import annotations
 
 from tactix.config import Settings
@@ -10,6 +12,7 @@ def _build_conversion_payload(
     inserted_games: int,
     positions: int,
 ) -> dict[str, object]:
+    """Return a conversion payload summary."""
     return {
         "source": settings.source,
         "games": games,
@@ -24,6 +27,7 @@ def _conversion_payload(
     to_process: list[dict[str, object]],
     positions: list[dict[str, object]],
 ) -> dict[str, object]:
+    """Return a conversion payload using list lengths."""
     return _build_conversion_payload(
         settings,
         games=len(raw_pgns),

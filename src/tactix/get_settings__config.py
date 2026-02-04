@@ -1,3 +1,5 @@
+"""Load settings with environment overrides."""
+
 from __future__ import annotations
 
 import importlib
@@ -10,6 +12,7 @@ if TYPE_CHECKING:
 
 
 def get_settings(source: str | None = None, profile: str | None = None) -> Settings:
+    """Return a Settings instance for the given source/profile."""
     config_module = importlib.import_module("tactix.config")
     defaults_module = importlib.import_module("tactix.define_config_defaults__config")
     settings_module = importlib.import_module("tactix.define_settings__config")

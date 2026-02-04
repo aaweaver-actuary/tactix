@@ -1,3 +1,5 @@
+"""Count matching hashes between computed and stored maps."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping

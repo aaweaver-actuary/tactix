@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from importlib import import_module
+
 from tactix.pipeline_state__pipeline import GameRow
 from tactix.should_skip_backfill__pipeline import _should_skip_backfill
 
@@ -11,9 +13,8 @@ def _filter_backfill_games(
 ) -> tuple[list[GameRow], list[GameRow]]:
     if not rows:
         return [], []
-    from tactix import pipeline as pipeline_module  # noqa: PLC0415
-
     game_ids = [row["game_id"] for row in rows]
+    pipeline_module = import_module("tactix.pipeline")
     latest_hashes = pipeline_module.fetch_latest_pgn_hashes(conn, game_ids, source)
     position_counts = pipeline_module.fetch_position_counts(conn, game_ids, source)
     to_process: list[GameRow] = []

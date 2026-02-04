@@ -1,3 +1,5 @@
+"""Reclassify motif names based on settings rules."""
+
 from tactix.analyze_tactics__positions import _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS
 from tactix.utils.logger import funclogger
 

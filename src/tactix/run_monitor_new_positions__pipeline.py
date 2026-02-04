@@ -3,6 +3,7 @@ from __future__ import annotations
 from tactix.analyze_positions__pipeline import _analyze_positions
 from tactix.collect_positions_for_monitor__pipeline import _collect_positions_for_monitor
 from tactix.config import Settings
+from tactix.ops_event import OpsEvent
 from tactix.pipeline_state__pipeline import logger
 from tactix.prepare_raw_pgn_context__pipeline import _prepare_raw_pgn_context
 from tactix.record_ops_event import record_ops_event
@@ -41,18 +42,20 @@ def run_monitor_new_positions(
     )
 
     record_ops_event(
-        settings,
-        component=settings.run_context,
-        event_type="monitor_new_positions_complete",
-        source=settings.source,
-        profile=profile,
-        metadata={
-            "new_games": len(new_game_ids),
-            "positions_extracted": positions_extracted,
-            "positions_analyzed": positions_analyzed,
-            "tactics_detected": tactics_detected,
-            "metrics_version": metrics_version,
-        },
+        OpsEvent(
+            settings=settings,
+            component=settings.run_context,
+            event_type="monitor_new_positions_complete",
+            source=settings.source,
+            profile=profile,
+            metadata={
+                "new_games": len(new_game_ids),
+                "positions_extracted": positions_extracted,
+                "positions_analyzed": positions_analyzed,
+                "tactics_detected": tactics_detected,
+                "metrics_version": metrics_version,
+            },
+        )
     )
 
     return {

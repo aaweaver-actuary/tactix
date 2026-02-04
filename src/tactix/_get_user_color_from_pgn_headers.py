@@ -1,3 +1,5 @@
+"""Resolve player colors from PGN headers."""
+
 from __future__ import annotations
 
 from functools import singledispatch
@@ -17,12 +19,14 @@ if TYPE_CHECKING:
 def _get_user_color_from_pgn_headers(
     headers: chess.pgn.Headers | PgnHeaders, user: str
 ) -> ChessPlayerColor:
+    """Return the user's color from PGN headers."""
     white, black = _resolve_player_names(headers)
     return _resolve_user_color(white, black, user)
 
 
 @singledispatch
 def _resolve_player_names(headers: object) -> tuple[str, str]:
+    """Resolve player names from a headers object."""
     white = getattr(headers, "white_player", None) or ""
     black = getattr(headers, "black_player", None) or ""
     return white.lower(), black.lower()
@@ -30,12 +34,14 @@ def _resolve_player_names(headers: object) -> tuple[str, str]:
 
 @_resolve_player_names.register
 def _resolve_player_names_from_headers(headers: chess.pgn.Headers) -> tuple[str, str]:
+    """Resolve player names from standard PGN headers."""
     white = headers.get("White") or ""
     black = headers.get("Black") or ""
     return white.lower(), black.lower()
 
 
 def _resolve_user_color(white: str, black: str, user: str) -> ChessPlayerColor:
+    """Return the player's color based on header names."""
     user_lower = user.lower()
     is_white = white == user_lower
     is_black = black == user_lower

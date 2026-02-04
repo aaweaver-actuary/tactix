@@ -4,6 +4,7 @@ from fastapi import Query
 from fastapi.responses import StreamingResponse
 
 from tactix._stream_job_response import _stream_job_response
+from tactix.stream_job_context import StreamJobRequest
 
 
 def stream_job_by_id(
@@ -14,9 +15,11 @@ def stream_job_by_id(
     backfill_end_ms: Annotated[int | None, Query(ge=0)] = None,
 ) -> StreamingResponse:
     return _stream_job_response(
-        job_id,
-        source,
-        profile,
-        backfill_start_ms,
-        backfill_end_ms,
+        StreamJobRequest(
+            job=job_id,
+            source=source,
+            profile=profile,
+            backfill_start_ms=backfill_start_ms,
+            backfill_end_ms=backfill_end_ms,
+        )
     )

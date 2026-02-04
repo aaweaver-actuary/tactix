@@ -1,3 +1,5 @@
+"""Extract positions for newly ingested games."""
+
 from __future__ import annotations
 
 from tactix.attach_position_ids__pipeline import _attach_position_ids

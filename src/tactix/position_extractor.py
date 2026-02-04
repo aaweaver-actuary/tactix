@@ -1,3 +1,7 @@
+"""Public position extractor exports and helpers."""
+
+# pylint: disable=protected-access
+
 from __future__ import annotations
 
 import chess

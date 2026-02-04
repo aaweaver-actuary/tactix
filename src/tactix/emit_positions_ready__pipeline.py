@@ -1,3 +1,5 @@
+"""Emit a progress event when positions are ready."""
+
 from __future__ import annotations
 
 from tactix.config import Settings

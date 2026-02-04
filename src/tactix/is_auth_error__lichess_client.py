@@ -1,3 +1,5 @@
+"""Detect authentication errors from Lichess API calls."""
+
 from __future__ import annotations
 
 from tactix.extract_status_code__lichess_client import _extract_status_code

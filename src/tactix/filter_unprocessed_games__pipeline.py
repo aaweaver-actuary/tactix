@@ -1,3 +1,5 @@
+"""Filter out games that already have positions."""
+
 from __future__ import annotations
 
 from tactix.define_pipeline_state__pipeline import ZERO_COUNT

@@ -1,3 +1,7 @@
+"""Lichess game fetching helpers with retry support."""
+
+# pylint: disable=protected-access
+
 from __future__ import annotations
 
 import logging
@@ -11,12 +15,10 @@ from tenacity import (
 )
 
 from tactix.chess_clients.fetch_helpers import run_incremental_fetch
-from tactix.chess_clients.lichess_client import (
-    LichessClient,
-    LichessClientContext,
-    LichessFetchRequest,
-)
 from tactix.config import Settings
+from tactix.define_lichess_client__lichess_client import LichessClient
+from tactix.define_lichess_client_context__lichess_client import LichessClientContext
+from tactix.define_lichess_fetch_request__lichess_client import LichessFetchRequest
 from tactix.utils.logger import get_logger
 
 log = get_logger(__name__)

@@ -1,3 +1,5 @@
+"""Parse game source identifiers from row mappings."""
+
 from collections.abc import Mapping
 
 

@@ -1,3 +1,5 @@
+"""Log counts of raw PGNs persisted during sync."""
+
 from __future__ import annotations
 
 from tactix.config import Settings

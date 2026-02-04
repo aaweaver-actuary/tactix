@@ -1,3 +1,5 @@
+"""Prepare context for raw PGN operations."""
+
 from __future__ import annotations
 
 import duckdb
@@ -13,6 +15,7 @@ def _prepare_raw_pgn_context(
     profile: str | None = None,
     limit: int | None = None,
 ) -> tuple[Settings, duckdb.DuckDBPyConnection, list[dict[str, object]]]:
+    """Build settings, connection, and raw PGN rows for a pipeline."""
     settings = _build_pipeline_settings(settings, source=source, profile=profile)
     conn = get_connection(settings.duckdb_path)
     init_schema(conn)

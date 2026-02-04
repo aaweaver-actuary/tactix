@@ -1,3 +1,7 @@
+"""FEN character definitions for chess piece parsing."""
+
+# pylint: disable=invalid-name
+
 from enum import StrEnum
 
 
@@ -39,6 +43,7 @@ class ChessFenChar(StrEnum):
 
     @staticmethod
     def is_valid(fen_char: str) -> bool:
+        """Return True when the character is a valid FEN piece letter."""
         return fen_char in ChessFenChar
 
 

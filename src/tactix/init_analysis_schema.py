@@ -1,9 +1,12 @@
-from psycopg2.extensions import connection as PgConnection
+"""Initialize analysis schema objects in Postgres."""
+
+from psycopg2.extensions import connection as PgConnection  # noqa: N812
 
 from tactix.ANALYSIS_SCHEMA import ANALYSIS_SCHEMA
 
 
 def init_analysis_schema(conn: PgConnection) -> None:
+    """Create analysis schema tables and indices if missing."""
     with conn.cursor() as cur:
         cur.execute(f"CREATE SCHEMA IF NOT EXISTS {ANALYSIS_SCHEMA}")
         cur.execute(f"CREATE SEQUENCE IF NOT EXISTS {ANALYSIS_SCHEMA}.tactics_tactic_id_seq")

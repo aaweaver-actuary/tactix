@@ -1,30 +1,16 @@
+"""API handler for trend stats."""
+
 from typing import Annotated
 
 from fastapi import Depends
 
-from tactix._resolve_dashboard_filters import _resolve_dashboard_filters
+from tactix.build_dashboard_stats_payload__api import _build_dashboard_stats_payload
 from tactix.DashboardQueryFilters import DashboardQueryFilters
-from tactix.db.duckdb_store import fetch_trend_stats, fetch_version, get_connection, init_schema
+from tactix.db.duckdb_store import fetch_trend_stats
 
 
 def trend_stats(
     filters: Annotated[DashboardQueryFilters, Depends()],
 ) -> dict[str, object]:
-    start_datetime, end_datetime, normalized_source, settings = _resolve_dashboard_filters(
-        filters,
-    )
-    conn = get_connection(settings.duckdb_path)
-    init_schema(conn)
-    response_source = "all" if normalized_source is None else normalized_source
-    return {
-        "source": response_source,
-        "metrics_version": fetch_version(conn),
-        "trends": fetch_trend_stats(
-            conn,
-            source=normalized_source,
-            rating_bucket=filters.rating_bucket,
-            time_control=filters.time_control,
-            start_date=start_datetime,
-            end_date=end_datetime,
-        ),
-    }
+    """Return trend stats payload for the provided filters."""
+    return _build_dashboard_stats_payload(filters, fetch_trend_stats, "trends")

@@ -1,8 +1,14 @@
+"""Context for a single chess position."""
+
+# pylint: disable=invalid-name
+
 from dataclasses import dataclass
 
 
 @dataclass
-class PositionContext:
+class PositionContext:  # pylint: disable=too-many-instance-attributes
+    """Structured position data extracted from a game."""
+
     game_id: str
     user: str
     source: str

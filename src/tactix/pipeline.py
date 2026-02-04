@@ -1,3 +1,5 @@
+"""Pipeline orchestrators for analysis and sync flows."""
+
 from __future__ import annotations
 
 import time
@@ -34,6 +36,7 @@ from tactix.coerce_str__pipeline import _coerce_str
 from tactix.collect_game_ids__pipeline import _collect_game_ids
 from tactix.collect_positions_for_monitor__pipeline import _collect_positions_for_monitor
 from tactix.compute_pgn_hashes__pipeline import _compute_pgn_hashes
+from tactix.config import Settings
 from tactix.conversion_payload__pipeline import _conversion_payload
 from tactix.convert_raw_pgns_to_positions__pipeline import convert_raw_pgns_to_positions
 from tactix.count_hash_matches__pipeline import _count_hash_matches
@@ -136,6 +139,15 @@ from tactix.upsert_postgres_raw_pgns_if_enabled__pipeline import (
 from tactix.validate_raw_pgn_hashes__pipeline import _validate_raw_pgn_hashes
 from tactix.within_window__pipeline import _within_window
 from tactix.write_analysis_checkpoint__pipeline import _write_analysis_checkpoint
+
+
+def analyse_with_retries(
+    engine,
+    position: dict[str, object],
+    settings: Settings,
+) -> tuple[dict[str, object], dict[str, object]] | None:
+    return _analyse_with_retries(engine, position, settings)
+
 
 __all__ = [
     "ANALYSIS_PROGRESS_BUCKETS",
@@ -243,6 +255,7 @@ __all__ = [
     "_validate_raw_pgn_hashes",
     "_within_window",
     "_write_analysis_checkpoint",
+    "analyse_with_retries",
     "analyze_position",
     "chess",
     "convert_raw_pgns_to_positions",

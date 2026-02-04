@@ -1,3 +1,5 @@
+"""Public exports for the Chess.com client."""
+
 from __future__ import annotations
 
 from tactix.build_auth_headers__chesscom_auth import _auth_headers

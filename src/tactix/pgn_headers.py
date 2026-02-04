@@ -1,3 +1,5 @@
+"""PGN header parsing and normalization."""
+
 from __future__ import annotations
 
 import datetime
@@ -18,7 +20,7 @@ from tactix.utils import Now
 
 
 @dataclass
-class PgnHeaders:
+class PgnHeaders:  # pylint: disable=too-many-instance-attributes
     """Dataclass representing PGN headers for a chess game."""
 
     event: str
@@ -35,12 +37,14 @@ class PgnHeaders:
     termination: str | None = None
 
     def __post_init__(self):
+        """Normalize header fields after initialization."""
         self.date = _coerce_pgn_date(self.date)
         self._convert_round_to_int()
         if not self.result:
             self.result = ChessGameResult.INCOMPLETE
 
     def _convert_round_to_int(self):
+        """Normalize the round value into an integer."""
         if self.round is None:
             return
         try:

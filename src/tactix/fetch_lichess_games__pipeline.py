@@ -1,3 +1,5 @@
+"""Fetch Lichess games as part of the pipeline."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping

@@ -1,3 +1,5 @@
+"""In-memory dashboard cache state."""
+
 from __future__ import annotations
 
 from collections import OrderedDict

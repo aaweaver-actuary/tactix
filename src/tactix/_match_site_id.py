@@ -1,9 +1,12 @@
+"""Helpers for extracting site ids from PGN headers."""
+
 import re
 
 from tactix.SITE_PATTERNS import SITE_PATTERNS
 
 
 def _match_site_id(site: str) -> str | None:
+    """Return a matched site id if available."""
     match = _match_site_patterns(site)
     if match is not None:
         return match
@@ -11,6 +14,7 @@ def _match_site_id(site: str) -> str | None:
 
 
 def _match_site_patterns(site: str) -> str | None:
+    """Match site id using known patterns."""
     for pattern in SITE_PATTERNS:
         match = pattern.search(site)
         if match:
@@ -19,6 +23,7 @@ def _match_site_patterns(site: str) -> str | None:
 
 
 def _fallback_site_id(site: str) -> str | None:
+    """Fallback to a sanitized id from the site string."""
     if not site:
         return None
     sanitized = re.sub(r"[^A-Za-z0-9]+", "", site)
@@ -28,4 +33,5 @@ def _fallback_site_id(site: str) -> str | None:
 
 
 def _has_digits(value: str) -> bool:
+    """Return True when the value contains digits."""
     return re.search(r"\d", value) is not None

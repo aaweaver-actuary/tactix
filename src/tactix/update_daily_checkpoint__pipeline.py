@@ -1,3 +1,5 @@
+"""Update daily checkpoints after sync."""
+
 from __future__ import annotations
 
 from tactix.config import Settings

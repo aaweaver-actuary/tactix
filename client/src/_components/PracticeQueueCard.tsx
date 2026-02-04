@@ -11,6 +11,7 @@ interface PracticeQueueCardProps {
   loading: boolean;
   onIncludeFailedAttemptChange: (next: boolean) => void;
   onRowClick?: (row: PracticeQueueItem) => void;
+  rowTestId?: (row: PracticeQueueItem, index: number) => string;
   dragHandleProps?: BaseCardDragHandleProps;
   dragHandleLabel?: string;
   onCollapsedChange?: (collapsed: boolean) => void;
@@ -23,6 +24,7 @@ export default function PracticeQueueCard({
   loading,
   onIncludeFailedAttemptChange,
   onRowClick,
+  rowTestId,
   dragHandleProps,
   dragHandleLabel,
   onCollapsedChange,
@@ -30,6 +32,7 @@ export default function PracticeQueueCard({
   return (
     <BaseCard
       className="p-4"
+      data-testid="practice-queue-card"
       header={
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -55,7 +58,12 @@ export default function PracticeQueueCard({
       dragHandleLabel={dragHandleLabel}
       onCollapsedChange={onCollapsedChange}
     >
-      <PracticeQueue data={data} columns={columns} onRowClick={onRowClick} />
+      <PracticeQueue
+        data={data}
+        columns={columns}
+        onRowClick={onRowClick}
+        rowTestId={rowTestId}
+      />
     </BaseCard>
   );
 }

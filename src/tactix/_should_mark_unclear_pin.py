@@ -1,17 +1,22 @@
+"""Determine if a pin outcome should be marked unclear."""
+
 from tactix._is_swing_at_least import _is_swing_at_least
 from tactix._is_unclear_pin_candidate import _is_unclear_pin_candidate
+from tactix.outcome_context import BaseOutcomeContext
 
 
 def _should_mark_unclear_pin(
-    result: str,
-    motif: str,
-    best_move: str | None,
-    user_move_uci: str,
-    swing: int | None,
+    context: BaseOutcomeContext,
     threshold: int | None,
 ) -> bool:
-    if swing is None or threshold is None or best_move is None:
+    """Return True when a pin result is unclear."""
+    if context.swing is None or threshold is None or context.best_move is None:
         return False
-    if not _is_unclear_pin_candidate(motif, best_move, user_move_uci, result):
+    if not _is_unclear_pin_candidate(
+        context.motif,
+        context.best_move,
+        context.user_move_uci,
+        context.result,
+    ):
         return False
-    return _is_swing_at_least(swing, threshold)
+    return _is_swing_at_least(context.swing, threshold)

@@ -1,3 +1,5 @@
+"""Mock chess client implementation."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -22,12 +24,14 @@ class MockChessClient(BaseChessClient):
         next_cursor: str | None = None,
         page_size: int | None = None,
     ) -> None:
+        """Initialize the mock client with optional games and paging."""
         super().__init__(context)
         self._games = list(games or [])
         self._next_cursor = next_cursor
         self._page_size = page_size
 
     def _normalize_games(self) -> list[dict[str, object]]:
+        """Normalize stored games into dictionaries."""
         games: list[dict[str, object]] = []
         for game in self._games:
             if isinstance(game, ChessGameRow):
@@ -41,6 +45,7 @@ class MockChessClient(BaseChessClient):
         games: list[dict[str, object]],
         request: ChessFetchRequest,
     ) -> list[dict[str, object]]:
+        """Apply time window filtering to games."""
         if request.full_history:
             return games
         since_ms = request.since_ms or 0
@@ -56,6 +61,7 @@ class MockChessClient(BaseChessClient):
         games: list[dict[str, object]],
         request: ChessFetchRequest,
     ) -> tuple[list[dict[str, object]], str | None]:
+        """Apply cursor pagination to games."""
         offset = 0
         if request.cursor:
             try:
@@ -71,6 +77,7 @@ class MockChessClient(BaseChessClient):
         return page, next_cursor
 
     def fetch_incremental_games(self, request: ChessFetchRequest) -> ChessFetchResult:
+        """Return paged games based on the request."""
         games = self._normalize_games()
         games = self._apply_window(games, request)
         games, next_cursor = self._apply_cursor(games, request)

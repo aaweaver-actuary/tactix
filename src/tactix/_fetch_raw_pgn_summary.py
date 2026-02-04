@@ -1,3 +1,5 @@
+"""Fetch raw PGN summary metrics from the database."""
+
 from collections.abc import Mapping
 from typing import Any
 
@@ -5,6 +7,7 @@ from tactix.PGN_SCHEMA import PGN_SCHEMA
 
 
 def _fetch_raw_pgn_summary(cur) -> tuple[list[Mapping[str, Any]], Mapping[str, Any]]:
+    """Return per-source and total raw PGN summary data."""
     cur.execute(
         f"""
         SELECT

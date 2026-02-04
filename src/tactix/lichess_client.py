@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import os  # noqa: F401  # pylint: disable=unused-import
+import os
 
-import requests  # noqa: F401  # pylint: disable=unused-import
+import requests
 
 from tactix.build_client__lichess_client import build_client
 from tactix.coerce_perf_type__lichess_client import _coerce_perf_type
@@ -50,6 +50,13 @@ __all__ = [
     "build_client",
     "fetch_incremental_games",
     "latest_timestamp",
+    "os",
     "read_checkpoint",
+    "refresh_lichess_token",
+    "requests",
     "write_checkpoint",
 ]
+
+
+def refresh_lichess_token(settings) -> None:
+    _refresh_lichess_token(settings)

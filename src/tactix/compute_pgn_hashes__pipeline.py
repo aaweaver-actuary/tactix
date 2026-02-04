@@ -1,3 +1,5 @@
+"""Compute PGN hashes for raw game rows."""
+
 from __future__ import annotations
 
 from tactix.db.duckdb_store import hash_pgn

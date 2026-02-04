@@ -1,19 +1,20 @@
+from tactix._apply_outcome__unclear_mate import _apply_outcome__unclear_mate
 from tactix._should_mark_unclear_mate_in_one import _should_mark_unclear_mate_in_one
+from tactix.outcome_context import MateOutcomeContext
 
 
 def _apply_outcome__unclear_mate_in_one(
-    result: str,
-    best_move: str | None,
-    user_move_uci: str,
-    after_cp: int,
-    mate_in: int | None,
+    context: MateOutcomeContext | str,
+    best_move: str | None = None,
+    user_move_uci: str | None = None,
+    after_cp: int | None = None,
+    mate_in: int | None = None,
 ) -> str:
-    if _should_mark_unclear_mate_in_one(
-        result,
+    return _apply_outcome__unclear_mate(
+        _should_mark_unclear_mate_in_one,
+        context,
         best_move,
         user_move_uci,
         after_cp,
         mate_in,
-    ):
-        return "unclear"
-    return result
+    )

@@ -1,3 +1,5 @@
+"""Clear analysis checkpoints from disk."""
+
 from __future__ import annotations
 
 

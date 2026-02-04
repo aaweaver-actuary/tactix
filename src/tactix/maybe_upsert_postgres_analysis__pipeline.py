@@ -1,5 +1,8 @@
+"""Maybe upsert analysis rows into Postgres."""
+
 from __future__ import annotations
 
+# pylint: disable=broad-exception-caught
 from tactix.pipeline_state__pipeline import logger
 from tactix.upsert_analysis_tactic_with_outcome import upsert_analysis_tactic_with_outcome
 

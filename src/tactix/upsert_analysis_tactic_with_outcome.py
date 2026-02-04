@@ -1,7 +1,9 @@
+"""Upsert tactics and outcome rows into Postgres."""
+
 from collections.abc import Mapping
 from typing import cast
 
-from psycopg2.extensions import connection as PgConnection
+from psycopg2.extensions import connection as PgConnection  # noqa: N812
 
 from tactix._delete_existing_analysis import _delete_existing_analysis
 from tactix._insert_analysis_outcome import _insert_analysis_outcome
@@ -14,6 +16,7 @@ def upsert_analysis_tactic_with_outcome(
     tactic_row: Mapping[str, object],
     outcome_row: Mapping[str, object],
 ) -> int:
+    """Upsert a tactic and its outcome and return the tactic id."""
     position_id = cast(
         int,
         BaseDbStore.require_position_id(

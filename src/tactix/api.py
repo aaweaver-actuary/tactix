@@ -1,6 +1,8 @@
+"""FastAPI application wiring and route registration."""
+
 from __future__ import annotations
 
-from typing import cast
+from typing import Any, cast
 
 from fastapi import Depends, FastAPI
 from starlette.middleware import Middleware
@@ -75,7 +77,7 @@ app = FastAPI(
     lifespan=lifespan,
     middleware=[
         Middleware(
-            cast("type[object]", CORSMiddleware),
+            cast(Any, CORSMiddleware),
             allow_origins=["*"],
             allow_methods=["*"],
             allow_headers=["*"],

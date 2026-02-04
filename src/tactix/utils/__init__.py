@@ -1,3 +1,7 @@
+"""Utility exports for the tactix package."""
+
+# pylint: disable=redefined-builtin
+
 from .generate_id import generate_id
 from .hasher import Hasher, hash, hash_file
 from .logger import Logger, funclogger

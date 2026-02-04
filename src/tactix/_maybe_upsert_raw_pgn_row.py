@@ -1,3 +1,5 @@
+"""Conditionally upsert a raw PGN row."""
+
 from collections.abc import Mapping
 
 from tactix._build_pgn_upsert_plan import _build_pgn_upsert_plan
@@ -15,6 +17,7 @@ def _maybe_upsert_raw_pgn_row(
     row: Mapping[str, object],
     latest_cache: dict[tuple[str, str], tuple[str | None, int]],
 ) -> int:
+    """Upsert a row if newer metadata is available."""
     game_id, source = _parse_game_source(row)
     if not _has_game_source(game_id, source):
         return 0

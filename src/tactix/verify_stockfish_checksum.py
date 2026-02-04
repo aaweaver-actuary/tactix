@@ -1,3 +1,5 @@
+"""Verify Stockfish binary checksums."""
+
 import hashlib
 from pathlib import Path
 

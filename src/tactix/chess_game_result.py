@@ -1,3 +1,5 @@
+"""Chess game result enumeration helpers."""
+
 from __future__ import annotations
 
 from enum import StrEnum
@@ -30,6 +32,10 @@ class ChessGameResult(StrEnum):
 
     @classmethod
     def from_str(cls, result_str: str, color: ChessPlayerColor) -> ChessGameResult:
+        """Convert a result string and player color to a result enum."""
+        # pylint: disable=import-outside-toplevel
+        from tactix.chess_player_color import ChessPlayerColor  # noqa: PLC0415
+
         resolved = ChessPlayerColor.result_mapping(color).get(result_str.lower())
         if resolved is None:
             raise ValueError(f"Invalid game result string: {result_str}")

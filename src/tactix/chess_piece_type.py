@@ -1,3 +1,5 @@
+"""Piece type helpers for chess models."""
+
 from __future__ import annotations
 
 from enum import StrEnum
@@ -37,6 +39,7 @@ class ChessPieceType(StrEnum):
 
     @classmethod
     def from_str(cls, string: str) -> ChessPieceType:
+        """Convert a string into a ChessPieceType."""
         mapping = {
             "p": cls.PAWN,
             "n": cls.KNIGHT,
@@ -57,6 +60,7 @@ class ChessPieceType(StrEnum):
         return resolved
 
     def as_chess(self) -> chess.PieceType:
+        """Return the python-chess piece type for this value."""
         mapping = {
             ChessPieceType.PAWN: chess.PAWN,
             ChessPieceType.KNIGHT: chess.KNIGHT,

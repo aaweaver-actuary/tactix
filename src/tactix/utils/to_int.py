@@ -1,3 +1,6 @@
+"""Integer coercion helpers."""
+
+
 def to_int(value: object) -> int | None:
     """Coerce a value to an integer if possible.
 

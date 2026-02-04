@@ -6,6 +6,7 @@ from typing import cast
 from tactix.config import Settings
 from tactix.emit_progress__pipeline import _emit_progress
 from tactix.init_pgn_schema import init_pgn_schema
+from tactix.ops_event import OpsEvent
 from tactix.pipeline_state__pipeline import GameRow, ProgressCallback, logger
 from tactix.postgres_connection import postgres_connection
 from tactix.postgres_pgns_enabled import postgres_pgns_enabled
@@ -44,14 +45,16 @@ def _upsert_postgres_raw_pgns_if_enabled(
         total=len(games_to_process),
     )
     record_ops_event(
-        settings,
-        component="ingestion",
-        event_type="postgres_raw_pgns_persisted",
-        source=settings.source,
-        profile=profile,
-        metadata={
-            "inserted": inserted,
-            "total": len(games_to_process),
-        },
+        OpsEvent(
+            settings=settings,
+            component="ingestion",
+            event_type="postgres_raw_pgns_persisted",
+            source=settings.source,
+            profile=profile,
+            metadata={
+                "inserted": inserted,
+                "total": len(games_to_process),
+            },
+        )
     )
     return inserted

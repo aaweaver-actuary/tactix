@@ -1,44 +1,43 @@
+"""Run the analysis loop over extracted positions."""
+
+# pylint: disable=import-outside-toplevel
+
 from __future__ import annotations
 
+from tactix.analysis_context import AnalysisPositionContext
 from tactix.analysis_progress_interval__pipeline import _analysis_progress_interval
-from tactix.config import Settings
-from tactix.define_pipeline_state__pipeline import ProgressCallback
+from tactix.AnalysisLoopContext import AnalysisLoopContext
 from tactix.process_analysis_position__pipeline import _process_analysis_position
 
 
 def _run_analysis_loop(
-    conn,
-    settings: Settings,
-    positions: list[dict[str, object]],
-    resume_index: int,
-    analysis_checkpoint_path,
-    analysis_signature: str,
-    progress: ProgressCallback | None,
-    pg_conn,
-    analysis_pg_enabled: bool,
+    context: AnalysisLoopContext,
 ) -> tuple[int, int]:
-    total_positions = len(positions)
+    """Execute analysis over positions and return counters."""
+    total_positions = len(context.positions)
     progress_every = _analysis_progress_interval(total_positions)
     tactics_count = 0
     postgres_written = 0
-    from tactix import StockfishEngine as pipeline_module  # noqa: PLC0415
+    from tactix import StockfishEngine as StockfishEngineModule  # noqa: PLC0415
 
-    with pipeline_module.StockfishEngine(settings) as engine:
-        for idx, pos in enumerate(positions):
+    with StockfishEngineModule.StockfishEngine(context.settings) as engine:
+        for idx, pos in enumerate(context.positions):
             tactics_delta, postgres_delta = _process_analysis_position(
-                conn,
-                settings,
-                engine,
-                pos,
-                idx,
-                resume_index,
-                analysis_checkpoint_path,
-                analysis_signature,
-                progress,
-                total_positions,
-                progress_every,
-                pg_conn,
-                analysis_pg_enabled,
+                AnalysisPositionContext(
+                    conn=context.conn,
+                    settings=context.settings,
+                    engine=engine,
+                    pos=pos,
+                    idx=idx,
+                    resume_index=context.resume_index,
+                    analysis_checkpoint_path=context.analysis_checkpoint_path,
+                    analysis_signature=context.analysis_signature,
+                    progress=context.progress,
+                    total_positions=total_positions,
+                    progress_every=progress_every,
+                    pg_conn=context.pg_conn,
+                    analysis_pg_enabled=context.analysis_pg_enabled,
+                )
             )
             tactics_count += tactics_delta
             postgres_written += postgres_delta

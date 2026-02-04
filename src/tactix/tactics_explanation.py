@@ -1,3 +1,5 @@
+"""Public exports for tactic explanation helpers."""
+
 from __future__ import annotations
 
 from tactix import format_tactics__explanation as _impl

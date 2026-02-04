@@ -1,3 +1,5 @@
+"""Resolve the backfill end timestamp for Airflow jobs."""
+
 from __future__ import annotations
 
 from tactix.coerce_backfill_end_ms__airflow_jobs import _coerce_backfill_end_ms

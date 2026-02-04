@@ -1,36 +1,35 @@
+"""Handle no-games scenarios in the sync pipeline."""
+
 from __future__ import annotations
 
 from tactix.build_no_games_payload__pipeline import _build_no_games_payload
-from tactix.config import Settings
-from tactix.define_pipeline_state__pipeline import FetchContext, ProgressCallback, logger
+from tactix.DailySyncStartContext import NoGamesContext, NoGamesPayloadContext
+from tactix.define_pipeline_state__pipeline import logger
 from tactix.emit_progress__pipeline import _emit_progress
 
 
 def _handle_no_games(
-    settings: Settings,
-    conn,
-    progress: ProgressCallback | None,
-    backfill_mode: bool,
-    fetch_context: FetchContext,
-    last_timestamp_value: int,
-    window_filtered: int,
+    context: NoGamesContext,
 ) -> dict[str, object]:
+    """Return the no-games payload and emit progress updates."""
     logger.info(
         "No new games for source=%s at checkpoint=%s",
-        settings.source,
-        fetch_context.since_ms,
+        context.settings.source,
+        context.fetch_context.since_ms,
     )
     _emit_progress(
-        progress,
+        context.progress,
         "no_games",
-        source=settings.source,
+        source=context.settings.source,
         message="No new games to process",
     )
     return _build_no_games_payload(
-        settings,
-        conn,
-        backfill_mode,
-        fetch_context,
-        last_timestamp_value,
-        window_filtered,
+        NoGamesPayloadContext(
+            settings=context.settings,
+            conn=context.conn,
+            backfill_mode=context.backfill_mode,
+            fetch_context=context.fetch_context,
+            last_timestamp_value=context.last_timestamp_value,
+            window_filtered=context.window_filtered,
+        )
     )

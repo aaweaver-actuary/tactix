@@ -1,3 +1,5 @@
+"""Convenience exports for Stockfish engine usage."""
+
 from __future__ import annotations
 
 import shutil

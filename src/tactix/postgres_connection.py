@@ -2,7 +2,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 
 import psycopg2
-from psycopg2.extensions import connection as PgConnection
+from psycopg2.extensions import connection as PgConnection  # noqa: N812
 
 from tactix._connection_kwargs import _connection_kwargs
 from tactix.config import Settings

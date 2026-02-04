@@ -1,3 +1,5 @@
+"""Load positions to resume analysis based on checkpoints."""
+
 from __future__ import annotations
 
 from tactix.analysis_signature__pipeline import _analysis_signature

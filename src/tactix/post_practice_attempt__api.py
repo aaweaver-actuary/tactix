@@ -1,3 +1,5 @@
+"""API handler for practice attempt submissions."""
+
 from __future__ import annotations
 
 import time as time_module
@@ -10,6 +12,7 @@ from tactix.models import PracticeAttemptRequest
 
 
 def practice_attempt(payload: PracticeAttemptRequest) -> dict[str, object]:
+    """Grade a practice attempt and return the result."""
     settings = get_settings(source=payload.source)
     conn = get_connection(settings.duckdb_path)
     init_schema(conn)

@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 
-from psycopg2.extensions import connection as PgConnection
+from psycopg2.extensions import connection as PgConnection  # noqa: N812
 
 from tactix._upsert_postgres_raw_pgn_rows import _upsert_postgres_raw_pgn_rows
 

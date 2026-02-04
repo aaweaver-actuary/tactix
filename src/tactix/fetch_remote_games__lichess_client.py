@@ -1,3 +1,7 @@
+"""Fetch remote Lichess games with retries."""
+
+# pylint: disable=protected-access
+
 from __future__ import annotations
 
 import logging

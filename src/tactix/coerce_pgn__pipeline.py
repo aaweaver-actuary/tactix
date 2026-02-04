@@ -1,3 +1,5 @@
+"""Coerce PGN payloads to text."""
+
 from __future__ import annotations
 
 from tactix.coerce_str__pipeline import _coerce_str

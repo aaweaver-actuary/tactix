@@ -1,3 +1,5 @@
+"""Request model for chess fetches."""
+
 from pydantic import BaseModel
 
 

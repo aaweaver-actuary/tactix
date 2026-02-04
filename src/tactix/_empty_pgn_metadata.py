@@ -1,4 +1,8 @@
+"""Provide an empty PGN metadata payload."""
+
+
 def _empty_pgn_metadata() -> dict[str, object]:
+    """Return default metadata values for missing PGN headers."""
     return {
         "user_rating": None,
         "time_control": None,

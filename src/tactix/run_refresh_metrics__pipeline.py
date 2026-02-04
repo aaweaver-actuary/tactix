@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from tactix.config import Settings, get_settings
+from tactix.dashboard_query import DashboardQuery
 from tactix.db.duckdb_store import (
     fetch_metrics,
     get_connection,
@@ -47,5 +48,5 @@ def run_refresh_metrics(
         "source": settings.source,
         "user": settings.user,
         "metrics_version": metrics_version,
-        "metrics_rows": len(fetch_metrics(conn, source=settings.source)),
+        "metrics_rows": len(fetch_metrics(conn, DashboardQuery(source=settings.source))),
     }

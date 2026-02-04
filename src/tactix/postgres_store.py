@@ -1,3 +1,5 @@
+"""Public exports for Postgres-backed storage helpers."""
+
 from __future__ import annotations
 
 import psycopg2

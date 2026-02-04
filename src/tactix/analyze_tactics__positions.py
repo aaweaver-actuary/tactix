@@ -16,7 +16,6 @@ _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS = {
     "discovered_attack": -1200,
     "discovered_check": -950,
     "fork": -500,
-    "hanging_piece": -900,
     "skewer": -700,
 }
 _PIN_FAILED_ATTEMPT_SWING_THRESHOLD = -50

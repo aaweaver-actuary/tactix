@@ -1,0 +1,47 @@
+project:
+  id: ''
+
+organization:
+  id: ''
+  name: ''
+
+security:
+  ignore-unpinned-requirements: true
+  ignore-cvss-severity-below: 0
+  ignore-cvss-unknown-severity: false
+  ignore-vulnerabilities:
+    42194:
+      reason: 'Transitive dependency from Flask-AppBuilder; no fixed release yet.'
+      expires: '2026-12-31'
+    51668:
+      reason: 'Airflow requires SQLAlchemy <2.0; awaiting upstream support for 2.x.'
+      expires: '2026-12-31'
+    62019:
+      reason: 'Airflow pins Werkzeug <3; upstream compatibility required for fixes.'
+      expires: '2026-12-31'
+    71594:
+      reason: 'Airflow pins Werkzeug <3; upstream compatibility required for fixes.'
+      expires: '2026-12-31'
+    71595:
+      reason: 'Airflow pins Werkzeug <3; upstream compatibility required for fixes.'
+      expires: '2026-12-31'
+    73889:
+      reason: 'Airflow pins Werkzeug <3; upstream compatibility required for fixes.'
+      expires: '2026-12-31'
+    73969:
+      reason: 'Airflow pins Werkzeug <3; upstream compatibility required for fixes.'
+      expires: '2026-12-31'
+    77317:
+      reason: 'Airflow provider constraints lock Flask-AppBuilder <=4.5.3.'
+      expires: '2026-12-31'
+    79598:
+      reason: 'Airflow provider constraints lock Flask-AppBuilder <=4.5.3.'
+      expires: '2026-12-31'
+    82196:
+      reason: 'Airflow pins Werkzeug <3; upstream compatibility required for fixes.'
+      expires: '2026-12-31'
+  continue-on-vulnerability-error: false
+
+security-updates:
+  auto-security-updates-limit:
+    - patch

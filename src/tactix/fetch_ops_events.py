@@ -1,3 +1,5 @@
+"""Fetch operations events from Postgres."""
+
 from typing import Any
 
 from psycopg2.extras import RealDictCursor
@@ -8,6 +10,7 @@ from tactix.postgres_connection import postgres_connection
 
 
 def fetch_ops_events(settings: Settings, limit: int = 10) -> list[dict[str, Any]]:
+    """Return recent ops events for the given settings."""
     with postgres_connection(settings) as conn:
         if conn is None:
             return []

@@ -1,3 +1,5 @@
+"""Resolve the Airflow base URL from settings."""
+
 from __future__ import annotations
 
 from tactix.config import Settings

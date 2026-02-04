@@ -1,3 +1,5 @@
+"""Apply failed-attempt overrides for discovered attacks."""
+
 from tactix._select_motif__discovered_attack_target import _select_motif__discovered_attack_target
 from tactix._should_override__discovered_attack_failed_attempt import (
     _should_override__discovered_attack_failed_attempt,
@@ -11,6 +13,7 @@ def _apply_outcome__failed_attempt_discovered_attack(
     swing: int | None,
     threshold: int | None,
 ) -> tuple[str, str]:
+    """Apply failed-attempt override for discovered attack motifs."""
     target_motif = _select_motif__discovered_attack_target(motif, best_motif)
     if _should_override__discovered_attack_failed_attempt(result, swing, threshold, target_motif):
         return "failed_attempt", target_motif

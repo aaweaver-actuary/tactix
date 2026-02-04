@@ -1,8 +1,12 @@
+"""Models and helpers for chess game rows."""
+
 from collections.abc import Callable, Iterable
 from datetime import UTC, datetime
 from typing import cast
 
 from pydantic import BaseModel
+
+from tactix.chess_clients.GameRowInputs import GameRowInputs
 
 
 class ChessGameRow(BaseModel):
@@ -26,26 +30,18 @@ class ChessGameRow(BaseModel):
 
 
 def build_game_row_dict[T: "ChessGameRow"](
-    *,
-    game_id: str,
-    pgn: str,
-    last_timestamp_ms: int,
-    user: str,
-    source: str,
-    fetched_at: datetime | None = None,
-    model_cls: type[T] | None = None,
+    inputs: "GameRowInputs[T]",
 ) -> dict[str, object]:
-    if fetched_at is None:
-        fetched_at = datetime.now(UTC)
-    if model_cls is None:
-        model_cls = cast(type[T], ChessGameRow)
+    """Build a normalized game row dictionary from inputs."""
+    fetched_at = datetime.now(UTC) if inputs.fetched_at is None else inputs.fetched_at
+    model_cls = inputs.model_cls or cast(type[T], ChessGameRow)
     row = ChessGameRow(
-        game_id=game_id,
-        user=user,
-        source=source,
+        game_id=inputs.game_id,
+        user=inputs.user,
+        source=inputs.source,
         fetched_at=fetched_at,
-        pgn=pgn,
-        last_timestamp_ms=last_timestamp_ms,
+        pgn=inputs.pgn,
+        last_timestamp_ms=inputs.last_timestamp_ms,
     )
     return coerce_game_row_dict(row, model_cls=model_cls)
 
@@ -55,6 +51,7 @@ def coerce_game_row_dict[T: "ChessGameRow"](
     *,
     model_cls: type[T] | None = None,
 ) -> dict[str, object]:
+    """Coerce a game row to the specified model and return a dict."""
     if model_cls is None:
         model_cls = cast(type[T], ChessGameRow)
     return model_cls.model_validate(row.model_dump()).model_dump()
@@ -64,12 +61,15 @@ def coerce_game_rows[T: "ChessGameRow"](
     rows: Iterable[dict],
     model_cls: type[T],
 ) -> list[dict]:
+    """Coerce multiple row dicts to a model and return dicts."""
     return [model_cls.model_validate(row).model_dump() for row in rows]
 
 
 def coerce_rows_for_model[T: "ChessGameRow"](
     model_cls: type[T],
 ) -> Callable[[Iterable[dict]], list[dict]]:
+    """Return a helper that coerces rows to the model class."""
+
     def _coerce(rows: Iterable[dict]) -> list[dict]:
         return coerce_game_rows(rows, model_cls)
 

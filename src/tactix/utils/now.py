@@ -1,7 +1,11 @@
+"""Time helper utilities."""
+
 from datetime import UTC, datetime
 
 
 class Now:
+    """Utility methods for current time and UTC conversion."""
+
     @staticmethod
     def as_datetime() -> datetime:
         """Return the current UTC time as a datetime object."""
@@ -38,7 +42,7 @@ class Now:
             if dt.tzinfo is None:
                 return dt.replace(tzinfo=UTC)
             return dt.astimezone(UTC)
-        except Exception:
+        except (TypeError, ValueError):
             return None
 
 

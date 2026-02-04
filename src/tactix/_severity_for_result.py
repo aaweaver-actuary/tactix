@@ -1,3 +1,5 @@
+"""Compute severity for a tactic outcome."""
+
 from tactix._severity_for_found_tactic import _severity_for_found_tactic
 from tactix._severity_for_nonfound_tactic import _severity_for_nonfound_tactic
 from tactix.utils.logger import funclogger

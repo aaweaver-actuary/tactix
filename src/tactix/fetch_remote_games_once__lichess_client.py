@@ -1,3 +1,7 @@
+"""Fetch Lichess games once via the chess client module."""
+
+# pylint: disable=import-outside-toplevel,protected-access
+
 from __future__ import annotations
 
 from tactix.config import Settings

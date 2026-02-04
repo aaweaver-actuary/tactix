@@ -1,4 +1,4 @@
-from psycopg2.extensions import connection as PgConnection
+from psycopg2.extensions import connection as PgConnection  # noqa: N812
 
 from tactix._list_tables import _list_tables
 

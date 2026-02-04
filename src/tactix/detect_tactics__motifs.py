@@ -1,3 +1,5 @@
+"""Detect tactical motifs from chess positions."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -44,6 +46,8 @@ PIECE_VALUES = {
 
 @dataclass(frozen=True)
 class TacticContext:
+    """Snapshot of board state and move metadata for motif detection."""
+
     board_before: chess.Board
     board_after: chess.Board
     best_move: chess.Move
@@ -51,16 +55,20 @@ class TacticContext:
 
 
 class BaseTacticDetector(ABC):
+    """Abstract base class for motif-specific detectors."""
+
     motif: str
 
     @abstractmethod
     def detect(self, context: TacticContext) -> bool:
+        """Return True if the tactic is detected for the given context."""
         raise NotImplementedError
 
     @staticmethod
     def classify_result(
         best_move: str | None, user_move: str, base_cp: int, after_cp: int
     ) -> tuple[str, int]:
+        """Classify the outcome label and return the eval delta."""
         delta = after_cp - base_cp
         if best_move and user_move == best_move:
             return "found", delta
@@ -72,12 +80,14 @@ class BaseTacticDetector(ABC):
 
     @staticmethod
     def score_from_pov(score_cp: int, pov_color: bool, turn_color: bool) -> int:
+        """Normalize a score to the point of view color."""
         if turn_color == pov_color:
             return score_cp
         return -score_cp
 
     @staticmethod
     def piece_value(piece_type: int) -> int:
+        """Return the configured material value for a piece type."""
         return PIECE_VALUES.get(piece_type, 0)
 
     @staticmethod
@@ -103,6 +113,7 @@ class BaseTacticDetector(ABC):
     def first_piece_in_direction(
         board: chess.Board, start: chess.Square, step: int
     ) -> chess.Square | None:
+        """Return the first occupied square when stepping from a start square."""
         file = chess.square_file(start)
         rank = chess.square_rank(start)
         deltas = {
@@ -133,6 +144,7 @@ class BaseTacticDetector(ABC):
     def count_high_value_targets(
         board_after: chess.Board, to_square: chess.Square, mover_color: bool
     ) -> int:
+        """Count attacked high-value targets from a destination square."""
         targets = 0
         for sq in board_after.attacks(to_square):
             piece = board_after.piece_at(sq)
@@ -144,6 +156,7 @@ class BaseTacticDetector(ABC):
     def attacked_high_value_targets(
         board: chess.Board, square: chess.Square, opponent: bool
     ) -> set[chess.Square]:
+        """Collect attacked high-value target squares for the attacker."""
         targets: set[chess.Square] = set()
         for target_sq in board.attacks(square):
             piece = board.piece_at(target_sq)
@@ -158,6 +171,7 @@ class BaseTacticDetector(ABC):
         best_move: chess.Move,
         mover_color: bool,
     ) -> bool:
+        """Return True when the move captures a hanging high-value piece."""
         captured = board_before.piece_at(best_move.to_square)
         if not _is_high_value_capture(captured):
             return False
@@ -170,6 +184,7 @@ class BaseTacticDetector(ABC):
 
     @staticmethod
     def has_hanging_piece(board: chess.Board, mover_color: bool) -> bool:
+        """Return True if any high-value piece is hanging for the mover."""
         for square, piece in board.piece_map().items():
             if piece.color != mover_color or piece.piece_type not in HIGH_VALUE_PIECES:
                 continue
@@ -259,21 +274,33 @@ def _opponent_king_square(board: chess.Board, mover_color: bool) -> chess.Square
     return board.king(opponent)
 
 
+@dataclass(frozen=True)
+class DiscoveredCheckContext:
+    """Inputs for discovered check detection."""
+
+    detector: BaseTacticDetector
+    board_before: chess.Board
+    board_after: chess.Board
+    mover_color: bool
+    king_square: chess.Square
+    exclude_square: chess.Square
+
+
 def _has_discovered_check(
-    detector: BaseTacticDetector,
-    board_before: chess.Board,
-    board_after: chess.Board,
-    mover_color: bool,
-    king_square: chess.Square,
-    exclude_square: chess.Square,
+    context: DiscoveredCheckContext,
 ) -> bool:
-    for square, _piece in detector.iter_unchanged_sliders(
-        board_before,
-        board_after,
-        mover_color,
-        exclude_square=exclude_square,
+    for square, _piece in context.detector.iter_unchanged_sliders(
+        context.board_before,
+        context.board_after,
+        context.mover_color,
+        exclude_square=context.exclude_square,
     ):
-        if _is_discovered_check_slider(board_before, board_after, square, king_square):
+        if _is_discovered_check_slider(
+            context.board_before,
+            context.board_after,
+            square,
+            context.king_square,
+        ):
             return True
     return False
 
@@ -289,21 +316,34 @@ def _is_discovered_check_slider(
     return king_square not in board_before.attacks(square)
 
 
+@dataclass(frozen=True)
+class DiscoveredAttackContext:
+    """Inputs for discovered attack detection."""
+
+    detector: BaseTacticDetector
+    board_before: chess.Board
+    board_after: chess.Board
+    mover_color: bool
+    opponent: bool
+    exclude_square: chess.Square | None
+
+
 def _has_discovered_attack(
-    detector: BaseTacticDetector,
-    board_before: chess.Board,
-    board_after: chess.Board,
-    mover_color: bool,
-    opponent: bool,
-    exclude_square: chess.Square | None,
+    context: DiscoveredAttackContext,
 ) -> bool:
-    for square, _piece in detector.iter_unchanged_sliders(
-        board_before,
-        board_after,
-        mover_color,
-        exclude_square=exclude_square,
+    for square, _piece in context.detector.iter_unchanged_sliders(
+        context.board_before,
+        context.board_after,
+        context.mover_color,
+        exclude_square=context.exclude_square,
     ):
-        if _has_new_target(detector, board_before, board_after, square, opponent):
+        if _has_new_target(
+            context.detector,
+            context.board_before,
+            context.board_after,
+            square,
+            context.opponent,
+        ):
             return True
     return False
 
@@ -321,28 +361,36 @@ def _has_new_target(
 
 
 class DiscoveredCheckDetector(BaseTacticDetector):
+    """Detect discovered check tactics."""
+
     motif = "discovered_check"
 
     def detect(self, context: TacticContext) -> bool:
+        """Return True when a discovered check is present."""
         if not context.board_after.is_check():
             return False
         king_square = _opponent_king_square(context.board_after, context.mover_color)
         if king_square is None:
             return False
         return _has_discovered_check(
-            self,
-            context.board_before,
-            context.board_after,
-            context.mover_color,
-            king_square,
-            context.best_move.to_square,
+            DiscoveredCheckContext(
+                detector=self,
+                board_before=context.board_before,
+                board_after=context.board_after,
+                mover_color=context.mover_color,
+                king_square=king_square,
+                exclude_square=context.best_move.to_square,
+            )
         )
 
 
 class DiscoveredAttackDetector(BaseTacticDetector):
+    """Detect discovered attack tactics."""
+
     motif = "discovered_attack"
 
     def detect(self, context: TacticContext) -> bool:
+        """Return True when a discovered attack is present."""
         moved_piece = context.board_before.piece_at(context.best_move.from_square)
         opponent = not context.mover_color
         exclude_square = None
@@ -353,19 +401,24 @@ class DiscoveredAttackDetector(BaseTacticDetector):
         }:
             exclude_square = context.best_move.to_square
         return _has_discovered_attack(
-            self,
-            context.board_before,
-            context.board_after,
-            context.mover_color,
-            opponent,
-            exclude_square,
+            DiscoveredAttackContext(
+                detector=self,
+                board_before=context.board_before,
+                board_after=context.board_after,
+                mover_color=context.mover_color,
+                opponent=opponent,
+                exclude_square=exclude_square,
+            )
         )
 
 
 class SkewerDetector(BaseTacticDetector):
+    """Detect skewer tactics."""
+
     motif = "skewer"
 
     def detect(self, context: TacticContext) -> bool:
+        """Return True when a skewer is present."""
         opponent = not context.mover_color
         return any(
             _has_skewer_in_steps(self, context.board_after, square, steps, opponent)
@@ -384,9 +437,12 @@ def _skewer_sources(
 
 
 class HangingPieceDetector(BaseTacticDetector):
+    """Detect hanging piece captures."""
+
     motif = "hanging_piece"
 
     def detect(self, context: TacticContext) -> bool:
+        """Return True when the move captures a hanging piece."""
         if not context.board_before.is_capture(context.best_move):
             return False
         return self.is_hanging_capture(
@@ -398,9 +454,12 @@ class HangingPieceDetector(BaseTacticDetector):
 
 
 class PinDetector(BaseTacticDetector):
+    """Detect pin tactics."""
+
     motif = "pin"
 
     def detect(self, context: TacticContext) -> bool:
+        """Return True when the move creates a pin."""
         moved_piece = context.board_before.piece_at(context.best_move.from_square)
         if not moved_piece or moved_piece.color != context.mover_color:
             return False
@@ -435,12 +494,14 @@ def _is_skewer_in_step(
     opponent: bool,
 ) -> bool:
     return _is_line_tactic(
-        detector,
-        board,
-        start,
-        step,
-        opponent,
-        target_stronger=True,
+        LineTacticContext(
+            detector=detector,
+            board=board,
+            start=start,
+            step=step,
+            opponent=opponent,
+            target_stronger=True,
+        )
     )
 
 
@@ -462,39 +523,57 @@ def _is_pin_in_step(
     opponent: bool,
 ) -> bool:
     return _is_line_tactic(
-        detector,
-        board,
-        start,
-        step,
-        opponent,
-        target_stronger=False,
+        LineTacticContext(
+            detector=detector,
+            board=board,
+            start=start,
+            step=step,
+            opponent=opponent,
+            target_stronger=False,
+        )
     )
 
 
+@dataclass(frozen=True)
+class LineTacticContext:
+    """Inputs for line tactic detection such as pins or skewers."""
+
+    detector: BaseTacticDetector
+    board: chess.Board
+    start: chess.Square
+    step: int
+    opponent: bool
+    target_stronger: bool
+
+
 def _is_line_tactic(
-    detector: BaseTacticDetector,
-    board: chess.Board,
-    start: chess.Square,
-    step: int,
-    opponent: bool,
-    *,
-    target_stronger: bool,
+    context: LineTacticContext,
 ) -> bool:
-    pieces = _two_pieces_in_line(detector, board, start, step)
+    pieces = _two_pieces_in_line(
+        context.detector,
+        context.board,
+        context.start,
+        context.step,
+    )
     if pieces is None:
         return False
     target, behind = pieces
-    if not _is_opponent_piece(target, opponent) or not _is_opponent_piece(behind, opponent):
+    if not _is_opponent_piece(target, context.opponent) or not _is_opponent_piece(
+        behind,
+        context.opponent,
+    ):
         return False
-    target_value = detector.piece_value(target.piece_type)
-    behind_value = detector.piece_value(behind.piece_type)
-    if target_stronger:
+    target_value = context.detector.piece_value(target.piece_type)
+    behind_value = context.detector.piece_value(behind.piece_type)
+    if context.target_stronger:
         return target_value > behind_value
     return behind_value > target_value
 
 
 def _is_opponent_piece(piece: chess.Piece | None, opponent: bool) -> bool:
-    return bool(piece) and piece.color == opponent
+    if piece is None:
+        return False
+    return piece.color == opponent
 
 
 def _two_pieces_in_line(
@@ -517,9 +596,12 @@ def _two_pieces_in_line(
 
 
 class ForkDetector(BaseTacticDetector):
+    """Detect fork tactics."""
+
     motif = "fork"
 
     def detect(self, context: TacticContext) -> bool:
+        """Return True when a fork is present."""
         piece = context.board_before.piece_at(context.best_move.from_square)
         if not _is_fork_piece(piece):
             return False
@@ -530,7 +612,9 @@ class ForkDetector(BaseTacticDetector):
 
 
 def _is_fork_piece(piece: chess.Piece | None) -> bool:
-    return bool(piece) and piece.piece_type in HIGH_VALUE_PIECES
+    if piece is None:
+        return False
+    return piece.piece_type in HIGH_VALUE_PIECES
 
 
 def _forks_meet_threshold(forks: int, board_after: chess.Board) -> bool:
@@ -540,30 +624,42 @@ def _forks_meet_threshold(forks: int, board_after: chess.Board) -> bool:
 
 
 class CaptureDetector(BaseTacticDetector):
+    """Detect basic captures."""
+
     motif = "capture"
 
     def detect(self, context: TacticContext) -> bool:
+        """Return True when the move is a capture."""
         return context.board_before.is_capture(context.best_move)
 
 
 class MateDetector(BaseTacticDetector):
+    """Detect checkmate tactics."""
+
     motif = "mate"
 
     def detect(self, context: TacticContext) -> bool:
+        """Return True when the move delivers checkmate."""
         return context.board_after.is_checkmate()
 
 
 class CheckDetector(BaseTacticDetector):
+    """Detect checking moves."""
+
     motif = "check"
 
     def detect(self, context: TacticContext) -> bool:
+        """Return True when the move gives check."""
         return context.board_after.is_check()
 
 
 class EscapeDetector(BaseTacticDetector):
+    """Detect escape tactics where a piece escapes attack."""
+
     motif = "escape"
 
     def detect(self, context: TacticContext) -> bool:
+        """Return True when the moved piece escapes attack."""
         return context.board_before.is_attacked_by(
             not context.mover_color, context.best_move.from_square
         ) and not context.board_before.is_attacked_by(
@@ -571,11 +667,15 @@ class EscapeDetector(BaseTacticDetector):
         )
 
 
-class MotifDetectorSuite:
+class MotifDetectorSuite:  # pylint: disable=too-few-public-methods
+    """Collection of detectors used to infer a tactic motif."""
+
     def __init__(self, detectors: Iterable[BaseTacticDetector]) -> None:
+        """Initialize the detector suite."""
         self._detectors = tuple(detectors)
 
     def infer_motif(self, board: chess.Board, best_move: chess.Move | None) -> str:
+        """Infer the best motif label for a move on the given board."""
         if best_move is None:
             return "initiative"
         mover_color = board.turn
@@ -594,6 +694,7 @@ class MotifDetectorSuite:
 
 
 def build_default_motif_detector_suite() -> MotifDetectorSuite:
+    """Build the default set of motif detectors."""
     return MotifDetectorSuite(
         [
             DiscoveredCheckDetector(),

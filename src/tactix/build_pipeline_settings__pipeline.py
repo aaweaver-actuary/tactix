@@ -1,3 +1,5 @@
+"""Build pipeline settings with source/profile overrides."""
+
 from __future__ import annotations
 
 from tactix.config import Settings, get_settings
@@ -8,6 +10,7 @@ def _build_pipeline_settings(
     source: str | None = None,
     profile: str | None = None,
 ) -> Settings:
+    """Return settings for pipeline execution."""
     settings = settings or get_settings(source=source, profile=profile)
     if source:
         settings.source = source

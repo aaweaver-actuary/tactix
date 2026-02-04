@@ -1,3 +1,5 @@
+"""API endpoint to stream background job events."""
+
 from __future__ import annotations
 
 from typing import Annotated
@@ -7,6 +9,7 @@ from fastapi.responses import StreamingResponse
 
 from tactix._stream_job_response import _stream_job_response
 from tactix.config import get_settings
+from tactix.stream_job_context import StreamJobRequest
 
 
 def stream_jobs(
@@ -16,12 +19,15 @@ def stream_jobs(
     backfill_start_ms: Annotated[int | None, Query(ge=0)] = None,
     backfill_end_ms: Annotated[int | None, Query(ge=0)] = None,
 ) -> StreamingResponse:
+    """Stream job events for the requested background task."""
     return _stream_job_response(
-        job,
-        source,
-        profile,
-        backfill_start_ms,
-        backfill_end_ms,
+        StreamJobRequest(
+            job=job,
+            source=source,
+            profile=profile,
+            backfill_start_ms=backfill_start_ms,
+            backfill_end_ms=backfill_end_ms,
+        ),
         get_settings=get_settings,
     )
 

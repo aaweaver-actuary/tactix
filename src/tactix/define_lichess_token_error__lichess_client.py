@@ -1,3 +1,5 @@
+"""Lichess token error definition."""
+
 from __future__ import annotations
 
 

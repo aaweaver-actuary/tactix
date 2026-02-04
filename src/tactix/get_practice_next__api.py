@@ -1,3 +1,5 @@
+"""API endpoint for the next practice item."""
+
 from __future__ import annotations
 
 from typing import Annotated
@@ -11,8 +13,9 @@ from tactix.normalize_source__source import _normalize_source
 
 def practice_next(
     source: Annotated[str | None, Query()] = None,
-    include_failed_attempt: bool = Query(False),
+    include_failed_attempt: bool = Query(False),  # noqa: B008
 ) -> dict[str, object]:
+    """Fetch the next practice item for the requested source."""
     normalized_source = _normalize_source(source)
     settings = get_settings(source=normalized_source)
     conn = get_connection(settings.duckdb_path)

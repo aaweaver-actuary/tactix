@@ -1,3 +1,7 @@
+"""Load Chess.com fixture games via the client."""
+
+# pylint: disable=protected-access
+
 from __future__ import annotations
 
 from tactix.apply_client_method__chesscom_client import _client_method

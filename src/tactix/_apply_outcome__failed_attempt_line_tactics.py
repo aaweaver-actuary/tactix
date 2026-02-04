@@ -1,3 +1,5 @@
+"""Apply failed-attempt overrides for line tactics."""
+
 from tactix._apply_outcome__failed_attempt_discovered_attack import (
     _apply_outcome__failed_attempt_discovered_attack,
 )
@@ -19,6 +21,7 @@ def _apply_outcome__failed_attempt_line_tactics(
     swing: int | None,
     settings: Settings | None,
 ) -> tuple[str, str]:
+    """Apply failed-attempt overrides for line tactics."""
     result, motif = _apply_outcome__failed_attempt_pin(
         result,
         motif,

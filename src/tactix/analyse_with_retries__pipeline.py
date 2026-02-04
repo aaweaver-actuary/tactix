@@ -4,6 +4,7 @@ import time
 
 import chess.engine
 
+from tactix.analyze_position import analyze_position
 from tactix.config import Settings
 from tactix.utils import Logger, funclogger
 
@@ -24,13 +25,20 @@ def _analyse_with_retries(
         except (
             chess.engine.EngineTerminatedError,
             chess.engine.EngineError,
-            BrokenPipeError,
             OSError,
         ) as exc:
             if attempt >= max_retries:
                 raise
             _handle_stockfish_retry(engine, attempt + 1, max_retries, exc, backoff_seconds)
     return None
+
+
+def analyse_with_retries(
+    engine,
+    position: dict[str, object],
+    settings: Settings,
+) -> tuple[dict[str, object], dict[str, object]] | None:
+    return _analyse_with_retries(engine, position, settings)
 
 
 @funclogger
@@ -53,9 +61,11 @@ def _analyse_position__pipeline(
             A tuple containing the analysis results and additional information as dictionaries,
             or None if the analysis could not be performed.
     """
-    from tactix import pipeline as pipeline_module  # noqa: PLC0415
+    from importlib import import_module  # noqa: PLC0415
 
-    return pipeline_module.analyze_position(position, engine, settings=settings)
+    pipeline_module = import_module("tactix.pipeline")
+    analyze_fn = getattr(pipeline_module, "analyze_position", analyze_position)
+    return analyze_fn(position, engine, settings=settings)
 
 
 @funclogger

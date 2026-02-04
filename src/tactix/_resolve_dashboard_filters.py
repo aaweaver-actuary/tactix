@@ -1,3 +1,5 @@
+"""Resolve dashboard filter defaults and normalization."""
+
 from datetime import datetime
 
 from tactix.coerce_date_to_datetime__datetime import _coerce_date_to_datetime

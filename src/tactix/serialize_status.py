@@ -1,9 +1,12 @@
+"""Serialize status models for API responses."""
+
 from typing import Any
 
 from tactix.PostgresStatus import PostgresStatus
 
 
 def serialize_status(status: PostgresStatus) -> dict[str, Any]:
+    """Return a JSON-serializable payload for the status object."""
     payload: dict[str, Any] = {
         "enabled": status.enabled,
         "status": status.status,

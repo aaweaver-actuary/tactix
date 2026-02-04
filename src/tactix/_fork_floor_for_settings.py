@@ -1,3 +1,5 @@
+"""Resolve fork severity floor from settings."""
+
 from tactix._is_profile_in import _is_profile_in
 from tactix.analyze_tactics__positions import _SEVERITY_MAX
 from tactix.config import Settings

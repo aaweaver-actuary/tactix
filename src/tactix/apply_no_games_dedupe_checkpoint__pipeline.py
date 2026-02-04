@@ -1,3 +1,5 @@
+"""Apply checkpoint updates when no games were deduped."""
+
 from __future__ import annotations
 
 from tactix.chess_clients.chesscom_client import write_cursor as write_chesscom_cursor

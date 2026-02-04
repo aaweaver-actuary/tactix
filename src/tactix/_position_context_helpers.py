@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 
 import chess
 import chess.pgn
@@ -11,6 +11,16 @@ from tactix.PositionContext import PositionContext
 from tactix.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+@dataclass(frozen=True)
+class PositionContextInputs:
+    ctx: PgnContext
+    game: chess.pgn.Game
+    board: chess.Board
+    node: chess.pgn.ChildNode
+    move: chess.Move
+    side_to_move: str
 
 
 def _get_user_color(white: str, user: str) -> bool:
@@ -34,25 +44,20 @@ def _side_from_turn(turn: bool) -> str:
 
 
 def _build_position_context(
-    ctx: PgnContext,
-    game: chess.pgn.Game,
-    board: chess.Board,
-    node: chess.pgn.ChildNode,
-    move: chess.Move,
-    side_to_move: str,
+    inputs: PositionContextInputs,
 ) -> dict[str, object]:
     return asdict(
         PositionContext(
-            game_id=ctx.game_id or game.headers.get("Site", ""),
-            user=ctx.user,
-            source=ctx.source,
-            fen=board.fen(),
-            ply=board.ply(),
-            move_number=board.fullmove_number,
-            side_to_move=side_to_move,
-            uci=move.uci(),
-            san=board.san(move),
-            clock_seconds=_clock_from_comment(node.comment or ""),
+            game_id=inputs.ctx.game_id or inputs.game.headers.get("Site", ""),
+            user=inputs.ctx.user,
+            source=inputs.ctx.source,
+            fen=inputs.board.fen(),
+            ply=inputs.board.ply(),
+            move_number=inputs.board.fullmove_number,
+            side_to_move=inputs.side_to_move,
+            uci=inputs.move.uci(),
+            san=inputs.board.san(inputs.move),
+            clock_seconds=_clock_from_comment(inputs.node.comment or ""),
             is_legal=True,
         )
     )

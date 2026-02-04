@@ -1,3 +1,6 @@
+# pylint: disable=duplicate-code,R0801
+"""Custom error types used in tactix."""
+
 import requests
 
 

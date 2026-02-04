@@ -1,3 +1,5 @@
+"""Refresh Lichess OAuth tokens."""
+
 from __future__ import annotations
 
 import requests

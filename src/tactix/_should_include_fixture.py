@@ -1,3 +1,6 @@
+"""Determine whether a fixture game should be included."""
+
+
 def _should_include_fixture(
     last_ts: int,
     since_ms: int,

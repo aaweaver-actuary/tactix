@@ -1,13 +1,13 @@
+"""Override checks for discovered attack failed attempts."""
+
+from tactix.should_override_failed_attempt__tactics import _should_override_failed_attempt
+
+
 def _should_override__discovered_attack_failed_attempt(
     result: str,
     swing: int | None,
     threshold: int | None,
     target_motif: str,
 ) -> bool:
-    return bool(
-        result == "unclear"
-        and swing is not None
-        and threshold is not None
-        and swing <= threshold
-        and target_motif
-    )
+    """Return True if a discovered attack failed attempt should override."""
+    return _should_override_failed_attempt(result, swing, threshold, target_motif)

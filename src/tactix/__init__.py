@@ -4,6 +4,7 @@ from importlib import import_module
 from typing import TYPE_CHECKING
 
 from tactix.chess_game import ChessGame
+from tactix.DailySyncStartContext import DailyGameSyncRequest
 from tactix.pipeline import run_daily_game_sync
 
 chesscom_client = import_module("tactix.chess_clients.chesscom_client")
@@ -13,7 +14,7 @@ lichess_client = import_module("tactix.chess_clients.lichess_client")
 
 def main() -> None:
     """Run a single end-to-end pipeline execution."""
-    result = run_daily_game_sync()
+    result = run_daily_game_sync(DailyGameSyncRequest())
     print(result)
 
 

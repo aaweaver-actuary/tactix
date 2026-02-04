@@ -1,3 +1,5 @@
+"""Expand a PGN row into chunk rows when needed."""
+
 from __future__ import annotations
 
 from tactix.build_chunk_row__pipeline import _build_chunk_row

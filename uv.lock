@@ -119,7 +119,7 @@ wheels = [
 
 [[package]]
 name = "apache-airflow"
-version = "2.10.0"
+version = "2.10.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alembic" },
@@ -187,13 +187,12 @@ dependencies = [
     { name = "tabulate" },
     { name = "tenacity" },
     { name = "termcolor" },
-    { name = "unicodecsv" },
     { name = "universal-pathlib" },
     { name = "werkzeug" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ab/e2/7018bfe0cc561c127ad58f2a052605a75ede6d3d9cb6984f8bd1ea672bd9/apache_airflow-2.10.0.tar.gz", hash = "sha256:1948c72dfe58d2979e06819c6b9441a572b20395dc6b4e0dae5e4cfecbb07209", size = 12481184, upload-time = "2024-08-15T21:05:41.918Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/49/86/66f8e1a40f520045e990043a574dbf8a253860f662969cc48532e11f6975/apache_airflow-2.10.3.tar.gz", hash = "sha256:09038892bec9390357837eb7ec482e5052482be57a5b24013a14200745fbe40d", size = 12485515, upload-time = "2024-11-05T10:55:32.504Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/73/ef/d765a4e32b9ba5872024eba264ae818aa2f8ffec1cb265ee14b5f06ab3d4/apache_airflow-2.10.0-py3-none-any.whl", hash = "sha256:a8985379cb923adf6c2da9df36e30efb23aab31e32332803a7be8ce7958b7dd4", size = 13432050, upload-time = "2024-08-15T21:04:37.198Z" },
+    { url = "https://files.pythonhosted.org/packages/0b/bf/87a3a8122a3bea7e108fc5f93eb7f5e80837889ea9c3722817bba434afd4/apache_airflow-2.10.3-py3-none-any.whl", hash = "sha256:6fb101dab139b3b6d739c04f3e390c8676478f94a9116a298fcc55a0a62e6dd6", size = 13439136, upload-time = "2024-11-05T10:54:41.431Z" },
 ]
 
 [[package]]
@@ -2695,13 +2694,14 @@ dev = [
     { name = "ruff" },
     { name = "safety" },
     { name = "ty" },
+    { name = "types-requests" },
     { name = "vulture" },
     { name = "xenon" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "apache-airflow", specifier = "==2.10.0" },
+    { name = "apache-airflow", specifier = "==2.10.3" },
     { name = "berserk", specifier = ">=0.13.0" },
     { name = "duckdb", specifier = ">=1.4.3" },
     { name = "fastapi", specifier = ">=0.115.0" },
@@ -2735,6 +2735,7 @@ dev = [
     { name = "ruff", specifier = ">=0.14.14" },
     { name = "safety", specifier = ">=3.7.0" },
     { name = "ty", specifier = ">=0.0.13" },
+    { name = "types-requests", specifier = ">=2.32.4.20260107" },
     { name = "vulture", specifier = ">=2.14" },
     { name = "xenon", specifier = ">=0.9.3" },
 ]
@@ -2836,6 +2837,18 @@ wheels = [
 ]
 
 [[package]]
+name = "types-requests"
+version = "2.32.4.20260107"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0f/f3/a0663907082280664d745929205a89d41dffb29e89a50f753af7d57d0a96/types_requests-2.32.4.20260107.tar.gz", hash = "sha256:018a11ac158f801bfa84857ddec1650750e393df8a004a8a9ae2a9bec6fcb24f", size = 23165, upload-time = "2026-01-07T03:20:54.091Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1c/12/709ea261f2bf91ef0a26a9eed20f2623227a8ed85610c1e54c5805692ecb/types_requests-2.32.4.20260107-py3-none-any.whl", hash = "sha256:b703fe72f8ce5b31ef031264fe9395cac8f46a04661a79f7ed31a80fb308730d", size = 20676, upload-time = "2026-01-07T03:20:52.929Z" },
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.15.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2873,12 +2886,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/91/7a/146a99696aee0609e
 wheels = [
     { url = "https://files.pythonhosted.org/packages/37/87/1f677586e8ac487e29672e4b17455758fce261de06a0d086167bb760361a/uc_micro_py-1.0.3-py3-none-any.whl", hash = "sha256:db1dffff340817673d7b466ec86114a9dc0e9d4d9b5ba229d9d60e5c12600cd5", size = 6229, upload-time = "2024-02-09T16:52:00.371Z" },
 ]
-
-[[package]]
-name = "unicodecsv"
-version = "0.14.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/6f/a4/691ab63b17505a26096608cc309960b5a6bdf39e4ba1a793d5f9b1a53270/unicodecsv-0.14.1.tar.gz", hash = "sha256:018c08037d48649a0412063ff4eda26eaa81eff1546dbffa51fa5293276ff7fc", size = 10267, upload-time = "2015-09-22T22:00:19.516Z" }
 
 [[package]]
 name = "universal-pathlib"

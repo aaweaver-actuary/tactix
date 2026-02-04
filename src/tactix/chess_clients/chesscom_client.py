@@ -1,3 +1,5 @@
+"""Chess.com client shim for chess_clients namespace."""
+
 from __future__ import annotations
 
 from tactix import chesscom_client as _legacy
@@ -28,10 +30,7 @@ from tactix.chesscom_client import (
 )
 from tactix.errors import RateLimitError
 
-try:
-    ChesscomRateLimitError = _legacy.ChesscomRateLimitError
-except AttributeError:  # pragma: no cover - legacy alias fallback
-    ChesscomRateLimitError = RateLimitError
+ChesscomRateLimitError = getattr(_legacy, "ChesscomRateLimitError", RateLimitError)
 
 __all__ = [
     "ARCHIVES_URL",

@@ -1,3 +1,5 @@
+"""Define top-level application settings."""
+
 from __future__ import annotations
 
 import os
@@ -47,7 +49,8 @@ def _chesscom_time_class_from_profile(profile: str) -> str:
 
 
 @dataclass(slots=True, init=False)
-class Settings:  # pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods,missing-function-docstring,too-many-instance-attributes
+class Settings:
     """Central configuration for ingestion, analysis, and UI refresh."""
 
     api_token: str = os.getenv("TACTIX_API_TOKEN", "local-dev-token")

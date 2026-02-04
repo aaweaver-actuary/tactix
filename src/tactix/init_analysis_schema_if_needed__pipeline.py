@@ -1,3 +1,5 @@
+"""Initialize analysis schema when Postgres is enabled."""
+
 from __future__ import annotations
 
 from tactix.init_analysis_schema import init_analysis_schema

@@ -1,3 +1,7 @@
+"""Fetch Chess.com URLs with backoff handling."""
+
+# pylint: disable=protected-access
+
 from __future__ import annotations
 
 import requests

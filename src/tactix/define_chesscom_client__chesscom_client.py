@@ -1,5 +1,8 @@
+"""Define the Chess.com client implementation."""
+
 from __future__ import annotations
 
+# pylint: disable=fixme,broad-exception-caught
 import time
 
 import requests
@@ -25,7 +28,7 @@ from tactix.filter_by_cursor__chesscom_cursor import _filter_by_cursor
 from tactix.latest_timestamp import (
     latest_timestamp,
 )
-from tactix.load_fixture_games import load_fixture_games
+from tactix.load_fixture_games import FixtureGamesRequest, load_fixture_games
 from tactix.parse_cursor__chesscom_cursor import _parse_cursor
 from tactix.parse_retry_after__chesscom_rate_limit import _parse_retry_after
 from tactix.resolve_next_page_url__chesscom_pagination import _next_page_url
@@ -102,14 +105,16 @@ class ChesscomClient(BaseChessClient):
         """
 
         return load_fixture_games(
-            fixture_path=self.settings.chesscom_fixture_pgn_path,
-            user=self.settings.user,
-            source=self.settings.source,
-            since_ms=since_ms,
-            logger=self.logger,
-            missing_message="Chess.com fixture PGN path missing: %s",
-            loaded_message="Loaded %s Chess.com fixture PGNs from %s",
-            coerce_rows=coerce_rows_for_model(ChessGameRow),
+            FixtureGamesRequest(
+                fixture_path=self.settings.chesscom_fixture_pgn_path,
+                user=self.settings.user,
+                source=self.settings.source,
+                since_ms=since_ms,
+                logger=self.logger,
+                missing_message="Chess.com fixture PGN path missing: %s",
+                loaded_message="Loaded %s Chess.com fixture PGNs from %s",
+                coerce_rows=coerce_rows_for_model(ChessGameRow),
+            )
         )
 
     def _fetch_remote_games(self, since_ms: int, full_history: bool) -> list[dict]:

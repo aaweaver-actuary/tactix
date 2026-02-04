@@ -1,3 +1,5 @@
+"""Update Chess.com checkpoint values after sync."""
+
 from __future__ import annotations
 
 from tactix.chess_clients.chesscom_client import write_cursor as write_chesscom_cursor
@@ -12,6 +14,7 @@ def _update_chesscom_checkpoint(
     games: list[GameRow],
     last_timestamp_value: int,
 ) -> tuple[int | None, int]:
+    """Persist cursor and compute updated last timestamp."""
     write_chesscom_cursor(settings.checkpoint_path, fetch_context.next_cursor)
     last_timestamp_value = _resolve_chesscom_last_timestamp(
         fetch_context,

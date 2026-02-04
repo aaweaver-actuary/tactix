@@ -1,3 +1,5 @@
+"""Parse Retry-After header values for Chess.com."""
+
 from __future__ import annotations
 
 from tactix.parse_retry_after_date__chesscom_rate_limit import _parse_retry_after_date

@@ -1,3 +1,5 @@
+"""Define Stockfish engine configuration settings."""
+
 from __future__ import annotations
 
 import os
@@ -35,7 +37,7 @@ def _env_bool(name: str, default: bool) -> bool:
 
 
 @dataclass(slots=True)
-class StockfishSettings:
+class StockfishSettings:  # pylint: disable=too-many-instance-attributes
     """Stockfish engine configuration."""
 
     path: Path = Path(_env_str("STOCKFISH_PATH", "stockfish"))

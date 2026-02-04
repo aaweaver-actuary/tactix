@@ -1,3 +1,5 @@
+"""Define the PGN upsert plan for persistence."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -6,7 +8,9 @@ from datetime import datetime
 
 
 @dataclass(slots=True)
-class PgnUpsertPlan:
+class PgnUpsertPlan:  # pylint: disable=too-many-instance-attributes
+    """Payload for inserting or updating PGN rows."""
+
     pgn_text: str
     pgn_hash: str
     pgn_version: int

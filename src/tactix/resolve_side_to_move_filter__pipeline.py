@@ -1,3 +1,5 @@
+"""Resolve side-to-move filters for settings."""
+
 from __future__ import annotations
 
 from tactix.black_profiles_for_source__pipeline import _black_profiles_for_source

@@ -1,3 +1,5 @@
+"""Resolve Chess.com pagination URLs from numeric fields."""
+
 from __future__ import annotations
 
 from tactix.build_page_url__chesscom_pagination import _page_url_for

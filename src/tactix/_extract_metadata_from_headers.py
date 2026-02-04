@@ -1,3 +1,5 @@
+"""Extract metadata fields from PGN headers."""
+
 from collections.abc import Mapping
 
 from tactix._normalize_header_value import _normalize_header_value

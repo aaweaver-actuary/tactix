@@ -1,3 +1,5 @@
+"""Update metrics summary and version counters."""
+
 from __future__ import annotations
 
 from tactix.config import Settings

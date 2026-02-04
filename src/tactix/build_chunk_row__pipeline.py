@@ -1,3 +1,5 @@
+"""Build chunk rows for raw PGN persistence."""
+
 from __future__ import annotations
 
 from typing import cast

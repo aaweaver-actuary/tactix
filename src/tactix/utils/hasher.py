@@ -1,3 +1,7 @@
+"""Hashing helpers for strings, bytes, and files."""
+
+# pylint: disable=redefined-builtin
+
 import hashlib
 
 
@@ -85,8 +89,12 @@ def hash(data: str | bytes, is_bytes: bool = False) -> str:
     and reduce fragmentation of utility code.
     """
     if is_bytes:
-        return Hasher.hash_bytes(data)  # type: ignore
-    return Hasher.hash_string(data)  # type: ignore
+        if not isinstance(data, (bytes, bytearray)):
+            raise TypeError("Expected bytes for hashing")
+        return Hasher.hash_bytes(data)
+    if not isinstance(data, str):
+        raise TypeError("Expected str for hashing")
+    return Hasher.hash_string(data)
 
 
 def hash_file(file_path: str) -> str:

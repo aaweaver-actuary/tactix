@@ -1,3 +1,5 @@
+"""Resolve the last chess.com timestamp for pipeline state."""
+
 from __future__ import annotations
 
 from tactix.define_pipeline_state__pipeline import FetchContext, GameRow

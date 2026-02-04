@@ -1,3 +1,5 @@
+"""API endpoint for streaming metrics updates."""
+
 from queue import Queue
 from threading import Thread
 from typing import Annotated
@@ -15,6 +17,7 @@ def stream_metrics(
     filters: Annotated[DashboardQueryFilters, Depends()],
     motif: Annotated[str | None, Query()] = None,
 ) -> StreamingResponse:
+    """Stream metrics updates based on dashboard filters."""
     start_datetime, end_datetime, normalized_source, settings = _resolve_dashboard_filters(
         filters,
     )

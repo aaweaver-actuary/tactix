@@ -1324,6 +1324,9 @@ export default function App() {
             loading={practiceLoading}
             onIncludeFailedAttemptChange={setIncludeFailedAttempt}
             onRowClick={handleGameDetail}
+            rowTestId={(row, index) =>
+              `practice-queue-row-${row.source ?? 'unknown'}-${index}`
+            }
             {...props}
           />
         ),

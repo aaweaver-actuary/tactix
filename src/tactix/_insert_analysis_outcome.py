@@ -1,3 +1,5 @@
+"""Insert analysis outcome rows into Postgres."""
+
 from tactix.ANALYSIS_SCHEMA import ANALYSIS_SCHEMA
 from tactix.base_db_store import OutcomeInsertPlan
 
@@ -7,6 +9,7 @@ def _insert_analysis_outcome(
     tactic_id: int,
     outcome_plan: OutcomeInsertPlan,
 ) -> None:
+    """Insert an analysis outcome row for a tactic."""
     cur.execute(
         f"""
         INSERT INTO {ANALYSIS_SCHEMA}.tactic_outcomes (

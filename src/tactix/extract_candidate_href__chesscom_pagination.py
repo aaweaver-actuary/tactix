@@ -1,3 +1,5 @@
+"""Extract href candidates from pagination payloads."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -8,6 +10,7 @@ from tactix.get_first_string__chesscom_pagination import _first_string
 
 
 def _extract_candidate_href(candidate: object) -> str | None:
+    """Return a candidate href from a pagination payload."""
     if isinstance(candidate, str):
         return _non_empty_str(candidate)
     if isinstance(candidate, Mapping):

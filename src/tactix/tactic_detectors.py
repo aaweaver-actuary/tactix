@@ -1,3 +1,5 @@
+"""Re-export tactic detector implementations."""
+
 from __future__ import annotations
 
 from tactix import detect_tactics__motifs as _impl

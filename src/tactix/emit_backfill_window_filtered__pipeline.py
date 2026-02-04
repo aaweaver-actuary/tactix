@@ -1,3 +1,5 @@
+"""Emit progress when backfill window filtering occurs."""
+
 from __future__ import annotations
 
 from tactix.config import Settings

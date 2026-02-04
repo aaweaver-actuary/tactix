@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -42,6 +43,9 @@ from tactix.db._rating_bucket_clause import _rating_bucket_clause
 from tactix.db._resolve_dashboard_query import _resolve_dashboard_query
 from tactix.db._rows_to_dicts import _rows_to_dicts
 from tactix.db.fetch_latest_raw_pgns import fetch_latest_raw_pgns as _fetch_latest_raw_pgns
+from tactix.db.fetch_unanalyzed_positions import (
+    fetch_unanalyzed_positions as _fetch_unanalyzed_positions,
+)
 from tactix.db.raw_pgn_summary import (
     build_raw_pgn_summary_payload,
     coerce_raw_pgn_summary_rows,
@@ -178,19 +182,48 @@ CREATE TABLE IF NOT EXISTS schema_version (
 );
 """
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
+
+
+def fetch_unanalyzed_positions(
+    conn: duckdb.DuckDBPyConnection,
+    game_ids: list[str] | None = None,
+    source: str | None = None,
+    limit: int | None = None,
+) -> list[dict[str, object]]:
+    """Return positions that have not yet been analyzed."""
+    return _fetch_unanalyzed_positions(
+        conn,
+        game_ids=game_ids,
+        source=source,
+        limit=limit,
+    )
+
+
+def _should_attempt_wal_recovery(exc: BaseException) -> bool:
+    """Return True when WAL recovery is allowed for the given exception."""
+    message = str(exc).lower()
+    if "wal replay failed" not in message:
+        return False
+    return (
+        bool(os.environ.get("PYTEST_CURRENT_TEST"))
+        or os.environ.get("TACTIX_ENV", "").lower() == "dev"
+        or os.environ.get("TACTIX_ALLOW_WAL_RECOVERY", "").lower() == "true"
+    )
 
 
 def get_connection(db_path: Path | str) -> duckdb.DuckDBPyConnection:
     """Open a DuckDB connection, recovering from WAL errors when needed."""
     db_path = Path(db_path)
-    wal_path = db_path.with_name(f"{db_path.name}.wal")
     try:
         return duckdb.connect(str(db_path))
-    except duckdb.InternalException:
-        if wal_path.exists():
-            wal_path.unlink()
-            return duckdb.connect(str(db_path))
+    except duckdb.InternalException as exc:
+        if _should_attempt_wal_recovery(exc):
+            wal_paths = list(db_path.parent.glob("*.wal"))
+            if wal_paths:
+                for wal_path in wal_paths:
+                    wal_path.unlink()
+                return duckdb.connect(str(db_path))
         raise
 
 

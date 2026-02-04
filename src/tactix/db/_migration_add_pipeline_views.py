@@ -10,6 +10,8 @@ from tactix.db.raw_pgns_queries import latest_raw_pgns_query
 def _migration_add_pipeline_views(conn: duckdb.DuckDBPyConnection) -> None:
     """Ensure pipeline compatibility views and columns exist."""
     columns = {row[1] for row in conn.execute("PRAGMA table_info('positions')").fetchall()}
+    if "side_to_move" not in columns:
+        conn.execute("ALTER TABLE positions ADD COLUMN side_to_move TEXT")
     if "user_to_move" not in columns:
         conn.execute("ALTER TABLE positions ADD COLUMN user_to_move BOOLEAN DEFAULT TRUE")
         conn.execute("UPDATE positions SET user_to_move = TRUE WHERE user_to_move IS NULL")

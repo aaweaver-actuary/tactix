@@ -64,8 +64,32 @@ class BackfillWindow:
     triggered_at_ms: int
 
 
+class _BackfillWindowAccessors:
+    window: BackfillWindow
+
+    @property
+    def source(self) -> str | None:
+        return self.window.source
+
+    @property
+    def profile(self) -> str | None:
+        return self.window.profile
+
+    @property
+    def backfill_start_ms(self) -> int | None:
+        return self.window.backfill_start_ms
+
+    @property
+    def backfill_end_ms(self) -> int | None:
+        return self.window.backfill_end_ms
+
+    @property
+    def triggered_at_ms(self) -> int:
+        return self.window.triggered_at_ms
+
+
 @dataclass(frozen=True)
-class StreamJobWorkerContext:
+class StreamJobWorkerContext(_BackfillWindowAccessors):
     """Context for streaming job worker execution."""
 
     settings: Settings
@@ -74,29 +98,9 @@ class StreamJobWorkerContext:
     job: str
     window: BackfillWindow
 
-    @property
-    def source(self) -> str | None:
-        return self.window.source
-
-    @property
-    def profile(self) -> str | None:
-        return self.window.profile
-
-    @property
-    def backfill_start_ms(self) -> int | None:
-        return self.window.backfill_start_ms
-
-    @property
-    def backfill_end_ms(self) -> int | None:
-        return self.window.backfill_end_ms
-
-    @property
-    def triggered_at_ms(self) -> int:
-        return self.window.triggered_at_ms
-
 
 @dataclass(frozen=True)
-class StreamJobRunContext:
+class StreamJobRunContext(_BackfillWindowAccessors):
     """Context for executing a stream job run."""
 
     settings: Settings
@@ -105,55 +109,15 @@ class StreamJobRunContext:
     window: BackfillWindow
     progress: Callable[[dict[str, object]], None]
 
-    @property
-    def source(self) -> str | None:
-        return self.window.source
-
-    @property
-    def profile(self) -> str | None:
-        return self.window.profile
-
-    @property
-    def backfill_start_ms(self) -> int | None:
-        return self.window.backfill_start_ms
-
-    @property
-    def backfill_end_ms(self) -> int | None:
-        return self.window.backfill_end_ms
-
-    @property
-    def triggered_at_ms(self) -> int:
-        return self.window.triggered_at_ms
-
 
 @dataclass(frozen=True)
-class AirflowDailySyncContext:
+class AirflowDailySyncContext(_BackfillWindowAccessors):
     """Context for airflow daily sync jobs."""
 
     settings: Settings
     queue: Queue[object]
     job: str
     window: BackfillWindow
-
-    @property
-    def source(self) -> str | None:
-        return self.window.source
-
-    @property
-    def profile(self) -> str | None:
-        return self.window.profile
-
-    @property
-    def backfill_start_ms(self) -> int | None:
-        return self.window.backfill_start_ms
-
-    @property
-    def backfill_end_ms(self) -> int | None:
-        return self.window.backfill_end_ms
-
-    @property
-    def triggered_at_ms(self) -> int:
-        return self.window.triggered_at_ms
 
 
 @dataclass(frozen=True)

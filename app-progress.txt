@@ -6,6 +6,12 @@ Session summary (2026-02-05):
 - Current pass count: 1/100.
 - Next action: Feature 2 (lichess blitz pipeline).
 
+Session summary (2026-02-04):
+- Refactored duplicated BackfillWindow accessors into a shared mixin for job-stream contexts.
+- Tests run: `make check` (before + after).
+- Before→After map:
+	- StreamJobWorkerContext/StreamJobRunContext/AirflowDailySyncContext BackfillWindow properties → `_BackfillWindowAccessors`.
+
 Next steps:
 - Implement and verify the lichess blitz end-to-end pipeline feature.
 - Expand UI coverage for pipeline summaries and practice queue.

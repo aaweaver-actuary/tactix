@@ -21,3 +21,6 @@ Session summary (2026-02-05):
 - Added regression tests for small modules and rating bucket SQL clauses.
 - Cleaned lint/type/vulture issues introduced during refactors.
 - Ran make check (pytest, vitest, xenon, pycycle, safety, bandit, dodgy, jscpd, vulture, knip, cargo build, client build).
+
+Session summary (2026-02-04):
+- Fixed lint failures (E501, PLR0913) in PGN upsert helpers with small refactors.

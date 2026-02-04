@@ -41,3 +41,14 @@ Session summary (2026-02-04):
 - Before→After map:
 	- coerce_* / emit_* / no_games_* / checkpoint + timestamp helpers → `app/use_cases/pipeline_support.py` objects.
 	- tests/test_small_modules.py no-games checkpoint import → tests/test_pipeline_support.py coverage for new objects.
+
+Session summary (2026-02-04):
+- Consolidated Chess.com and Lichess client helpers into infra client adapters.
+- Added `ports.GameSourceClient` and updated pipeline typing to use the port interface.
+- Updated chess client shims and tests to target the consolidated infra modules.
+- Tests run: `make check` (before + after).
+- Python file count (src/): 579 → 528 (-51).
+- Before→After map:
+	- *_chesscom_* helpers (cursor/pagination/rate limit/fixtures/archive) → `infra/clients/chesscom_client.py`.
+	- *_lichess_client.py helpers + game_fetching → `infra/clients/lichess_client.py`.
+	- pipeline client typing (`BaseChessClient`) → `ports.GameSourceClient`.

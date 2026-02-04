@@ -1,16 +1,23 @@
-"""Define the Chess.com client implementation."""
+"""Chess.com client implementation and helpers (adapter layer)."""
 
 from __future__ import annotations
 
-# pylint: disable=fixme,broad-exception-caught
 import time
+
+# pylint: disable=fixme,broad-exception-caught,protected-access,undefined-all-variable
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
+from pathlib import Path
+from typing import Any, cast
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import requests
 
-from tactix.build_auth_headers__chesscom_auth import _auth_headers
-from tactix.build_cursor__chesscom_cursor import _build_cursor
 from tactix.chess_clients.base_chess_client import (
     BaseChessClient,
+    BaseChessClientContext,
     ChessFetchRequest,
     ChessFetchResult,
 )
@@ -19,26 +26,272 @@ from tactix.chess_clients.chess_game_row import (
     coerce_game_row_dict,
     coerce_rows_for_model,
 )
-from tactix.chess_clients.fetch_helpers import use_fixture_games
-from tactix.define_chesscom_client_context__chesscom_client import ChesscomClientContext
+from tactix.chess_clients.fetch_helpers import run_incremental_fetch, use_fixture_games
+from tactix.config import Settings
 from tactix.errors import RateLimitError
 from tactix.extract_game_id import extract_game_id
 from tactix.extract_last_timestamp_ms import extract_last_timestamp_ms
-from tactix.filter_by_cursor__chesscom_cursor import _filter_by_cursor
-from tactix.latest_timestamp import (
-    latest_timestamp,
-)
+from tactix.latest_timestamp import latest_timestamp
 from tactix.load_fixture_games import FixtureGamesRequest, load_fixture_games
-from tactix.parse_cursor__chesscom_cursor import _parse_cursor
-from tactix.parse_retry_after__chesscom_rate_limit import _parse_retry_after
-from tactix.resolve_next_page_url__chesscom_pagination import _next_page_url
-from tactix.should_stop_archive_fetch__chesscom_archive import _should_stop_archive_fetch
-from tactix.utils import Logger
+from tactix.read_optional_text__filesystem import _read_optional_text
+from tactix.utils import Logger, to_int
 
 logger = Logger(__name__)
 
 ARCHIVES_URL = "https://api.chess.com/pub/player/{username}/games/archives"
 HTTP_STATUS_TOO_MANY_REQUESTS = 429
+
+
+def _auth_headers(token: str | None) -> dict[str, str]:
+    """Build authorization headers.
+
+    Args:
+        token: API token if available.
+
+    Returns:
+        Headers dict for the request.
+    """
+
+    if not token:
+        return {}
+    return {"Authorization": f"Bearer {token}"}
+
+
+def _build_cursor(last_ts: int, game_id: str) -> str:
+    """Build a cursor token.
+
+    Args:
+        last_ts: Last timestamp in milliseconds.
+        game_id: Game identifier.
+
+    Returns:
+        Cursor token.
+    """
+
+    return f"{last_ts}:{game_id}"
+
+
+def _parse_cursor(cursor: str | None) -> tuple[int, str]:
+    """Parse a cursor token into timestamp and id.
+
+    Args:
+        cursor: Cursor token.
+
+    Returns:
+        Tuple of timestamp and game id.
+    """
+
+    if not cursor:
+        return 0, ""
+    if ":" in cursor:
+        prefix, suffix = cursor.split(":", 1)
+        try:
+            return int(prefix), suffix
+        except ValueError:
+            return 0, cursor
+    if cursor.isdigit():
+        return int(cursor), ""
+    return 0, cursor
+
+
+def _cursor_allows_game(game: dict, since_ts: int, since_game: str) -> bool:
+    """Return True if the game is beyond the given cursor position."""
+
+    last_ts = int(game.get("last_timestamp_ms", 0))
+    return (
+        (not since_ts)
+        or (last_ts > since_ts)
+        or (last_ts == since_ts and str(game.get("game_id", "")) > since_game)
+    )
+
+
+def _filter_by_cursor(rows: list[dict], cursor: str | None) -> list[dict]:
+    """Filter rows using a cursor token.
+
+    Args:
+        rows: Candidate rows to filter.
+        cursor: Cursor token to apply.
+
+    Returns:
+        Filtered list of rows.
+    """
+
+    since_ts, since_game = _parse_cursor(cursor)
+    ordered = sorted(rows, key=lambda g: int(g.get("last_timestamp_ms", 0)))
+    return [game for game in ordered if _cursor_allows_game(game, since_ts, since_game)]
+
+
+def read_cursor(path: Path) -> str | None:
+    """Read a cursor token from disk.
+
+    Args:
+        path: Cursor path.
+
+    Returns:
+        Cursor token or None.
+    """
+
+    return _read_optional_text(path)
+
+
+def write_cursor(path: Path, cursor: str | None) -> None:
+    """Write a cursor token to disk.
+
+    Args:
+        path: Cursor file path.
+        cursor: Cursor token to persist.
+    """
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if cursor is None:
+        path.write_text("")
+        return
+    path.write_text(cursor)
+
+
+def _parse_retry_after_seconds(value: str) -> float | None:
+    """Parse Retry-After as a numeric duration.
+
+    Args:
+        value: Retry-After header value.
+
+    Returns:
+        Parsed seconds or None.
+    """
+
+    try:
+        seconds = float(value)
+    except ValueError:
+        return None
+    return max(seconds, 0.0)
+
+
+def _parse_retry_after_date(value: str) -> float | None:
+    """Parse Retry-After as an HTTP date.
+
+    Args:
+        value: Retry-After header value.
+
+    Returns:
+        Parsed seconds or None.
+    """
+
+    try:
+        dt = parsedate_to_datetime(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+    delta = (dt - datetime.now(UTC)).total_seconds()
+    return max(delta, 0.0)
+
+
+def _parse_retry_after(value: str | None) -> float | None:
+    """Parse Retry-After header values.
+
+    Args:
+        value: Retry-After header value.
+
+    Returns:
+        Number of seconds to wait, or None.
+    """
+
+    if not value:
+        return None
+    seconds = _parse_retry_after_seconds(value)
+    if seconds is not None:
+        return seconds
+    return _parse_retry_after_date(value)
+
+
+def _non_empty_str(value: str) -> str | None:
+    return value if value else None
+
+
+def _first_string(mapping: Mapping[str, object], keys: Iterable[str]) -> str | None:
+    for key in keys:
+        value = mapping.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return None
+
+
+def _extract_candidate_href(candidate: object) -> str | None:
+    """Return a candidate href from a pagination payload."""
+
+    if isinstance(candidate, str):
+        return _non_empty_str(candidate)
+    if isinstance(candidate, Mapping):
+        candidate_map = cast(Mapping[str, object], candidate)
+        return _first_string(candidate_map, ("href", "url"))
+    return None
+
+
+def _next_page_candidate(data: dict) -> str | None:
+    for key in ("next_page", "next", "next_url", "nextPage"):
+        href = _extract_candidate_href(data.get(key))
+        if href:
+            return href
+    return None
+
+
+def _pagination_values(data: Mapping[str, object]) -> tuple[int, int] | None:
+    page = to_int(data.get("page") or data.get("current_page"))
+    total_pages = to_int(data.get("total_pages") or data.get("totalPages"))
+    if page is None or total_pages is None:
+        return None
+    return page, total_pages
+
+
+def _page_url_for(current_url: str, page: int) -> str:
+    parsed = urlparse(current_url)
+    query = parse_qs(parsed.query)
+    query["page"] = [str(page)]
+    return urlunparse(parsed._replace(query=urlencode(query, doseq=True)))
+
+
+def _page_from_numbers(data: dict, current_url: str) -> str | None:
+    """Compute a next page URL from numeric pagination fields.
+
+    Args:
+        data: Response payload.
+        current_url: Current URL used for pagination.
+
+    Returns:
+        Next page URL if determinable.
+    """
+
+    page_info = _pagination_values(data)
+    if page_info is None:
+        return None
+    page, total_pages = page_info
+    if page >= total_pages:
+        return None
+    return _page_url_for(current_url, page + 1)
+
+
+def _next_page_url(data: dict, current_url: str) -> str | None:
+    """Resolve the next page URL from a response payload.
+
+    Args:
+        data: Response payload.
+        current_url: Current URL used for pagination.
+
+    Returns:
+        Next page URL if available.
+    """
+
+    candidate = _next_page_candidate(data)
+    return candidate or _page_from_numbers(data, current_url)
+
+
+def _should_stop_archive_fetch(since_ms: int, archive_max_ts: int) -> bool:
+    return bool(since_ms and archive_max_ts and archive_max_ts <= since_ms)
+
+
+@dataclass(slots=True)
+class ChesscomClientContext(BaseChessClientContext):
+    """Context for Chess.com API interactions."""
 
 
 class ChesscomClient(BaseChessClient):
@@ -414,3 +667,126 @@ class ChesscomClient(BaseChessClient):
             cursor,
             next_cursor,
         )
+
+
+def _client_for_settings(settings: Settings) -> ChesscomClient:
+    """Return a Chess.com client for the given settings."""
+
+    context = ChesscomClientContext(settings=settings, logger=logger)
+    return ChesscomClient(context)
+
+
+def _client_method[T](settings: Settings, method: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+    """Instantiate a client and call the provided method."""
+
+    client = _client_for_settings(settings)
+    return method(client, *args, **kwargs)
+
+
+def _fetch_archive_pages(settings: Settings, archive_url: str) -> list[dict]:
+    """Fetch all pages for a given archive URL.
+
+    Args:
+        settings: Settings for the request.
+        archive_url: Archive endpoint URL.
+
+    Returns:
+        List of raw game dictionaries.
+    """
+
+    return _client_method(settings, ChesscomClient._fetch_archive_pages, archive_url)
+
+
+def _fetch_remote_games(
+    settings: Settings, since_ms: int, *, full_history: bool = False
+) -> list[dict]:
+    """Fetch Chess.com games from the remote API.
+
+    Args:
+        settings: Settings for the request.
+        since_ms: Minimum timestamp for included games.
+        full_history: Whether to fetch full history.
+
+    Returns:
+        Raw game rows.
+    """
+
+    return _client_method(
+        settings,
+        ChesscomClient._fetch_remote_games,
+        since_ms,
+        full_history,
+    )
+
+
+def _load_fixture_games(settings: Settings, since_ms: int) -> list[dict]:
+    """Load Chess.com fixture games.
+
+    Args:
+        settings: Settings for fixtures.
+        since_ms: Minimum timestamp for included games.
+
+    Returns:
+        Raw fixture games.
+    """
+
+    return _client_method(settings, ChesscomClient._load_fixture_games, since_ms)
+
+
+def _get_with_backoff(settings: Settings, url: str, timeout: int) -> requests.Response:
+    """Fetch a URL with exponential backoff on 429 responses.
+
+    Args:
+        settings: Settings for the request.
+        url: URL to request.
+        timeout: Timeout in seconds.
+
+    Returns:
+        Response object.
+    """
+
+    return _client_method(settings, ChesscomClient._get_with_backoff, url, timeout)
+
+
+def fetch_incremental_games(
+    settings: Settings, cursor: str | None, *, full_history: bool = False
+) -> ChessFetchResult:
+    """Fetch Chess.com games incrementally.
+
+    Args:
+        settings: Settings for the request.
+        cursor: Cursor token.
+        full_history: Whether to fetch full history.
+
+    Returns:
+        Chess.com fetch result containing games and cursor metadata.
+    """
+
+    request = ChessFetchRequest(cursor=cursor, full_history=full_history)
+    return run_incremental_fetch(
+        build_client=lambda: _client_for_settings(settings),
+        request=request,
+    )
+
+
+CHESSCOM_PUBLIC_EXPORTS = [
+    "ARCHIVES_URL",
+    "ChesscomClient",
+    "ChesscomClientContext",
+    "_auth_headers",
+    "_build_cursor",
+    "_fetch_archive_pages",
+    "_fetch_remote_games",
+    "_filter_by_cursor",
+    "_get_with_backoff",
+    "_load_fixture_games",
+    "_next_page_url",
+    "_parse_cursor",
+    "_parse_retry_after",
+    "fetch_incremental_games",
+    "read_cursor",
+    "to_int",
+    "write_cursor",
+]
+
+__all__ = list(CHESSCOM_PUBLIC_EXPORTS)

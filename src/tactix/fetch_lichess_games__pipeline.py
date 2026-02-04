@@ -5,16 +5,16 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import cast
 
-from tactix.chess_clients.base_chess_client import BaseChessClient
 from tactix.config import Settings
 from tactix.FetchContext import FetchContext
 from tactix.lichess_client import LichessFetchRequest, read_checkpoint
 from tactix.pipeline_state__pipeline import ZERO_COUNT
+from tactix.ports.game_source_client import GameSourceClient
 
 
 def _fetch_lichess_games(
     settings: Settings,
-    client: BaseChessClient,
+    client: GameSourceClient,
     backfill_mode: bool,
     window_start_ms: int | None,
     window_end_ms: int | None,

@@ -5,11 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import cast
 
-from tactix.chess_clients.base_chess_client import BaseChessClient
 from tactix.config import Settings
 from tactix.FetchContext import FetchContext
 from tactix.GameRow import GameRow
 from tactix.pipeline_state__pipeline import ProgressCallback
+from tactix.ports.game_source_client import GameSourceClient
 
 
 @dataclass(frozen=True)
@@ -29,7 +29,7 @@ class DailyGameSyncContext:
     """Inputs for running a daily game sync."""
 
     settings: Settings
-    client: BaseChessClient
+    client: GameSourceClient
     progress: ProgressCallback | None
     window_start_ms: int | None
     window_end_ms: int | None
@@ -46,7 +46,7 @@ class DailyGameSyncRequest:
     window_start_ms: int | None = None
     window_end_ms: int | None = None
     profile: str | None = None
-    client: BaseChessClient | None = None
+    client: GameSourceClient | None = None
 
 
 @dataclass(frozen=True)
@@ -54,7 +54,7 @@ class PrepareGamesForSyncContext:
     """Inputs for preparing games for sync."""
 
     settings: Settings
-    client: BaseChessClient
+    client: GameSourceClient
     backfill_mode: bool
     window_start_ms: int | None
     window_end_ms: int | None

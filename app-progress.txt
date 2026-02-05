@@ -1,4 +1,10 @@
 Session summary (2026-02-05):
+- Removed the unused ports package re-export shim so callers rely on the canonical port module directly.
+- Tests run: `make check` (before changes); `make check` (after changes, interrupted at prospector/KeyboardInterrupt).
+- Before→After map:
+	- tactix.ports.GameSourceClient re-export → removed; imports already use tactix.ports.game_source_client.
+
+Session summary (2026-02-05):
 - Removed shim-only modules for API logging, mate override results, and dashboard query helpers; inlined aliases/logger creation where used.
 - Cleaned up unused re-export modules to keep src/tactix focused on canonical implementations.
 - Tests run: `make check` (before changes), `make check` (after changes).

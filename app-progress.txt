@@ -270,3 +270,9 @@ Session summary (2026-02-05):
 	- get_postgres_*__api handlers → PostgresRepository calls (from PostgresStore).
 	- src/tactix/postgres_store_impl.PostgresStore → review-for-deletion/postgres_store_impl.py; src/tactix/postgres_store_impl.py now re-exports repository wiring.
 	- tests/test_postgres_status patch targets + tests/test_postgres_store delegation coverage → PostgresRepository.
+
+Session summary (2026-02-05):
+- Removed the remaining Postgres store re-export shim by stubbing the module; all imports now target `db.postgres_repository` directly.
+- Tests run: `make check` (green; existing Vitest act warnings and pycycle .venv parse warning unchanged).
+- Before→After map:
+	- src/tactix/postgres_store_impl.py shim re-exports → deprecated stub (canonical repository modules only).

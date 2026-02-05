@@ -6,11 +6,11 @@ from pathlib import Path
 from tactix.config import DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH, Settings
 from tactix.db.duckdb_store import (
     get_connection,
-    grade_practice_attempt,
     init_schema,
     insert_positions,
     upsert_tactic_with_outcome,
 )
+from tactix.db.tactic_repository_provider import tactic_repository
 from tactix.pgn_utils import split_pgn_chunks
 from tactix.extract_positions import extract_positions
 from tactix.StockfishEngine import StockfishEngine
@@ -79,7 +79,11 @@ class MateInTwoCorrespondenceTests(unittest.TestCase):
         self.assertIsNotNone(stored_line[0])
         self.assertIn("Best line", stored_line[1] or "")
 
-        attempt = grade_practice_attempt(conn, tactic_id, position_ids[0], "c5f2")
+        attempt = tactic_repository(conn).grade_practice_attempt(
+            tactic_id,
+            position_ids[0],
+            "c5f2",
+        )
         self.assertIn("Best line", attempt["explanation"] or "")
         self.assertIn("f2", attempt["explanation"] or "")
 

@@ -14,8 +14,11 @@ def test_practice_queue_returns_items() -> None:
     with (
         patch("tactix.get_practice_queue__api.get_connection", return_value=MagicMock()),
         patch("tactix.get_practice_queue__api.init_schema"),
-        patch("tactix.get_practice_queue__api.fetch_practice_queue", return_value=sample),
+        patch("tactix.get_practice_queue__api.tactic_repository") as repo_factory,
     ):
+        repo = MagicMock()
+        repo.fetch_practice_queue.return_value = sample
+        repo_factory.return_value = repo
         response = client.get(
             "/api/practice/queue?source=lichess&include_failed_attempt=1&limit=5",
             headers={"Authorization": f"Bearer {token}"},
@@ -41,8 +44,11 @@ def test_practice_next_returns_single_item() -> None:
     with (
         patch("tactix.get_practice_next__api.get_connection", return_value=MagicMock()),
         patch("tactix.get_practice_next__api.init_schema"),
-        patch("tactix.get_practice_next__api.fetch_practice_queue", return_value=sample),
+        patch("tactix.get_practice_next__api.tactic_repository") as repo_factory,
     ):
+        repo = MagicMock()
+        repo.fetch_practice_queue.return_value = sample
+        repo_factory.return_value = repo
         response = client.get(
             "/api/practice/next?source=lichess&include_failed_attempt=0",
             headers={"Authorization": f"Bearer {token}"},
@@ -82,8 +88,11 @@ def test_practice_next_returns_schema() -> None:
     with (
         patch("tactix.get_practice_next__api.get_connection", return_value=MagicMock()),
         patch("tactix.get_practice_next__api.init_schema"),
-        patch("tactix.get_practice_next__api.fetch_practice_queue", return_value=sample),
+        patch("tactix.get_practice_next__api.tactic_repository") as repo_factory,
     ):
+        repo = MagicMock()
+        repo.fetch_practice_queue.return_value = sample
+        repo_factory.return_value = repo
         response = client.get(
             "/api/practice/next?source=lichess&include_failed_attempt=1",
             headers={"Authorization": f"Bearer {token}"},
@@ -163,8 +172,11 @@ def test_practice_attempt_returns_schema() -> None:
     with (
         patch("tactix.post_practice_attempt__api.get_connection", return_value=MagicMock()),
         patch("tactix.post_practice_attempt__api.init_schema"),
-        patch("tactix.post_practice_attempt__api.grade_practice_attempt", return_value=sample),
+        patch("tactix.post_practice_attempt__api.tactic_repository") as repo_factory,
     ):
+        repo = MagicMock()
+        repo.grade_practice_attempt.return_value = sample
+        repo_factory.return_value = repo
         response = client.post(
             "/api/practice/attempt",
             headers={"Authorization": f"Bearer {token}"},
@@ -218,11 +230,11 @@ def test_practice_attempt_includes_latency_and_errors() -> None:
         patch("tactix.post_practice_attempt__api.get_connection", return_value=MagicMock()),
         patch("tactix.post_practice_attempt__api.init_schema"),
         patch("tactix.post_practice_attempt__api.time_module.time", return_value=10.0),
-        patch(
-            "tactix.post_practice_attempt__api.grade_practice_attempt",
-            return_value={"status": "ok"},
-        ) as grade,
+        patch("tactix.post_practice_attempt__api.tactic_repository") as repo_factory,
     ):
+        repo = MagicMock()
+        repo.grade_practice_attempt.return_value = {"status": "ok"}
+        repo_factory.return_value = repo
         response = client.post(
             "/api/practice/attempt",
             headers={"Authorization": f"Bearer {token}"},
@@ -230,17 +242,17 @@ def test_practice_attempt_includes_latency_and_errors() -> None:
         )
 
     assert response.status_code == 200
-    _, kwargs = grade.call_args
+    _, kwargs = repo.grade_practice_attempt.call_args
     assert kwargs["latency_ms"] == 5000
 
     with (
         patch("tactix.post_practice_attempt__api.get_connection", return_value=MagicMock()),
         patch("tactix.post_practice_attempt__api.init_schema"),
-        patch(
-            "tactix.post_practice_attempt__api.grade_practice_attempt",
-            side_effect=ValueError("bad"),
-        ),
+        patch("tactix.post_practice_attempt__api.tactic_repository") as repo_factory,
     ):
+        repo = MagicMock()
+        repo.grade_practice_attempt.side_effect = ValueError("bad")
+        repo_factory.return_value = repo
         error_response = client.post(
             "/api/practice/attempt",
             headers={"Authorization": f"Bearer {token}"},
@@ -257,8 +269,11 @@ def test_game_detail_missing_pgn_raises_404() -> None:
     with (
         patch("tactix.get_game_detail__api.get_connection", return_value=MagicMock()),
         patch("tactix.get_game_detail__api.init_schema"),
-        patch("tactix.get_game_detail__api.fetch_game_detail", return_value={"pgn": ""}),
+        patch("tactix.get_game_detail__api.tactic_repository") as repo_factory,
     ):
+        repo = MagicMock()
+        repo.fetch_game_detail.return_value = {"pgn": ""}
+        repo_factory.return_value = repo
         response = client.get(
             "/api/games/game-123?source=lichess",
             headers={"Authorization": f"Bearer {token}"},
@@ -275,8 +290,11 @@ def test_game_detail_returns_payload() -> None:
     with (
         patch("tactix.get_game_detail__api.get_connection", return_value=MagicMock()),
         patch("tactix.get_game_detail__api.init_schema"),
-        patch("tactix.get_game_detail__api.fetch_game_detail", return_value=payload),
+        patch("tactix.get_game_detail__api.tactic_repository") as repo_factory,
     ):
+        repo = MagicMock()
+        repo.fetch_game_detail.return_value = payload
+        repo_factory.return_value = repo
         response = client.get(
             "/api/games/game-123?source=lichess",
             headers={"Authorization": f"Bearer {token}"},

@@ -4,31 +4,18 @@ from __future__ import annotations
 
 import os
 from collections import defaultdict
-from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
+from collections.abc import Mapping
 from datetime import UTC, datetime
-from io import StringIO
 from pathlib import Path
 
-import chess.pgn
 import duckdb
 
-from tactix._get_game_result_for_user_from_pgn_headers import (
-    _get_game_result_for_user_from_pgn_headers,
-)
-from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
 from tactix.dashboard_query import (
     DashboardQuery,
     clone_dashboard_query,
 )
-from tactix.db._append_date_range_filters import _append_date_range_filters
-from tactix.db._append_optional_filter import _append_optional_filter
-from tactix.db._append_time_control_filter import _append_time_control_filter
 from tactix.db._build_legacy_raw_pgn_inserts import _build_legacy_raw_pgn_inserts
-from tactix.db._build_raw_pgn_upsert_plan import _build_raw_pgn_upsert_plan
 from tactix.db._drop_table_if_exists import _drop_table_if_exists
-from tactix.db._fetch_next_raw_pgn_id import _fetch_next_raw_pgn_id
-from tactix.db._insert_raw_pgn_plan import _insert_raw_pgn_plan
 from tactix.db._migration_add_columns import _migration_add_columns
 from tactix.db._migration_add_pipeline_views import _migration_add_pipeline_views
 from tactix.db._migration_add_position_legality import _migration_add_position_legality
@@ -38,34 +25,33 @@ from tactix.db._migration_add_training_attempt_latency import (
 )
 from tactix.db._migration_base_tables import _migration_base_tables
 from tactix.db._migration_raw_pgns_versioning import _migration_raw_pgns_versioning
-from tactix.db._normalize_filter import _normalize_filter
-from tactix.db._rating_bucket_clause import _rating_bucket_clause
 from tactix.db._resolve_dashboard_query import _resolve_dashboard_query
 from tactix.db._rows_to_dicts import _rows_to_dicts
-from tactix.db.fetch_latest_raw_pgns import fetch_latest_raw_pgns as _fetch_latest_raw_pgns
+from tactix.db.duckdb_dashboard_reader import (
+    DuckDbDashboardDependencies,
+    DuckDbDashboardFetchers,
+    DuckDbDashboardReader,
+)
+from tactix.db.duckdb_dashboard_repository import (
+    DuckDbDashboardRepository,
+    default_dashboard_repository_dependencies,
+)
+from tactix.db.duckdb_position_repository import (
+    DuckDbPositionRepository,
+    default_position_dependencies,
+)
+from tactix.db.duckdb_tactic_repository import (
+    DuckDbTacticRepository,
+    default_tactic_dependencies,
+)
 from tactix.db.fetch_unanalyzed_positions import (
     fetch_unanalyzed_positions as _fetch_unanalyzed_positions,
 )
-from tactix.db.raw_pgn_summary import (
-    build_raw_pgn_summary_payload,
-    coerce_raw_pgn_summary_rows,
-)
 from tactix.db.raw_pgns_queries import latest_raw_pgns_query
-from tactix.db.RawPgnInsertInputs import RawPgnInsertInputs
-from tactix.db.record_training_attempt import record_training_attempt
-from tactix.extract_pgn_metadata import extract_pgn_metadata
-from tactix.format_tactics__explanation import format_tactic_explanation
-from tactix.sql_tactics import (
-    OUTCOME_COLUMNS,
-    TACTIC_ANALYSIS_COLUMNS,
-    TACTIC_COLUMNS,
-    TACTIC_QUEUE_COLUMNS,
-)
-from tactix.utils.logger import Logger
+from tactix.db.record_training_attempt import record_training_attempt as _record_training_attempt
+from tactix.define_base_db_store__db_store import BaseDbStore
+from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
 from tactix.utils.to_int import to_int
-
-logger = Logger(__name__)
-
 
 RAW_PGNS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS raw_pgns (
@@ -200,6 +186,14 @@ def fetch_unanalyzed_positions(
     )
 
 
+def record_training_attempt(
+    conn: duckdb.DuckDBPyConnection,
+    payload: Mapping[str, object],
+) -> int:
+    """Persist a training attempt record."""
+    return _record_training_attempt(conn, payload)
+
+
 def _should_attempt_wal_recovery(exc: BaseException) -> bool:
     """Return True when WAL recovery is allowed for the given exception."""
     message = str(exc).lower()
@@ -225,11 +219,6 @@ def get_connection(db_path: Path | str) -> duckdb.DuckDBPyConnection:
                     wal_path.unlink()
                 return duckdb.connect(str(db_path))
         raise
-
-
-def hash_pgn(pgn: str) -> str:
-    """Return the canonical hash for PGN content."""
-    return BaseDbStore.hash_pgn(pgn)
 
 
 def get_schema_version(conn: duckdb.DuckDBPyConnection) -> int:
@@ -287,6 +276,21 @@ def _rating_bucket_for_rating(rating: int | None) -> str | None:
     return f"{start}-{end}"
 
 
+def _position_repository(conn: duckdb.DuckDBPyConnection) -> DuckDbPositionRepository:
+    return DuckDbPositionRepository(conn, dependencies=default_position_dependencies())
+
+
+def _tactic_repository(conn: duckdb.DuckDBPyConnection) -> DuckDbTacticRepository:
+    return DuckDbTacticRepository(conn, dependencies=default_tactic_dependencies())
+
+
+def _dashboard_repository(conn: duckdb.DuckDBPyConnection) -> DuckDbDashboardRepository:
+    return DuckDbDashboardRepository(
+        conn,
+        dependencies=default_dashboard_repository_dependencies(),
+    )
+
+
 class DuckDbStore(BaseDbStore):
     """DuckDB-backed store implementation."""
 
@@ -305,48 +309,54 @@ class DuckDbStore(BaseDbStore):
         filters: DashboardQuery | None = None,
         **legacy: object,
     ) -> dict[str, object]:
-        query = _resolve_dashboard_query(query, filters=filters, **legacy)
         conn = get_connection(self._db_path)
-        init_schema(conn)
-        active_source = None if query.source in (None, "all") else query.source
-        response_source = "all" if active_source is None else active_source
-        metrics_query = clone_dashboard_query(
-            query,
-            source=active_source,
-            motif=query.motif,
+        repository = _dashboard_repository(conn)
+
+        def _metrics_fetcher(
+            _conn: duckdb.DuckDBPyConnection,
+            dashboard_query: DashboardQuery,
+            **kwargs: object,
+        ) -> list[dict[str, object]]:
+            return repository.fetch_metrics(dashboard_query, **kwargs)
+
+        def _recent_games_fetcher(
+            _conn: duckdb.DuckDBPyConnection,
+            dashboard_query: DashboardQuery,
+            **kwargs: object,
+        ) -> list[dict[str, object]]:
+            return repository.fetch_recent_games(dashboard_query, **kwargs)
+
+        def _recent_positions_fetcher(
+            _conn: duckdb.DuckDBPyConnection,
+            dashboard_query: DashboardQuery,
+            **kwargs: object,
+        ) -> list[dict[str, object]]:
+            return repository.fetch_recent_positions(dashboard_query, **kwargs)
+
+        def _recent_tactics_fetcher(
+            _conn: duckdb.DuckDBPyConnection,
+            dashboard_query: DashboardQuery,
+            **kwargs: object,
+        ) -> list[dict[str, object]]:
+            return repository.fetch_recent_tactics(dashboard_query, **kwargs)
+
+        reader = DuckDbDashboardReader(
+            conn,
+            user=self.settings.user,
+            dependencies=DuckDbDashboardDependencies(
+                resolve_query=_resolve_dashboard_query,
+                clone_query=clone_dashboard_query,
+                fetchers=DuckDbDashboardFetchers(
+                    metrics=_metrics_fetcher,
+                    recent_games=_recent_games_fetcher,
+                    recent_positions=_recent_positions_fetcher,
+                    recent_tactics=_recent_tactics_fetcher,
+                ),
+                fetch_version=fetch_version,
+                init_schema=init_schema,
+            ),
         )
-        non_motif_query = clone_dashboard_query(
-            query,
-            source=active_source,
-            motif=None,
-        )
-        tactics_query = clone_dashboard_query(
-            query,
-            source=active_source,
-            motif=query.motif,
-        )
-        return {
-            "source": response_source,
-            "user": self.settings.user,
-            "metrics": fetch_metrics(
-                conn,
-                metrics_query,
-            ),
-            "recent_games": fetch_recent_games(
-                conn,
-                non_motif_query,
-                user=self.settings.user,
-            ),
-            "positions": fetch_recent_positions(
-                conn,
-                non_motif_query,
-            ),
-            "tactics": fetch_recent_tactics(
-                conn,
-                tactics_query,
-            ),
-            "metrics_version": fetch_version(conn),
-        }
+        return reader.get_dashboard_payload(query, filters=filters, **legacy)
 
 
 _SCHEMA_MIGRATIONS = [
@@ -412,135 +422,6 @@ def _ensure_column(
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
 
-def upsert_raw_pgns(
-    conn: duckdb.DuckDBPyConnection,
-    rows: Iterable[Mapping[str, object]],
-) -> int:
-    """Insert raw PGN rows with version tracking."""
-    rows_list = list(rows)
-    if not rows_list:
-        return 0
-    conn.execute("BEGIN TRANSACTION")
-    try:
-        inserted = _upsert_raw_pgn_rows(conn, rows_list)
-        conn.execute("COMMIT")
-    except duckdb.Error:
-        conn.execute("ROLLBACK")
-        raise
-    return inserted
-
-
-def _upsert_raw_pgn_rows(
-    conn: duckdb.DuckDBPyConnection,
-    rows_list: list[Mapping[str, object]],
-) -> int:
-    """Insert raw PGN rows and return insert count."""
-    next_id = _fetch_next_raw_pgn_id(conn)
-    latest_cache: dict[tuple[str, str], tuple[str | None, int]] = {}
-    inserted = 0
-    for row in rows_list:
-        game_id = str(row["game_id"])
-        source = str(row["source"])
-        plan = _build_raw_pgn_upsert_plan(conn, row, game_id, source, latest_cache)
-        if plan is None:
-            continue
-        next_id += 1
-        _insert_raw_pgn_plan(
-            conn,
-            RawPgnInsertInputs(
-                raw_pgn_id=next_id,
-                game_id=game_id,
-                source=source,
-                row=row,
-                plan=plan,
-            ),
-        )
-        latest_cache[(game_id, source)] = (plan.pgn_hash, plan.pgn_version)
-        inserted += 1
-    return inserted
-
-
-def fetch_latest_pgn_hashes(
-    conn: duckdb.DuckDBPyConnection,
-    game_ids: list[str],
-    source: str | None,
-) -> dict[str, str]:
-    """Fetch latest PGN hashes for the provided game ids."""
-    if not game_ids:
-        return {}
-    placeholders = ", ".join(["?"] * len(game_ids))
-    params: list[object] = list(game_ids)
-    sql = f"""
-        WITH latest_pgns AS (
-            {latest_raw_pgns_query(f"WHERE game_id IN ({placeholders})")}
-        )
-        SELECT game_id, pgn_hash
-        FROM latest_pgns
-    """
-    if source:
-        sql += " WHERE source = ?"
-        params.append(source)
-    rows = conn.execute(sql, params).fetchall()
-    return {str(game_id): str(pgn_hash) for game_id, pgn_hash in rows if pgn_hash}
-
-
-def fetch_latest_raw_pgns(
-    conn: duckdb.DuckDBPyConnection,
-    source: str | None = None,
-    limit: int | None = None,
-) -> list[dict[str, object]]:
-    """Fetch the latest raw PGN rows for a source."""
-    return _fetch_latest_raw_pgns(conn, source, limit)
-
-
-def fetch_raw_pgns_summary(
-    conn: duckdb.DuckDBPyConnection,
-    *,
-    source: str | None = None,
-) -> dict[str, object]:
-    """Return raw PGN summary payload for the given source."""
-    where_clause = ""
-    params: list[object] = []
-    if source:
-        where_clause = "WHERE source = ?"
-        params.append(source)
-    sources_result = conn.execute(
-        f"""
-        SELECT
-            source,
-            COUNT(*) AS total_rows,
-            COUNT(DISTINCT game_id) AS distinct_games,
-            MAX(ingested_at) AS latest_ingested_at
-        FROM raw_pgns
-        {where_clause}
-        GROUP BY source
-        ORDER BY source
-        """,
-        params,
-    )
-    sources = _rows_to_dicts(sources_result)
-    totals_result = conn.execute(
-        f"""
-        SELECT
-            COUNT(*) AS total_rows,
-            COUNT(DISTINCT game_id) AS distinct_games,
-            MAX(ingested_at) AS latest_ingested_at
-        FROM raw_pgns
-        {where_clause}
-        """,
-        params,
-    )
-    totals_row = totals_result.fetchone()
-    totals_dict = {}
-    if totals_row:
-        columns = [desc[0] for desc in totals_result.description]
-        totals_dict = dict(zip(columns, totals_row, strict=False))
-    return build_raw_pgn_summary_payload(
-        sources=coerce_raw_pgn_summary_rows(sources),
-        totals=totals_dict,
-    )
-
-
 def fetch_pipeline_table_counts(
     conn: duckdb.DuckDBPyConnection,
     query: DashboardQuery | str | None = None,
@@ -549,55 +430,11 @@ def fetch_pipeline_table_counts(
     **legacy: object,
 ) -> dict[str, int]:
     """Return per-table counts for pipeline verification."""
-    resolved = _resolve_dashboard_query(query, filters=filters, **legacy)
-    sql, params = _build_games_filtered_query(resolved)
-    sql += """
-        SELECT
-            (SELECT COUNT(*) FROM games_filtered) AS games,
-            (
-                SELECT COUNT(*)
-                FROM positions p
-                INNER JOIN games_filtered r
-                    ON p.game_id = r.game_id AND p.source = r.source
-            ) AS positions,
-            (
-                SELECT COUNT(*)
-                FROM user_moves u
-                INNER JOIN games_filtered r
-                    ON u.game_id = r.game_id AND u.source = r.source
-            ) AS user_moves,
-            (
-                SELECT COUNT(*)
-                FROM opportunities o
-                INNER JOIN games_filtered r
-                    ON o.game_id = r.game_id AND o.source = r.source
-            ) AS opportunities,
-            (
-                SELECT COUNT(*)
-                FROM conversions c
-                INNER JOIN games_filtered r
-                    ON c.game_id = r.game_id AND c.source = r.source
-            ) AS conversions,
-            (
-                SELECT COUNT(*)
-                FROM practice_queue q
-                INNER JOIN games_filtered r
-                    ON q.game_id = r.game_id AND q.source = r.source
-            ) AS practice_queue
-    """
-    result = conn.execute(sql, params)
-    row = result.fetchone()
-    if not row:
-        return {
-            "games": 0,
-            "positions": 0,
-            "user_moves": 0,
-            "opportunities": 0,
-            "conversions": 0,
-            "practice_queue": 0,
-        }
-    columns = [desc[0] for desc in result.description]
-    return {column: int(value or 0) for column, value in zip(columns, row, strict=False)}
+    return _dashboard_repository(conn).fetch_pipeline_table_counts(
+        query,
+        filters=filters,
+        **legacy,
+    )
 
 
 def fetch_opportunity_motif_counts(
@@ -608,50 +445,11 @@ def fetch_opportunity_motif_counts(
     **legacy: object,
 ) -> dict[str, int]:
     """Return motif counts for opportunities in the dashboard range."""
-    resolved = _resolve_dashboard_query(query, filters=filters, **legacy)
-    sql, params = _build_games_filtered_query(resolved)
-    sql += """
-        SELECT o.motif, COUNT(*) AS total
-        FROM opportunities o
-        INNER JOIN games_filtered r
-            ON o.game_id = r.game_id AND o.source = r.source
-        GROUP BY o.motif
-        ORDER BY o.motif
-    """
-    rows = _rows_to_dicts(conn.execute(sql, params))
-    return {str(row.get("motif")): int(row.get("total") or 0) for row in rows}
-
-
-def _build_games_filtered_query(
-    resolved: DashboardQuery,
-) -> tuple[str, list[object]]:
-    sql = """
-        WITH games_filtered AS (
-            SELECT *
-            FROM games r
-    """
-    params: list[object] = []
-    conditions: list[str] = []
-    if resolved.source:
-        conditions.append("r.source = ?")
-        params.append(resolved.source)
-    _append_time_control_filter(conditions, params, resolved.time_control, "r.time_control")
-    normalized_rating = _normalize_filter(resolved.rating_bucket)
-    if normalized_rating:
-        conditions.append(_rating_bucket_clause(normalized_rating))
-    _append_date_range_filters(
-        conditions,
-        params,
-        resolved.start_date,
-        resolved.end_date,
-        "to_timestamp(r.last_timestamp_ms / 1000)",
+    return _dashboard_repository(conn).fetch_opportunity_motif_counts(
+        query,
+        filters=filters,
+        **legacy,
     )
-    if conditions:
-        sql += " WHERE " + " AND ".join(conditions)
-    sql += """
-        )
-    """
-    return sql, params
 
 
 def fetch_position_counts(
@@ -660,17 +458,7 @@ def fetch_position_counts(
     source: str | None,
 ) -> dict[str, int]:
     """Return position counts keyed by game id."""
-    if not game_ids:
-        return {}
-    placeholders = ", ".join(["?"] * len(game_ids))
-    params: list[object] = list(game_ids)
-    sql = f"SELECT game_id, COUNT(*) FROM positions WHERE game_id IN ({placeholders})"
-    if source:
-        sql += " AND source = ?"
-        params.append(source)
-    sql += " GROUP BY game_id"
-    rows = conn.execute(sql, params).fetchall()
-    return {str(game_id): int(count) for game_id, count in rows}
+    return _position_repository(conn).fetch_position_counts(game_ids, source)
 
 
 def fetch_positions_for_games(
@@ -678,14 +466,7 @@ def fetch_positions_for_games(
     game_ids: list[str],
 ) -> list[dict[str, object]]:
     """Return stored positions for the provided games."""
-    if not game_ids:
-        return []
-    placeholders = ", ".join(["?"] * len(game_ids))
-    result = conn.execute(
-        f"SELECT * FROM positions WHERE game_id IN ({placeholders}) ORDER BY position_id",
-        game_ids,
-    )
-    return _rows_to_dicts(result)
+    return _position_repository(conn).fetch_positions_for_games(game_ids)
 
 
 def insert_positions(
@@ -693,47 +474,7 @@ def insert_positions(
     positions: list[Mapping[str, object]],
 ) -> list[int]:
     """Insert position rows and return new ids."""
-    if not positions:
-        return []
-    row = conn.execute("SELECT MAX(position_id) FROM positions").fetchone()
-    next_id = int(row[0] or 0) if row else 0
-    ids: list[int] = []
-    for pos in positions:
-        next_id += 1
-        conn.execute(
-            """
-            INSERT INTO positions (
-                position_id,
-                game_id,
-                user,
-                source,
-                fen,
-                ply,
-                move_number,
-                side_to_move,
-                uci,
-                san,
-                clock_seconds,
-                is_legal
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            [
-                next_id,
-                pos.get("game_id"),
-                pos.get("user"),
-                pos.get("source"),
-                pos.get("fen"),
-                pos.get("ply"),
-                pos.get("move_number"),
-                pos.get("side_to_move"),
-                pos.get("uci"),
-                pos.get("san"),
-                pos.get("clock_seconds"),
-                pos.get("is_legal", True),
-            ],
-        )
-        ids.append(next_id)
-    return ids
+    return _position_repository(conn).insert_positions(positions)
 
 
 def insert_tactics(
@@ -741,41 +482,7 @@ def insert_tactics(
     rows: list[Mapping[str, object]],
 ) -> list[int]:
     """Insert tactic rows and return ids."""
-    if not rows:
-        return []
-    row = conn.execute("SELECT MAX(tactic_id) FROM tactics").fetchone()
-    next_id = int(row[0] or 0) if row else 0
-    ids: list[int] = []
-    for tactic in rows:
-        next_id += 1
-        conn.execute(
-            """
-            INSERT INTO tactics (
-                tactic_id,
-                game_id,
-                position_id,
-                motif,
-                severity,
-                best_uci,
-                best_san,
-                explanation,
-                eval_cp
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            [
-                next_id,
-                tactic.get("game_id"),
-                tactic.get("position_id"),
-                tactic.get("motif"),
-                tactic.get("severity"),
-                tactic.get("best_uci"),
-                tactic.get("best_san"),
-                tactic.get("explanation"),
-                tactic.get("eval_cp"),
-            ],
-        )
-        ids.append(next_id)
-    return ids
+    return _tactic_repository(conn).insert_tactics(rows)
 
 
 def insert_tactic_outcomes(
@@ -783,33 +490,7 @@ def insert_tactic_outcomes(
     rows: list[Mapping[str, object]],
 ) -> list[int]:
     """Insert tactic outcome rows and return ids."""
-    if not rows:
-        return []
-    row = conn.execute("SELECT MAX(outcome_id) FROM tactic_outcomes").fetchone()
-    next_id = int(row[0] or 0) if row else 0
-    ids: list[int] = []
-    for outcome in rows:
-        next_id += 1
-        conn.execute(
-            """
-            INSERT INTO tactic_outcomes (
-                outcome_id,
-                tactic_id,
-                result,
-                user_uci,
-                eval_delta
-            ) VALUES (?, ?, ?, ?, ?)
-            """,
-            [
-                next_id,
-                outcome.get("tactic_id"),
-                outcome.get("result"),
-                outcome.get("user_uci"),
-                outcome.get("eval_delta"),
-            ],
-        )
-        ids.append(next_id)
-    return ids
+    return _tactic_repository(conn).insert_tactic_outcomes(rows)
 
 
 def upsert_tactic_with_outcome(
@@ -818,47 +499,7 @@ def upsert_tactic_with_outcome(
     outcome_row: Mapping[str, object],
 ) -> int:
     """Insert a tactic with its outcome and return the tactic id."""
-    BaseDbStore.require_position_id(
-        tactic_row,
-        "position_id is required when inserting tactics",
-    )
-    tactic_ids = insert_tactics(conn, [tactic_row])
-    tactic_id = tactic_ids[0]
-    insert_tactic_outcomes(
-        conn,
-        [{**outcome_row, "tactic_id": tactic_id}],
-    )
-    return tactic_id
-
-
-def delete_game_rows(conn: duckdb.DuckDBPyConnection, game_ids: list[str]) -> None:
-    """Delete position, tactic, and outcome rows for the provided games."""
-    if not game_ids:
-        return
-    placeholders = ", ".join(["?"] * len(game_ids))
-    tactic_ids = conn.execute(
-        f"SELECT tactic_id FROM tactics WHERE game_id IN ({placeholders})",
-        game_ids,
-    ).fetchall()
-    tactic_id_values = [row[0] for row in tactic_ids]
-    if tactic_id_values:
-        outcome_placeholders = ", ".join(["?"] * len(tactic_id_values))
-        conn.execute(
-            f"DELETE FROM tactic_outcomes WHERE tactic_id IN ({outcome_placeholders})",
-            tactic_id_values,
-        )
-    conn.execute(
-        f"DELETE FROM tactics WHERE game_id IN ({placeholders})",
-        game_ids,
-    )
-    conn.execute(
-        f"DELETE FROM positions WHERE game_id IN ({placeholders})",
-        game_ids,
-    )
-    conn.execute(
-        f"DELETE FROM raw_pgns WHERE game_id IN ({placeholders})",
-        game_ids,
-    )
+    return _tactic_repository(conn).upsert_tactic_with_outcome(tactic_row, outcome_row)
 
 
 def _coerce_metric_count(value: object) -> int:
@@ -1184,27 +825,11 @@ def fetch_metrics(
     **legacy: object,
 ) -> list[dict[str, object]]:
     """Fetch metrics summary rows with optional filters."""
-    resolved = _resolve_dashboard_query(query, filters=filters, **legacy)
-    sql = "SELECT * FROM metrics_summary"
-    params: list[object] = []
-    conditions: list[str] = []
-    if resolved.source:
-        conditions.append("source = ?")
-        params.append(resolved.source)
-    _append_optional_filter(conditions, params, "motif = ?", resolved.motif)
-    _append_optional_filter(conditions, params, "rating_bucket = ?", resolved.rating_bucket)
-    _append_optional_filter(conditions, params, "time_control = ?", resolved.time_control)
-    _append_date_range_filters(
-        conditions,
-        params,
-        resolved.start_date,
-        resolved.end_date,
-        "trend_date",
+    return _dashboard_repository(conn).fetch_metrics(
+        query,
+        filters=filters,
+        **legacy,
     )
-    if conditions:
-        sql += " WHERE " + " AND ".join(conditions)
-    result = conn.execute(sql, params)
-    return _rows_to_dicts(result)
 
 
 def fetch_motif_stats(
@@ -1250,177 +875,12 @@ def fetch_recent_games(
     user: str | None = None,
     **legacy: object,
 ) -> list[dict[str, object]]:
-    resolved = _resolve_dashboard_query(query, **legacy)
-    final_query, params = _build_recent_games_query(limit, resolved)
-    rows = _rows_to_dicts(conn.execute(final_query, params))
-    return [_format_recent_game_row(row, user) for row in rows]
-
-
-def _build_recent_games_query(
-    limit: int,
-    query: DashboardQuery,
-) -> tuple[str, list[object]]:
-    normalized_rating = _normalize_filter(query.rating_bucket)
-    sql = f"""
-        WITH latest_pgns AS (
-            {latest_raw_pgns_query()}
-        ),
-        filtered AS (
-            SELECT
-                r.game_id,
-                r.source,
-                r.user,
-                r.pgn,
-                r.time_control,
-                r.user_rating,
-                r.last_timestamp_ms
-            FROM latest_pgns r
-    """
-    params: list[object] = []
-    conditions: list[str] = []
-    _append_time_control_filter(conditions, params, query.time_control, "r.time_control")
-    if normalized_rating:
-        conditions.append(_rating_bucket_clause(normalized_rating))
-    _append_date_range_filters(
-        conditions,
-        params,
-        query.start_date,
-        query.end_date,
-        "to_timestamp(r.last_timestamp_ms / 1000)",
+    return _dashboard_repository(conn).fetch_recent_games(
+        query,
+        limit=limit,
+        user=user,
+        **legacy,
     )
-    if conditions:
-        sql += " WHERE " + " AND ".join(conditions)
-    sql += "\n        )\n    "
-    if query.source:
-        params.append(query.source)
-        final_query = (
-            sql
-            + "SELECT * FROM filtered WHERE source = ? "
-            + "ORDER BY last_timestamp_ms DESC, game_id LIMIT ?"
-        )
-        params.append(limit)
-        return final_query, params
-    final_query = (
-        sql
-        + """
-        , ranked AS (
-            SELECT
-                *,
-                ROW_NUMBER() OVER (
-                    PARTITION BY source
-                    ORDER BY last_timestamp_ms DESC
-                ) AS source_rank
-            FROM filtered
-        )
-        SELECT * EXCLUDE (source_rank)
-        FROM ranked
-        WHERE source_rank <= ?
-        ORDER BY last_timestamp_ms DESC, game_id
-        """
-    )
-    params.append(limit)
-    return final_query, params
-
-
-def _resolve_opponent_and_color(
-    user_lower: str,
-    white: object | None,
-    black: object | None,
-) -> tuple[object | None, str | None]:
-    white_lower = _normalize_player_name(white)
-    black_lower = _normalize_player_name(black)
-    if _is_user_player(white_lower, user_lower):
-        return black, "white"
-    if _is_user_player(black_lower, user_lower):
-        return white, "black"
-    return _fallback_opponent(white, black), None
-
-
-def _normalize_player_name(value: object | None) -> str:
-    return str(value or "").lower()
-
-
-def _is_user_player(player: str, user_lower: str) -> bool:
-    return bool(player) and player == user_lower
-
-
-def _fallback_opponent(white: object | None, black: object | None) -> object | None:
-    return black or white
-
-
-def _timestamp_ms_to_iso(value: object) -> str | None:
-    if isinstance(value, (int, float)) and int(value) > 0:
-        return datetime.fromtimestamp(int(value) / 1000, tz=UTC).isoformat()
-    return None
-
-
-def _resolve_played_at(
-    metadata: Mapping[str, object],
-    row: Mapping[str, object],
-) -> str | None:
-    played_at = _timestamp_ms_to_iso(metadata.get("start_timestamp_ms"))
-    if played_at:
-        return played_at
-    return _timestamp_ms_to_iso(row.get("last_timestamp_ms"))
-
-
-def _format_recent_game_row(row: Mapping[str, object], user: str | None) -> dict[str, object]:
-    raw_user = _resolve_recent_game_user(row, user)
-    pgn_text = str(row.get("pgn") or "")
-    metadata = extract_pgn_metadata(pgn_text, raw_user)
-    opponent, user_color = _resolve_opponent_and_color(
-        raw_user.lower(),
-        metadata.get("white_player"),
-        metadata.get("black_player"),
-    )
-    played_at = _resolve_played_at(metadata, row)
-    result = _resolve_recent_game_result(pgn_text, raw_user, metadata.get("result"))
-    return _recent_game_payload(
-        row,
-        {**metadata, "result": result},
-        opponent,
-        user_color,
-        played_at,
-    )
-
-
-def _resolve_recent_game_result(
-    pgn_text: str,
-    user: str,
-    fallback: object,
-) -> object:
-    """Resolve the result of a recent game from PGN headers."""
-    if not pgn_text.strip().startswith("["):
-        return fallback
-    try:
-        headers = chess.pgn.read_headers(StringIO(pgn_text))
-        if headers is None:
-            return fallback
-        return str(_get_game_result_for_user_from_pgn_headers(headers, user))
-    except (ValueError, TypeError):
-        return fallback
-
-
-def _resolve_recent_game_user(row: Mapping[str, object], user: str | None) -> str:
-    return user or str(row.get("user") or "")
-
-
-def _recent_game_payload(
-    row: Mapping[str, object],
-    metadata: Mapping[str, object],
-    opponent: object | None,
-    user_color: str | None,
-    played_at: str | None,
-) -> dict[str, object]:
-    return {
-        "game_id": str(row.get("game_id") or ""),
-        "source": row.get("source"),
-        "opponent": opponent,
-        "result": metadata.get("result"),
-        "played_at": played_at,
-        "time_control": metadata.get("time_control") or row.get("time_control") or None,
-        "user_color": user_color,
-    }
 
 
 def fetch_recent_positions(
@@ -1430,42 +890,11 @@ def fetch_recent_positions(
     limit: int = 20,
     **legacy: object,
 ) -> list[dict[str, object]]:
-    resolved = _resolve_dashboard_query(query, **legacy)
-    normalized_rating = _normalize_filter(resolved.rating_bucket)
-    sql = f"""
-        WITH latest_pgns AS (
-            {latest_raw_pgns_query()}
-        )
-        SELECT p.*
-        FROM positions p
-        LEFT JOIN latest_pgns r ON r.game_id = p.game_id AND r.source = p.source
-    """
-    params: list[object] = []
-    conditions: list[str] = []
-    if resolved.source:
-        conditions.append("p.source = ?")
-        params.append(resolved.source)
-    _append_time_control_filter(
-        conditions,
-        params,
-        resolved.time_control,
-        "r.time_control",
+    return _dashboard_repository(conn).fetch_recent_positions(
+        query,
+        limit=limit,
+        **legacy,
     )
-    if normalized_rating:
-        conditions.append(_rating_bucket_clause(normalized_rating))
-    _append_date_range_filters(
-        conditions,
-        params,
-        resolved.start_date,
-        resolved.end_date,
-        "p.created_at",
-    )
-    if conditions:
-        sql += " WHERE " + " AND ".join(conditions)
-    sql += " ORDER BY p.created_at DESC LIMIT ?"
-    params.append(limit)
-    result = conn.execute(sql, params)
-    return _rows_to_dicts(result)
 
 
 def fetch_recent_tactics(
@@ -1475,379 +904,11 @@ def fetch_recent_tactics(
     limit: int = 20,
     **legacy: object,
 ) -> list[dict[str, object]]:
-    resolved = _resolve_dashboard_query(query, **legacy)
-    sql, params = _build_recent_tactics_query(limit, resolved)
-    return _rows_to_dicts(conn.execute(sql, params))
-
-
-def _build_recent_tactics_query(
-    limit: int,
-    query: DashboardQuery,
-) -> tuple[str, list[object]]:
-    normalized_motif = _normalize_filter(query.motif)
-    normalized_rating = _normalize_filter(query.rating_bucket)
-    sql = f"""
-        WITH latest_pgns AS (
-            {latest_raw_pgns_query()}
-        )
-        SELECT t.*, o.result, o.eval_delta, o.user_uci, p.source
-        FROM tactics t
-        LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
-        LEFT JOIN positions p ON p.position_id = t.position_id
-        LEFT JOIN latest_pgns r ON r.game_id = p.game_id AND r.source = p.source
-    """
-    params: list[object] = []
-    conditions: list[str] = []
-    _append_recent_tactics_filters(
-        conditions,
-        params,
+    return _dashboard_repository(conn).fetch_recent_tactics(
         query,
-        normalized_motif,
-        normalized_rating,
+        limit=limit,
+        **legacy,
     )
-    if conditions:
-        sql += " WHERE " + " AND ".join(conditions)
-    sql += " ORDER BY t.created_at DESC LIMIT ?"
-    params.append(limit)
-    return sql, params
-
-
-def _append_recent_tactics_filters(
-    conditions: list[str],
-    params: list[object],
-    query: DashboardQuery,
-    normalized_motif: str | None,
-    normalized_rating: str | None,
-) -> None:
-    _append_optional_filter(conditions, params, "p.source = ?", query.source)
-    _append_optional_filter(conditions, params, "t.motif = ?", normalized_motif)
-    _append_time_control_filter(conditions, params, query.time_control, "r.time_control")
-    if normalized_rating:
-        conditions.append(_rating_bucket_clause(normalized_rating))
-    _append_date_range_filters(
-        conditions,
-        params,
-        query.start_date,
-        query.end_date,
-        "t.created_at",
-    )
-
-
-def _latest_pgns_query() -> str:
-    return f"""
-        WITH latest_pgns AS (
-            {latest_raw_pgns_query()}
-        )
-        SELECT *
-        FROM latest_pgns
-        WHERE game_id = ?
-    """
-
-
-def _row_to_dict(
-    result: duckdb.DuckDBPyConnection | duckdb.DuckDBPyRelation,
-    row: tuple[object, ...],
-) -> dict[str, object]:
-    columns = [desc[0] for desc in result.description]
-    return dict(zip(columns, row, strict=True))
-
-
-def _fetch_latest_pgn_row(
-    conn: duckdb.DuckDBPyConnection,
-    game_id: str,
-    source: str | None,
-) -> tuple[tuple[object, ...] | None, duckdb.DuckDBPyConnection]:
-    query = _latest_pgns_query()
-    params: list[object] = [game_id]
-    if source:
-        query += " AND source = ?"
-        params.append(source)
-    result = conn.execute(query, params)
-    row = result.fetchone()
-    if row or not source:
-        return row, result
-    fallback_result = conn.execute(_latest_pgns_query(), [game_id])
-    return fallback_result.fetchone(), fallback_result
-
-
-def _fetch_game_analysis_rows(
-    conn: duckdb.DuckDBPyConnection,
-    game_id: str,
-    source: str | None,
-) -> list[dict[str, object]]:
-    analysis_query = f"""
-        SELECT
-            {TACTIC_ANALYSIS_COLUMNS},
-            {OUTCOME_COLUMNS},
-            p.move_number,
-            p.ply,
-            p.san,
-            p.uci,
-            p.side_to_move,
-            p.fen
-        FROM tactics t
-        LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
-        LEFT JOIN positions p ON p.position_id = t.position_id
-        WHERE t.game_id = ?
-    """
-    analysis_params: list[object] = [game_id]
-    if source:
-        analysis_query += " AND p.source = ?"
-        analysis_params.append(source)
-    analysis_query += " ORDER BY p.ply ASC, t.created_at ASC"
-    return _rows_to_dicts(conn.execute(analysis_query, analysis_params))
-
-
-def fetch_game_detail(
-    conn: duckdb.DuckDBPyConnection,
-    game_id: str,
-    user: str,
-    source: str | None = None,
-) -> dict[str, object]:
-    """Fetch a detailed game payload including analysis rows."""
-    row, result = _fetch_latest_pgn_row(conn, game_id, source)
-    if not row:
-        return {
-            "game_id": game_id,
-            "source": source,
-            "pgn": None,
-            "metadata": {},
-            "analysis": [],
-        }
-    pgn_row = _row_to_dict(result, row)
-    pgn_value = pgn_row.get("pgn")
-    pgn = str(pgn_value) if pgn_value is not None else None
-    metadata = extract_pgn_metadata(pgn or "", user)
-    analysis_rows = _fetch_game_analysis_rows(conn, game_id, source)
-    return {
-        "game_id": game_id,
-        "source": pgn_row.get("source") or source,
-        "pgn": pgn,
-        "metadata": metadata,
-        "analysis": analysis_rows,
-    }
-
-
-def fetch_practice_tactic(
-    conn: duckdb.DuckDBPyConnection, tactic_id: int
-) -> dict[str, object] | None:
-    """Fetch a single tactic for practice flows."""
-    result = conn.execute(
-        f"""
-        SELECT
-            {TACTIC_COLUMNS},
-            {OUTCOME_COLUMNS},
-            p.source,
-            p.fen,
-            p.uci AS position_uci,
-            p.san,
-            p.ply,
-            p.move_number,
-            p.side_to_move,
-            p.clock_seconds
-        FROM tactics t
-        LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
-        LEFT JOIN positions p ON p.position_id = t.position_id
-        WHERE t.tactic_id = ?
-        """,
-        [tactic_id],
-    )
-    rows = _rows_to_dicts(result)
-    return rows[0] if rows else None
-
-
-def _require_practice_tactic(
-    conn: duckdb.DuckDBPyConnection,
-    tactic_id: int,
-    position_id: int,
-) -> dict[str, object]:
-    """Return the tactic for a position or raise a ValueError."""
-    tactic = fetch_practice_tactic(conn, tactic_id)
-    if not tactic or tactic.get("position_id") != position_id:
-        raise ValueError("Tactic not found for position")
-    return tactic
-
-
-def _normalize_attempted_uci(attempted_uci: str) -> str:
-    """Normalize and validate an attempted UCI move."""
-    trimmed = attempted_uci.strip()
-    if not trimmed:
-        raise ValueError("attempted_uci is required")
-    return trimmed
-
-
-def _normalize_best_uci(tactic: Mapping[str, object]) -> str:
-    """Return the normalized best UCI move for a tactic."""
-    best_uci_raw = tactic.get("best_uci")
-    return str(best_uci_raw).strip() if best_uci_raw is not None else ""
-
-
-def _resolve_practice_explanation(
-    tactic: Mapping[str, object],
-    best_uci: str,
-) -> tuple[str | None, str | None]:
-    """Resolve explanation fields for practice payloads."""
-    fen = _string_or_none(tactic.get("fen"))
-    motif = _string_or_none(tactic.get("motif"))
-    best_san = _string_or_none(tactic.get("best_san"))
-    explanation = _string_or_none(tactic.get("explanation"))
-    generated_san, generated_explanation = format_tactic_explanation(fen, best_uci, motif)
-    return _resolve_explanation(best_san, explanation, generated_san, generated_explanation)
-
-
-def _string_or_none(value: object) -> str | None:
-    """Return a stripped string or None for empty values."""
-    if value is None:
-        return None
-    text = str(value).strip()
-    return text or None
-
-
-def _resolve_explanation(
-    best_san: str | None,
-    explanation: str | None,
-    generated_san: str | None,
-    generated_explanation: str | None,
-) -> tuple[str | None, str | None]:
-    """Pick the best available SAN and explanation strings."""
-    if not best_san:
-        best_san = generated_san or None
-    if not explanation:
-        explanation = generated_explanation or None
-    return best_san, explanation
-
-
-@dataclass(frozen=True)
-class PracticeAttemptInputs:
-    """Grouped inputs for practice attempt payloads."""
-
-    tactic: Mapping[str, object]
-    tactic_id: int
-    position_id: int
-    attempted_uci: str
-    best_uci: str
-    correct: bool
-    latency_ms: int | None
-
-
-def _build_practice_attempt_payload(
-    inputs: PracticeAttemptInputs,
-) -> dict[str, object]:
-    """Build the practice attempt payload for persistence."""
-    return {
-        "tactic_id": inputs.tactic_id,
-        "position_id": inputs.position_id,
-        "source": inputs.tactic.get("source"),
-        "attempted_uci": inputs.attempted_uci,
-        "correct": inputs.correct,
-        "success": inputs.correct,
-        "best_uci": inputs.best_uci,
-        "motif": inputs.tactic.get("motif", "unknown"),
-        "severity": inputs.tactic.get("severity", 0.0),
-        "eval_delta": inputs.tactic.get("eval_delta", 0) or 0,
-        "latency_ms": inputs.latency_ms,
-    }
-
-
-def _build_practice_message(
-    correct: bool,
-    tactic: Mapping[str, object],
-    best_uci: str,
-) -> str:
-    """Return the user-facing practice message."""
-    if correct:
-        return f"Correct! {tactic.get('motif', 'tactic')} found."
-    return f"Missed it. Best move was {best_uci or '--'}."
-
-
-def grade_practice_attempt(
-    conn: duckdb.DuckDBPyConnection,
-    tactic_id: int,
-    position_id: int,
-    attempted_uci: str,
-    latency_ms: int | None = None,
-) -> dict[str, object]:
-    """Grade a practice attempt and persist the result."""
-    tactic = _require_practice_tactic(conn, tactic_id, position_id)
-    trimmed_attempt = _normalize_attempted_uci(attempted_uci)
-    best_uci = _normalize_best_uci(tactic)
-    correct = bool(best_uci) and trimmed_attempt.lower() == best_uci.lower()
-    best_san, explanation = _resolve_practice_explanation(tactic, best_uci)
-    attempt_payload = _build_practice_attempt_payload(
-        PracticeAttemptInputs(
-            tactic=tactic,
-            tactic_id=tactic_id,
-            position_id=position_id,
-            attempted_uci=trimmed_attempt,
-            best_uci=best_uci,
-            correct=correct,
-            latency_ms=latency_ms,
-        )
-    )
-    attempt_id = record_training_attempt(conn, attempt_payload)
-    message = _build_practice_message(correct, tactic, best_uci)
-    return {
-        "attempt_id": attempt_id,
-        "tactic_id": tactic_id,
-        "position_id": position_id,
-        "source": tactic.get("source"),
-        "attempted_uci": trimmed_attempt,
-        "best_uci": best_uci,
-        "correct": correct,
-        "success": correct,
-        "motif": tactic.get("motif", "unknown"),
-        "severity": tactic.get("severity", 0.0),
-        "eval_delta": tactic.get("eval_delta", 0) or 0,
-        "message": message,
-        "best_san": best_san,
-        "explanation": explanation,
-        "latency_ms": latency_ms,
-    }
-
-
-def fetch_practice_queue(
-    conn: duckdb.DuckDBPyConnection,
-    limit: int = 20,
-    source: str | None = None,
-    include_failed_attempt: bool = False,
-    exclude_seen: bool = False,
-) -> list[dict[str, object]]:
-    """Return a queue of practice tactics."""
-    results = ["missed"]
-    if include_failed_attempt:
-        results.append("failed_attempt")
-    placeholders = ", ".join(["?"] * len(results))
-    query = f"""
-        SELECT
-            {TACTIC_QUEUE_COLUMNS},
-            {OUTCOME_COLUMNS},
-            p.source,
-            p.fen,
-            p.uci AS position_uci,
-            p.san,
-            p.ply,
-            p.move_number,
-            p.side_to_move,
-            p.clock_seconds
-        FROM tactics t
-        INNER JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
-        INNER JOIN positions p ON p.position_id = t.position_id
-        WHERE o.result IN ({placeholders})
-    """
-    params: list[object] = list(results)
-    if source:
-        query += " AND p.source = ?"
-        params.append(source)
-    if exclude_seen:
-        query += " AND t.tactic_id NOT IN (SELECT tactic_id FROM training_attempts"
-        if source:
-            query += " WHERE source = ?"
-            params.append(source)
-        query += ")"
-    query += " ORDER BY t.created_at DESC LIMIT ?"
-    params.append(limit)
-    result = conn.execute(query, params)
-    return _rows_to_dicts(result)
 
 
 def fetch_version(conn: duckdb.DuckDBPyConnection) -> int:

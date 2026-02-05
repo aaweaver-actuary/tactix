@@ -1,4 +1,51 @@
 Session summary (2026-02-05):
+- Migrated practice queue/next, practice attempt, and game detail APIs plus related tests off duckdb_store wrappers to DuckDbTacticRepository via the new tactic_repository_provider factory.
+- Removed duckdb_store practice/game-detail wrappers; call sites now instantiate repositories directly with explicit dependencies.
+- Updated practice pipeline/practice grading tests to use repository methods; API tests patch tactic_repository instead of duckdb_store functions.
+- Tests run: `make check` (green; existing React act warnings remain).
+- Before→After map:
+	- duckdb_store fetch_practice_queue/fetch_practice_tactic/grade_practice_attempt/fetch_game_detail → tactic_repository_provider + DuckDbTacticRepository methods in APIs and tests.
+
+Session summary (2026-02-05):
+- Migrated DuckDB raw PGN pipeline/API call sites to `raw_pgn_repository_provider` and removed raw PGN wrappers from duckdb_store; behavior preserved through repository delegation.
+- Added `delete_game_rows` helper for cleanup when deleting existing PGNs; pipelines now hash via provider helpers and validate against repository fetchers.
+- DuckDbStore now focuses on schema/migrations and metrics/dashboard responsibilities; raw PGN responsibilities live in repository + provider modules.
+- Tests run: `make check` (green; existing Vitest act() warnings unchanged).
+- Before→After map:
+	- duckdb_store raw PGN helpers (hash_pgn, fetch_latest_raw_pgns, fetch_raw_pgns_summary, upsert_raw_pgns, delete_game_rows) → raw_pgn_repository_provider + delete_game_rows helper + repository methods.
+
+Session summary (2026-02-05):
+- Migrated dashboard query helpers and default dependency wiring into DuckDbDashboardRepository; DuckDbStore now delegates without re-exporting helper functions.
+- Updated dashboard repository tests and store helper tests to import helpers from canonical modules; tightened boundaries by removing store-local helpers.
+- Tests run: `make check` (green; existing vitest act warnings unchanged).
+- Before→After map:
+	- duckdb_store dashboard helper functions & dependency factory → duckdb_dashboard_repository helpers + default_dashboard_repository_dependencies()
+	- tests/test_duckdb_dashboard_repository.py imports → repository default deps; tests/test_duckdb_store_helpers.py helper imports → module-level helpers.
+
+Session summary (2026-02-05):
+- Extracted DuckDbPositionRepository and DuckDbTacticRepository with injected dependencies; duckdb_store position/tactic/practice helpers now delegate to these objects.
+- Added equivalence tests for position/tactic repositories against duckdb_store wrappers using temp DuckDB instances.
+- Tests run: `make check` (green).
+- Before→After map:
+	- duckdb_store position/tactic/practice helpers → DuckDbPositionRepository/DuckDbTacticRepository + duckdb_store delegation wrappers.
+
+Session summary (2026-02-05):
+- Extracted raw PGN read/write operations into DuckDbRawPgnRepository with explicit dependencies and helper wiring.
+- DuckDbStore raw PGN API functions delegate to the repository; public behavior and SQL unchanged.
+- Added repository equivalence tests validating upsert/hash/summary against duckdb_store functions using temp DuckDB.
+- Tests run: `make check` (green).
+- Before→After map:
+	- duckdb_store raw PGN functions → DuckDbRawPgnRepository + duckdb_store delegation wrappers.
+
+Session summary (2026-02-05):
+- Extracted DuckDB dashboard payload builder into DuckDbDashboardReader (src/tactix/db/duckdb_dashboard_reader.py) with explicit dependencies and unit coverage.
+- DuckDbStore.get_dashboard_payload now delegates to the reader; pipeline/mock behavior unchanged.
+- Added dashboard reader equivalence tests (tests/test_duckdb_dashboard_reader.py) against DuckDbStore results.
+- Tests run: `make check` (green).
+- Before→After map:
+	- DuckDbStore.get_dashboard_payload inline logic → DuckDbDashboardReader + DuckDbStore delegation.
+
+Session summary (2026-02-05):
 - Consolidated remaining schema/constants/context shims to canonical modules (sync_contexts, define_db_schemas__const, _normalize_clock_parts, _match_site_id).
 - Moved legacy shim modules into review-for-deletion/ and updated tests/imports to canonical modules.
 - Tests run: `make check` (before + after).
@@ -9,6 +56,15 @@ Session summary (2026-02-05):
 	- tests/* context/schema imports → sync_contexts + define_db_schemas__const.
 
 Session summary (2026-02-04):
+- Migrated raw PGN pipelines/APIs from duckdb_store wrappers to DuckDbRawPgnRepository via raw_pgn_repository_provider; added delete_game_rows helper module.
+- duckdb_store raw PGN helpers (hash/upsert/fetch/summary/delete) removed; pipelines now construct repositories and pass fetchers into hash validation; compute/backfill hashing uses provider hashing.
+- Updated raw PGN-related tests (dashboard/tactic/metrics/pipeline/store helpers, repository parity) to seed via provider helpers and delete_game_rows module.
+- Tests run: `make check` (before changes), `make check` (after changes pending).
+- Before→After map:
+	- raw PGN pipeline/api calls to duckdb_store upsert/fetch/hash/delete → raw_pgn_repository_provider helpers + delete_game_rows module + DuckDbRawPgnRepository usage.
+	- duckdb_store raw PGN wrapper functions → removed; responsibilities now live in repository provider.
+	- hash_pgn usage in compute/backfill helpers → raw_pgn_repository_provider.hash_pgn.
+
 - Updated no-games payload context imports to use `tactix.sync_contexts` and shifted legacy shim modules into review-for-deletion.
 - Tests run: `make check` (before + after).
 - Before→After map:
@@ -117,3 +173,34 @@ Session summary (2026-02-05):
 	- `chesscom_client.py`, `lichess_client.py` → `infra/clients/*.py` and `chess_clients/*` shims.
 	- `postgres_store.py` dynamic import → direct helpers in `postgres_store_impl.py`.
 	- `stockfish_engine.py`, `airflow_client.py` → direct module imports.
+
+Session summary (2026-02-05):
+- Migrated `base_db_store` call sites to canonical db store definitions and archived the shim.
+- Archived the unused `airflow_dag_helpers` facade in review-for-deletion/.
+- Tests run: `make check` (green).
+- Before→After map:
+	- `base_db_store` imports → `define_base_db_store__db_store`, `define_base_db_store_context__db_store`, `define_outcome_insert_plan__db_store`, `define_tactic_insert_plan__db_store`.
+	- src/tactix/base_db_store.py → review-for-deletion/base_db_store.py.
+	- src/tactix/airflow_dag_helpers.py → review-for-deletion/airflow_dag_helpers.py.
+
+Session summary (2026-02-05):
+- Migrated tactic detector tests to the canonical `detect_tactics__motifs` module and archived the shim.
+- Tests run: `make check` (green).
+- Before→After map:
+	- tests/tactic_detectors imports → `detect_tactics__motifs`.
+	- src/tactix/tactic_detectors.py → review-for-deletion/tactic_detectors.py.
+
+Session summary (2026-02-05):
+- Extracted DuckDbDashboardRepository to own module with explicit filter/query dependencies.
+- duckdb_store dashboard functions and DuckDbDashboardReader fetchers now delegate to the repository; behavior preserved.
+- Added repository equivalence tests covering metrics, recent games/positions/tactics, motif counts, and pipeline table counts.
+- Tests run: `make check` (green).
+- Before→After map:
+	- duckdb_store dashboard helpers → DuckDbDashboardRepository + duckdb_store delegation/wiring + updated reader fetchers.
+
+Session summary (2026-02-05):
+- Migrated tactics explanation tests to `format_tactics__explanation` and archived the shim.
+- Tests run: `make check` (green).
+- Before→After map:
+	- tests/test_tactics_explanation.py → `format_tactics__explanation` import.
+	- src/tactix/tactics_explanation.py → review-for-deletion/tactics_explanation.py.

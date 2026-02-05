@@ -4,11 +4,11 @@ from pathlib import Path
 
 from tactix.db.duckdb_store import (
     get_connection,
-    grade_practice_attempt,
     init_schema,
     insert_positions,
     upsert_tactic_with_outcome,
 )
+from tactix.db.tactic_repository_provider import tactic_repository
 
 
 class PracticeAttemptGradingTests(unittest.TestCase):
@@ -46,7 +46,11 @@ class PracticeAttemptGradingTests(unittest.TestCase):
             {"result": "missed", "user_uci": "a2a3", "eval_delta": -240},
         )
 
-        result = grade_practice_attempt(conn, tactic_id, position_ids[0], "a2a4")
+        result = tactic_repository(conn).grade_practice_attempt(
+            tactic_id,
+            position_ids[0],
+            "a2a4",
+        )
         self.assertTrue(result["correct"])
         self.assertIn("a2a4", result["explanation"])
         rows = conn.execute(
@@ -64,7 +68,11 @@ class PracticeAttemptGradingTests(unittest.TestCase):
         self.assertAlmostEqual(rows[0][4], 1.3)
         self.assertEqual(rows[0][5], -240)
 
-        result = grade_practice_attempt(conn, tactic_id, position_ids[0], "a2a3")
+        result = tactic_repository(conn).grade_practice_attempt(
+            tactic_id,
+            position_ids[0],
+            "a2a3",
+        )
         self.assertFalse(result["correct"])
         count = conn.execute("SELECT COUNT(*) FROM training_attempts").fetchone()[0]
         self.assertEqual(count, 2)

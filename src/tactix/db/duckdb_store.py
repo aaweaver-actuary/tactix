@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Mapping
 from pathlib import Path
 
 import duckdb
@@ -33,18 +32,6 @@ from tactix.db.duckdb_dashboard_repository import (
     DuckDbDashboardRepository,
     default_dashboard_repository_dependencies,
 )
-from tactix.db.duckdb_position_repository import (
-    DuckDbPositionRepository,
-    default_position_dependencies,
-)
-from tactix.db.duckdb_tactic_repository import (
-    DuckDbTacticRepository,
-    default_tactic_dependencies,
-)
-from tactix.db.fetch_unanalyzed_positions import (
-    fetch_unanalyzed_positions as _fetch_unanalyzed_positions,
-)
-from tactix.db.record_training_attempt import record_training_attempt as _record_training_attempt
 from tactix.define_base_db_store__db_store import BaseDbStore
 from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
 
@@ -166,29 +153,6 @@ CREATE TABLE IF NOT EXISTS schema_version (
 SCHEMA_VERSION = 7
 
 
-def fetch_unanalyzed_positions(
-    conn: duckdb.DuckDBPyConnection,
-    game_ids: list[str] | None = None,
-    source: str | None = None,
-    limit: int | None = None,
-) -> list[dict[str, object]]:
-    """Return positions that have not yet been analyzed."""
-    return _fetch_unanalyzed_positions(
-        conn,
-        game_ids=game_ids,
-        source=source,
-        limit=limit,
-    )
-
-
-def record_training_attempt(
-    conn: duckdb.DuckDBPyConnection,
-    payload: Mapping[str, object],
-) -> int:
-    """Persist a training attempt record."""
-    return _record_training_attempt(conn, payload)
-
-
 def _should_attempt_wal_recovery(exc: BaseException) -> bool:
     """Return True when WAL recovery is allowed for the given exception."""
     message = str(exc).lower()
@@ -269,14 +233,6 @@ def _rating_bucket_for_rating(rating: int | None) -> str | None:
     start = (rating // bucket_size) * bucket_size
     end = start + bucket_size - 1
     return f"{start}-{end}"
-
-
-def _position_repository(conn: duckdb.DuckDBPyConnection) -> DuckDbPositionRepository:
-    return DuckDbPositionRepository(conn, dependencies=default_position_dependencies())
-
-
-def _tactic_repository(conn: duckdb.DuckDBPyConnection) -> DuckDbTacticRepository:
-    return DuckDbTacticRepository(conn, dependencies=default_tactic_dependencies())
 
 
 def _dashboard_repository(conn: duckdb.DuckDBPyConnection) -> DuckDbDashboardRepository:
@@ -415,56 +371,6 @@ def _ensure_column(
     columns = {row[1] for row in conn.execute(f"PRAGMA table_info('{table}')").fetchall()}
     if column not in columns:
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
-
-
-def fetch_position_counts(
-    conn: duckdb.DuckDBPyConnection,
-    game_ids: list[str],
-    source: str | None,
-) -> dict[str, int]:
-    """Return position counts keyed by game id."""
-    return _position_repository(conn).fetch_position_counts(game_ids, source)
-
-
-def fetch_positions_for_games(
-    conn: duckdb.DuckDBPyConnection,
-    game_ids: list[str],
-) -> list[dict[str, object]]:
-    """Return stored positions for the provided games."""
-    return _position_repository(conn).fetch_positions_for_games(game_ids)
-
-
-def insert_positions(
-    conn: duckdb.DuckDBPyConnection,
-    positions: list[Mapping[str, object]],
-) -> list[int]:
-    """Insert position rows and return new ids."""
-    return _position_repository(conn).insert_positions(positions)
-
-
-def insert_tactics(
-    conn: duckdb.DuckDBPyConnection,
-    rows: list[Mapping[str, object]],
-) -> list[int]:
-    """Insert tactic rows and return ids."""
-    return _tactic_repository(conn).insert_tactics(rows)
-
-
-def insert_tactic_outcomes(
-    conn: duckdb.DuckDBPyConnection,
-    rows: list[Mapping[str, object]],
-) -> list[int]:
-    """Insert tactic outcome rows and return ids."""
-    return _tactic_repository(conn).insert_tactic_outcomes(rows)
-
-
-def upsert_tactic_with_outcome(
-    conn: duckdb.DuckDBPyConnection,
-    tactic_row: Mapping[str, object],
-    outcome_row: Mapping[str, object],
-) -> int:
-    """Insert a tactic with its outcome and return the tactic id."""
-    return _tactic_repository(conn).upsert_tactic_with_outcome(tactic_row, outcome_row)
 
 
 def write_metrics_version(conn: duckdb.DuckDBPyConnection) -> int:

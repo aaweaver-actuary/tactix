@@ -7,7 +7,7 @@ from tactix.app.use_cases.pipeline_support import (
     _clear_analysis_checkpoint,
     _read_analysis_checkpoint,
 )
-from tactix.db.duckdb_store import fetch_positions_for_games
+from tactix.db.position_repository_provider import fetch_positions_for_games
 from tactix.define_pipeline_state__pipeline import RESUME_INDEX_START, logger
 
 

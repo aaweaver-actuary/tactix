@@ -264,6 +264,10 @@ class DuckDbTacticRepository:
             "latency_ms": latency_ms,
         }
 
+    def record_training_attempt(self, payload: Mapping[str, object]) -> int:
+        """Persist a training attempt record."""
+        return self._dependencies.record_training_attempt(self._conn, payload)
+
     def fetch_game_detail(
         self,
         game_id: str,

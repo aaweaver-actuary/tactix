@@ -242,3 +242,12 @@ Session summary (2026-02-05):
 - Before→After map:
 	- duckdb_store `_build_motif_breakdowns`/`_build_trend_rows` grouping blocks → `_group_metric_rows` helper.
 	- dashboard repository games-filtered query setup + duplicated opportunity join blocks → `_build_games_filtered_sql`, `_fetch_pipeline_table_counts`, `_fetch_opportunity_motif_counts`, `_games_filtered_join_clause`, `_opportunities_from_games_filtered`.
+
+Session summary (2026-02-05):
+- Migrated position/tactic helper wrappers out of duckdb_store into repository providers and added a position repository provider module.
+- Added DuckDbTacticRepository.record_training_attempt and tactic/position provider helper functions; pipeline + tests now use providers directly.
+- Trimmed duckdb_store to connection/schema/migrations + dashboard store, removing position/tactic/training wrappers.
+- Tests run: `make check` (green; existing Vitest act warnings unchanged).
+- Before→After map:
+	- duckdb_store position/tactic/training wrappers → position_repository_provider + tactic_repository_provider + DuckDbTacticRepository.record_training_attempt.
+	- pipeline/test call sites using duckdb_store insert/fetch/upsert → provider helpers (position/tactic repositories).

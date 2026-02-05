@@ -8,12 +8,9 @@ from tactix.db.duckdb_tactic_repository import (
     DuckDbTacticRepository,
     default_tactic_dependencies,
 )
-from tactix.db.duckdb_store import (
-    get_connection,
-    init_schema,
-    insert_positions,
-    upsert_tactic_with_outcome,
-)
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.position_repository_provider import insert_positions
+from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
 from tactix.db.raw_pgn_repository_provider import upsert_raw_pgns
 
 PGN_TEMPLATE = """[Event \"Test\"]
@@ -51,7 +48,7 @@ class DuckDbTacticRepositoryTests(unittest.TestCase):
         self.repo_conn.close()
         self.fn_conn.close()
 
-    def test_repository_matches_duckdb_store_functions(self) -> None:
+    def test_repository_matches_provider_helpers(self) -> None:
         self._seed_raw_pgns()
         position_row = self._build_position()
         position_id_repo = insert_positions(self.repo_conn, [position_row])[0]

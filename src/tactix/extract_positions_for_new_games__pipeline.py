@@ -5,7 +5,10 @@ from __future__ import annotations
 from tactix.attach_position_ids__pipeline import _attach_position_ids
 from tactix.collect_game_ids__pipeline import _collect_game_ids
 from tactix.config import Settings
-from tactix.db.duckdb_store import fetch_position_counts, insert_positions
+from tactix.db.position_repository_provider import (
+    fetch_position_counts,
+    insert_positions,
+)
 from tactix.extract_positions_for_rows__pipeline import _extract_positions_for_rows
 from tactix.filter_unprocessed_games__pipeline import _filter_unprocessed_games
 

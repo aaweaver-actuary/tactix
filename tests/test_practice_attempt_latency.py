@@ -6,12 +6,9 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from tactix.db.duckdb_store import (
-    get_connection,
-    init_schema,
-    insert_positions,
-    upsert_tactic_with_outcome,
-)
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.position_repository_provider import insert_positions
+from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
 
 
 def test_practice_attempt_records_success_and_latency() -> None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from tactix.app.use_cases.pipeline_support import _resolve_side_to_move_filter
 from tactix.config import Settings
-from tactix.db.duckdb_store import insert_positions
+from tactix.db.position_repository_provider import insert_positions
 from tactix.extract_positions__pgn import extract_positions
 from tactix.GameRow import GameRow
 

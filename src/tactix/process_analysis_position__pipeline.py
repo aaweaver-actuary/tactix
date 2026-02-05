@@ -9,7 +9,7 @@ from tactix.app.use_cases.pipeline_support import (
     _maybe_emit_analysis_progress,
     _maybe_write_analysis_checkpoint,
 )
-from tactix.db.duckdb_store import upsert_tactic_with_outcome
+from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
 from tactix.maybe_upsert_postgres_analysis__pipeline import _maybe_upsert_postgres_analysis
 
 

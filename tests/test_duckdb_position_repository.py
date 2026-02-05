@@ -8,11 +8,10 @@ from tactix.db.duckdb_position_repository import (
     DuckDbPositionRepository,
     default_position_dependencies,
 )
-from tactix.db.duckdb_store import (
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.position_repository_provider import (
     fetch_position_counts,
     fetch_positions_for_games,
-    get_connection,
-    init_schema,
     insert_positions,
 )
 
@@ -33,7 +32,7 @@ class DuckDbPositionRepositoryTests(unittest.TestCase):
         self.repo_conn.close()
         self.fn_conn.close()
 
-    def test_repository_matches_duckdb_store_functions(self) -> None:
+    def test_repository_matches_provider_helpers(self) -> None:
         positions = self._build_positions()
         ids_repo = self.repo.insert_positions(positions)
         ids_functions = insert_positions(self.fn_conn, positions)

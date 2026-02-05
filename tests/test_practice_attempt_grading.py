@@ -2,12 +2,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tactix.db.duckdb_store import (
-    get_connection,
-    init_schema,
-    insert_positions,
-    upsert_tactic_with_outcome,
-)
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.position_repository_provider import insert_positions
+from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
 from tactix.db.tactic_repository_provider import tactic_repository
 
 

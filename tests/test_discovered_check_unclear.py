@@ -9,12 +9,9 @@ import chess
 import chess.pgn
 
 from tactix.config import Settings
-from tactix.db.duckdb_store import (
-    get_connection,
-    init_schema,
-    insert_positions,
-    upsert_tactic_with_outcome,
-)
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.position_repository_provider import insert_positions
+from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
 from tactix.engine_result import EngineResult
 from tactix.pgn_utils import split_pgn_chunks
 from tactix.analyze_position import analyze_position

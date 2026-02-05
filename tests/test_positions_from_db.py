@@ -4,11 +4,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from tactix.config import Settings
-from tactix.db.duckdb_store import (
-    fetch_positions_for_games,
-    get_connection,
-    init_schema,
-)
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.position_repository_provider import fetch_positions_for_games
 from tactix.db.raw_pgn_repository_provider import upsert_raw_pgns
 from tactix.pgn_utils import (
     extract_game_id,

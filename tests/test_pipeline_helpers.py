@@ -5,13 +5,10 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from tactix.config import Settings
-from tactix.db.duckdb_store import (
-    fetch_unanalyzed_positions,
-    get_connection,
-    init_schema,
-    insert_positions,
-    upsert_tactic_with_outcome,
-)
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.fetch_unanalyzed_positions import fetch_unanalyzed_positions
+from tactix.db.position_repository_provider import insert_positions
+from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
 from tactix.db.raw_pgn_repository_provider import upsert_raw_pgns
 import tactix.pipeline as pipeline
 

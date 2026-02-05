@@ -5,12 +5,9 @@ from pathlib import Path
 import chess
 
 from tactix.config import Settings
-from tactix.db.duckdb_store import (
-    get_connection,
-    init_schema,
-    insert_positions,
-    upsert_tactic_with_outcome,
-)
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.position_repository_provider import insert_positions
+from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
 from tactix.stockfish_runner import EngineResult
 from tactix.detect_tactics__motifs import BaseTacticDetector, build_default_motif_detector_suite
 from tactix._is_profile_in import _is_profile_in

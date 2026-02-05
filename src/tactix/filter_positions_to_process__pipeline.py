@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from tactix.collect_game_ids__pipeline import _collect_game_ids
 from tactix.config import Settings
-from tactix.db.duckdb_store import fetch_position_counts
+from tactix.db.position_repository_provider import fetch_position_counts
 from tactix.filter_unprocessed_games__pipeline import _filter_unprocessed_games
 
 

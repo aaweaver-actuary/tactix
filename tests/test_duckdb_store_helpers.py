@@ -18,11 +18,15 @@ from tactix.db.dashboard_repository_provider import (
 from tactix.db.duckdb_store import (
     DuckDbStore,
     _ensure_raw_pgns_versioned,
-    fetch_position_counts,
-    fetch_positions_for_games,
     get_connection,
     init_schema,
+)
+from tactix.db.position_repository_provider import (
+    fetch_position_counts,
+    fetch_positions_for_games,
     insert_positions,
+)
+from tactix.db.tactic_repository_provider import (
     insert_tactic_outcomes,
     insert_tactics,
     upsert_tactic_with_outcome,

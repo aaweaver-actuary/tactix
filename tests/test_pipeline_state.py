@@ -8,8 +8,8 @@ import chess.engine
 from tactix.config import Settings
 from tactix.db.duckdb_store import fetch_version, get_connection
 from tactix.pgn_utils import extract_last_timestamp_ms, split_pgn_chunks
-from tactix.chess_clients.lichess_client import read_checkpoint
-from tactix.chess_clients.chesscom_client import read_cursor
+from tactix.infra.clients.lichess_client import read_checkpoint
+from tactix.infra.clients.chesscom_client import read_cursor
 from tactix.pipeline import run_daily_game_sync
 
 

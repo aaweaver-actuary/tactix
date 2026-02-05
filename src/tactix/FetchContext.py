@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from tactix.chess_clients.chesscom_client import ChesscomFetchResult
+from tactix.infra.clients.chesscom_client import ChesscomFetchResult
 
 
 @dataclass(slots=True)

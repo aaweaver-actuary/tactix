@@ -80,7 +80,6 @@ _EXPORT_BINDINGS = (
     _refresh_lichess_token,
     _resolve_access_token,
     _resolve_perf_value,
-    _write_cached_token,
     build_client,
     fetch_incremental_games,
     latest_timestamp,

@@ -8,9 +8,9 @@ from tactix.chess_game import ChessGame
 from tactix.pipeline import run_daily_game_sync
 from tactix.sync_contexts import DailyGameSyncRequest
 
-chesscom_client = import_module("tactix.chess_clients.chesscom_client")
+chesscom_client = import_module("tactix.infra.clients.chesscom_client")
 duckdb_store = import_module("tactix.db.duckdb_store")
-lichess_client = import_module("tactix.chess_clients.lichess_client")
+lichess_client = import_module("tactix.infra.clients.lichess_client")
 
 _LEGACY_MODULE_ALIASES = {
     "tactix.DashboardQueryFilters": "tactix.dashboard_query_filters",

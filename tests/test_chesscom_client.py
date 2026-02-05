@@ -12,7 +12,7 @@ import chess.pgn
 
 from tactix.config import Settings, get_settings
 from tactix.utils.logger import Logger
-from tactix.chess_clients.chesscom_client import (
+from tactix.infra.clients.chesscom_client import (
     ARCHIVES_URL,
     ChesscomClient,
     ChesscomClientContext,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from tactix.chess_clients.chesscom_client import ChesscomFetchRequest, ChesscomFetchResult
+from tactix.infra.clients.chesscom_client import ChesscomFetchRequest, ChesscomFetchResult
 from tactix.ports.game_source_client import GameSourceClient
 
 

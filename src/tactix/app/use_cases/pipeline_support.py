@@ -6,7 +6,6 @@ import json
 import time
 from dataclasses import dataclass
 
-from tactix.chess_clients.chesscom_client import write_cursor as write_chesscom_cursor
 from tactix.config import Settings
 from tactix.define_pipeline_state__pipeline import (
     CHESSCOM_BLACK_PROFILES,
@@ -18,6 +17,7 @@ from tactix.define_pipeline_state__pipeline import (
 )
 from tactix.FetchContext import FetchContext
 from tactix.GameRow import GameRow
+from tactix.infra.clients.chesscom_client import write_cursor as write_chesscom_cursor
 from tactix.infra.clients.lichess_client import write_checkpoint
 from tactix.latest_timestamp import latest_timestamp
 from tactix.no_games_payload_contexts import (

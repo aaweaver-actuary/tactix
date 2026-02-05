@@ -38,6 +38,10 @@ from tactix.utils import Logger, to_int
 
 logger = Logger(__name__)
 
+ChesscomFetchRequest = ChessFetchRequest
+ChesscomFetchResult = ChessFetchResult
+ChesscomRateLimitError = RateLimitError
+
 ARCHIVES_URL = "https://api.chess.com/pub/player/{username}/games/archives"
 HTTP_STATUS_TOO_MANY_REQUESTS = 429
 
@@ -771,6 +775,9 @@ def fetch_incremental_games(
 
 CHESSCOM_PUBLIC_EXPORTS = [
     "ARCHIVES_URL",
+    "ChesscomFetchRequest",
+    "ChesscomFetchResult",
+    "ChesscomRateLimitError",
     "ChesscomClient",
     "ChesscomClientContext",
     "_auth_headers",

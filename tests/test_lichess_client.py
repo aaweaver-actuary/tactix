@@ -9,7 +9,7 @@ import berserk
 
 from tactix.config import Settings
 from tactix.utils.logger import Logger
-from tactix.chess_clients.lichess_client import (
+from tactix.infra.clients.lichess_client import (
     LichessClient,
     LichessClientContext,
     LichessFetchRequest,

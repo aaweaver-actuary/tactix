@@ -193,7 +193,7 @@ def test_upsert_postgres_raw_pgns_skips_duplicate_hash() -> None:
     conn.cursor.return_value = cursor
     conn.autocommit = True
 
-    with patch("tactix._build_pgn_upsert_plan._hash_pgn_text", return_value="match"):
+    with patch("tactix._build_pgn_upsert_plan.BaseDbStore.hash_pgn", return_value="match"):
         inserted = upsert_postgres_raw_pgns(
             conn,
             [

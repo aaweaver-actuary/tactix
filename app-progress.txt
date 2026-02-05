@@ -200,6 +200,14 @@ Session summary (2026-02-05):
 - Tests run: `make check` (green).
 
 Session summary (2026-02-05):
+- Migrated PGN hashing call sites to `BaseDbStore.hash_pgn` and retired the `_hash_pgn_text` shim.
+- Archived the shim in review-for-deletion and left a deprecated stub in src.
+- Tests run: `make check` (before + after; existing Vitest act() warnings and pycycle .venv parse warning unchanged).
+- Before→After map:
+	- tactix._hash_pgn_text usages in _build_pgn_upsert_plan/raw_pgn_repository_provider/_build_legacy_raw_pgn_inserts → BaseDbStore.hash_pgn.
+	- src/tactix/_hash_pgn_text.py → review-for-deletion/_hash_pgn_text.py (src now deprecated stub).
+
+Session summary (2026-02-05):
 - Consolidated dashboard query resolution to canonical `resolve_dashboard_query` and shifted tests/patch targets off remaining shim imports.
 - Updated Stockfish test imports/patches to target `StockfishEngine` and `engine_result` directly.
 - Tests run: `make check` (green).

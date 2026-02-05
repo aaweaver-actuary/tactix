@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from datetime import UTC, datetime
 
-from tactix._hash_pgn_text import _hash_pgn_text
+from tactix.define_base_db_store__db_store import BaseDbStore
 from tactix.extract_pgn_metadata import extract_pgn_metadata
 
 
@@ -26,7 +26,7 @@ def _build_legacy_raw_pgn_inserts(
                 source,
                 fetched_at,
                 pgn_text,
-                _hash_pgn_text(pgn_text),
+                BaseDbStore.hash_pgn(pgn_text),
                 1,
                 metadata.get("user_rating"),
                 metadata.get("time_control"),

@@ -6,11 +6,11 @@ from collections.abc import Iterable, Mapping
 
 import duckdb
 
-from tactix._hash_pgn_text import _hash_pgn_text
 from tactix.db.duckdb_raw_pgn_repository import (
     DuckDbRawPgnRepository,
     default_raw_pgn_dependencies,
 )
+from tactix.define_base_db_store__db_store import BaseDbStore
 
 
 def raw_pgn_repository(conn: duckdb.DuckDBPyConnection) -> DuckDbRawPgnRepository:
@@ -20,7 +20,7 @@ def raw_pgn_repository(conn: duckdb.DuckDBPyConnection) -> DuckDbRawPgnRepositor
 
 def hash_pgn(pgn: str) -> str:
     """Return the canonical hash for PGN content."""
-    return _hash_pgn_text(pgn)
+    return BaseDbStore.hash_pgn(pgn)
 
 
 def upsert_raw_pgns(

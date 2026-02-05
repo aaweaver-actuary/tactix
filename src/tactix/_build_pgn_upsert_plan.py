@@ -4,14 +4,13 @@ from collections.abc import Callable, Mapping
 from datetime import datetime
 from typing import cast
 
-from tactix._hash_pgn_text import _hash_pgn_text
 from tactix.define_base_db_store__db_store import BaseDbStore
 from tactix.PgnUpsertInputs import PgnUpsertHashing, PgnUpsertInputs, PgnUpsertTimestamps
 from tactix.PgnUpsertPlan import PgnUpsertPlan
 
 
 def _resolve_hash_pgn__pgn_upsert_plan() -> Callable[[str], str]:
-    return _hash_pgn_text
+    return BaseDbStore.hash_pgn
 
 
 def _build_pgn_upsert_hashing__pgn_upsert_plan(

@@ -1,7 +1,5 @@
-"""Hash PGN text using the base store helper."""
+"""Deprecated module; use `BaseDbStore.hash_pgn` directly."""
 
-from tactix.define_base_db_store__db_store import BaseDbStore
+from __future__ import annotations
 
-
-def _hash_pgn_text(pgn: str) -> str:
-    return BaseDbStore.hash_pgn(pgn)
+__all__: list[str] = []

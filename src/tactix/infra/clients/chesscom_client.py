@@ -592,7 +592,7 @@ class ChesscomClient(BaseChessClient):
         retry_after = _parse_retry_after(response.headers.get("Retry-After"))
         if attempt >= max_retries:
             message = "Chess.com rate limit exceeded"
-            raise RateLimitError(message, response=response)
+            raise ChesscomRateLimitError(message, response=response)
         wait_seconds = max(base_backoff * (2**attempt), retry_after or 0.0)
         self.logger.warning(
             "Chess.com rate limited (429). Retrying in %.2fs (attempt %s/%s).",

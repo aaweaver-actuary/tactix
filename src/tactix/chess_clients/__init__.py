@@ -36,3 +36,7 @@ def __dir__() -> list[str]:
 if TYPE_CHECKING:
     from tactix.infra.clients.chesscom_client import ChesscomClient
     from tactix.infra.clients.lichess_client import LichessClient
+
+    __getattr__("ChesscomClient")
+    __getattr__("LichessClient")
+    __dir__()

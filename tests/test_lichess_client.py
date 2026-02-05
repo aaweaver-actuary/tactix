@@ -292,7 +292,7 @@ class LichessClientTests(unittest.TestCase):
             "tactix.infra.clients.lichess_client.build_client",
             return_value=fake_client,
         ):
-            from tactix.chess_clients import lichess_client
+            from tactix.infra.clients import lichess_client
 
             result = lichess_client._fetch_remote_games_once(settings, since_ms=0)
 
@@ -508,7 +508,7 @@ class LichessClientTests(unittest.TestCase):
             "tactix.infra.clients.lichess_client.build_client",
             return_value=fake_client,
         ):
-            from tactix.chess_clients import lichess_client
+            from tactix.infra.clients import lichess_client
 
             lichess_client._fetch_remote_games_once(settings, since_ms=0)
 
@@ -536,7 +536,7 @@ class LichessClientTests(unittest.TestCase):
             "tactix.infra.clients.lichess_client.build_client",
             return_value=fake_client,
         ):
-            from tactix.chess_clients import lichess_client
+            from tactix.infra.clients import lichess_client
 
             lichess_client._fetch_remote_games_once(settings, since_ms=0)
 
@@ -564,7 +564,7 @@ class LichessClientTests(unittest.TestCase):
             "tactix.infra.clients.lichess_client.build_client",
             return_value=fake_client,
         ):
-            from tactix.chess_clients import lichess_client
+            from tactix.infra.clients import lichess_client
 
             lichess_client._fetch_remote_games_once(settings, since_ms=0)
 
@@ -666,7 +666,7 @@ class LichessClientTests(unittest.TestCase):
             "tactix.infra.clients.lichess_client.build_client",
             return_value=fake_client,
         ):
-            from tactix.chess_clients import lichess_client
+            from tactix.infra.clients import lichess_client
 
             lichess_client._fetch_remote_games_once(settings, since_ms=0, until_ms=1234)
 

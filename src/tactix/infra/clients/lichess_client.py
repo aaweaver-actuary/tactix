@@ -470,7 +470,7 @@ class LichessClient(BaseChessClient):
         except Exception as exc:
             if self._should_refresh_token(exc):
                 self.logger.warning("Refreshing Lichess OAuth token after auth failure")
-                _refresh_lichess_token(self.settings)
+                refresh_lichess_token(self.settings)
                 return self._fetch_remote_games_once(since_ms, until_ms)
             raise
 

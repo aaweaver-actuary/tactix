@@ -1,10 +1,12 @@
 Session summary (2026-02-05):
 - Migrated Chess.com/Lichess pipeline + tests off chess_clients shims to canonical infra client modules; added ChesscomFetchRequest/Result aliases to the canonical Chess.com client.
-- Archived chess_clients shims into review-for-deletion/chess_clients for cleanup.
-- Tests run: `make check` (before changes), `make check` (after changes; interrupted during pylint in this environment).
+- Archived chess_clients shims into review-for-deletion/chess_clients for cleanup and removed lazy-loading exports to keep dead-code checks clean.
+- Adjusted infra client helpers to use exported aliases (ChesscomRateLimitError, refresh_lichess_token) and updated lichess tests to import canonical modules.
+- Tests run: `make check` (before changes), `make check` (after changes; green with existing vitest act warnings and pycycle .venv parse warning).
 - Before→After map:
 	- tactix.chess_clients.{chesscom_client,lichess_client} imports → tactix.infra.clients.{chesscom_client,lichess_client}.
 	- src/tactix/chess_clients/{chesscom_client.py,lichess_client.py} → review-for-deletion/chess_clients/ copies.
+	- chess_clients __init__ lazy exports → direct infra client exports.
 
 Session summary (2026-02-05):
 - Added dashboard_repository_provider with dashboard/metrics fetch wrappers and unit coverage, then migrated dashboard/metrics call sites off duckdb_store.

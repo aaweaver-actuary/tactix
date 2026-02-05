@@ -204,3 +204,12 @@ Session summary (2026-02-05):
 - Before→After map:
 	- tests/test_tactics_explanation.py → `format_tactics__explanation` import.
 	- src/tactix/tactics_explanation.py → review-for-deletion/tactics_explanation.py.
+
+Session summary (2026-02-05):
+- Eliminated dashboard/metrics jscpd clones by extracting shared grouping and SQL helper utilities.
+- duckdb_store motif/trend grouping now flows through `_group_metric_rows` for consistent keying and smaller helpers.
+- DuckDbDashboardRepository now builds games-filtered SQL via `_build_games_filtered_sql` and executes counts/motif queries via `_fetch_pipeline_table_counts` and `_fetch_opportunity_motif_counts` with shared join fragments.
+- Tests run: `make check` (green; existing Vitest act warnings unchanged).
+- Before→After map:
+	- duckdb_store `_build_motif_breakdowns`/`_build_trend_rows` grouping blocks → `_group_metric_rows` helper.
+	- dashboard repository games-filtered query setup + duplicated opportunity join blocks → `_build_games_filtered_sql`, `_fetch_pipeline_table_counts`, `_fetch_opportunity_motif_counts`, `_games_filtered_join_clause`, `_opportunities_from_games_filtered`.

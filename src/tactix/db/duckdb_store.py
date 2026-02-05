@@ -710,16 +710,27 @@ def _count_found(items: list[dict[str, object]]) -> int:
     return sum(1 for item in items if item.get("result") == "found")
 
 
-def _build_motif_breakdowns(rows: list[dict[str, object]]) -> list[tuple[object, ...]]:
-    grouped: dict[tuple[object, ...], list[dict[str, object]]] = defaultdict(list)
+def _group_metric_rows(
+    rows: list[dict[str, object]],
+) -> dict[tuple[object, object, object, object], list[dict[str, object]]]:
+    grouped: dict[
+        tuple[object, object, object, object],
+        list[dict[str, object]],
+    ] = defaultdict(list)
     for row in rows:
-        key = (
-            row.get("source"),
-            row.get("motif"),
-            row.get("rating_bucket"),
-            row.get("time_control"),
-        )
-        grouped[key].append(row)
+        grouped[
+            (
+                row.get("source"),
+                row.get("motif"),
+                row.get("rating_bucket"),
+                row.get("time_control"),
+            )
+        ].append(row)
+    return grouped
+
+
+def _build_motif_breakdowns(rows: list[dict[str, object]]) -> list[tuple[object, ...]]:
+    grouped = _group_metric_rows(rows)
     metric_rows: list[tuple[object, ...]] = []
     for (source, motif, rating_bucket, time_control), items in grouped.items():
         total = len(items)
@@ -752,15 +763,7 @@ def _build_trend_rows(
     *,
     window_days: int,
 ) -> list[tuple[object, ...]]:
-    grouped: dict[tuple[object, ...], list[dict[str, object]]] = defaultdict(list)
-    for row in rows:
-        key = (
-            row.get("source"),
-            row.get("motif"),
-            row.get("rating_bucket"),
-            row.get("time_control"),
-        )
-        grouped[key].append(row)
+    grouped = _group_metric_rows(rows)
     metric_rows: list[tuple[object, ...]] = []
     for (source, motif, rating_bucket, time_control), items in grouped.items():
         metric_rows.extend(

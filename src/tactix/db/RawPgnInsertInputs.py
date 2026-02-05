@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from tactix.define_pgn_upsert_plan__db_store import PgnUpsertPlan
+from tactix.PgnUpsertPlan import PgnUpsertPlan
 
 
 @dataclass(frozen=True)

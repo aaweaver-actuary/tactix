@@ -1229,7 +1229,7 @@ class PipelineStateTests(unittest.TestCase):
         )
 
         with patch(
-            "tactix.lichess_client.LichessClient.fetch_incremental_games",
+            "tactix.infra.clients.lichess_client.LichessClient.fetch_incremental_games",
             side_effect=RuntimeError("network down"),
         ):
             with self.assertRaises(RuntimeError):

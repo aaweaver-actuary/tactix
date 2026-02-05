@@ -1,16 +1,11 @@
 """Base helpers for tactic detectors."""
 
-# pylint: disable=invalid-name
-
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
 
 import chess
-
-MISSED_DELTA_THRESHOLD = -300
-FAILED_ATTEMPT_THRESHOLD = -100
+from pydantic import BaseModel
 
 PIECE_VALUES = {
     chess.KING: 10000,
@@ -20,6 +15,9 @@ PIECE_VALUES = {
     chess.KNIGHT: 300,
     chess.PAWN: 100,
 }
+
+MISSED_DELTA_THRESHOLD = -300
+FAILED_ATTEMPT_THRESHOLD = -100
 
 HIGH_VALUE_PIECES = {
     chess.QUEEN,
@@ -36,12 +34,108 @@ SLIDER_PIECES = {
 }
 
 
-@dataclass(frozen=True)
-class SliderInfo:
-    """Describe a stationary slider piece."""
+def _capture_square_for_move(
+    board: chess.Board,
+    move: chess.Move,
+    mover_color: bool,
+) -> chess.Square:
+    if board.is_en_passant(move):
+        return move.to_square + (-8 if mover_color == chess.WHITE else 8)
+    return move.to_square
+
+
+def _classify_no_best_move(delta: int) -> str:
+    if delta <= MISSED_DELTA_THRESHOLD:
+        return "missed"
+    if delta <= FAILED_ATTEMPT_THRESHOLD:
+        return "failed_attempt"
+    return "initiative"
+
+
+def _classify_with_best_move(user_move_uci: str, best_move: str, delta: int) -> str:
+    if user_move_uci == best_move:
+        return "found"
+    if delta <= MISSED_DELTA_THRESHOLD:
+        return "missed"
+    if delta <= FAILED_ATTEMPT_THRESHOLD:
+        return "failed_attempt"
+    return "unclear"
+
+
+def _iter_opponent_targets(
+    board: chess.Board,
+    square: chess.Square,
+    mover_color: bool,
+) -> Iterable[chess.Piece]:
+    for target in board.attacks(square):
+        target_piece = board.piece_at(target)
+        if target_piece and target_piece.color != mover_color:
+            yield target_piece
+
+
+def _is_unchanged_slider(
+    board_before: chess.Board,
+    square: chess.Square,
+    piece: chess.Piece,
+) -> bool:
+    before_piece = board_before.piece_at(square)
+    if before_piece is None:
+        return False
+    if before_piece.piece_type != piece.piece_type:
+        return False
+    return before_piece.color == piece.color
+
+
+def _is_slider_candidate(
+    piece: chess.Piece,
+    mover_color: bool,
+    square: chess.Square,
+    exclude_square: chess.Square | None,
+) -> bool:
+    if piece.color != mover_color or piece.piece_type not in SLIDER_PIECES:
+        return False
+    if exclude_square is None:
+        return True
+    return square != exclude_square
+
+
+def _iter_unchanged_sliders(
+    board_before: chess.Board,
+    board_after: chess.Board,
+    mover_color: bool,
+    exclude_square: chess.Square | None,
+) -> Iterable[tuple[chess.Square, chess.Piece]]:
+    for square, piece in board_after.piece_map().items():
+        if not _is_slider_candidate(piece, mover_color, square, exclude_square):
+            continue
+        if _is_unchanged_slider(board_before, square, piece):
+            yield square, piece
+
+
+def _can_compare_capture(
+    mover_piece: chess.Piece | None,
+    board_after: chess.Board,
+) -> bool:
+    if mover_piece is None:
+        return False
+    return not board_after.is_checkmate()
+
+
+def _is_favorable_trade(captured_piece: chess.Piece, mover_piece: chess.Piece) -> bool:
+    return PIECE_VALUES.get(captured_piece.piece_type, 0) > PIECE_VALUES.get(
+        mover_piece.piece_type, 0
+    )
+
+
+class PieceInfo(BaseModel):
+    """Describe a piece on the board."""
 
     square: chess.Square
     piece: chess.Piece
+
+
+class SliderInfo(PieceInfo):
+    """Describe a stationary slider piece."""
 
 
 class BaseTacticDetector:
@@ -72,26 +166,20 @@ class BaseTacticDetector:
         after_cp: int,
     ) -> tuple[str, int]:
         """Classify the tactic result based on evaluation swing."""
-        if best_move is None:
-            return "initiative", 0
         delta = after_cp - base_cp
-        if user_move_uci == best_move:
-            return "found", delta
-        if delta <= MISSED_DELTA_THRESHOLD:
-            return "missed", delta
-        if delta <= FAILED_ATTEMPT_THRESHOLD:
-            return "failed_attempt", delta
-        return "unclear", delta
+        if best_move is None:
+            return _classify_no_best_move(delta), delta
+        return _classify_with_best_move(user_move_uci, best_move, delta), delta
 
     @classmethod
     def has_hanging_piece(cls, board: chess.Board, mover_color: bool) -> bool:
-        """Return True when the opponent has a hanging piece."""
+        """Return True when the mover has a hanging piece."""
         opponent = not mover_color
         for square, piece in board.piece_map().items():
-            if piece.color != opponent:
+            if piece.color != mover_color:
                 continue
-            if board.is_attacked_by(mover_color, square) and not board.is_attacked_by(
-                opponent, square
+            if board.is_attacked_by(opponent, square) and not board.is_attacked_by(
+                mover_color, square
             ):
                 return True
         return False
@@ -107,24 +195,16 @@ class BaseTacticDetector:
         """Return True when a capture removes a hanging piece."""
         if not board_before.is_capture(move):
             return False
-        result = False
-        if board_after.is_checkmate():
-            result = True
-        else:
-            capture_square = move.to_square
-            if board_before.is_en_passant(move):
-                capture_square = move.to_square + (-8 if mover_color == chess.WHITE else 8)
-            captured_piece = board_before.piece_at(capture_square)
-            if captured_piece is not None:
-                if not board_before.is_attacked_by(not mover_color, capture_square):
-                    result = True
-                else:
-                    mover_piece = board_before.piece_at(move.from_square)
-                    if mover_piece is not None:
-                        result = PIECE_VALUES.get(captured_piece.piece_type, 0) > PIECE_VALUES.get(
-                            mover_piece.piece_type, 0
-                        )
-        return result
+        capture_square = _capture_square_for_move(board_before, move, mover_color)
+        captured_piece = board_before.piece_at(capture_square)
+        if captured_piece is None:
+            return False
+        if not board_before.is_attacked_by(not mover_color, capture_square):
+            return True
+        mover_piece = board_before.piece_at(move.from_square)
+        if not _can_compare_capture(mover_piece, board_after):
+            return False
+        return _is_favorable_trade(captured_piece, mover_piece)
 
     @classmethod
     def count_high_value_targets(
@@ -137,15 +217,11 @@ class BaseTacticDetector:
         piece = board.piece_at(square)
         if piece is None or piece.color != mover_color:
             return 0
-        attacks = board.attacks(square)
-        total = 0
-        for target in attacks:
-            target_piece = board.piece_at(target)
-            if target_piece is None or target_piece.color == mover_color:
-                continue
-            if target_piece.piece_type in HIGH_VALUE_PIECES:
-                total += 1
-        return total
+        return sum(
+            1
+            for target_piece in _iter_opponent_targets(board, square, mover_color)
+            if target_piece.piece_type in HIGH_VALUE_PIECES
+        )
 
     @classmethod
     def has_high_value_target(
@@ -158,18 +234,14 @@ class BaseTacticDetector:
         piece = board.piece_at(square)
         if piece is None or piece.color == opponent:
             return False
-        for target in board.attacks(square):
-            target_piece = board.piece_at(target)
-            if (
-                target_piece
-                and target_piece.color == opponent
-                and target_piece.piece_type in HIGH_VALUE_PIECES
-            ):
-                return True
-        return False
+        return any(
+            target_piece.piece_type in HIGH_VALUE_PIECES
+            for target_piece in _iter_opponent_targets(board, square, not opponent)
+        )
 
+    @classmethod
     def iter_unchanged_sliders(
-        self,
+        cls,
         board_before: chess.Board,
         board_after: chess.Board,
         mover_color: bool,
@@ -177,14 +249,16 @@ class BaseTacticDetector:
         exclude_square: chess.Square | None = None,
     ) -> Iterable[tuple[chess.Square, chess.Piece]]:
         """Yield slider pieces that did not move between boards."""
-        for square, piece in board_after.piece_map().items():
-            if piece.color != mover_color or piece.piece_type not in SLIDER_PIECES:
-                continue
-            if exclude_square is not None and square == exclude_square:
-                continue
-            before_piece = board_before.piece_at(square)
-            if before_piece is None or before_piece.piece_type != piece.piece_type:
-                continue
-            if before_piece.color != piece.color:
-                continue
-            yield square, piece
+        yield from _iter_unchanged_sliders(
+            board_before,
+            board_after,
+            mover_color,
+            exclude_square,
+        )
+
+
+_VULTURE_USED = (
+    SliderInfo,
+    BaseTacticDetector.has_hanging_piece,
+    BaseTacticDetector.has_high_value_target,
+)

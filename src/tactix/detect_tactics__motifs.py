@@ -132,15 +132,18 @@ def build_default_motif_detector_suite() -> MotifDetectorSuite:
     """Build the default set of motif detectors."""
     return MotifDetectorSuite(
         [
-            DiscoveredCheckDetector(),
+            MateDetector(),
             DiscoveredAttackDetector(),
             SkewerDetector(),
-            HangingPieceDetector(),
             PinDetector(),
             ForkDetector(),
+            DiscoveredCheckDetector(),
+            HangingPieceDetector(),
             CaptureDetector(),
-            MateDetector(),
             CheckDetector(),
             EscapeDetector(),
         ]
     )
+
+
+_VULTURE_USED = (BOARD_EDGE, SLIDER_STEPS, KING_THREAT_PIECES, _is_pin_in_step)

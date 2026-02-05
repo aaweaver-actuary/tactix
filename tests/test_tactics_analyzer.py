@@ -12,10 +12,7 @@ from tactix.db.duckdb_store import (
     upsert_tactic_with_outcome,
 )
 from tactix.stockfish_runner import EngineResult
-from tactix.tactic_detectors import (
-    BaseTacticDetector,
-    build_default_motif_detector_suite,
-)
+from tactix.detect_tactics__motifs import BaseTacticDetector, build_default_motif_detector_suite
 from tactix.tactics_analyzer import _is_profile_in, analyze_position
 from tests.fixture_helpers import (
     discovered_attack_fixture_position,

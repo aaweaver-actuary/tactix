@@ -6,12 +6,12 @@ from typing import cast
 
 from tactix.build_chess_client__pipeline import _build_chess_client
 from tactix.build_pipeline_settings__pipeline import _build_pipeline_settings
-from tactix.chess_clients.base_chess_client import BaseChessClient
 from tactix.config import Settings
-from tactix.DailySyncStartContext import DailyGameSyncContext, DailyGameSyncRequest
 from tactix.legacy_args import apply_legacy_args, apply_legacy_kwargs, init_legacy_values
 from tactix.pipeline_state__pipeline import ProgressCallback
+from tactix.ports.game_source_client import GameSourceClient
 from tactix.run_daily_game_sync_internal__pipeline import _run_daily_game_sync
+from tactix.sync_contexts import DailyGameSyncContext, DailyGameSyncRequest
 
 
 def run_daily_game_sync(
@@ -41,7 +41,7 @@ def run_daily_game_sync(
             profile=cast(str | None, values["profile"]),
             window_start_ms=cast(int | None, values["window_start_ms"]),
             window_end_ms=cast(int | None, values["window_end_ms"]),
-            client=cast(BaseChessClient | None, values["client"]),
+            client=cast(GameSourceClient | None, values["client"]),
         )
     settings = _build_pipeline_settings(
         resolved.settings,

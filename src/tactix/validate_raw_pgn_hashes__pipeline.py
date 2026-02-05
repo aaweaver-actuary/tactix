@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from importlib import import_module
+from collections.abc import Callable
 
 from tactix.compute_pgn_hashes__pipeline import _compute_pgn_hashes
 from tactix.count_hash_matches__pipeline import _count_hash_matches
-from tactix.define_pipeline_state__pipeline import GameRow
+from tactix.GameRow import GameRow
 from tactix.raise_for_hash_mismatch__pipeline import _raise_for_hash_mismatch
 
 
 def _validate_raw_pgn_hashes(
-    conn,
     rows: list[GameRow],
     source: str,
+    fetch_latest_pgn_hashes: Callable[[list[str], str], dict[str, str]],
 ) -> dict[str, int]:
     """
     Validates raw PGN hashes for a set of chess games by comparing computed hashes
@@ -19,12 +19,12 @@ def _validate_raw_pgn_hashes(
 
     Parameters
     ----------
-    conn : Any
-        Database connection object used to fetch stored PGN hashes.
     rows : list of GameRow
         List of game rows containing raw PGN data to be validated.
     source : str
         Identifier for the data source (e.g., 'chesscom', 'lichess').
+    fetch_latest_pgn_hashes : Callable[[list[str], str], dict[str, str]]
+        Fetcher returning latest hashes keyed by game id for the provided source.
 
     Returns
     -------
@@ -42,9 +42,8 @@ def _validate_raw_pgn_hashes(
 
     Examples
     --------
-    >>> conn = get_db_connection()
     >>> rows = [GameRow(...), GameRow(...)]
-    >>> result = _validate_raw_pgn_hashes(conn, rows, "chesscom")
+    >>> result = _validate_raw_pgn_hashes(rows, "chesscom", fetch_latest_pgn_hashes)
     >>> print(result)
     {'computed': 2, 'matched': 2}
 
@@ -60,8 +59,7 @@ def _validate_raw_pgn_hashes(
     if not rows:
         return {"computed": 0, "matched": 0}
     computed = _compute_pgn_hashes(rows, source)
-    pipeline_module = import_module("tactix.pipeline")
-    stored = pipeline_module.fetch_latest_pgn_hashes(conn, list(computed.keys()), source)
+    stored = fetch_latest_pgn_hashes(list(computed.keys()), source)
     matched = _count_hash_matches(computed, stored)
     _raise_for_hash_mismatch(source, computed, stored, matched)
     return {"computed": len(computed), "matched": matched}

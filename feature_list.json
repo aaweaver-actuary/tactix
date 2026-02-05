@@ -1,0 +1,1095 @@
+[
+  {
+    "category": "functional",
+    "description": "End-to-end pipeline run for chess.com bullet range populates games, positions, opportunities, conversions, practice queue, and dashboard stats",
+    "steps": [
+      "Step 1: Set user_id to a test chess.com profile",
+      "Step 2: Call POST /api/pipeline/run with start_date and end_date covering known bullet games",
+      "Step 3: Verify response reports games fetched > 0",
+      "Step 4: Query games table for the date range and confirm rows exist for source chess.com",
+      "Step 5: Query positions table and confirm user_to_move positions were created",
+      "Step 6: Query user_moves table and confirm a move exists for each position",
+      "Step 7: Query opportunities table and confirm hanging piece and mate opportunities present",
+      "Step 8: Query conversions table and confirm records exist for opportunities",
+      "Step 9: Query practice_queue and confirm missed items were inserted",
+      "Step 10: Call GET /api/dashboard/summary with same filters",
+      "Step 11: Verify summary totals match DB counts for the range"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "End-to-end pipeline run for lichess blitz range populates all MVP tables and dashboard stats",
+    "steps": [
+      "Step 1: Set user_id to a test lichess profile",
+      "Step 2: Call POST /api/pipeline/run with start_date and end_date covering known blitz games",
+      "Step 3: Verify response reports games fetched > 0",
+      "Step 4: Query games table for the date range and confirm rows exist for source lichess",
+      "Step 5: Query positions table and confirm user_to_move positions were created",
+      "Step 6: Query user_moves table and confirm a move exists for each position",
+      "Step 7: Query opportunities table and confirm mate opportunities present when applicable",
+      "Step 8: Query conversions table and confirm converted and missed outcomes exist",
+      "Step 9: Query practice_queue and confirm missed items were inserted",
+      "Step 10: Call GET /api/dashboard/summary with same filters",
+      "Step 11: Verify summary totals match DB counts for the range"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "SyncGames is idempotent for repeated runs with identical date range and source",
+    "steps": [
+      "Step 1: Choose a fixed date range for chess.com",
+      "Step 2: Run POST /api/pipeline/run with that range",
+      "Step 3: Record counts of games and positions in the database",
+      "Step 4: Run POST /api/pipeline/run again with the same range",
+      "Step 5: Verify games count does not increase",
+      "Step 6: Verify positions count does not increase",
+      "Step 7: Verify opportunities count does not increase",
+      "Step 8: Verify conversions count does not increase",
+      "Step 9: Verify practice_queue count does not increase",
+      "Step 10: Confirm game_id values are unchanged",
+      "Step 11: Confirm no duplicate rows were inserted"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Chess.com incremental sync uses cursor to fetch only new games",
+    "steps": [
+      "Step 1: Run POST /api/pipeline/run for an initial date range",
+      "Step 2: Record the latest played_at timestamp for chess.com games",
+      "Step 3: Run POST /api/pipeline/run for a later range that overlaps the first",
+      "Step 4: Verify the API client is called with a cursor after the recorded timestamp",
+      "Step 5: Verify only games after the cursor are inserted",
+      "Step 6: Confirm overlapping games are skipped",
+      "Step 7: Confirm positions and user_moves are only created for new games",
+      "Step 8: Confirm opportunities are only created for new positions",
+      "Step 9: Confirm conversions are only created for new opportunities",
+      "Step 10: Confirm practice_queue only grows for new missed items"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Lichess incremental sync uses cursor to fetch only new games",
+    "steps": [
+      "Step 1: Run POST /api/pipeline/run for an initial date range",
+      "Step 2: Record the latest played_at timestamp for lichess games",
+      "Step 3: Run POST /api/pipeline/run for a later range that overlaps the first",
+      "Step 4: Verify the API client is called with a cursor after the recorded timestamp",
+      "Step 5: Verify only games after the cursor are inserted",
+      "Step 6: Confirm overlapping games are skipped",
+      "Step 7: Confirm positions and user_moves are only created for new games",
+      "Step 8: Confirm opportunities are only created for new positions",
+      "Step 9: Confirm conversions are only created for new opportunities",
+      "Step 10: Confirm practice_queue only grows for new missed items"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Games table stores canonical metadata for each fetched game",
+    "steps": [
+      "Step 1: Run a pipeline sync for a small date range",
+      "Step 2: Query a single game row",
+      "Step 3: Verify game_id includes the source prefix",
+      "Step 4: Verify source, played_at, time_control, user_id, user_color fields are present",
+      "Step 5: Verify result and pgn fields are present"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Time control is parsed and normalized to bullet, blitz, rapid, classical, or unknown",
+    "steps": ["Step 1: Sync games for each supported time control", "Step 2: Query games table for those rows", "Step 3: Verify time_control values match expected normalized values"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User color is correctly inferred from PGN headers",
+    "steps": [
+      "Step 1: Select a known game where user is White",
+      "Step 2: Verify user_color stored as white",
+      "Step 3: Select a known game where user is Black",
+      "Step 4: Verify user_color stored as black"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Game result is parsed to win, loss, draw, or unknown",
+    "steps": ["Step 1: Sync games with known results", "Step 2: Verify result column values map to win/loss/draw", "Step 3: Verify unknown result is stored as unknown when missing"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "PGN text is stored or referenced as the source of truth",
+    "steps": ["Step 1: Sync a game with PGN content", "Step 2: Verify pgn field is non-empty or contains a pointer", "Step 3: If stored externally, verify pointer resolves to the PGN text"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "ExtractUserMovePositions creates positions for every user-to-move ply",
+    "steps": [
+      "Step 1: Select a single game with known move count",
+      "Step 2: Run position extraction for that game",
+      "Step 3: Count user-to-move plies expected from PGN",
+      "Step 4: Query positions for the game",
+      "Step 5: Verify number of positions matches expected count",
+      "Step 6: Verify each position includes fen and ply",
+      "Step 7: Verify user_to_move is true for each record",
+      "Step 8: Verify position_id is unique per fen+side",
+      "Step 9: Verify game_id is linked correctly",
+      "Step 10: Verify created_at is set"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User moves are recorded per position with played UCI and timestamps",
+    "steps": [
+      "Step 1: Select a game with known moves",
+      "Step 2: Extract user positions and moves",
+      "Step 3: Query user_moves for the game",
+      "Step 4: Verify each position_id has exactly one user_move",
+      "Step 5: Verify played_uci matches PGN move",
+      "Step 6: Verify played_at matches game timestamp",
+      "Step 7: Verify user_move_id is present",
+      "Step 8: Verify created_at is set",
+      "Step 9: Verify no user_moves exist for opponent-to-move plies",
+      "Step 10: Verify each user_move links to a valid position_id"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position_id is a stable hash of FEN plus side-to-move",
+    "steps": [
+      "Step 1: Generate a position from a known FEN",
+      "Step 2: Recompute the position_id for the same FEN",
+      "Step 3: Verify the position_id matches",
+      "Step 4: Change side-to-move and verify position_id changes"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Positions store ply and game linkage for each user decision",
+    "steps": ["Step 1: Query positions for a known game", "Step 2: Verify ply values increase by 2 for user turns", "Step 3: Verify each position is linked to the correct game_id"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Post-move positions are created for user hanging piece detection",
+    "steps": [
+      "Step 1: Select a game with a known blunder move",
+      "Step 2: Extract positions and user_moves",
+      "Step 3: After the blunder move, build the post-move FEN",
+      "Step 4: Create a position record for the post-move FEN",
+      "Step 5: Verify the position is linked to the same game_id",
+      "Step 6: Verify user_to_move is false for the post-move position",
+      "Step 7: Verify the post-move position_id is stored",
+      "Step 8: Verify created_at is set",
+      "Step 9: Verify this post-move position is used for USER_HANGING_PIECE",
+      "Step 10: Verify the related pre-move position remains intact"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Detect OPP_HANGING_PIECE when a capturable opponent piece is undefended",
+    "steps": [
+      "Step 1: Create a position where an opponent piece is undefended",
+      "Step 2: Ensure a legal capture exists for the user",
+      "Step 3: Run AnalyzeOpportunities for the position",
+      "Step 4: Verify an opportunity of type OPP_HANGING_PIECE is created",
+      "Step 5: Verify target_piece and target_square are set",
+      "Step 6: Verify confidence is high",
+      "Step 7: Verify best_line_uci is optional and may be empty",
+      "Step 8: Verify opportunity links to the correct position_id",
+      "Step 9: Verify created_at is set",
+      "Step 10: Verify no duplicate opportunity is created on re-run"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Detect OPP_HANGING_PIECE when a simple exchange yields material win",
+    "steps": [
+      "Step 1: Create a position where capturing leads to a favorable exchange",
+      "Step 2: Ensure the capture is legal for the user",
+      "Step 3: Run AnalyzeOpportunities for the position",
+      "Step 4: Verify an opportunity of type OPP_HANGING_PIECE is created",
+      "Step 5: Verify target_piece and target_square are set",
+      "Step 6: Verify confidence is high or medium based on heuristic",
+      "Step 7: Verify best_line_uci includes the capture move when available",
+      "Step 8: Verify opportunity links to the correct position_id",
+      "Step 9: Verify created_at is set",
+      "Step 10: Verify no illegal captures are recorded"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Exclude hanging piece opportunities that require illegal capture or leave king in check",
+    "steps": [
+      "Step 1: Create a position where a capture is illegal due to pin",
+      "Step 2: Run AnalyzeOpportunities for the position",
+      "Step 3: Verify no OPP_HANGING_PIECE is created for that target",
+      "Step 4: Create a position where capture leaves king in check",
+      "Step 5: Run AnalyzeOpportunities for the position",
+      "Step 6: Verify no OPP_HANGING_PIECE is created",
+      "Step 7: Create a legal alternative capture",
+      "Step 8: Run AnalyzeOpportunities and confirm only legal target is recorded",
+      "Step 9: Verify confidence is not high for illegal candidates",
+      "Step 10: Verify no opportunities reference illegal target squares"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Detect MATE_IN_1 with best_line_uci and store required fields",
+    "steps": [
+      "Step 1: Create a position with forced mate in 1",
+      "Step 2: Run AnalyzeOpportunities for the position",
+      "Step 3: Verify an opportunity of type MATE_IN_1 is created",
+      "Step 4: Verify best_line_uci contains the mating move",
+      "Step 5: Verify confidence is high",
+      "Step 6: Verify target_piece and target_square are null",
+      "Step 7: Verify opportunity links to the correct position_id",
+      "Step 8: Verify created_at is set",
+      "Step 9: Verify no duplicate opportunity on re-run",
+      "Step 10: Verify engine_depth is recorded when available"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Detect MATE_IN_2 with best_line_uci and store required fields",
+    "steps": [
+      "Step 1: Create a position with forced mate in 2",
+      "Step 2: Run AnalyzeOpportunities for the position",
+      "Step 3: Verify an opportunity of type MATE_IN_2 is created",
+      "Step 4: Verify best_line_uci includes at least the first move",
+      "Step 5: Verify confidence is high or medium based on engine depth",
+      "Step 6: Verify target_piece and target_square are null",
+      "Step 7: Verify opportunity links to the correct position_id",
+      "Step 8: Verify created_at is set",
+      "Step 9: Verify no duplicate opportunity on re-run",
+      "Step 10: Verify engine_depth is recorded when available"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Conversion is marked when user captures the hanging target square",
+    "steps": [
+      "Step 1: Create a position with OPP_HANGING_PIECE",
+      "Step 2: Set the user move to capture the target square",
+      "Step 3: Run ComputeConversions",
+      "Step 4: Verify conversion record exists with converted true",
+      "Step 5: Verify conversion_reason is captured_target"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Conversion is marked when user plays the first move of best_line_uci for mate",
+    "steps": [
+      "Step 1: Create a position with MATE_IN_1 or MATE_IN_2",
+      "Step 2: Set the user move to match the first move in best_line_uci",
+      "Step 3: Run ComputeConversions",
+      "Step 4: Verify conversion record exists with converted true",
+      "Step 5: Verify conversion_reason is played_mate_line"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Conversion is marked false when user plays a different move",
+    "steps": [
+      "Step 1: Create a position with an opportunity",
+      "Step 2: Set the user move to a non-converting move",
+      "Step 3: Run ComputeConversions",
+      "Step 4: Verify conversion record exists with converted false"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Detect USER_HANGING_PIECE after the user move in the post-move position",
+    "steps": [
+      "Step 1: Create a position where a user move leaves a piece en prise",
+      "Step 2: Apply the user move to produce the post-move FEN",
+      "Step 3: Run AnalyzeOpportunities on the post-move position",
+      "Step 4: Verify opportunity of type USER_HANGING_PIECE is created",
+      "Step 5: Verify target_piece and target_square are set to the hanging piece",
+      "Step 6: Verify confidence is high or medium based on heuristic",
+      "Step 7: Verify opportunity links to the post-move position_id",
+      "Step 8: Verify created_at is set",
+      "Step 9: Verify opportunity is not created on the pre-move position",
+      "Step 10: Verify no duplicate opportunity on re-run"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice queue adds an item when OPP_HANGING_PIECE is missed",
+    "steps": [
+      "Step 1: Create a position with OPP_HANGING_PIECE",
+      "Step 2: Set user move to a non-capture",
+      "Step 3: Run UpdatePracticeQueue",
+      "Step 4: Verify practice_queue row is created",
+      "Step 5: Verify trigger is missed_opportunity"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice queue adds an item when MATE_IN_1 or MATE_IN_2 is missed",
+    "steps": [
+      "Step 1: Create a position with mate opportunity",
+      "Step 2: Set user move to a non-mate move",
+      "Step 3: Run UpdatePracticeQueue",
+      "Step 4: Verify practice_queue row is created",
+      "Step 5: Verify trigger is missed_opportunity"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice queue adds a blunder item using post-move FEN when USER_HANGING_PIECE occurs",
+    "steps": [
+      "Step 1: Create a position where a user move hangs a piece",
+      "Step 2: Apply the user move to produce the post-move FEN",
+      "Step 3: Create the post-move position record",
+      "Step 4: Run AnalyzeOpportunities to create USER_HANGING_PIECE",
+      "Step 5: Run UpdatePracticeQueue for that opportunity",
+      "Step 6: Verify practice_queue row is created",
+      "Step 7: Verify tactic_type is USER_HANGING_PIECE or a MISSED_ variant",
+      "Step 8: Verify trigger is created_blunder",
+      "Step 9: Verify practice_queue uses the post-move position_id",
+      "Step 10: Verify blunder move UCI is stored for context"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice queue deduplicates on (user_id, position_id, tactic_type)",
+    "steps": ["Step 1: Create a missed opportunity", "Step 2: Run UpdatePracticeQueue twice", "Step 3: Verify only one practice_queue row exists for the key"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice scheduling defaults are set on insert",
+    "steps": ["Step 1: Insert a practice queue item", "Step 2: Verify due_at is set to now", "Step 3: Verify interval_days is 0 or 1", "Step 4: Verify ease is 2.5"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Conversions table references opportunity_id and position_id",
+    "steps": ["Step 1: Create an opportunity", "Step 2: Run ComputeConversions", "Step 3: Verify conversion row links to opportunity_id", "Step 4: Verify conversion row links to position_id"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "BuildDashboard returns correct total games and positions analyzed",
+    "steps": [
+      "Step 1: Run a pipeline for a known date range",
+      "Step 2: Count games in the DB for that range",
+      "Step 3: Count positions in the DB for that range",
+      "Step 4: Call GET /api/dashboard/summary for the same filters",
+      "Step 5: Verify total_games equals DB game count",
+      "Step 6: Verify total_positions_analyzed equals DB position count",
+      "Step 7: Verify response includes opportunities_by_type",
+      "Step 8: Verify response includes blunders_by_piece_type",
+      "Step 9: Verify response includes recent_trends when enabled",
+      "Step 10: Verify response is stable on repeated calls"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "BuildDashboard aggregates opportunities by type with conversion rate",
+    "steps": [
+      "Step 1: Run a pipeline for a known date range",
+      "Step 2: Query opportunities grouped by type from DB",
+      "Step 3: Query conversions grouped by type from DB",
+      "Step 4: Call GET /api/dashboard/summary",
+      "Step 5: Verify opportunities_by_type count matches DB",
+      "Step 6: Verify converted_count matches DB",
+      "Step 7: Verify conversion_rate equals converted_count / count",
+      "Step 8: Verify zero-count types return conversion_rate 0",
+      "Step 9: Verify types include OPP_HANGING_PIECE, USER_HANGING_PIECE, MATE_IN_1, MATE_IN_2",
+      "Step 10: Verify response is stable on repeated calls"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "BuildDashboard aggregates blunders by piece type from USER_HANGING_PIECE",
+    "steps": [
+      "Step 1: Run a pipeline for a known date range",
+      "Step 2: Query USER_HANGING_PIECE opportunities grouped by target_piece",
+      "Step 3: Call GET /api/dashboard/summary",
+      "Step 4: Verify blunders_by_piece_type matches DB group counts",
+      "Step 5: Verify pieces are normalized to p/n/b/r/q/k or expected set",
+      "Step 6: Verify missing pieces are omitted or have zero",
+      "Step 7: Verify counts are filtered by date range",
+      "Step 8: Verify counts respect source filter",
+      "Step 9: Verify counts respect time_control filter",
+      "Step 10: Verify response is stable on repeated calls"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "BuildDashboard returns recent trends for the last 7 days when enabled",
+    "steps": ["Step 1: Run pipeline for a range that includes the last 7 days", "Step 2: Call GET /api/dashboard/summary", "Step 3: Verify recent_trends exists and covers 7 days"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/dashboard/summary applies filters for date, source, and time control",
+    "steps": [
+      "Step 1: Run pipeline with mixed sources and time controls",
+      "Step 2: Call GET /api/dashboard/summary with a date range",
+      "Step 3: Verify totals reflect only that date range",
+      "Step 4: Call GET /api/dashboard/summary with source=chess.com",
+      "Step 5: Verify totals reflect only chess.com games",
+      "Step 6: Call GET /api/dashboard/summary with source=lichess",
+      "Step 7: Verify totals reflect only lichess games",
+      "Step 8: Call GET /api/dashboard/summary with time_control=blitz",
+      "Step 9: Verify totals reflect only blitz games",
+      "Step 10: Verify combining filters yields correct intersection"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/dashboard/games returns the filtered game list with required fields",
+    "steps": [
+      "Step 1: Run pipeline for a range with multiple games",
+      "Step 2: Call GET /api/dashboard/games with date filter",
+      "Step 3: Verify response contains game_id, played_at, source, time_control, result",
+      "Step 4: Verify response contains user_rating, opp_rating, rating_diff",
+      "Step 5: Verify number of results matches DB for the filter",
+      "Step 6: Verify ordering by played_at descending",
+      "Step 7: Verify each game_id exists in DB",
+      "Step 8: Verify filtering by source works",
+      "Step 9: Verify filtering by time_control works",
+      "Step 10: Verify response is stable on repeated calls"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/practice-queue returns due or recent items with FEN and metadata",
+    "steps": [
+      "Step 1: Run pipeline to create practice_queue items",
+      "Step 2: Call GET /api/practice-queue with date and source filters",
+      "Step 3: Verify each item includes practice_id",
+      "Step 4: Verify each item includes position fen or position_id resolvable to fen",
+      "Step 5: Verify each item includes tactic_type and trigger",
+      "Step 6: Verify each item includes game_id and ply",
+      "Step 7: Verify target_square is present when applicable",
+      "Step 8: Verify best_line_uci is present for mate opportunities",
+      "Step 9: Verify due items appear before future items",
+      "Step 10: Verify response is stable on repeated calls"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "POST /api/pipeline/run executes full pipeline and returns run summary",
+    "steps": [
+      "Step 1: Call POST /api/pipeline/run with a valid range",
+      "Step 2: Verify response contains games_fetched",
+      "Step 3: Verify response contains positions_analyzed",
+      "Step 4: Verify response contains opportunities_found",
+      "Step 5: Verify response contains practice_items_added",
+      "Step 6: Verify games table contains new rows",
+      "Step 7: Verify positions table contains new rows",
+      "Step 8: Verify opportunities table contains new rows",
+      "Step 9: Verify conversions table contains new rows",
+      "Step 10: Verify practice_queue contains new rows"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "API returns 400 for invalid date ranges",
+    "steps": ["Step 1: Call POST /api/pipeline/run with start_date after end_date", "Step 2: Verify response status is 400", "Step 3: Verify error message indicates invalid date range"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "API returns 400 for unsupported source or time_control values",
+    "steps": [
+      "Step 1: Call GET /api/dashboard/summary with source=invalid",
+      "Step 2: Verify response status is 400",
+      "Step 3: Call GET /api/dashboard/summary with time_control=invalid",
+      "Step 4: Verify response status is 400"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "DB-level SQL assertions validate canonical 2026-02-01 chess.com bullet scenario",
+    "steps": [
+      "Step 1: Load the canonical 2026-02-01 chess.com bullet dataset",
+      "Step 2: Run the pipeline for that specific date",
+      "Step 3: Assert exact game count in games table",
+      "Step 4: Assert exact position count in positions table",
+      "Step 5: Assert exact opportunity counts by type",
+      "Step 6: Assert exact conversion counts by type",
+      "Step 7: Assert exact practice_queue count",
+      "Step 8: Assert practice_queue rows link to valid positions",
+      "Step 9: Assert no extra rows exist outside the expected set",
+      "Step 10: Record assertions as DB-level test fixtures"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "API contract tests validate canonical 2026-02-01 chess.com bullet scenario",
+    "steps": [
+      "Step 1: Load the canonical 2026-02-01 dataset",
+      "Step 2: Run POST /api/pipeline/run for that date",
+      "Step 3: Call GET /api/dashboard/summary and snapshot response",
+      "Step 4: Call GET /api/dashboard/games and snapshot response",
+      "Step 5: Call GET /api/practice-queue and snapshot response",
+      "Step 6: Verify response schemas match expected contracts",
+      "Step 7: Verify counts match DB assertions",
+      "Step 8: Verify conversion_rate fields are correct",
+      "Step 9: Verify practice_queue items include required fields",
+      "Step 10: Save snapshots as API contract fixtures"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Client mocked rendering test for summary cards with API data",
+    "steps": [
+      "Step 1: Mock GET /api/dashboard/summary response",
+      "Step 2: Render the dashboard page",
+      "Step 3: Verify Games analyzed card displays total_games",
+      "Step 4: Verify Positions analyzed card displays total_positions_analyzed",
+      "Step 5: Verify Opportunities card displays per-type counts",
+      "Step 6: Verify conversion rates are formatted correctly",
+      "Step 7: Verify blunders and missed free pieces rates are displayed",
+      "Step 8: Verify no console errors occur",
+      "Step 9: Capture snapshot of the summary section",
+      "Step 10: Verify snapshot matches expected output"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Client mocked rendering test for games table and practice queue",
+    "steps": [
+      "Step 1: Mock GET /api/dashboard/games response",
+      "Step 2: Mock GET /api/practice-queue response",
+      "Step 3: Render the dashboard page",
+      "Step 4: Verify games table rows match mock data",
+      "Step 5: Verify rating_diff is rendered",
+      "Step 6: Verify practice queue items render FEN and tactic type",
+      "Step 7: Verify trigger labels render correctly",
+      "Step 8: Verify empty state is hidden when data exists",
+      "Step 9: Capture snapshot of table and queue sections",
+      "Step 10: Verify snapshots match expected output"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Client E2E puppeteer flow captures screenshot artifact",
+    "steps": [
+      "Step 1: Start the API server in test mode",
+      "Step 2: Start the client dev server or test build",
+      "Step 3: Open the dashboard page in puppeteer",
+      "Step 4: Set filters to a known range",
+      "Step 5: Click Apply",
+      "Step 6: Wait for summary cards to render",
+      "Step 7: Wait for games table to render",
+      "Step 8: Wait for practice queue to render",
+      "Step 9: Capture a screenshot artifact",
+      "Step 10: Verify screenshot is saved to the CI artifact path"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Date range filter is inclusive of start and end dates",
+    "steps": ["Step 1: Choose a range with games on both boundary dates", "Step 2: Call GET /api/dashboard/games with that range", "Step 3: Verify games on the boundary dates are included"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Source filter supports All, chess.com, and lichess",
+    "steps": [
+      "Step 1: Call GET /api/dashboard/summary with source=All",
+      "Step 2: Verify totals include both sources",
+      "Step 3: Call with source=chess.com and verify only chess.com games",
+      "Step 4: Call with source=lichess and verify only lichess games"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Time control filter supports All, bullet, blitz, and rapid",
+    "steps": [
+      "Step 1: Call GET /api/dashboard/summary with time_control=All",
+      "Step 2: Verify totals include all time controls",
+      "Step 3: Call with time_control=bullet and verify only bullet games",
+      "Step 4: Call with time_control=blitz and verify only blitz games",
+      "Step 5: Call with time_control=rapid and verify only rapid games"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Games list is ordered by played_at descending",
+    "steps": [
+      "Step 1: Call GET /api/dashboard/games for a range with multiple games",
+      "Step 2: Verify the first row has the latest played_at",
+      "Step 3: Verify subsequent rows are in descending order"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice queue list is ordered by due_at ascending",
+    "steps": ["Step 1: Insert multiple practice_queue items with different due_at", "Step 2: Call GET /api/practice-queue", "Step 3: Verify items are sorted by due_at ascending"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Pipeline idempotency for positions, opportunities, conversions, and practice queue",
+    "steps": [
+      "Step 1: Run pipeline for a fixed range",
+      "Step 2: Record counts for positions, opportunities, conversions, practice_queue",
+      "Step 3: Run pipeline again for the same range",
+      "Step 4: Verify counts remain unchanged",
+      "Step 5: Verify no duplicate position_id values appear",
+      "Step 6: Verify no duplicate opportunity_id values appear",
+      "Step 7: Verify no duplicate conversion_id values appear",
+      "Step 8: Verify no duplicate practice_id values appear",
+      "Step 9: Verify dedupe key is enforced for practice_queue",
+      "Step 10: Verify repeated runs return consistent summaries"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Opportunities for hanging pieces store target_piece and target_square",
+    "steps": ["Step 1: Create a hanging piece opportunity", "Step 2: Query the opportunity row", "Step 3: Verify target_piece and target_square are populated"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Opportunities store engine_depth and confidence when available",
+    "steps": ["Step 1: Run analysis with engine depth configured", "Step 2: Query opportunity rows", "Step 3: Verify engine_depth is stored", "Step 4: Verify confidence is one of high, medium, low"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Conversions are created only when a user_move exists for the position",
+    "steps": ["Step 1: Create a position with no user_move", "Step 2: Create an opportunity for that position", "Step 3: Run ComputeConversions", "Step 4: Verify no conversion row is created"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Pipeline handles no games in range and returns empty summary",
+    "steps": ["Step 1: Run pipeline for a date range with no games", "Step 2: Verify response shows games_fetched = 0", "Step 3: Verify dashboard summary totals are zero"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User and opponent ratings are nullable without breaking API",
+    "steps": [
+      "Step 1: Sync a game with missing rating data",
+      "Step 2: Call GET /api/dashboard/games",
+      "Step 3: Verify user_rating or opp_rating can be null",
+      "Step 4: Verify rating_diff is null or computed safely"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice queue uses pre-move or post-move FEN per trigger rules",
+    "steps": [
+      "Step 1: Create a missed hanging piece opportunity",
+      "Step 2: Run UpdatePracticeQueue for the miss",
+      "Step 3: Verify practice item uses pre-move position FEN",
+      "Step 4: Create a missed mate opportunity",
+      "Step 5: Run UpdatePracticeQueue for the miss",
+      "Step 6: Verify practice item uses pre-move position FEN",
+      "Step 7: Create a USER_HANGING_PIECE blunder",
+      "Step 8: Run UpdatePracticeQueue for the blunder",
+      "Step 9: Verify practice item uses post-move position FEN",
+      "Step 10: Verify each practice item links to correct position_id"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "best_line_uci is stored as a space-separated list of UCI moves",
+    "steps": ["Step 1: Create a mate opportunity with best_line_uci", "Step 2: Query the opportunity row", "Step 3: Verify best_line_uci contains space-separated UCI moves"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "user_moves played_at is derived from the game timestamp",
+    "steps": ["Step 1: Extract user moves from a game", "Step 2: Query user_moves", "Step 3: Verify played_at matches the game played_at value"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "positions user_to_move is true for pre-move user decisions",
+    "steps": ["Step 1: Extract positions from a game", "Step 2: Verify pre-move positions have user_to_move true", "Step 3: Verify any post-move positions for blunders have user_to_move false"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Filter bar layout includes stable data-testid attributes for all controls",
+    "steps": [
+      "Step 1: Navigate to the dashboard page",
+      "Step 2: Inspect filter controls",
+      "Step 3: Verify data-testid exists for date range picker",
+      "Step 4: Verify data-testid exists for source dropdown",
+      "Step 5: Verify data-testid exists for time control dropdown",
+      "Step 6: Verify data-testid exists for Apply button"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Date range picker alignment and accessible labels",
+    "steps": ["Step 1: Navigate to the dashboard page", "Step 2: Verify date range picker aligns with other controls", "Step 3: Verify accessible label is present"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Source dropdown size and placement match design rhythm",
+    "steps": ["Step 1: Navigate to the dashboard page", "Step 2: Verify source dropdown width aligns with date picker", "Step 3: Verify spacing between controls is consistent"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Time control dropdown size and placement match design rhythm",
+    "steps": ["Step 1: Navigate to the dashboard page", "Step 2: Verify time control dropdown width aligns with source dropdown", "Step 3: Verify spacing between controls is consistent"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Apply button visual states and keyboard focus are consistent",
+    "steps": [
+      "Step 1: Navigate to the dashboard page",
+      "Step 2: Verify Apply button has primary styling",
+      "Step 3: Verify Apply button is disabled when no filter changes",
+      "Step 4: Change a filter value",
+      "Step 5: Verify Apply button becomes enabled",
+      "Step 6: Hover the Apply button",
+      "Step 7: Verify hover style matches design tokens",
+      "Step 8: Focus the Apply button via keyboard",
+      "Step 9: Verify focus ring is visible",
+      "Step 10: Press Enter and verify filters apply"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Summary cards layout shows five cards with equal spacing",
+    "steps": ["Step 1: Navigate to the dashboard page", "Step 2: Verify five summary cards are displayed", "Step 3: Verify equal spacing and alignment across cards"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Summary cards number formatting uses readable separators",
+    "steps": ["Step 1: Navigate to the dashboard page with large values", "Step 2: Verify numbers include thousands separators", "Step 3: Verify percentages are formatted with percent sign"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Games table rows have hover feedback and are clickable",
+    "steps": ["Step 1: Navigate to the dashboard page", "Step 2: Hover a games table row", "Step 3: Verify row hover style", "Step 4: Click a row and verify interaction feedback"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Practice queue panel layout shows FEN, tactic type, and trigger",
+    "steps": ["Step 1: Navigate to the dashboard page", "Step 2: Verify practice queue panel is visible", "Step 3: Verify each item shows FEN, tactic type, and trigger label"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Empty states for games and practice queue display friendly guidance",
+    "steps": [
+      "Step 1: Use filters that return no games",
+      "Step 2: Verify games table shows empty state message",
+      "Step 3: Use filters that return no practice items",
+      "Step 4: Verify practice queue shows empty state message"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Loading skeletons are shown during API requests",
+    "steps": ["Step 1: Trigger filter apply", "Step 2: Observe summary, games table, and practice queue", "Step 3: Verify skeleton loaders are shown until data arrives"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Error banner is shown on API failure",
+    "steps": ["Step 1: Simulate API error response", "Step 2: Verify error banner appears", "Step 3: Verify banner message is user-friendly"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Responsive layout adapts for mobile, tablet, and desktop",
+    "steps": [
+      "Step 1: Set viewport width to 320px",
+      "Step 2: Verify filter bar stacks vertically",
+      "Step 3: Verify summary cards wrap to a single column",
+      "Step 4: Verify table becomes horizontally scrollable",
+      "Step 5: Set viewport width to 768px",
+      "Step 6: Verify cards wrap to two columns",
+      "Step 7: Verify filter bar aligns in two rows",
+      "Step 8: Set viewport width to 1024px",
+      "Step 9: Verify cards display in a single row",
+      "Step 10: Verify panels align side-by-side"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Color contrast meets accessibility for key stats",
+    "steps": ["Step 1: Inspect summary cards", "Step 2: Verify text contrast meets WCAG AA for normal text", "Step 3: Verify accent colors maintain readable contrast"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Typography scale is consistent across headings and body text",
+    "steps": ["Step 1: Inspect headings and body text", "Step 2: Verify heading sizes follow a consistent scale", "Step 3: Verify line heights are readable"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Stable data-testid attributes exist for summary cards and tables",
+    "steps": ["Step 1: Inspect summary cards", "Step 2: Verify each card has a stable data-testid", "Step 3: Inspect games table", "Step 4: Verify table has a stable data-testid"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Opportunity types use consistent iconography",
+    "steps": ["Step 1: Inspect opportunities display", "Step 2: Verify each type has a consistent icon or badge", "Step 3: Verify icons are aligned with text"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Conversion rate is displayed as a badge with consistent styling",
+    "steps": ["Step 1: Inspect opportunities card", "Step 2: Verify conversion rate is shown as a badge", "Step 3: Verify badge styling matches design tokens"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Games table columns align and text truncates gracefully",
+    "steps": ["Step 1: Inspect games table", "Step 2: Verify numeric columns are right-aligned", "Step 3: Verify long game_id values truncate with ellipsis"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Practice queue items show tactic type and trigger as styled chips",
+    "steps": ["Step 1: Inspect practice queue items", "Step 2: Verify tactic type is rendered as a chip", "Step 3: Verify trigger is rendered as a chip"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Filters apply only when Apply is clicked and pass query params",
+    "steps": [
+      "Step 1: Load the dashboard page",
+      "Step 2: Change the date range value",
+      "Step 3: Verify no API request is sent yet",
+      "Step 4: Change the source dropdown",
+      "Step 5: Verify no API request is sent yet",
+      "Step 6: Click Apply",
+      "Step 7: Verify API requests are sent for summary, games, and practice queue",
+      "Step 8: Verify each request includes start_date and end_date",
+      "Step 9: Verify each request includes source",
+      "Step 10: Verify each request includes time_control"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Default filters use All sources, All time controls, and empty date range",
+    "steps": [
+      "Step 1: Load the dashboard page",
+      "Step 2: Verify source filter default is All",
+      "Step 3: Verify time control filter default is All",
+      "Step 4: Verify date range is unset",
+      "Step 5: Click Apply",
+      "Step 6: Verify API requests omit date filters and return full range"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Summary cards map directly to API summary fields",
+    "steps": ["Step 1: Mock GET /api/dashboard/summary response", "Step 2: Render the dashboard page", "Step 3: Verify each card maps to the corresponding API field"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "rating_diff is computed as user_rating minus opp_rating",
+    "steps": ["Step 1: Call GET /api/dashboard/games for a game with ratings", "Step 2: Verify rating_diff equals user_rating - opp_rating"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice queue response includes target_square and best_line_uci when present",
+    "steps": [
+      "Step 1: Create an opportunity with target_square",
+      "Step 2: Create a mate opportunity with best_line_uci",
+      "Step 3: Call GET /api/practice-queue",
+      "Step 4: Verify target_square appears for hanging piece items",
+      "Step 5: Verify best_line_uci appears for mate items"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice queue returns due and recent items",
+    "steps": [
+      "Step 1: Insert practice items with past and future due_at",
+      "Step 2: Call GET /api/practice-queue",
+      "Step 3: Verify due items are included",
+      "Step 4: Verify recent items are included if configured"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Unknown time controls are normalized to unknown",
+    "steps": ["Step 1: Sync a game with an unsupported time control", "Step 2: Query the game row", "Step 3: Verify time_control is unknown"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "conversion_reason values are captured_target, played_mate_line, or other",
+    "steps": [
+      "Step 1: Convert a hanging piece opportunity",
+      "Step 2: Verify conversion_reason is captured_target",
+      "Step 3: Convert a mate opportunity",
+      "Step 4: Verify conversion_reason is played_mate_line",
+      "Step 5: Create a non-converting opportunity",
+      "Step 6: Verify conversion_reason is other or null"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Opportunities reference valid position_id values",
+    "steps": ["Step 1: Run analysis for a game", "Step 2: Query opportunities", "Step 3: Verify each opportunity position_id exists in positions"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Position_id uniqueness prevents duplicate inserts within a game",
+    "steps": ["Step 1: Extract positions for a game", "Step 2: Attempt to insert the same position again", "Step 3: Verify no duplicate position_id is created"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Dashboard endpoints are scoped to user_id",
+    "steps": [
+      "Step 1: Insert games for two different user_id values",
+      "Step 2: Call GET /api/dashboard/summary for user A",
+      "Step 3: Verify totals exclude user B",
+      "Step 4: Call GET /api/dashboard/games for user B",
+      "Step 5: Verify totals exclude user A"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "When user_id is omitted, API uses the current user context",
+    "steps": [
+      "Step 1: Configure a default current user in tests",
+      "Step 2: Call GET /api/dashboard/summary without user_id",
+      "Step 3: Verify response uses the current user",
+      "Step 4: Verify results match that user’s data"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Practice queue allows multiple tactic types for the same position",
+    "steps": [
+      "Step 1: Create a position with multiple opportunity types",
+      "Step 2: Miss each opportunity",
+      "Step 3: Run UpdatePracticeQueue",
+      "Step 4: Verify multiple practice_queue rows exist for different tactic_type values"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Mate in 2 conversion checks only the first move of best_line_uci",
+    "steps": [
+      "Step 1: Create a MATE_IN_2 opportunity",
+      "Step 2: Set user move to the first move of best_line_uci",
+      "Step 3: Run ComputeConversions",
+      "Step 4: Verify converted is true regardless of opponent response"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "USER_HANGING_PIECE opportunities attach to the post-move position record",
+    "steps": [
+      "Step 1: Create a blunder move that hangs a piece",
+      "Step 2: Generate the post-move position record",
+      "Step 3: Run AnalyzeOpportunities",
+      "Step 4: Verify the USER_HANGING_PIECE opportunity position_id matches the post-move position"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Hanging piece conversion uses target_square match even if piece type differs",
+    "steps": ["Step 1: Create an OPP_HANGING_PIECE opportunity", "Step 2: Capture the target square with a different piece", "Step 3: Run ComputeConversions", "Step 4: Verify converted is true"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Pipeline correctly handles games where the user plays Black",
+    "steps": [
+      "Step 1: Sync a game where user_color is black",
+      "Step 2: Extract user positions and user_moves",
+      "Step 3: Verify positions correspond to Black’s turns",
+      "Step 4: Verify opportunities and conversions align with Black’s moves"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Games list rating_diff handles null ratings safely",
+    "steps": ["Step 1: Insert a game with missing opponent rating", "Step 2: Call GET /api/dashboard/games", "Step 3: Verify rating_diff is null or omitted for that row"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Practice queue FEN is rendered in monospace and wraps cleanly",
+    "steps": ["Step 1: Navigate to the dashboard page with long FEN strings", "Step 2: Verify FEN text uses a monospace font", "Step 3: Verify FEN wraps without breaking layout"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Games table rows have consistent height and padding",
+    "steps": ["Step 1: Navigate to the dashboard page", "Step 2: Inspect multiple rows", "Step 3: Verify row height and padding are consistent"],
+    "passes": false
+  }
+]

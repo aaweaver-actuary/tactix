@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-from importlib import import_module
 from typing import Any
 
-from tactix.base_db_store import BaseDbStore
 from tactix.dashboard_query import DashboardQuery
+from tactix.define_base_db_store__db_store import BaseDbStore
+from tactix.fetch_analysis_tactics import fetch_analysis_tactics
+from tactix.fetch_ops_events import fetch_ops_events
+from tactix.fetch_postgres_raw_pgns_summary import fetch_postgres_raw_pgns_summary
+from tactix.get_postgres_status import get_postgres_status
 from tactix.postgres_status import PostgresStatus
 
 
@@ -15,23 +18,19 @@ class PostgresStore(BaseDbStore):
 
     def get_status(self) -> PostgresStatus:
         """Return the current Postgres status snapshot."""
-        store_module = import_module("tactix.postgres_store")
-        return store_module.get_postgres_status(self.settings)
+        return get_postgres_status(self.settings)
 
     def fetch_ops_events(self, limit: int = 10) -> list[dict[str, Any]]:
         """Fetch recent ops events from Postgres."""
-        store_module = import_module("tactix.postgres_store")
-        return store_module.fetch_ops_events(self.settings, limit=limit)
+        return fetch_ops_events(self.settings, limit=limit)
 
     def fetch_analysis_tactics(self, limit: int = 10) -> list[dict[str, Any]]:
         """Fetch recent analyzed tactics from Postgres."""
-        store_module = import_module("tactix.postgres_store")
-        return store_module.fetch_analysis_tactics(self.settings, limit=limit)
+        return fetch_analysis_tactics(self.settings, limit=limit)
 
     def fetch_raw_pgns_summary(self) -> dict[str, Any]:
         """Fetch raw PGN summary data from Postgres."""
-        store_module = import_module("tactix.postgres_store")
-        return store_module.fetch_postgres_raw_pgns_summary(self.settings)
+        return fetch_postgres_raw_pgns_summary(self.settings)
 
     def get_dashboard_payload(
         self,

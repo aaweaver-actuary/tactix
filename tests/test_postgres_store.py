@@ -1,8 +1,8 @@
 from unittest.mock import MagicMock, patch
 
-from tactix.PostgresStatus import PostgresStatus
-from tactix.PostgresStore import PostgresStore
-from tactix.base_db_store import BaseDbStoreContext
+from tactix.postgres_status import PostgresStatus
+from tactix.postgres_store_impl import PostgresStore
+from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
 from tactix.config import Settings
 from tactix.fetch_analysis_tactics import fetch_analysis_tactics
 from tactix.fetch_ops_events import fetch_ops_events
@@ -16,7 +16,7 @@ from tactix.postgres_pgns_enabled import postgres_pgns_enabled
 from tactix.record_ops_event import record_ops_event
 from tactix.upsert_analysis_tactic_with_outcome import upsert_analysis_tactic_with_outcome
 from tactix.upsert_postgres_raw_pgns import upsert_postgres_raw_pgns
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 from tactix.serialize_status import (
     serialize_status,
 )
@@ -87,7 +87,10 @@ def test_get_postgres_status_disabled() -> None:
 
 def test_get_postgres_status_unreachable() -> None:
     settings = _make_settings()
-    with patch("tactix.postgres_store.psycopg2.connect", side_effect=Exception("boom")):
+    with patch(
+        "tactix.get_postgres_status.psycopg2.connect",
+        side_effect=Exception("boom"),
+    ):
         status = get_postgres_status(settings)
     assert status.enabled is True
     assert status.status == "unreachable"
@@ -105,7 +108,7 @@ def test_get_postgres_status_ok_with_tables() -> None:
     ]
     conn = MagicMock()
     conn.cursor.return_value = cursor
-    with patch("tactix.postgres_store.psycopg2.connect", return_value=conn):
+    with patch("tactix.get_postgres_status.psycopg2.connect", return_value=conn):
         status = get_postgres_status(settings)
     assert status.status == "ok"
     assert status.schema == "tactix_ops,tactix_analysis,tactix_pgns"
@@ -179,7 +182,7 @@ def test_upsert_postgres_raw_pgns_skips_duplicate_hash() -> None:
     conn.cursor.return_value = cursor
     conn.autocommit = True
 
-    with patch("tactix.postgres_store._hash_pgn_text", return_value="match"):
+    with patch("tactix._build_pgn_upsert_plan._hash_pgn_text", return_value="match"):
         inserted = upsert_postgres_raw_pgns(
             conn,
             [
@@ -219,7 +222,7 @@ def test_fetch_postgres_raw_pgns_summary_returns_totals() -> None:
     }
     conn = MagicMock()
     conn.cursor.return_value = cursor
-    with patch("tactix.postgres_store.psycopg2.connect", return_value=conn):
+    with patch("tactix.postgres_connection.psycopg2.connect", return_value=conn):
         payload = fetch_postgres_raw_pgns_summary(settings)
 
     assert payload["status"] == "ok"
@@ -230,7 +233,7 @@ def test_fetch_postgres_raw_pgns_summary_returns_totals() -> None:
 
 def test_postgres_store_get_status_delegates() -> None:
     store = _make_store()
-    with patch("tactix.postgres_store.get_postgres_status") as get_status:
+    with patch("tactix.postgres_store_impl.get_postgres_status") as get_status:
         get_status.return_value = PostgresStatus(enabled=True, status="ok")
         status = store.get_status()
     assert status.status == "ok"
@@ -239,7 +242,7 @@ def test_postgres_store_get_status_delegates() -> None:
 
 def test_postgres_store_fetch_ops_events_delegates() -> None:
     store = _make_store()
-    with patch("tactix.postgres_store.fetch_ops_events") as fetch_events:
+    with patch("tactix.postgres_store_impl.fetch_ops_events") as fetch_events:
         fetch_events.return_value = [{"event_type": "test"}]
         events = store.fetch_ops_events(limit=5)
     assert events == [{"event_type": "test"}]
@@ -248,7 +251,7 @@ def test_postgres_store_fetch_ops_events_delegates() -> None:
 
 def test_postgres_store_fetch_analysis_tactics_delegates() -> None:
     store = _make_store()
-    with patch("tactix.postgres_store.fetch_analysis_tactics") as fetch_tactics:
+    with patch("tactix.postgres_store_impl.fetch_analysis_tactics") as fetch_tactics:
         fetch_tactics.return_value = [{"tactic_id": 1}]
         tactics = store.fetch_analysis_tactics(limit=12)
     assert tactics == [{"tactic_id": 1}]
@@ -257,7 +260,9 @@ def test_postgres_store_fetch_analysis_tactics_delegates() -> None:
 
 def test_postgres_store_fetch_raw_pgns_summary_delegates() -> None:
     store = _make_store()
-    with patch("tactix.postgres_store.fetch_postgres_raw_pgns_summary") as fetch_summary:
+    with patch(
+        "tactix.postgres_store_impl.fetch_postgres_raw_pgns_summary",
+    ) as fetch_summary:
         fetch_summary.return_value = {"status": "ok"}
         summary = store.fetch_raw_pgns_summary()
     assert summary == {"status": "ok"}
@@ -307,7 +312,7 @@ def test_fetch_analysis_tactics_returns_rows() -> None:
     cursor.fetchall.return_value = [{"tactic_id": 1, "motif": "fork"}]
     conn = MagicMock()
     conn.cursor.return_value = cursor
-    with patch("tactix.postgres_store.psycopg2.connect", return_value=conn):
+    with patch("tactix.postgres_connection.psycopg2.connect", return_value=conn):
         rows = fetch_analysis_tactics(settings, limit=1)
     assert rows == [{"tactic_id": 1, "motif": "fork"}]
 
@@ -336,7 +341,7 @@ def test_fetch_ops_events_with_rows() -> None:
     ]
     conn = MagicMock()
     conn.cursor.return_value = cursor
-    with patch("tactix.postgres_store.psycopg2.connect", return_value=conn):
+    with patch("tactix.postgres_connection.psycopg2.connect", return_value=conn):
         events = fetch_ops_events(settings, limit=1)
     assert len(events) == 1
     assert events[0]["event_type"] == "daily_game_sync_start"

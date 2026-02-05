@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from importlib import import_module
 
-from tactix.pipeline_state__pipeline import GameRow
+from tactix.GameRow import GameRow
 from tactix.should_skip_backfill__pipeline import _should_skip_backfill
 
 

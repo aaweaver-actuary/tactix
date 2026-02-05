@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tactix.DailySyncStartContext import (
+from tactix.sync_contexts import (
     NoGamesAfterDedupeContext,
     NoGamesAfterDedupePayloadContext,
     NoGamesContext,

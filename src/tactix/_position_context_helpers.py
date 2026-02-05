@@ -8,9 +8,9 @@ import chess.pgn
 from tactix._clock_from_comment import _clock_from_comment
 from tactix.PgnContext import PgnContext
 from tactix.PositionContext import PositionContext
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 
-logger = get_logger(__name__)
+logger = Logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -55,6 +55,7 @@ def _build_position_context(
             ply=inputs.board.ply(),
             move_number=inputs.board.fullmove_number,
             side_to_move=inputs.side_to_move,
+            user_to_move=True,
             uci=inputs.move.uci(),
             san=inputs.board.san(inputs.move),
             clock_seconds=_clock_from_comment(inputs.node.comment or ""),

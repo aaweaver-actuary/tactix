@@ -5,10 +5,10 @@ from tactix.chess_clients.base_chess_client import (
     BaseChessClientContext,
     ChessFetchRequest,
 )
-from tactix.base_db_store import BaseDbStoreContext
+from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
 from tactix.chess_clients.chess_game_row import ChessGameRow
 from tactix.config import Settings
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 from tactix.chess_clients.mock_chess_client import MockChessClient
 from tactix.mock_db_store import MockDbStore
 from tactix.pipeline import get_dashboard_payload

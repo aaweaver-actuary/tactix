@@ -1,6 +1,5 @@
-from tactix.ANALYSIS_SCHEMA import ANALYSIS_SCHEMA
 from tactix.config import Settings
-from tactix.pgn_schema import PGN_SCHEMA
+from tactix.define_db_schemas__const import ANALYSIS_SCHEMA, PGN_SCHEMA
 
 
 def _build_schema_label(settings: Settings) -> str:

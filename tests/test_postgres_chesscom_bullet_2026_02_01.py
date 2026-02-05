@@ -14,7 +14,7 @@ from tactix._get_game_result_for_user_from_pgn_headers import (
     _get_game_result_for_user_from_pgn_headers,
 )
 from tactix._get_user_color_from_pgn_headers import _get_user_color_from_pgn_headers
-from tactix.base_db_store import BaseDbStore
+from tactix.define_base_db_store__db_store import BaseDbStore
 from tactix.config import Settings
 from tactix.init_analysis_schema import init_analysis_schema
 from tactix.pgn_utils import extract_game_id, split_pgn_chunks

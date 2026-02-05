@@ -9,13 +9,13 @@ from dotenv import load_dotenv
 
 from tactix.config import get_settings
 from tactix.pipeline import run_daily_game_sync
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 from tactix.prepare_dag_helpers__airflow import (
     default_args,
     make_notify_dashboard_task,
 )
 
-logger = get_logger(__name__)
+logger = Logger(__name__)
 load_dotenv()
 CHESSCOM_USERNAME = os.getenv("CHESSCOM_USERNAME")
 

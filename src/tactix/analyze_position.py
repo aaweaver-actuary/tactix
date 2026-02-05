@@ -4,9 +4,6 @@ import chess
 
 from tactix._apply_outcome_overrides import _apply_outcome_overrides
 from tactix._build_tactic_rows import (
-    OutcomeDetails,
-    TacticDetails,
-    TacticRowInput,
     _build_tactic_rows,
 )
 from tactix._compare_move__best_line import BestLineContext, _compare_move__best_line
@@ -29,11 +26,15 @@ from tactix._parse_user_move import _parse_user_move
 from tactix._prepare_position_inputs import _prepare_position_inputs
 from tactix._reclassify_failed_attempt import _reclassify_failed_attempt
 from tactix._score_after_move import _score_after_move
+from tactix.analyze_tactics__positions import _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.config import Settings
 from tactix.format_tactics__explanation import format_tactic_explanation
 from tactix.outcome_context import BaseOutcomeContext, OutcomeOverridesContext
+from tactix.OutcomeDetails import OutcomeDetails
 from tactix.StockfishEngine import StockfishEngine
+from tactix.TacticDetails import TacticDetails
+from tactix.TacticRowInput import TacticRowInput
 from tactix.utils.logger import funclogger
 
 
@@ -77,6 +78,52 @@ class OutcomeOverridePositionContext:
     settings: Settings | None
 
 
+def _should_mark_missed_for_initiative(
+    context: MotifResolutionContext,
+    result: str,
+    user_motif: str,
+) -> bool:
+    return result == "initiative" and context.best_move_obj is None and user_motif != "unknown"
+
+
+def _should_infer_best_motif(result: str, best_move_obj: object | None) -> bool:
+    return result in {"missed", "failed_attempt", "unclear"} and best_move_obj is not None
+
+
+def _resolve_best_motif_adjustment(
+    context: MotifResolutionContext,
+    result: str,
+    user_motif: str,
+) -> tuple[str, str, str | None]:
+    best_motif = _infer_hanging_or_detected_motif(
+        context.motif_board,
+        context.best_move_obj,
+        context.mover_color,
+    )
+    if (
+        best_motif == "initiative"
+        and result in {"missed", "failed_attempt"}
+        and user_motif not in _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS
+    ):
+        return "unclear", user_motif, best_motif
+    return result, _override_motif_for_missed(user_motif, best_motif, result), best_motif
+
+
+def _classify_hanging_piece_from_base(
+    base_cp: int | None,
+    delta: int,
+    unclear_threshold: int,
+) -> str | None:
+    if base_cp is None:
+        return None
+    if base_cp < abs(unclear_threshold):
+        return None
+    after_cp = base_cp + delta
+    if delta <= unclear_threshold < after_cp:
+        return "failed_attempt"
+    return None
+
+
 @funclogger
 def _resolve_motif_and_result(
     context: MotifResolutionContext,
@@ -85,13 +132,14 @@ def _resolve_motif_and_result(
     user_motif = context.user_motif
     motif = user_motif
     best_motif: str | None = None
-    if result in {"missed", "failed_attempt", "unclear"} and context.best_move_obj is not None:
-        best_motif = _infer_hanging_or_detected_motif(
-            context.motif_board,
-            context.best_move_obj,
-            context.mover_color,
+    if _should_mark_missed_for_initiative(context, result, user_motif):
+        result = "missed"
+    if _should_infer_best_motif(result, context.best_move_obj):
+        result, motif, best_motif = _resolve_best_motif_adjustment(
+            context,
+            result,
+            user_motif,
         )
-        motif = _override_motif_for_missed(user_motif, best_motif, result)
     result = _reclassify_failed_attempt(result, context.delta, motif, user_motif)
     return result, motif, best_motif
 
@@ -100,12 +148,13 @@ def _resolve_motif_and_result(
 def _adjust_hanging_piece_result(
     result: str,
     motif: str,
-    swing: int | None,
+    delta: int | None,
+    base_cp: int | None,
     settings: Settings | None,
 ) -> str:
-    if not _should_adjust_hanging_piece(result, motif, swing):
+    if not _should_adjust_hanging_piece(result, motif, delta):
         return result
-    adjusted = _resolve_hanging_piece_adjustment(result, swing, settings)
+    adjusted = _resolve_hanging_piece_adjustment(result, delta, base_cp, settings)
     return result if adjusted is None else adjusted
 
 
@@ -113,13 +162,13 @@ def _adjust_hanging_piece_result(
 def _should_adjust_hanging_piece(
     result: str,
     motif: str,
-    swing: int | None,
+    delta: int | None,
 ) -> bool:
     return all(
         (
             motif == "hanging_piece",
-            swing is not None,
-            result not in {"found", "failed_attempt"},
+            delta is not None,
+            result != "found",
         )
     )
 
@@ -127,10 +176,11 @@ def _should_adjust_hanging_piece(
 @funclogger
 def _resolve_hanging_piece_adjustment(
     result: str,
-    swing: int | None,
+    delta: int | None,
+    base_cp: int | None,
     settings: Settings | None,
 ) -> str | None:
-    if swing is None:
+    if delta is None:
         return None
     failed_attempt_threshold = _compute_eval__failed_attempt_threshold(
         "hanging_piece",
@@ -139,18 +189,53 @@ def _resolve_hanging_piece_adjustment(
     unclear_threshold = _compute_eval__hanging_piece_unclear_threshold(settings)
     if failed_attempt_threshold is None or unclear_threshold is None:
         return None
-    return _classify_hanging_piece_result(result, swing, unclear_threshold)
+    return _classify_hanging_piece_result(
+        result,
+        delta,
+        unclear_threshold,
+        failed_attempt_threshold,
+        base_cp,
+    )
 
 
 @funclogger
-def _classify_hanging_piece_result(result: str, swing: int, unclear_threshold: int) -> str:
-    severe_failed_attempt_threshold = unclear_threshold * 3
-    if result == "missed" and swing <= severe_failed_attempt_threshold:
-        return "failed_attempt"
-    if swing <= unclear_threshold:
+def _classify_hanging_piece_result(
+    result: str,
+    delta: int,
+    unclear_threshold: int,
+    failed_attempt_threshold: int,
+    base_cp: int | None,
+) -> str:
+    if result == "unclear":
+        return "unclear"
+    classification = _classify_hanging_piece_from_base(base_cp, delta, unclear_threshold)
+    if classification is not None:
+        return classification
+    if _is_missed_due_to_delta(base_cp, delta, unclear_threshold, failed_attempt_threshold):
         return "missed"
-    if swing < 0:
+    return _classify_non_missed_delta(result, delta, failed_attempt_threshold)
+
+
+def _is_missed_due_to_delta(
+    base_cp: int | None,
+    delta: int,
+    unclear_threshold: int,
+    failed_attempt_threshold: int,
+) -> bool:
+    if base_cp is not None and base_cp <= unclear_threshold and delta <= failed_attempt_threshold:
+        return True
+    return delta <= unclear_threshold
+
+
+def _classify_non_missed_delta(
+    result: str,
+    delta: int,
+    failed_attempt_threshold: int,
+) -> str:
+    if delta <= failed_attempt_threshold:
         return "failed_attempt"
+    if delta < 0:
+        return "failed_attempt" if result == "failed_attempt" else "unclear"
     return "unclear"
 
 
@@ -220,7 +305,7 @@ def analyze_position(
             settings=settings,
         )
     )
-    result = _finalize_hanging_piece_result(result, motif, swing, base_cp, settings)
+    result = _finalize_hanging_piece_result(result, motif, delta, base_cp, settings)
     severity = _compute_severity_for_position(
         build_severity_context(
             SeverityInputs(
@@ -316,13 +401,11 @@ def _apply_outcome_overrides_for_position(
 def _finalize_hanging_piece_result(
     result: str,
     motif: str,
-    swing: int | None,
+    delta: int | None,
     base_cp: int,
     settings: Settings | None,
 ) -> str:
-    if motif == "hanging_piece" and result == "found" and base_cp < 0:
-        result = "missed"
-    return _adjust_hanging_piece_result(result, motif, swing, settings)
+    return _adjust_hanging_piece_result(result, motif, delta, base_cp, settings)
 
 
 @funclogger

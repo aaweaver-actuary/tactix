@@ -3,9 +3,10 @@ from datetime import timezone
 
 import pytest
 
-from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
+from tactix.define_base_db_store__db_store import BaseDbStore
+from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
 from tactix.config import Settings
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 from tactix.mock_db_store import MockDbStore
 from tactix.pgn_utils import extract_pgn_metadata
 

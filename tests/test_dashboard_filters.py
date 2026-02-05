@@ -10,9 +10,9 @@ from tactix.db.duckdb_store import (
     init_schema,
     insert_positions,
     update_metrics_summary,
-    upsert_raw_pgns,
     upsert_tactic_with_outcome,
 )
+from tactix.db.raw_pgn_repository_provider import upsert_raw_pgns
 from tactix.pgn_utils import extract_game_id, extract_last_timestamp_ms
 
 

@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from tactix.chess_clients.base_chess_client import BaseChessClient
 from tactix.config import Settings
 from tactix.fetch_chesscom_games__pipeline import _fetch_chesscom_games
 from tactix.fetch_lichess_games__pipeline import _fetch_lichess_games
-from tactix.pipeline_state__pipeline import FetchContext
+from tactix.FetchContext import FetchContext
+from tactix.ports.game_source_client import GameSourceClient
 
 
 def _fetch_incremental_games(
     settings: Settings,
-    client: BaseChessClient,
+    client: GameSourceClient,
     backfill_mode: bool,
     window_start_ms: int | None,
     window_end_ms: int | None,

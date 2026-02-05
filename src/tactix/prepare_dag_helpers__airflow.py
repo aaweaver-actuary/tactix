@@ -8,9 +8,9 @@ from airflow.utils import timezone
 
 from tactix.dashboard_query import DashboardQuery
 from tactix.pipeline import get_dashboard_payload
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 
-logger = get_logger(__name__)
+logger = Logger(__name__)
 
 
 def default_args(*, retries: int = 2) -> dict[str, object]:

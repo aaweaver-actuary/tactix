@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+from tactix.AnalysisPrepResult import AnalysisPrepResult
 from tactix.config import Settings
 from tactix.define_pipeline_state__pipeline import (
-    AnalysisPrepResult,
-    GameRow,
     ProgressCallback,
 )
+from tactix.GameRow import GameRow
 from tactix.load_resume_positions__pipeline import _load_resume_positions
 from tactix.persist_and_extract_positions__pipeline import (
     PersistAndExtractPositionsContext,

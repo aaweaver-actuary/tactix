@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS positions (
     ply INTEGER,
     move_number INTEGER,
     side_to_move TEXT,
+    user_to_move BOOLEAN DEFAULT TRUE,
     uci TEXT,
     san TEXT,
     clock_seconds DOUBLE,

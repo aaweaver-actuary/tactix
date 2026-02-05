@@ -12,11 +12,8 @@ import chess
 import pytest
 
 from tactix.config import Settings
-from tactix.db.duckdb_store import (
-    fetch_practice_queue,
-    fetch_recent_games,
-    get_connection,
-)
+from tactix.db.duckdb_store import fetch_recent_games, get_connection
+from tactix.db.tactic_repository_provider import tactic_repository
 from tactix.define_chess_game__chess_game import ChessGame
 from tactix.pgn_utils import extract_last_timestamp_ms, split_pgn_chunks
 from tactix.pipeline import run_daily_game_sync
@@ -281,8 +278,7 @@ def test_canonical_practice_queue_contains_two_missed_hanging_pieces(
         loss_game_id = losses[0].get("game_id")
         assert loss_game_id
 
-        practice_queue = fetch_practice_queue(
-            conn,
+        practice_queue = tactic_repository(conn).fetch_practice_queue(
             source="chesscom",
             include_failed_attempt=False,
             limit=10,

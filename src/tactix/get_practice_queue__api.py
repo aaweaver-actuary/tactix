@@ -7,7 +7,8 @@ from typing import Annotated
 from fastapi import Query
 
 from tactix.config import get_settings
-from tactix.db.duckdb_store import fetch_practice_queue, get_connection, init_schema
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.tactic_repository_provider import tactic_repository
 from tactix.normalize_source__source import _normalize_source
 
 
@@ -21,8 +22,7 @@ def practice_queue(
     settings = get_settings(source=normalized_source)
     conn = get_connection(settings.duckdb_path)
     init_schema(conn)
-    queue = fetch_practice_queue(
-        conn,
+    queue = tactic_repository(conn).fetch_practice_queue(
         limit=limit,
         source=normalized_source or settings.source,
         include_failed_attempt=include_failed_attempt,

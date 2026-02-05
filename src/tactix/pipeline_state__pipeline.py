@@ -1,5 +1,7 @@
 """Public re-exports for pipeline state definitions."""
 
+from tactix.AnalysisPrepResult import AnalysisPrepResult
+from tactix.DailyAnalysisResult import DailyAnalysisResult
 from tactix.define_pipeline_state__pipeline import (
     ANALYSIS_PROGRESS_BUCKETS,
     CHESSCOM_BLACK_PROFILES,
@@ -9,13 +11,11 @@ from tactix.define_pipeline_state__pipeline import (
     RESUME_INDEX_START,
     SINGLE_PGN_CHUNK,
     ZERO_COUNT,
-    AnalysisPrepResult,
-    DailyAnalysisResult,
-    FetchContext,
-    GameRow,
     ProgressCallback,
     logger,
 )
+from tactix.FetchContext import FetchContext
+from tactix.GameRow import GameRow
 
 __all__ = [
     "ANALYSIS_PROGRESS_BUCKETS",

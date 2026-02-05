@@ -1,7 +1,7 @@
 import logging
 import unittest
 
-from tactix.utils.logger import get_logger, set_level
+from tactix.utils.logger import Logger, set_level
 
 
 class LoggingUtilsTests(unittest.TestCase):
@@ -18,7 +18,7 @@ class LoggingUtilsTests(unittest.TestCase):
         handler = logging.StreamHandler()
         self.logger.handlers = [handler]
 
-        logger = get_logger("tactix")
+        logger = Logger("tactix")
 
         self.assertIs(logger, self.logger)
         self.assertEqual(len(logger.handlers), 1)

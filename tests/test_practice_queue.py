@@ -3,12 +3,12 @@ import unittest
 from pathlib import Path
 
 from tactix.db.duckdb_store import (
-    fetch_practice_queue,
     get_connection,
     init_schema,
     insert_positions,
     upsert_tactic_with_outcome,
 )
+from tactix.db.tactic_repository_provider import tactic_repository
 
 
 class PracticeQueueTests(unittest.TestCase):
@@ -17,6 +17,7 @@ class PracticeQueueTests(unittest.TestCase):
         db_path = tmp_dir / "practice.duckdb"
         conn = get_connection(db_path)
         init_schema(conn)
+        repo = tactic_repository(conn)
 
         positions = [
             {
@@ -96,7 +97,7 @@ class PracticeQueueTests(unittest.TestCase):
             {"result": "missed", "user_uci": "c2c3", "eval_delta": -320},
         )
 
-        queue = fetch_practice_queue(conn, source="lichess")
+        queue = repo.fetch_practice_queue(source="lichess")
         self.assertTrue(queue)
         self.assertTrue(all(item["result"] == "missed" for item in queue))
         self.assertTrue(all(item["source"] == "lichess" for item in queue))
@@ -106,6 +107,7 @@ class PracticeQueueTests(unittest.TestCase):
         db_path = tmp_dir / "practice_failed.duckdb"
         conn = get_connection(db_path)
         init_schema(conn)
+        repo = tactic_repository(conn)
 
         positions = [
             {
@@ -160,7 +162,7 @@ class PracticeQueueTests(unittest.TestCase):
             {"result": "unclear", "user_uci": "e2e3", "eval_delta": -20},
         )
 
-        queue = fetch_practice_queue(conn, source="lichess", include_failed_attempt=True)
+        queue = repo.fetch_practice_queue(source="lichess", include_failed_attempt=True)
         results = {item["result"] for item in queue}
         self.assertIn("failed_attempt", results)
         self.assertNotIn("unclear", results)

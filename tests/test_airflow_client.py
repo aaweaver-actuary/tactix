@@ -74,16 +74,3 @@ def test_trigger_and_fetch_dag_run_use_request_json() -> None:
 
     assert trigger_request.call_count == 1
     assert fetch_request.call_count == 1
-
-
-def test_airflow_client_reexports_new_helpers() -> None:
-    import tactix.airflow_client as airflow_client
-
-    assert airflow_client.gather_url__airflow_base is gather_url__airflow_base
-    assert airflow_client.gather_auth__airflow_credentials is gather_auth__airflow_credentials
-    assert airflow_client.prepare_error__http_status is prepare_error__http_status
-    assert airflow_client.fetch_json__airflow_api is fetch_json__airflow_api
-    assert airflow_client.orchestrate_dag_run__airflow_trigger is (
-        orchestrate_dag_run__airflow_trigger
-    )
-    assert airflow_client.fetch_dag_run__airflow_api is fetch_dag_run__airflow_api

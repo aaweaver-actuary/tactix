@@ -5,8 +5,8 @@ from importlib import import_module
 from typing import TYPE_CHECKING
 
 from tactix.chess_game import ChessGame
-from tactix.DailySyncStartContext import DailyGameSyncRequest
 from tactix.pipeline import run_daily_game_sync
+from tactix.sync_contexts import DailyGameSyncRequest
 
 chesscom_client = import_module("tactix.chess_clients.chesscom_client")
 duckdb_store = import_module("tactix.db.duckdb_store")
@@ -14,10 +14,10 @@ lichess_client = import_module("tactix.chess_clients.lichess_client")
 
 _LEGACY_MODULE_ALIASES = {
     "tactix.DashboardQueryFilters": "tactix.dashboard_query_filters",
-    "tactix.CLOCK_PARTS_SHORT": "tactix.clock_parts_short",
-    "tactix.PGN_SCHEMA": "tactix.pgn_schema",
-    "tactix.NoGamesPayloadContext": "tactix.no_games_payload_context",
-    "tactix.NoGamesAfterDedupePayloadContext_1": "tactix.no_games_after_dedupe_payload_context",
+    "tactix.CLOCK_PARTS_SHORT": "tactix._normalize_clock_parts",
+    "tactix.PGN_SCHEMA": "tactix.define_db_schemas__const",
+    "tactix.NoGamesPayloadContext": "tactix.sync_contexts",
+    "tactix.NoGamesAfterDedupePayloadContext_1": "tactix.sync_contexts",
     "tactix.duckdb_store": "tactix.db.duckdb_store",
 }
 

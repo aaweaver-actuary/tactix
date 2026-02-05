@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from tactix.pipeline_state__pipeline import GameRow
+from tactix.GameRow import GameRow
 from tactix.within_window__pipeline import _within_window
 
 

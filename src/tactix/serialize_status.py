@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from tactix.PostgresStatus import PostgresStatus
+from tactix.postgres_status import PostgresStatus
 
 
 def serialize_status(status: PostgresStatus) -> dict[str, Any]:

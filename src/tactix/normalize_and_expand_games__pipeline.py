@@ -5,8 +5,8 @@ from collections.abc import Mapping
 from tactix.config import Settings
 from tactix.dedupe_games__pipeline import _dedupe_games
 from tactix.expand_pgn_rows__pipeline import _expand_pgn_rows
+from tactix.GameRow import GameRow
 from tactix.normalize_game_row__pipeline import _normalize_game_row
-from tactix.pipeline_state__pipeline import GameRow
 
 
 def _normalize_and_expand_games(

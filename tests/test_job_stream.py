@@ -102,17 +102,17 @@ def test_daily_game_sync_stream_uses_airflow_when_enabled() -> None:
     settings.airflow_username = "admin"
     settings.airflow_password = "admin"
     with (
-        patch("tactix.stream_jobs__api.get_settings", return_value=settings),
+        patch("tactix.job_stream.get_settings", return_value=settings),
         patch(
-            "tactix.run_airflow_daily_sync_job__job_stream._trigger_airflow_daily_sync",
+            "tactix.job_stream._trigger_airflow_daily_sync",
             return_value="run-1",
         ) as trigger,
         patch(
-            "tactix.run_airflow_daily_sync_job__job_stream._wait_for_airflow_run",
+            "tactix.job_stream._wait_for_airflow_run",
             return_value="success",
         ),
         patch(
-            "tactix.run_airflow_daily_sync_job__job_stream.get_dashboard_payload",
+            "tactix.job_stream.get_dashboard_payload",
             return_value={"metrics_version": 12},
         ),
     ):

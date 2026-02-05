@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from tactix.app.use_cases.pipeline_support import _emit_progress
 from tactix.config import Settings, get_settings
 from tactix.db.duckdb_store import get_connection, get_schema_version, migrate_schema
-from tactix.emit_progress__pipeline import _emit_progress
 from tactix.pipeline_state__pipeline import ProgressCallback
 
 

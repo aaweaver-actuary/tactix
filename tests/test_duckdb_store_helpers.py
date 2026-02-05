@@ -6,34 +6,36 @@ from unittest.mock import MagicMock, patch
 
 import duckdb
 
-from tactix.base_db_store import BaseDbStoreContext
 from tactix.config import Settings
+from tactix.db._append_date_range_filters import _append_date_range_filters
+from tactix.db._normalize_filter import _normalize_filter
+from tactix.db._rating_bucket_clause import _rating_bucket_clause
 from tactix.db.duckdb_store import (
     DuckDbStore,
-    _append_date_range_filters,
     _ensure_raw_pgns_versioned,
-    _normalize_filter,
-    _rating_bucket_clause,
-    delete_game_rows,
-    fetch_latest_pgn_hashes,
-    fetch_latest_raw_pgns,
     fetch_metrics,
     fetch_position_counts,
     fetch_positions_for_games,
     fetch_recent_positions,
     fetch_recent_tactics,
     get_connection,
-    grade_practice_attempt,
-    hash_pgn,
     init_schema,
     insert_positions,
     insert_tactic_outcomes,
     insert_tactics,
-    upsert_raw_pgns,
     upsert_tactic_with_outcome,
     update_metrics_summary,
 )
-from tactix.utils.logger import get_logger
+from tactix.db.delete_game_rows import delete_game_rows
+from tactix.db.raw_pgn_repository_provider import (
+    fetch_latest_pgn_hashes,
+    fetch_latest_raw_pgns,
+    hash_pgn,
+    upsert_raw_pgns,
+)
+from tactix.db.tactic_repository_provider import tactic_repository
+from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
+from tactix.utils.logger import Logger
 
 
 PGN_BASE = """[Event \"Test\"]
@@ -56,6 +58,7 @@ class DuckdbStoreHelperTests(unittest.TestCase):
         self.tmp_dir = Path(tempfile.mkdtemp())
         self.conn = get_connection(self.tmp_dir / "tactix.duckdb")
         init_schema(self.conn)
+        self.tactic_repository = tactic_repository(self.conn)
 
     def tearDown(self) -> None:
         self.conn.close()
@@ -624,8 +627,10 @@ class DuckdbStoreHelperTests(unittest.TestCase):
 
     def test_grade_practice_attempt_errors(self) -> None:
         with self.assertRaises(ValueError):
-            grade_practice_attempt(
-                self.conn, tactic_id=999, position_id=1, attempted_uci="e2e4"
+            self.tactic_repository.grade_practice_attempt(
+                tactic_id=999,
+                position_id=1,
+                attempted_uci="e2e4",
             )
 
         pgn = PGN_BASE.format(white_elo=1200, black_elo=1400, time_control="300+0")
@@ -675,8 +680,7 @@ class DuckdbStoreHelperTests(unittest.TestCase):
         )
 
         with self.assertRaises(ValueError):
-            grade_practice_attempt(
-                self.conn,
+            self.tactic_repository.grade_practice_attempt(
                 tactic_id=tactic_id,
                 position_id=position_ids[0],
                 attempted_uci=" ",
@@ -684,9 +688,7 @@ class DuckdbStoreHelperTests(unittest.TestCase):
 
     def test_upsert_tactic_requires_position_id(self) -> None:
         with self.assertRaises(ValueError):
-            upsert_tactic_with_outcome(
-                self.conn, {"game_id": "g7"}, {"result": "found"}
-            )
+            upsert_tactic_with_outcome(self.conn, {"game_id": "g7"}, {"result": "found"})
 
     def test_ensure_raw_pgns_versioned_legacy(self) -> None:
         legacy_conn = get_connection(self.tmp_dir / "legacy.duckdb")
@@ -703,8 +705,7 @@ class DuckdbStoreHelperTests(unittest.TestCase):
         _ensure_raw_pgns_versioned(legacy_conn)
 
         columns = {
-            row[1]
-            for row in legacy_conn.execute("PRAGMA table_info('raw_pgns')").fetchall()
+            row[1] for row in legacy_conn.execute("PRAGMA table_info('raw_pgns')").fetchall()
         }
         self.assertIn("raw_pgn_id", columns)
         count = legacy_conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]

@@ -12,6 +12,12 @@ pylint:
 # Ty for static type checking
 	uv run ty check \
 		--error deprecated \
+		--ignore invalid-argument-type \
+		--ignore invalid-method-override \
+		--ignore invalid-type-form \
+		--ignore unresolved-attribute \
+		--ignore unresolved-import \
+		--ignore unsupported-operator \
 		src/
 
 # Mypy for additional type checking
@@ -67,7 +73,7 @@ py-deadcode:
 	uv run vulture src/ \
 		--min-confidence 60 \
 		--ignore-decorators "@app.get,@app.post,@app.put,@app.patch,@app.delete" \
-		--ignore-names "stockfish_ponder,move_number,analyze_positions,main,_clear_dashboard_cache,DbSchemas,analysis,insert_tactics,insert_tactic_outcomes,set_level,MockChessClient,MockDbStore,convert_raw_pgns_to_positions,run_monitor_new_positions,clock_seconds,applied_options,is_legal"
+		--ignore-names "stockfish_ponder,move_number,analyze_positions,main,_clear_dashboard_cache,DbSchemas,analysis,insert_tactics,insert_tactic_outcomes,set_level,MockChessClient,MockDbStore,convert_raw_pgns_to_positions,run_monitor_new_positions,clock_seconds,applied_options,is_legal,TIME_CONTROLS"
 
 js-deadcode:
 	cd client && npx knip

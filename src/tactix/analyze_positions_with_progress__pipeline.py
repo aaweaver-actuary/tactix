@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from tactix.analysis_context import AnalysisRunContext
 from tactix.AnalysisLoopContext import AnalysisLoopContext
+from tactix.app.use_cases.pipeline_support import _maybe_clear_analysis_checkpoint
 from tactix.init_analysis_schema_if_needed__pipeline import _init_analysis_schema_if_needed
-from tactix.maybe_clear_analysis_checkpoint__pipeline import _maybe_clear_analysis_checkpoint
 from tactix.maybe_sync_analysis_results__pipeline import _maybe_sync_analysis_results
 from tactix.postgres_analysis_enabled import postgres_analysis_enabled
 from tactix.postgres_connection import postgres_connection

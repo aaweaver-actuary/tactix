@@ -7,7 +7,8 @@ import time as time_module
 from fastapi import HTTPException
 
 from tactix.config import get_settings
-from tactix.db.duckdb_store import get_connection, grade_practice_attempt, init_schema
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.tactic_repository_provider import tactic_repository
 from tactix.models import PracticeAttemptRequest
 
 
@@ -21,11 +22,11 @@ def practice_attempt(payload: PracticeAttemptRequest) -> dict[str, object]:
         now_ms = int(time_module.time() * 1000)
         latency_ms = max(0, now_ms - payload.served_at_ms)
     try:
-        result = grade_practice_attempt(
-            conn,
-            tactic_id=payload.tactic_id,
-            position_id=payload.position_id,
-            attempted_uci=payload.attempted_uci,
+        repo = tactic_repository(conn)
+        result = repo.grade_practice_attempt(
+            payload.tactic_id,
+            payload.position_id,
+            payload.attempted_uci,
             latency_ms=latency_ms,
         )
     except ValueError as exc:

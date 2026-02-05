@@ -8,11 +8,11 @@ import chess
 from tactix.config import DEFAULT_RAPID_STOCKFISH_DEPTH, Settings
 from tactix.db.duckdb_store import (
     get_connection,
-    grade_practice_attempt,
     init_schema,
     insert_positions,
     upsert_tactic_with_outcome,
 )
+from tactix.db.tactic_repository_provider import tactic_repository
 from tactix.pgn_utils import split_pgn_chunks
 from tactix.extract_positions import extract_positions
 from tactix.StockfishEngine import StockfishEngine
@@ -77,7 +77,11 @@ class MateInOneRapidTests(unittest.TestCase):
         self.assertEqual(stored_outcome[0], "found")
         self.assertEqual(stored_outcome[1], "d8h4")
 
-        attempt = grade_practice_attempt(conn, tactic_id, position_ids[0], "d8h4")
+        attempt = tactic_repository(conn).grade_practice_attempt(
+            tactic_id,
+            position_ids[0],
+            "d8h4",
+        )
         self.assertIn("Best line", attempt["explanation"] or "")
         self.assertIn("h4", attempt["explanation"] or "")
 
@@ -240,7 +244,11 @@ class TestForkRapid(unittest.TestCase):
         self.assertEqual(stored_outcome[0], "found")
         self.assertEqual(stored_outcome[1], "f4e2")
 
-        attempt = grade_practice_attempt(conn, tactic_id, position_ids[0], "f4e2")
+        attempt = tactic_repository(conn).grade_practice_attempt(
+            tactic_id,
+            position_ids[0],
+            "f4e2",
+        )
         self.assertIn("Best line", attempt["explanation"] or "")
         self.assertIn("e2", attempt["explanation"] or "")
 

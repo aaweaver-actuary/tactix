@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tactix.DailySyncStartContext import DailySyncPayloadContext
+from tactix.sync_contexts import DailySyncPayloadContext
 
 
 def _build_daily_sync_payload(

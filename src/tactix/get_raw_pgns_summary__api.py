@@ -7,7 +7,8 @@ from typing import Annotated
 from fastapi import Query
 
 from tactix.config import get_settings
-from tactix.db.duckdb_store import fetch_raw_pgns_summary, get_connection, init_schema
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.raw_pgn_repository_provider import fetch_raw_pgns_summary
 from tactix.normalize_source__source import _normalize_source
 
 

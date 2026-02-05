@@ -10,7 +10,7 @@ from tactix._connection_kwargs import _connection_kwargs
 from tactix.config import Settings
 from tactix.init_postgres_schema import init_postgres_schema
 from tactix.postgres_enabled import postgres_enabled
-from tactix.PostgresStatus import PostgresStatus
+from tactix.postgres_status import PostgresStatus
 
 
 def get_postgres_status(settings: Settings) -> PostgresStatus:
@@ -23,7 +23,7 @@ def get_postgres_status(settings: Settings) -> PostgresStatus:
     start = time.monotonic()
     try:
         conn = psycopg2.connect(**kwargs)
-    except psycopg2.Error as exc:
+    except Exception as exc:  # noqa: BLE001
         return PostgresStatus(
             enabled=True,
             status="unreachable",

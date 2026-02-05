@@ -9,16 +9,14 @@ from fastapi.responses import StreamingResponse
 
 
 def test_context_modules_import_and_instantiation() -> None:
-    contexts = importlib.import_module("tactix.DailySyncStartContext")
-    payload_contexts = importlib.import_module("tactix.DailySyncPayloadContext")
-    fetch_progress = importlib.import_module("tactix.FetchProgressContext_1")
+    contexts = importlib.import_module("tactix.sync_contexts")
 
     dummy_settings = object()
     dummy_fetch_context = object()
     dummy_progress = None
     dummy_game_rows: list[object] = []
 
-    payload_contexts.DailySyncPayloadContext(
+    contexts.DailySyncPayloadContext(
         settings=dummy_settings,
         fetch_context=dummy_fetch_context,
         games=dummy_game_rows,
@@ -34,7 +32,7 @@ def test_context_modules_import_and_instantiation() -> None:
         backfill_mode=False,
     )
 
-    fetch_progress.FetchProgressContext(
+    contexts.FetchProgressContext(
         settings=dummy_settings,
         progress=dummy_progress,
         fetch_context=dummy_fetch_context,
@@ -138,11 +136,11 @@ def test_context_modules_import_and_instantiation() -> None:
 
 
 def test_stream_jobs_api_returns_streaming_response(monkeypatch) -> None:
-    stream_jobs_api = importlib.import_module("tactix.stream_jobs__api")
+    stream_jobs_api = importlib.import_module("tactix.job_stream")
 
-    def fake_stream_job_response(request, get_settings):
+    def fake_stream_job_response(request, settings_factory):
         assert request.job == "daily_game_sync"
-        assert get_settings() == "settings"
+        assert settings_factory() == "settings"
         return StreamingResponse(iter(()))
 
     monkeypatch.setattr(stream_jobs_api, "_stream_job_response", fake_stream_job_response)
@@ -179,7 +177,7 @@ def test_apply_engine_options_exec(monkeypatch) -> None:
 
 
 def test_streaming_response_job_stream(monkeypatch) -> None:
-    streaming_module = importlib.import_module("tactix.streaming_response__job_stream")
+    streaming_module = importlib.import_module("tactix.job_stream")
 
     def fake_event_stream(queue, sentinel):
         assert queue is not None

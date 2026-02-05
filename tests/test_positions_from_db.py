@@ -8,8 +8,8 @@ from tactix.db.duckdb_store import (
     fetch_positions_for_games,
     get_connection,
     init_schema,
-    upsert_raw_pgns,
 )
+from tactix.db.raw_pgn_repository_provider import upsert_raw_pgns
 from tactix.pgn_utils import (
     extract_game_id,
     extract_last_timestamp_ms,
@@ -25,9 +25,7 @@ class PositionsFromDbTests(unittest.TestCase):
         conn = get_connection(db_path)
         init_schema(conn)
 
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "lichess_rapid_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "lichess_rapid_sample.pgn"
         chunks = split_pgn_chunks(fixture_path.read_text())
         rows = []
         for chunk in chunks:

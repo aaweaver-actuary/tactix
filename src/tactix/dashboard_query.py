@@ -43,11 +43,11 @@ def resolve_dashboard_query(
         return filters
     return DashboardQuery(
         source=query,
-        motif=filters.source,
-        rating_bucket=filters.motif,
-        time_control=filters.rating_bucket,
-        start_date=cast(datetime | None, filters.time_control),
-        end_date=filters.start_date,
+        motif=filters.motif,
+        rating_bucket=filters.rating_bucket,
+        time_control=filters.time_control,
+        start_date=filters.start_date,
+        end_date=filters.end_date,
     )
 
 

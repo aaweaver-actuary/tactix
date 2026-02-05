@@ -7,10 +7,11 @@ from dataclasses import dataclass
 import duckdb
 
 from tactix.analysis_signature__pipeline import _analysis_signature
+from tactix.app.use_cases.pipeline_support import _emit_progress
 from tactix.config import Settings
-from tactix.define_pipeline_state__pipeline import GameRow, ProgressCallback
-from tactix.emit_progress__pipeline import _emit_progress
+from tactix.define_pipeline_state__pipeline import ProgressCallback
 from tactix.extract_positions_from_games__pipeline import _extract_positions_from_games
+from tactix.GameRow import GameRow
 from tactix.persist_raw_pgns__pipeline import PersistRawPgnsContext, _persist_raw_pgns
 from tactix.upsert_postgres_raw_pgns_if_enabled__pipeline import (
     _upsert_postgres_raw_pgns_if_enabled,

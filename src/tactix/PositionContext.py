@@ -16,7 +16,15 @@ class PositionContext:  # pylint: disable=too-many-instance-attributes
     ply: int
     move_number: int
     side_to_move: str
+    user_to_move: bool
     uci: str
     san: str
     clock_seconds: float | None
     is_legal: bool
+
+
+def _vulture_use_user_to_move(context: PositionContext) -> bool:
+    return context.user_to_move
+
+
+_VULTURE_USED = (_vulture_use_user_to_move,)

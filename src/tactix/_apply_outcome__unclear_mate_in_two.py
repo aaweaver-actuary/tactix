@@ -5,11 +5,11 @@ from tactix._apply_outcome__unclear_mate import (
     _build_mate_outcome_args,
 )
 from tactix._should_mark_unclear_mate_in_two import _should_mark_unclear_mate_in_two
-from tactix.outcome_context import MateOutcomeContext
+from tactix.mate_outcome import MateOutcome
 
 
 def _apply_outcome__unclear_mate_in_two(
-    context: MateOutcomeContext | str,
+    context: MateOutcome | str,
     best_move: str | None = None,
     user_move_uci: str | None = None,
     after_cp: int | None = None,

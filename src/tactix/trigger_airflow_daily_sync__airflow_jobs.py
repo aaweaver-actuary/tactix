@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import cast
 
+from tactix.airflow_daily_sync_context import AirflowDailySyncTriggerContext
 from tactix.build_airflow_conf__airflow_jobs import _airflow_conf
 from tactix.config import Settings
 from tactix.get_airflow_run_id__airflow_response import _airflow_run_id
@@ -9,7 +10,6 @@ from tactix.legacy_args import apply_legacy_args, apply_legacy_kwargs, init_lega
 from tactix.orchestrate_dag_run__airflow_trigger import (
     orchestrate_dag_run__airflow_trigger,
 )
-from tactix.stream_job_context import AirflowDailySyncTriggerContext
 
 
 def _trigger_airflow_daily_sync(

@@ -1,7 +1,7 @@
 """Insert analysis outcome rows into Postgres."""
 
-from tactix.ANALYSIS_SCHEMA import ANALYSIS_SCHEMA
-from tactix.base_db_store import OutcomeInsertPlan
+from tactix.define_db_schemas__const import ANALYSIS_SCHEMA
+from tactix.define_outcome_insert_plan__db_store import OutcomeInsertPlan
 
 
 def _insert_analysis_outcome(

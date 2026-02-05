@@ -2,7 +2,7 @@
 
 from psycopg2.extensions import connection as PgConnection  # noqa: N812
 
-from tactix.ANALYSIS_SCHEMA import ANALYSIS_SCHEMA
+from tactix.define_db_schemas__const import ANALYSIS_SCHEMA
 
 
 def init_analysis_schema(conn: PgConnection) -> None:

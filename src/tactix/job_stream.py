@@ -16,7 +16,6 @@ from fastapi.responses import StreamingResponse
 
 from tactix._resolve_dashboard_filters import _resolve_dashboard_filters
 from tactix.airflow_daily_sync_context import AirflowDailySyncTriggerContext
-from tactix.api_logger__tactix import logger
 from tactix.check_airflow_enabled__airflow_settings import _airflow_enabled
 from tactix.config import Settings, get_settings
 from tactix.dashboard_query import DashboardQuery
@@ -40,6 +39,9 @@ from tactix.resolve_backfill_end_ms__airflow_jobs import _resolve_backfill_end_m
 from tactix.sync_contexts import DailyGameSyncRequest
 from tactix.trigger_airflow_daily_sync__airflow_jobs import _trigger_airflow_daily_sync
 from tactix.utils import funclogger
+from tactix.utils.logger import Logger
+
+logger = Logger("tactix.api")
 
 
 @dataclass(frozen=True)

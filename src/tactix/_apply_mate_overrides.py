@@ -6,7 +6,8 @@ from tactix._apply_outcome__unclear_mate_in_two import (
 )
 from tactix._override_mate_motif import _override_mate_motif
 from tactix.mate_outcome import MateOutcome
-from tactix.MateOverrideResult import MateOverrideResult
+
+MateOverrideResult = tuple[str, str, int | None]
 
 
 def _apply_mate_overrides(ctx: MateOutcome) -> MateOverrideResult:

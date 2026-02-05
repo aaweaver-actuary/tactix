@@ -43,6 +43,15 @@ Session summary (2026-02-05):
 	- tests/test_duckdb_dashboard_repository.py imports → repository default deps; tests/test_duckdb_store_helpers.py helper imports → module-level helpers.
 
 Session summary (2026-02-05):
+- Extracted DuckDbMetricsRepository with explicit dependencies and moved metrics aggregation helpers out of duckdb_store.
+- Added metrics_repository_provider + parity test for metrics repository; migrated pipelines/tests to use provider updates.
+- Removed duckdb_store metrics summary wrappers after migration.
+- Tests run: `make check` (green).
+- Before→After map:
+	- duckdb_store update_metrics_summary + metric aggregation helpers → DuckDbMetricsRepository + metrics_repository_provider.update_metrics_summary.
+	- run_refresh_metrics__pipeline/update_metrics_and_version__pipeline/tests using duckdb_store.update_metrics_summary → metrics_repository_provider.update_metrics_summary.
+
+Session summary (2026-02-05):
 - Extracted DuckDbPositionRepository and DuckDbTacticRepository with injected dependencies; duckdb_store position/tactic/practice helpers now delegate to these objects.
 - Added equivalence tests for position/tactic repositories against duckdb_store wrappers using temp DuckDB instances.
 - Tests run: `make check` (green).

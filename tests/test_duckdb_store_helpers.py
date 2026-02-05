@@ -26,9 +26,9 @@ from tactix.db.duckdb_store import (
     insert_tactic_outcomes,
     insert_tactics,
     upsert_tactic_with_outcome,
-    update_metrics_summary,
 )
 from tactix.db.delete_game_rows import delete_game_rows
+from tactix.db.metrics_repository_provider import update_metrics_summary
 from tactix.db.raw_pgn_repository_provider import (
     fetch_latest_pgn_hashes,
     fetch_latest_raw_pgns,

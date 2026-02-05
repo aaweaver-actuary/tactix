@@ -5,17 +5,10 @@ import unittest
 from pathlib import Path
 
 from tactix.dashboard_query import DashboardQuery
-from tactix.db.duckdb_dashboard_repository import (
-    DuckDbDashboardRepository,
-    default_dashboard_repository_dependencies,
-)
-from tactix.db.dashboard_repository_provider import (
-    fetch_metrics,
-    fetch_opportunity_motif_counts,
-    fetch_pipeline_table_counts,
-    fetch_recent_games,
-    fetch_recent_positions,
-    fetch_recent_tactics,
+from tactix.db.dashboard_repository_provider import fetch_metrics
+from tactix.db.duckdb_metrics_repository import (
+    DuckDbMetricsRepository,
+    default_metrics_dependencies,
 )
 from tactix.db.duckdb_store import (
     get_connection,
@@ -26,68 +19,41 @@ from tactix.db.duckdb_store import (
 from tactix.db.metrics_repository_provider import update_metrics_summary
 from tactix.db.raw_pgn_repository_provider import upsert_raw_pgns
 
-PGN_TEMPLATE = """[Event \"Test\"]
-[Site \"https://example.org/{site}\"]
-[UTCDate \"2024.01.01\"]
-[UTCTime \"00:00:01\"]
-[White \"tester\"]
-[Black \"opponent\"]
-[WhiteElo \"{white_elo}\"]
-[BlackElo \"{black_elo}\"]
-[TimeControl \"{time_control}\"]
-[Result \"*\"]
+PGN_TEMPLATE = """[Event "Test"]
+[Site "https://example.org/{site}"]
+[UTCDate "2024.01.01"]
+[UTCTime "00:00:01"]
+[White "tester"]
+[Black "opponent"]
+[WhiteElo "{white_elo}"]
+[BlackElo "{black_elo}"]
+[TimeControl "{time_control}"]
+[Result "*"]
 
 1. e4 *
 """
 
 
-class DuckDbDashboardRepositoryTests(unittest.TestCase):
+class DuckDbMetricsRepositoryTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp_dir = Path(tempfile.mkdtemp())
-        self.conn = get_connection(self.tmp_dir / "dash.duckdb")
+        self.conn = get_connection(self.tmp_dir / "metrics.duckdb")
         init_schema(self.conn)
 
     def tearDown(self) -> None:
         self.conn.close()
 
-    def test_repository_matches_store_functions(self) -> None:
+    def test_repository_matches_store_update(self) -> None:
         self._insert_dashboard_rows()
+
         update_metrics_summary(self.conn)
+        legacy_rows = self._sorted_rows(fetch_metrics(self.conn, DashboardQuery(source="all")))
 
-        repo = self._build_repository()
-        all_query = DashboardQuery(source="all")
-        lichess_query = DashboardQuery(source="lichess")
+        repo = DuckDbMetricsRepository(self.conn, dependencies=default_metrics_dependencies())
+        repo.update_metrics_summary()
+        repo_rows = self._sorted_rows(fetch_metrics(self.conn, DashboardQuery(source="all")))
 
-        self.assertEqual(
-            self._sorted_rows(repo.fetch_metrics(all_query)),
-            self._sorted_rows(fetch_metrics(self.conn, all_query)),
-        )
-        self.assertEqual(
-            repo.fetch_recent_games(all_query),
-            fetch_recent_games(self.conn, all_query, user="tester"),
-        )
-        self.assertEqual(
-            repo.fetch_recent_positions(lichess_query),
-            fetch_recent_positions(self.conn, lichess_query),
-        )
-        self.assertEqual(
-            repo.fetch_recent_tactics(lichess_query),
-            fetch_recent_tactics(self.conn, lichess_query),
-        )
-        self.assertEqual(
-            repo.fetch_pipeline_table_counts(lichess_query),
-            fetch_pipeline_table_counts(self.conn, lichess_query),
-        )
-        self.assertEqual(
-            repo.fetch_opportunity_motif_counts(lichess_query),
-            fetch_opportunity_motif_counts(self.conn, lichess_query),
-        )
-
-    def _build_repository(self) -> DuckDbDashboardRepository:
-        return DuckDbDashboardRepository(
-            self.conn,
-            dependencies=default_dashboard_repository_dependencies(),
-        )
+        self.assertEqual(legacy_rows, repo_rows)
 
     def _insert_dashboard_rows(self) -> None:
         scenarios = [

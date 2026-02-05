@@ -9,9 +9,9 @@ from tactix.db.dashboard_repository_provider import fetch_metrics
 from tactix.db.duckdb_store import (
     get_connection,
     init_schema,
-    update_metrics_summary,
     write_metrics_version,
 )
+from tactix.db.metrics_repository_provider import update_metrics_summary
 from tactix.define_pipeline_state__pipeline import ProgressCallback
 
 

@@ -11,7 +11,8 @@ from tactix.db.dashboard_repository_provider import (
     fetch_recent_tactics,
     fetch_trend_stats,
 )
-from tactix.db.duckdb_store import get_connection, init_schema, update_metrics_summary
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.metrics_repository_provider import update_metrics_summary
 
 
 class DashboardRepositoryProviderTests(unittest.TestCase):

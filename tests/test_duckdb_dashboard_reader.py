@@ -24,9 +24,9 @@ from tactix.db.duckdb_store import (
     get_connection,
     init_schema,
     insert_positions,
-    update_metrics_summary,
     upsert_tactic_with_outcome,
 )
+from tactix.db.metrics_repository_provider import update_metrics_summary
 from tactix.db.raw_pgn_repository_provider import upsert_raw_pgns
 from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
 from tactix.utils.logger import Logger

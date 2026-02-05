@@ -251,3 +251,13 @@ Session summary (2026-02-05):
 - Before→After map:
 	- duckdb_store position/tactic/training wrappers → position_repository_provider + tactic_repository_provider + DuckDbTacticRepository.record_training_attempt.
 	- pipeline/test call sites using duckdb_store insert/fetch/upsert → provider helpers (position/tactic repositories).
+
+Session summary (2026-02-05):
+- Added PostgresRepository with explicit dependency wiring; Postgres API handlers now call repository methods directly.
+- Archived PostgresStore shim implementation to review-for-deletion and replaced src/tactix/postgres_store_impl.py with a repository re-export.
+- Updated Postgres tests to cover repository delegation and API patch targets.
+- Tests run: `make check` (green; existing Vitest act() warnings and pycycle .venv parse warning remain).
+- Before→After map:
+	- get_postgres_*__api handlers → PostgresRepository calls (from PostgresStore).
+	- src/tactix/postgres_store_impl.PostgresStore → review-for-deletion/postgres_store_impl.py; src/tactix/postgres_store_impl.py now re-exports repository wiring.
+	- tests/test_postgres_status patch targets + tests/test_postgres_store delegation coverage → PostgresRepository.

@@ -1,8 +1,10 @@
 from unittest.mock import MagicMock, patch
 
+from tactix.db.postgres_repository import (
+    PostgresRepository,
+    PostgresRepositoryDependencies,
+)
 from tactix.postgres_status import PostgresStatus
-from tactix.postgres_store_impl import PostgresStore
-from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
 from tactix.config import Settings
 from tactix.fetch_analysis_tactics import fetch_analysis_tactics
 from tactix.fetch_ops_events import fetch_ops_events
@@ -16,7 +18,6 @@ from tactix.postgres_pgns_enabled import postgres_pgns_enabled
 from tactix.record_ops_event import record_ops_event
 from tactix.upsert_analysis_tactic_with_outcome import upsert_analysis_tactic_with_outcome
 from tactix.upsert_postgres_raw_pgns import upsert_postgres_raw_pgns
-from tactix.utils.logger import Logger
 from tactix.serialize_status import (
     serialize_status,
 )
@@ -31,9 +32,19 @@ def _make_settings() -> Settings:
     return settings
 
 
-def _make_store() -> PostgresStore:
-    settings = _make_settings()
-    return PostgresStore(BaseDbStoreContext(settings=settings, logger=get_logger("test")))
+def _make_repository(
+    settings: Settings | None = None,
+    dependencies: PostgresRepositoryDependencies | None = None,
+) -> tuple[PostgresRepository, PostgresRepositoryDependencies]:
+    resolved = settings or _make_settings()
+    if dependencies is None:
+        dependencies = PostgresRepositoryDependencies(
+            get_status=MagicMock(),
+            fetch_ops_events=MagicMock(),
+            fetch_analysis_tactics=MagicMock(),
+            fetch_raw_pgns_summary=MagicMock(),
+        )
+    return PostgresRepository(resolved, dependencies=dependencies), dependencies
 
 
 def test_postgres_enabled_with_host() -> None:
@@ -231,42 +242,40 @@ def test_fetch_postgres_raw_pgns_summary_returns_totals() -> None:
     assert payload["sources"][0]["source"] == "lichess"
 
 
-def test_postgres_store_get_status_delegates() -> None:
-    store = _make_store()
-    with patch("tactix.postgres_store_impl.get_postgres_status") as get_status:
-        get_status.return_value = PostgresStatus(enabled=True, status="ok")
-        status = store.get_status()
+def test_postgres_repository_get_status_delegates() -> None:
+    settings = _make_settings()
+    repo, deps = _make_repository(settings=settings)
+    deps.get_status.return_value = PostgresStatus(enabled=True, status="ok")
+    status = repo.get_status()
     assert status.status == "ok"
-    get_status.assert_called_once_with(store.settings)
+    deps.get_status.assert_called_once_with(settings)
 
 
-def test_postgres_store_fetch_ops_events_delegates() -> None:
-    store = _make_store()
-    with patch("tactix.postgres_store_impl.fetch_ops_events") as fetch_events:
-        fetch_events.return_value = [{"event_type": "test"}]
-        events = store.fetch_ops_events(limit=5)
+def test_postgres_repository_fetch_ops_events_delegates() -> None:
+    settings = _make_settings()
+    repo, deps = _make_repository(settings=settings)
+    deps.fetch_ops_events.return_value = [{"event_type": "test"}]
+    events = repo.fetch_ops_events(limit=5)
     assert events == [{"event_type": "test"}]
-    fetch_events.assert_called_once_with(store.settings, limit=5)
+    deps.fetch_ops_events.assert_called_once_with(settings, 5)
 
 
-def test_postgres_store_fetch_analysis_tactics_delegates() -> None:
-    store = _make_store()
-    with patch("tactix.postgres_store_impl.fetch_analysis_tactics") as fetch_tactics:
-        fetch_tactics.return_value = [{"tactic_id": 1}]
-        tactics = store.fetch_analysis_tactics(limit=12)
+def test_postgres_repository_fetch_analysis_tactics_delegates() -> None:
+    settings = _make_settings()
+    repo, deps = _make_repository(settings=settings)
+    deps.fetch_analysis_tactics.return_value = [{"tactic_id": 1}]
+    tactics = repo.fetch_analysis_tactics(limit=12)
     assert tactics == [{"tactic_id": 1}]
-    fetch_tactics.assert_called_once_with(store.settings, limit=12)
+    deps.fetch_analysis_tactics.assert_called_once_with(settings, 12)
 
 
-def test_postgres_store_fetch_raw_pgns_summary_delegates() -> None:
-    store = _make_store()
-    with patch(
-        "tactix.postgres_store_impl.fetch_postgres_raw_pgns_summary",
-    ) as fetch_summary:
-        fetch_summary.return_value = {"status": "ok"}
-        summary = store.fetch_raw_pgns_summary()
+def test_postgres_repository_fetch_raw_pgns_summary_delegates() -> None:
+    settings = _make_settings()
+    repo, deps = _make_repository(settings=settings)
+    deps.fetch_raw_pgns_summary.return_value = {"status": "ok"}
+    summary = repo.fetch_raw_pgns_summary()
     assert summary == {"status": "ok"}
-    fetch_summary.assert_called_once_with(store.settings)
+    deps.fetch_raw_pgns_summary.assert_called_once_with(settings)
 
 
 def test_fetch_postgres_raw_pgns_summary_disabled() -> None:

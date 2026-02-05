@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
-from tactix.api_logger__tactix import logger
 from tactix.config import get_settings
-from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
-from tactix.postgres_store_impl import PostgresStore
+from tactix.db.postgres_repository import (
+    PostgresRepository,
+    default_postgres_repository_dependencies,
+)
 
 
 def postgres_raw_pgns() -> dict[str, object]:
     """Return the raw PGN summary from Postgres."""
     settings = get_settings()
-    store = PostgresStore(BaseDbStoreContext(settings=settings, logger=logger))
-    return store.fetch_raw_pgns_summary()
+    repo = PostgresRepository(
+        settings,
+        dependencies=default_postgres_repository_dependencies(),
+    )
+    return repo.fetch_raw_pgns_summary()

@@ -1,6 +1,6 @@
 import chess
 
-from tactix.tactic_detectors import BaseTacticDetector
+from tactix.detect_tactics__motifs import BaseTacticDetector
 
 
 def test_iter_unchanged_sliders_yields_static_slider() -> None:

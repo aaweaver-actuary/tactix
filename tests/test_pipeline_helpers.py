@@ -10,9 +10,9 @@ from tactix.db.duckdb_store import (
     get_connection,
     init_schema,
     insert_positions,
-    upsert_raw_pgns,
     upsert_tactic_with_outcome,
 )
+from tactix.db.raw_pgn_repository_provider import upsert_raw_pgns
 import tactix.pipeline as pipeline
 
 
@@ -154,32 +154,22 @@ class PipelineHelperTests(unittest.TestCase):
         self.assertEqual(expanded[1]["game_id"], "ZyXwVu98")
         self.assertGreater(expanded[0]["last_timestamp_ms"], 0)
         self.assertGreater(expanded[1]["last_timestamp_ms"], 0)
-        self.assertNotEqual(
-            expanded[0]["last_timestamp_ms"], expanded[1]["last_timestamp_ms"]
-        )
+        self.assertNotEqual(expanded[0]["last_timestamp_ms"], expanded[1]["last_timestamp_ms"])
 
     def test_analysis_checkpoint_helpers(self) -> None:
         checkpoint_path = self.tmp_dir / "analysis.json"
         signature = pipeline._analysis_signature(["g1", "g2"], 3, "lichess")
 
-        self.assertEqual(
-            pipeline._read_analysis_checkpoint(checkpoint_path, signature), -1
-        )
+        self.assertEqual(pipeline._read_analysis_checkpoint(checkpoint_path, signature), -1)
 
         pipeline._write_analysis_checkpoint(checkpoint_path, signature, 2)
-        self.assertEqual(
-            pipeline._read_analysis_checkpoint(checkpoint_path, signature), 2
-        )
+        self.assertEqual(pipeline._read_analysis_checkpoint(checkpoint_path, signature), 2)
 
         checkpoint_path.write_text("not-json")
-        self.assertEqual(
-            pipeline._read_analysis_checkpoint(checkpoint_path, signature), -1
-        )
+        self.assertEqual(pipeline._read_analysis_checkpoint(checkpoint_path, signature), -1)
 
         pipeline._write_analysis_checkpoint(checkpoint_path, "other", 1)
-        self.assertEqual(
-            pipeline._read_analysis_checkpoint(checkpoint_path, signature), -1
-        )
+        self.assertEqual(pipeline._read_analysis_checkpoint(checkpoint_path, signature), -1)
 
         pipeline._clear_analysis_checkpoint(checkpoint_path)
         self.assertFalse(checkpoint_path.exists())
@@ -211,16 +201,12 @@ class PipelineHelperTests(unittest.TestCase):
                 return_value={"g1": 2, "g2": 0},
             ),
         ):
-            to_process, skipped = pipeline._filter_backfill_games(
-                MagicMock(), rows, "lichess"
-            )
+            to_process, skipped = pipeline._filter_backfill_games(MagicMock(), rows, "lichess")
 
         self.assertEqual([row["game_id"] for row in skipped], ["g1"])
         self.assertEqual([row["game_id"] for row in to_process], ["g2"])
 
-        empty_process, empty_skipped = pipeline._filter_backfill_games(
-            MagicMock(), [], "lichess"
-        )
+        empty_process, empty_skipped = pipeline._filter_backfill_games(MagicMock(), [], "lichess")
         self.assertEqual(empty_process, [])
         self.assertEqual(empty_skipped, [])
 
@@ -242,10 +228,14 @@ class PipelineHelperTests(unittest.TestCase):
                 {"c1": pipeline.hash_pgn("pgn-3")},
             ]
             lichess_result = pipeline._validate_raw_pgn_hashes(
-                MagicMock(), lichess_rows, "lichess"
+                lichess_rows,
+                "lichess",
+                fetch_mock,
             )
             chesscom_result = pipeline._validate_raw_pgn_hashes(
-                MagicMock(), chesscom_rows, "chesscom"
+                chesscom_rows,
+                "chesscom",
+                fetch_mock,
             )
 
         self.assertEqual(lichess_result, {"computed": 2, "matched": 2})
@@ -254,16 +244,16 @@ class PipelineHelperTests(unittest.TestCase):
         with patch(
             "tactix.pipeline.fetch_latest_pgn_hashes",
             return_value={"l1": "bad-hash"},
-        ):
+        ) as fetch_mock:
             with self.assertRaises(ValueError):
                 pipeline._validate_raw_pgn_hashes(
-                    MagicMock(), [{"game_id": "l1", "pgn": "pgn-1"}], "lichess"
+                    [{"game_id": "l1", "pgn": "pgn-1"}],
+                    "lichess",
+                    fetch_mock,
                 )
 
     def test_sync_postgres_analysis_results_no_connection(self) -> None:
-        synced = pipeline._sync_postgres_analysis_results(
-            MagicMock(), None, self.settings
-        )
+        synced = pipeline._sync_postgres_analysis_results(MagicMock(), None, self.settings)
         self.assertEqual(synced, 0)
 
     def test_sync_postgres_analysis_results_writes_recent_tactics(self) -> None:
@@ -302,9 +292,7 @@ class PipelineHelperTests(unittest.TestCase):
 
         pg_conn = MagicMock()
         with patch("tactix.pipeline.upsert_analysis_tactic_with_outcome") as upsert:
-            synced = pipeline._sync_postgres_analysis_results(
-                conn, pg_conn, self.settings, limit=5
-            )
+            synced = pipeline._sync_postgres_analysis_results(conn, pg_conn, self.settings, limit=5)
 
         self.assertEqual(synced, 1)
         upsert.assert_called_once()

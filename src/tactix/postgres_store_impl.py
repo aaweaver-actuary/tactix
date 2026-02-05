@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from tactix.base_db_store import BaseDbStore
 from tactix.dashboard_query import DashboardQuery
+from tactix.define_base_db_store__db_store import BaseDbStore
 from tactix.fetch_analysis_tactics import fetch_analysis_tactics
 from tactix.fetch_ops_events import fetch_ops_events
 from tactix.fetch_postgres_raw_pgns_summary import fetch_postgres_raw_pgns_summary

@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 from tactix.postgres_status import PostgresStatus
 from tactix.postgres_store_impl import PostgresStore
-from tactix.base_db_store import BaseDbStoreContext
+from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
 from tactix.config import Settings
 from tactix.fetch_analysis_tactics import fetch_analysis_tactics
 from tactix.fetch_ops_events import fetch_ops_events

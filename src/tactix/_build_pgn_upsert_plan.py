@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import cast
 
 from tactix._hash_pgn_text import _hash_pgn_text
-from tactix.base_db_store import BaseDbStore
+from tactix.define_base_db_store__db_store import BaseDbStore
 from tactix.PgnUpsertInputs import PgnUpsertHashing, PgnUpsertInputs, PgnUpsertTimestamps
 from tactix.PgnUpsertPlan import PgnUpsertPlan
 

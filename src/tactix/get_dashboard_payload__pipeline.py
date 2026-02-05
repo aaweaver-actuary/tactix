@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
 from tactix.config import Settings, get_settings
 from tactix.dashboard_query import DashboardQuery
 from tactix.db.duckdb_store import DuckDbStore
+from tactix.define_base_db_store__db_store import BaseDbStore
+from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
 from tactix.pipeline_state__pipeline import logger
 
 

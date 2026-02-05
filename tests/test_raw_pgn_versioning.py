@@ -2,7 +2,8 @@ import tempfile
 from pathlib import Path
 import unittest
 
-from tactix.db.duckdb_store import get_connection, init_schema, upsert_raw_pgns
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.raw_pgn_repository_provider import upsert_raw_pgns
 from tactix.pgn_utils import extract_game_id, split_pgn_chunks
 
 
@@ -11,9 +12,7 @@ class RawPgnVersioningTests(unittest.TestCase):
         tmp_dir = Path(tempfile.mkdtemp())
         conn = get_connection(tmp_dir / "tactix.duckdb")
         init_schema(conn)
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "lichess_rapid_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "lichess_rapid_sample.pgn"
         raw_pgn = split_pgn_chunks(fixture_path.read_text())[0]
         game_id = extract_game_id(raw_pgn)
 

@@ -1,6 +1,6 @@
 import chess
 
-from tactix.tactics_explanation import format_tactic_explanation
+from tactix.format_tactics__explanation import format_tactic_explanation
 
 
 def test_format_tactic_explanation_with_fen_and_legal_move() -> None:

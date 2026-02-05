@@ -8,7 +8,8 @@ import duckdb
 
 from tactix.app.use_cases.pipeline_support import _emit_progress
 from tactix.config import Settings
-from tactix.db.duckdb_store import delete_game_rows, upsert_raw_pgns
+from tactix.db.delete_game_rows import delete_game_rows
+from tactix.db.raw_pgn_repository_provider import raw_pgn_repository
 from tactix.define_pipeline_state__pipeline import ProgressCallback
 from tactix.GameRow import GameRow
 from tactix.ops_event import OpsEvent
@@ -31,6 +32,7 @@ class PersistRawPgnsContext:
 
 def _persist_raw_pgns(context: PersistRawPgnsContext) -> tuple[int, int, int]:
     """Persist raw PGNs and return insert/hash metrics."""
+    repository = raw_pgn_repository(context.conn)
     if context.emit_start:
         _emit_progress(
             context.progress,
@@ -43,11 +45,11 @@ def _persist_raw_pgns(context: PersistRawPgnsContext) -> tuple[int, int, int]:
             context.conn,
             [game["game_id"] for game in context.games_to_process],
         )
-    raw_pgns_inserted = upsert_raw_pgns(context.conn, context.games_to_process)
+    raw_pgns_inserted = repository.upsert_raw_pgns(context.games_to_process)
     hash_metrics = _validate_raw_pgn_hashes(
-        context.conn,
         context.games_to_process,
         context.settings.source,
+        repository.fetch_latest_pgn_hashes,
     )
     raw_pgns_hashed = hash_metrics["computed"]
     raw_pgns_matched = hash_metrics["matched"]

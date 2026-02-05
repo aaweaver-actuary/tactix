@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-from tactix.db.duckdb_store import hash_pgn
+from tactix.db.raw_pgn_repository_provider import hash_pgn
 from tactix.GameRow import GameRow
 from tactix.pipeline_state__pipeline import ZERO_COUNT
 

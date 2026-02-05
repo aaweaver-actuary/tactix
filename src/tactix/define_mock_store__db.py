@@ -6,8 +6,9 @@ from collections.abc import Iterable, Mapping
 from datetime import date, datetime
 from typing import cast
 
-from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
 from tactix.dashboard_query import DashboardQuery, resolve_dashboard_query
+from tactix.define_base_db_store__db_store import BaseDbStore
+from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
 
 
 class MockDbStore(BaseDbStore):

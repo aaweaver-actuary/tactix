@@ -1,5 +1,5 @@
 import tactix.tactics_analyzer as analyzer
-from tactix.tactic_detectors import MotifDetectorSuite
+from tactix.detect_tactics__motifs import MotifDetectorSuite
 
 
 def test_analyzer_uses_detector_suite() -> None:

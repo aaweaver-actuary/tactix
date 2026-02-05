@@ -65,11 +65,8 @@ from tactix.conversion_payload__pipeline import _conversion_payload
 from tactix.convert_raw_pgns_to_positions__pipeline import convert_raw_pgns_to_positions
 from tactix.count_hash_matches__pipeline import _count_hash_matches
 from tactix.DailyAnalysisResult import DailyAnalysisResult
-from tactix.db.duckdb_store import (
-    fetch_latest_pgn_hashes,
-    fetch_position_counts,
-    hash_pgn,
-)
+from tactix.db.duckdb_store import fetch_position_counts
+from tactix.db.raw_pgn_repository_provider import fetch_latest_pgn_hashes, hash_pgn
 from tactix.dedupe_games__pipeline import _dedupe_games
 from tactix.define_pipeline_state__pipeline import (
     ANALYSIS_PROGRESS_BUCKETS,

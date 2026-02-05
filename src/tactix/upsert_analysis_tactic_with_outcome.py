@@ -8,7 +8,7 @@ from psycopg2.extensions import connection as PgConnection  # noqa: N812
 from tactix._delete_existing_analysis import _delete_existing_analysis
 from tactix._insert_analysis_outcome import _insert_analysis_outcome
 from tactix._insert_analysis_tactic import _insert_analysis_tactic
-from tactix.base_db_store import BaseDbStore
+from tactix.define_base_db_store__db_store import BaseDbStore
 
 
 def upsert_analysis_tactic_with_outcome(

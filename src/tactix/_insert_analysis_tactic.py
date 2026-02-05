@@ -1,7 +1,7 @@
 """Insert analysis tactic rows into Postgres."""
 
-from tactix.ANALYSIS_SCHEMA import ANALYSIS_SCHEMA
 from tactix.base_db_store import TacticInsertPlan
+from tactix.define_db_schemas__const import ANALYSIS_SCHEMA
 
 
 def _insert_analysis_tactic(cur, tactic_plan: TacticInsertPlan) -> int:

@@ -32,7 +32,7 @@ def test_direct_file_execution() -> None:
     queue: Queue[object] = Queue()
     job_stream_namespace["_streaming_response"](queue, object())
 
-    runpy.run_path(str(root / "src/tactix/DailySyncStartContext.py"))
-    runpy.run_path(str(root / "src/tactix/FetchProgressContext_1.py"))
+    runpy.run_path(str(root / "src/tactix/sync_contexts.py"))
+    runpy.run_path(str(root / "src/tactix/_normalize_clock_parts.py"))
 
     runpy.run_path(str(root / "src/tactix/dashboard_cache_state__api_cache.py"))

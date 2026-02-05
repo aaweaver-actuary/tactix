@@ -9,16 +9,14 @@ from fastapi.responses import StreamingResponse
 
 
 def test_context_modules_import_and_instantiation() -> None:
-    contexts = importlib.import_module("tactix.DailySyncStartContext")
-    payload_contexts = importlib.import_module("tactix.DailySyncPayloadContext")
-    fetch_progress = importlib.import_module("tactix.FetchProgressContext_1")
+    contexts = importlib.import_module("tactix.sync_contexts")
 
     dummy_settings = object()
     dummy_fetch_context = object()
     dummy_progress = None
     dummy_game_rows: list[object] = []
 
-    payload_contexts.DailySyncPayloadContext(
+    contexts.DailySyncPayloadContext(
         settings=dummy_settings,
         fetch_context=dummy_fetch_context,
         games=dummy_game_rows,
@@ -34,7 +32,7 @@ def test_context_modules_import_and_instantiation() -> None:
         backfill_mode=False,
     )
 
-    fetch_progress.FetchProgressContext(
+    contexts.FetchProgressContext(
         settings=dummy_settings,
         progress=dummy_progress,
         fetch_context=dummy_fetch_context,

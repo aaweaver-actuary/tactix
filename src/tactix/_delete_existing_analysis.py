@@ -1,6 +1,6 @@
 """Delete existing analysis rows for a position."""
 
-from tactix.ANALYSIS_SCHEMA import ANALYSIS_SCHEMA
+from tactix.define_db_schemas__const import ANALYSIS_SCHEMA
 
 
 def _delete_existing_analysis(cur, position_id: int) -> None:

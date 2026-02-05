@@ -7,16 +7,16 @@ from tactix.app.use_cases.pipeline_support import (
     _maybe_emit_window_filtered,
     _resolve_last_timestamp_value,
 )
-from tactix.DailySyncStartContext import (
-    FetchProgressContext,
-    PrepareGamesForSyncContext,
-    WindowFilterContext,
-)
 from tactix.fetch_incremental_games__pipeline import _fetch_incremental_games
 from tactix.FetchContext import FetchContext
 from tactix.filter_games_for_window__pipeline import _filter_games_for_window
 from tactix.GameRow import GameRow
 from tactix.normalize_and_expand_games__pipeline import _normalize_and_expand_games
+from tactix.sync_contexts import (
+    FetchProgressContext,
+    PrepareGamesForSyncContext,
+    WindowFilterContext,
+)
 
 
 def _prepare_games_for_sync(

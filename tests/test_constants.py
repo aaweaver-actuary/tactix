@@ -1,4 +1,4 @@
-from tactix.const import DbSchemas
+from tactix.define_db_schemas__const import DbSchemas
 
 
 def test_db_schemas_defaults() -> None:

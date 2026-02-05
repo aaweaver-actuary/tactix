@@ -5,16 +5,10 @@ from __future__ import annotations
 import importlib
 
 MODULES = [
-    "tactix.DailySyncStartContext",
-    "tactix.FetchProgressContext_1",
-    "tactix.FetchProgressContext_2",
-    "tactix.NoGamesAfterDedupeContext",
-    "tactix.NoGamesAfterDedupePayloadContext",
-    "tactix.NoGamesAfterDedupePayloadContext_1",
-    "tactix.NoGamesContext",
-    "tactix.NoGamesPayloadContext",
-    "tactix.NoGamesPayloadContext_1",
-    "tactix.PGN_SCHEMA",
+    "tactix.sync_contexts",
+    "tactix.define_db_schemas__const",
+    "tactix._normalize_clock_parts",
+    "tactix._match_site_id",
     "tactix.airflow_settings",
     "tactix.dashboard_cache_state__api_cache",
     "tactix.StockfishEngine",

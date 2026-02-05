@@ -3,11 +3,10 @@
 from psycopg2.extensions import connection as PgConnection  # noqa: N812
 
 from tactix._schema_tables import _schema_tables
-from tactix.ANALYSIS_SCHEMA import ANALYSIS_SCHEMA
 from tactix.config import Settings
+from tactix.define_db_schemas__const import ANALYSIS_SCHEMA, PGN_SCHEMA
 from tactix.init_analysis_schema import init_analysis_schema
 from tactix.init_pgn_schema import init_pgn_schema
-from tactix.PGN_SCHEMA import PGN_SCHEMA
 
 
 def _collect_tables(conn: PgConnection, settings: Settings) -> list[str]:

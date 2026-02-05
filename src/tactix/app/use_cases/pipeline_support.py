@@ -8,13 +8,6 @@ from dataclasses import dataclass
 
 from tactix.chess_clients.chesscom_client import write_cursor as write_chesscom_cursor
 from tactix.config import Settings
-from tactix.DailySyncStartContext import (
-    DailySyncStartContext,
-    FetchProgressContext,
-    NoGamesAfterDedupeContext,
-    NoGamesContext,
-    WindowFilterContext,
-)
 from tactix.FetchContext import FetchContext
 from tactix.GameRow import GameRow
 from tactix.infra.clients.lichess_client import write_checkpoint
@@ -34,8 +27,13 @@ from tactix.pipeline_state__pipeline import (
 )
 from tactix.record_ops_event import record_ops_event
 from tactix.sync_contexts import (
+    DailySyncStartContext,
+    FetchProgressContext,
+    NoGamesAfterDedupeContext,
     NoGamesAfterDedupePayloadContext,
+    NoGamesContext,
     NoGamesPayloadContext,
+    WindowFilterContext,
 )
 from tactix.update_metrics_and_version__pipeline import _update_metrics_and_version
 from tactix.utils.normalize_string import normalize_string

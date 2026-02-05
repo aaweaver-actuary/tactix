@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from tactix.DailySyncCompleteContext import DailySyncCompleteContext
 from tactix.ops_event import OpsEvent
 from tactix.record_ops_event import record_ops_event
+from tactix.sync_contexts import DailySyncCompleteContext
 
 
 def _record_daily_sync_complete(

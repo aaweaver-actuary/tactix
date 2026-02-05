@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 
-from tactix.PGN_SCHEMA import PGN_SCHEMA
+from tactix.define_db_schemas__const import PGN_SCHEMA
 from tactix.PgnUpsertPlan import PgnUpsertPlan
 
 

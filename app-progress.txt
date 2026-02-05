@@ -1,3 +1,13 @@
+Session summary (2026-02-05):
+- Consolidated remaining schema/constants/context shims to canonical modules (sync_contexts, define_db_schemas__const, _normalize_clock_parts, _match_site_id).
+- Moved legacy shim modules into review-for-deletion/ and updated tests/imports to canonical modules.
+- Tests run: `make check` (before + after).
+- Before→After map:
+	- src/tactix/ANALYSIS_SCHEMA.py, PGN_SCHEMA.py → review-for-deletion/ANALYSIS_SCHEMA.py, PGN_SCHEMA.py (schema constants now in define_db_schemas__const).
+	- src/tactix/CLOCK_PARTS_FULL.py, CLOCK_PARTS_SHORT.py, SITE_PATTERNS.py → review-for-deletion/ copies (constants now in _normalize_clock_parts/_match_site_id).
+	- src/tactix/DailySyncStartContext.py, DailySyncCompleteContext.py, DailySyncPayloadContext.py, FetchProgressContext*.py, NoGames*Context*.py, no_games_*payload_context*.py, context_exports.py, const.py → review-for-deletion/ copies (call sites now import from sync_contexts/define_db_schemas__const).
+	- tests/* context/schema imports → sync_contexts + define_db_schemas__const.
+
 Session summary (2026-02-04):
 - Updated no-games payload context imports to use `tactix.sync_contexts` and shifted legacy shim modules into review-for-deletion.
 - Tests run: `make check` (before + after).

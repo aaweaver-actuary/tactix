@@ -3,7 +3,7 @@
 from collections.abc import Mapping
 from typing import Any
 
-from tactix.PGN_SCHEMA import PGN_SCHEMA
+from tactix.define_db_schemas__const import PGN_SCHEMA
 
 
 def _fetch_raw_pgn_summary(cur) -> tuple[list[Mapping[str, Any]], Mapping[str, Any]]:

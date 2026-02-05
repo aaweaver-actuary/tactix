@@ -1,1 +1,0 @@
-CLOCK_PARTS_FULL = 3

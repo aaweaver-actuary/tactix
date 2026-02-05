@@ -4,8 +4,8 @@ from typing import Any
 
 from psycopg2.extras import RealDictCursor
 
-from tactix.ANALYSIS_SCHEMA import ANALYSIS_SCHEMA
 from tactix.config import Settings
+from tactix.define_db_schemas__const import ANALYSIS_SCHEMA
 from tactix.init_analysis_schema import init_analysis_schema
 from tactix.postgres_analysis_enabled import postgres_analysis_enabled
 from tactix.postgres_connection import postgres_connection

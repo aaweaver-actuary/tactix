@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from tactix.DailySyncStartContext import (
-    NoGamesAfterDedupeContext,
+from tactix.DailySyncStartContext import NoGamesAfterDedupeContext, NoGamesContext
+from tactix.sync_contexts import (
     NoGamesAfterDedupePayloadContext,
-    NoGamesContext,
     NoGamesPayloadContext,
 )
 from tactix.utils.logger import funclogger

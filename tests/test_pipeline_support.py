@@ -19,13 +19,15 @@ from tactix.DailySyncStartContext import (
     DailySyncStartContext,
     FetchProgressContext,
     NoGamesAfterDedupeContext,
-    NoGamesAfterDedupePayloadContext,
     NoGamesContext,
-    NoGamesPayloadContext,
     WindowFilterContext,
 )
 from tactix.FetchContext import FetchContext
 from tactix.GameRow import GameRow
+from tactix.sync_contexts import (
+    NoGamesAfterDedupePayloadContext,
+    NoGamesPayloadContext,
+)
 from tactix.pipeline_state__pipeline import CHESSCOM_BLACK_PROFILES, LICHESS_BLACK_PROFILES
 
 

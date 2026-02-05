@@ -1,4 +1,11 @@
 Session summary (2026-02-04):
+- Updated no-games payload context imports to use `tactix.sync_contexts` and shifted legacy shim modules into review-for-deletion.
+- Tests run: `make check` (before + after).
+- Before→After map:
+	- src/tactix/NoGamesPayloadContext.py → review-for-deletion/NoGamesPayloadContext.py
+	- src/tactix/NoGamesAfterDedupePayloadContext_1.py → review-for-deletion/NoGamesAfterDedupePayloadContext_1.py
+
+Session summary (2026-02-04):
 - Removed legacy shim modules from src/tactix now that review-for-deletion copies are in place.
 - Call sites already use canonical modules (tactix.dashboard_query_filters, tactix.tactics_search_filters, tactix.postgres_store_impl, tactix.postgres_status, tactix.get_dashboard__api).
 - Tests run: `make check` (before + after).

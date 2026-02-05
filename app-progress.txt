@@ -198,6 +198,15 @@ Session summary (2026-02-05):
 - Updated chess client shims under `chess_clients/` to target infra client implementations.
 - Archived legacy convenience export modules in review-for-deletion/.
 - Tests run: `make check` (green).
+
+Session summary (2026-02-05):
+- Consolidated dashboard query resolution to canonical `resolve_dashboard_query` and shifted tests/patch targets off remaining shim imports.
+- Updated Stockfish test imports/patches to target `StockfishEngine` and `engine_result` directly.
+- Tests run: `make check` (green).
+- Before→After map:
+	- duckdb_store/duckdb_dashboard_repository/test dashboard query resolver → `tactix.dashboard_query.resolve_dashboard_query`.
+	- tests patching `tactix.duckdb_store` → `tactix.db.duckdb_store`.
+	- tests importing/patching `tactix.stockfish_runner` → `tactix.StockfishEngine` + `tactix.engine_result`.
 - Before→After map:
 	- `chesscom_client.py`, `lichess_client.py` → `infra/clients/*.py` and `chess_clients/*` shims.
 	- `postgres_store.py` dynamic import → direct helpers in `postgres_store_impl.py`.

@@ -13,13 +13,12 @@ import duckdb
 from tactix._get_game_result_for_user_from_pgn_headers import (
     _get_game_result_for_user_from_pgn_headers,
 )
-from tactix.dashboard_query import DashboardQuery
+from tactix.dashboard_query import DashboardQuery, resolve_dashboard_query
 from tactix.db._append_date_range_filters import _append_date_range_filters
 from tactix.db._append_optional_filter import _append_optional_filter
 from tactix.db._append_time_control_filter import _append_time_control_filter
 from tactix.db._normalize_filter import _normalize_filter
 from tactix.db._rating_bucket_clause import _rating_bucket_clause
-from tactix.db._resolve_dashboard_query import _resolve_dashboard_query
 from tactix.db._rows_to_dicts import _rows_to_dicts
 from tactix.db.raw_pgns_queries import latest_raw_pgns_query
 from tactix.extract_pgn_metadata import extract_pgn_metadata
@@ -563,7 +562,7 @@ def default_dashboard_repository_dependencies() -> DuckDbDashboardRepositoryDepe
         rating_bucket_clause=_rating_bucket_clause,
     )
     return DuckDbDashboardRepositoryDependencies(
-        resolve_query=_resolve_dashboard_query,
+        resolve_query=resolve_dashboard_query,
         rows_to_dicts=_rows_to_dicts,
         filters=filters,
         builders=builders,

@@ -734,7 +734,7 @@ class DuckdbStoreHelperTests(unittest.TestCase):
 
         _fake_connect.calls = 0
 
-        with patch("tactix.duckdb_store.duckdb.connect", side_effect=_fake_connect):
+        with patch("tactix.db.duckdb_store.duckdb.connect", side_effect=_fake_connect):
             conn = get_connection(db_path)
 
         self.assertIs(conn, connection)

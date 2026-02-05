@@ -72,8 +72,8 @@ def test_resolve_command_uses_shutil_which() -> None:
     engine = StockfishEngine(settings)
 
     with (
-        patch("tactix.stockfish_runner.Path.exists", return_value=False),
-        patch("tactix.stockfish_runner.shutil.which", return_value="/usr/bin/stockfish"),
+        patch("tactix.StockfishEngine.Path.exists", return_value=False),
+        patch("tactix.StockfishEngine.shutil.which", return_value="/usr/bin/stockfish"),
     ):
         resolved = engine._resolve_command()
 

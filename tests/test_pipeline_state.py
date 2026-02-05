@@ -1190,7 +1190,7 @@ class PipelineStateTests(unittest.TestCase):
                 raise chess.engine.EngineTerminatedError("simulated crash")
             return original_analyse(self, board)
 
-        with patch("tactix.stockfish_runner.StockfishEngine.analyse", new=crash_once):
+        with patch("tactix.StockfishEngine.StockfishEngine.analyse", new=crash_once):
             with self.assertRaises(chess.engine.EngineTerminatedError):
                 run_daily_game_sync(settings)
 

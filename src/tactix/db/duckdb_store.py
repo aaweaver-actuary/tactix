@@ -10,6 +10,7 @@ import duckdb
 from tactix.dashboard_query import (
     DashboardQuery,
     clone_dashboard_query,
+    resolve_dashboard_query,
 )
 from tactix.db._build_legacy_raw_pgn_inserts import _build_legacy_raw_pgn_inserts
 from tactix.db._drop_table_if_exists import _drop_table_if_exists
@@ -22,7 +23,6 @@ from tactix.db._migration_add_training_attempt_latency import (
 )
 from tactix.db._migration_base_tables import _migration_base_tables
 from tactix.db._migration_raw_pgns_versioning import _migration_raw_pgns_versioning
-from tactix.db._resolve_dashboard_query import _resolve_dashboard_query
 from tactix.db.duckdb_dashboard_reader import (
     DuckDbDashboardDependencies,
     DuckDbDashboardFetchers,
@@ -295,7 +295,7 @@ class DuckDbStore(BaseDbStore):
             conn,
             user=self.settings.user,
             dependencies=DuckDbDashboardDependencies(
-                resolve_query=_resolve_dashboard_query,
+                resolve_query=resolve_dashboard_query,
                 clone_query=clone_dashboard_query,
                 fetchers=DuckDbDashboardFetchers(
                     metrics=_metrics_fetcher,

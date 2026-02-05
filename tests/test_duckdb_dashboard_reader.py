@@ -5,8 +5,7 @@ import unittest
 from pathlib import Path
 
 from tactix.config import Settings
-from tactix.dashboard_query import DashboardQuery, clone_dashboard_query
-from tactix.db._resolve_dashboard_query import _resolve_dashboard_query
+from tactix.dashboard_query import DashboardQuery, clone_dashboard_query, resolve_dashboard_query
 from tactix.db.duckdb_dashboard_reader import (
     DuckDbDashboardDependencies,
     DuckDbDashboardFetchers,
@@ -94,7 +93,7 @@ class DuckDbDashboardReaderTests(unittest.TestCase):
 
     def _build_reader(self) -> DuckDbDashboardReader:
         dependencies = DuckDbDashboardDependencies(
-            resolve_query=_resolve_dashboard_query,
+            resolve_query=resolve_dashboard_query,
             clone_query=clone_dashboard_query,
             fetchers=DuckDbDashboardFetchers(
                 metrics=fetch_metrics,

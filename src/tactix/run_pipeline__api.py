@@ -11,12 +11,11 @@ from fastapi import Depends, HTTPException
 from tactix.coerce_date_to_datetime__datetime import _coerce_date_to_datetime
 from tactix.config import get_settings
 from tactix.dashboard_query import DashboardQuery
-from tactix.db.duckdb_store import (
+from tactix.db.dashboard_repository_provider import (
     fetch_opportunity_motif_counts,
     fetch_pipeline_table_counts,
-    get_connection,
-    init_schema,
 )
+from tactix.db.duckdb_store import get_connection, init_schema
 from tactix.list_sources_for_cache_refresh__api_cache import _sources_for_cache_refresh
 from tactix.normalize_source__source import _normalize_source
 from tactix.pipeline import run_daily_game_sync

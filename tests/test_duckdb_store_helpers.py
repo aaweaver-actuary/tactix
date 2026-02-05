@@ -10,14 +10,16 @@ from tactix.config import Settings
 from tactix.db._append_date_range_filters import _append_date_range_filters
 from tactix.db._normalize_filter import _normalize_filter
 from tactix.db._rating_bucket_clause import _rating_bucket_clause
+from tactix.db.dashboard_repository_provider import (
+    fetch_metrics,
+    fetch_recent_positions,
+    fetch_recent_tactics,
+)
 from tactix.db.duckdb_store import (
     DuckDbStore,
     _ensure_raw_pgns_versioned,
-    fetch_metrics,
     fetch_position_counts,
     fetch_positions_for_games,
-    fetch_recent_positions,
-    fetch_recent_tactics,
     get_connection,
     init_schema,
     insert_positions,

@@ -9,7 +9,8 @@ from fastapi import Depends, Query
 from tactix.coerce_date_to_datetime__datetime import _coerce_date_to_datetime
 from tactix.config import get_settings
 from tactix.dashboard_query import DashboardQuery
-from tactix.db.duckdb_store import fetch_recent_tactics, get_connection, init_schema
+from tactix.db.dashboard_repository_provider import fetch_recent_tactics
+from tactix.db.duckdb_store import get_connection, init_schema
 from tactix.normalize_source__source import _normalize_source
 from tactix.tactics_search_filters import TacticsSearchFilters
 

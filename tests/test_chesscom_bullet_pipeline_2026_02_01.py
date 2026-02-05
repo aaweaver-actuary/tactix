@@ -12,7 +12,8 @@ import chess
 import pytest
 
 from tactix.config import Settings
-from tactix.db.duckdb_store import fetch_recent_games, get_connection
+from tactix.db.dashboard_repository_provider import fetch_recent_games
+from tactix.db.duckdb_store import get_connection
 from tactix.db.tactic_repository_provider import tactic_repository
 from tactix.define_chess_game__chess_game import ChessGame
 from tactix.pgn_utils import extract_last_timestamp_ms, split_pgn_chunks

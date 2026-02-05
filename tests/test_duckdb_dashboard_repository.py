@@ -9,13 +9,15 @@ from tactix.db.duckdb_dashboard_repository import (
     DuckDbDashboardRepository,
     default_dashboard_repository_dependencies,
 )
-from tactix.db.duckdb_store import (
+from tactix.db.dashboard_repository_provider import (
     fetch_metrics,
     fetch_opportunity_motif_counts,
     fetch_pipeline_table_counts,
     fetch_recent_games,
     fetch_recent_positions,
     fetch_recent_tactics,
+)
+from tactix.db.duckdb_store import (
     get_connection,
     init_schema,
     insert_positions,

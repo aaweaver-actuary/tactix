@@ -7,7 +7,7 @@ from importlib import import_module
 # pylint: disable=broad-exception-caught
 from tactix.config import Settings
 from tactix.dashboard_query import DashboardQuery
-from tactix.db.duckdb_store import fetch_recent_tactics
+from tactix.db.dashboard_repository_provider import fetch_recent_tactics
 from tactix.define_pipeline_state__pipeline import DEFAULT_SYNC_LIMIT, logger
 
 

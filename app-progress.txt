@@ -1,4 +1,13 @@
 Session summary (2026-02-05):
+- Added dashboard_repository_provider with dashboard/metrics fetch wrappers and unit coverage, then migrated dashboard/metrics call sites off duckdb_store.
+- Updated APIs/pipelines/tests to call provider fetchers; removed duckdb_store dashboard/metrics wrappers to shrink the store surface.
+- Tests run: `make check` (green; existing Vitest act() warnings and pycycle .venv parse warning).
+- Before→After map:
+	- duckdb_store dashboard/metrics wrappers (fetch_* + motif/trend stats) → dashboard_repository_provider fetchers + direct repository access.
+	- run_pipeline__api/get_dashboard_summary__api/get_tactics_search__api/sync_postgres_analysis_results__pipeline/run_refresh_metrics__pipeline/motif_stats/trend_stats → dashboard_repository_provider imports.
+	- tests/test_dashboard_repository_provider.py added; dashboard/metrics-related tests now import provider fetchers.
+
+Session summary (2026-02-05):
 - Consolidated remaining shim modules for tactics analysis, position extraction, pipeline state, and DuckDB helpers into canonical modules; archived shims in review-for-deletion and updated imports/tests.
 - Updated position extractor tests and debug scripts to use canonical helpers and patch targets.
 - Tests run: `make check` (green; existing vitest act() warnings unchanged).

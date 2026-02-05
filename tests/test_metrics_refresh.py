@@ -3,9 +3,8 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from tactix.db.dashboard_repository_provider import fetch_metrics, fetch_motif_stats
 from tactix.db.duckdb_store import (
-    fetch_metrics,
-    fetch_motif_stats,
     get_connection,
     init_schema,
     insert_positions,

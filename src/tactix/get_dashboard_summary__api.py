@@ -10,7 +10,8 @@ from fastapi import Depends, Query
 from tactix._resolve_dashboard_filters import _resolve_dashboard_filters
 from tactix.dashboard_query import DashboardQuery
 from tactix.dashboard_query_filters import DashboardQueryFilters
-from tactix.db.duckdb_store import fetch_pipeline_table_counts, get_connection, init_schema
+from tactix.db.dashboard_repository_provider import fetch_pipeline_table_counts
+from tactix.db.duckdb_store import get_connection, init_schema
 
 
 def dashboard_summary(  # pragma: no cover

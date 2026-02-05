@@ -422,36 +422,6 @@ def _ensure_column(
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
 
-def fetch_pipeline_table_counts(
-    conn: duckdb.DuckDBPyConnection,
-    query: DashboardQuery | str | None = None,
-    *,
-    filters: DashboardQuery | None = None,
-    **legacy: object,
-) -> dict[str, int]:
-    """Return per-table counts for pipeline verification."""
-    return _dashboard_repository(conn).fetch_pipeline_table_counts(
-        query,
-        filters=filters,
-        **legacy,
-    )
-
-
-def fetch_opportunity_motif_counts(
-    conn: duckdb.DuckDBPyConnection,
-    query: DashboardQuery | str | None = None,
-    *,
-    filters: DashboardQuery | None = None,
-    **legacy: object,
-) -> dict[str, int]:
-    """Return motif counts for opportunities in the dashboard range."""
-    return _dashboard_repository(conn).fetch_opportunity_motif_counts(
-        query,
-        filters=filters,
-        **legacy,
-    )
-
-
 def fetch_position_counts(
     conn: duckdb.DuckDBPyConnection,
     game_ids: list[str],
@@ -820,45 +790,6 @@ def _build_time_trouble_row(
     )
 
 
-def fetch_metrics(
-    conn: duckdb.DuckDBPyConnection,
-    query: DashboardQuery | str | None = None,
-    *,
-    filters: DashboardQuery | None = None,
-    **legacy: object,
-) -> list[dict[str, object]]:
-    """Fetch metrics summary rows with optional filters."""
-    return _dashboard_repository(conn).fetch_metrics(
-        query,
-        filters=filters,
-        **legacy,
-    )
-
-
-def fetch_motif_stats(
-    conn: duckdb.DuckDBPyConnection,
-    query: DashboardQuery | str | None = None,
-    *,
-    filters: DashboardQuery | None = None,
-    **legacy: object,
-) -> list[dict[str, object]]:
-    """Return motif breakdown metrics."""
-    rows = fetch_metrics(conn, query, filters=filters, **legacy)
-    return [row for row in rows if row.get("metric_type") == "motif_breakdown"]
-
-
-def fetch_trend_stats(
-    conn: duckdb.DuckDBPyConnection,
-    query: DashboardQuery | str | None = None,
-    *,
-    filters: DashboardQuery | None = None,
-    **legacy: object,
-) -> list[dict[str, object]]:
-    """Return trend metrics rows."""
-    rows = fetch_metrics(conn, query, filters=filters, **legacy)
-    return [row for row in rows if row.get("metric_type") == "trend"]
-
-
 def write_metrics_version(conn: duckdb.DuckDBPyConnection) -> int:
     """Increment and persist the metrics version."""
     current = fetch_version(conn)
@@ -868,50 +799,6 @@ def write_metrics_version(conn: duckdb.DuckDBPyConnection) -> int:
         [new_version],
     )
     return new_version
-
-
-def fetch_recent_games(
-    conn: duckdb.DuckDBPyConnection,
-    query: DashboardQuery | str | None = None,
-    *,
-    limit: int = 20,
-    user: str | None = None,
-    **legacy: object,
-) -> list[dict[str, object]]:
-    return _dashboard_repository(conn).fetch_recent_games(
-        query,
-        limit=limit,
-        user=user,
-        **legacy,
-    )
-
-
-def fetch_recent_positions(
-    conn: duckdb.DuckDBPyConnection,
-    query: DashboardQuery | str | None = None,
-    *,
-    limit: int = 20,
-    **legacy: object,
-) -> list[dict[str, object]]:
-    return _dashboard_repository(conn).fetch_recent_positions(
-        query,
-        limit=limit,
-        **legacy,
-    )
-
-
-def fetch_recent_tactics(
-    conn: duckdb.DuckDBPyConnection,
-    query: DashboardQuery | str | None = None,
-    *,
-    limit: int = 20,
-    **legacy: object,
-) -> list[dict[str, object]]:
-    return _dashboard_repository(conn).fetch_recent_tactics(
-        query,
-        limit=limit,
-        **legacy,
-    )
 
 
 def fetch_version(conn: duckdb.DuckDBPyConnection) -> int:

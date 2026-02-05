@@ -12,12 +12,14 @@ from tactix.db.duckdb_dashboard_reader import (
     DuckDbDashboardFetchers,
     DuckDbDashboardReader,
 )
-from tactix.db.duckdb_store import (
-    DuckDbStore,
+from tactix.db.dashboard_repository_provider import (
     fetch_metrics,
     fetch_recent_games,
     fetch_recent_positions,
     fetch_recent_tactics,
+)
+from tactix.db.duckdb_store import (
+    DuckDbStore,
     fetch_version,
     get_connection,
     init_schema,

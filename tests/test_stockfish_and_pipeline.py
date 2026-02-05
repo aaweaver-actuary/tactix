@@ -6,12 +6,12 @@ import unittest
 import chess
 
 from tactix.config import Settings
-from tactix.db.duckdb_store import (
-    get_connection,
+from tactix.db.dashboard_repository_provider import (
     fetch_metrics,
     fetch_recent_positions,
     fetch_recent_tactics,
 )
+from tactix.db.duckdb_store import get_connection
 from tactix.pipeline import run_daily_game_sync
 from tactix.StockfishEngine import StockfishEngine
 

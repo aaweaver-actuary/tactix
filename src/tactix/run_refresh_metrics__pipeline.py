@@ -5,8 +5,8 @@ from __future__ import annotations
 from tactix.app.use_cases.pipeline_support import _emit_progress
 from tactix.config import Settings, get_settings
 from tactix.dashboard_query import DashboardQuery
+from tactix.db.dashboard_repository_provider import fetch_metrics
 from tactix.db.duckdb_store import (
-    fetch_metrics,
     get_connection,
     init_schema,
     update_metrics_summary,

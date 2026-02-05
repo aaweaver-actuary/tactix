@@ -5,7 +5,7 @@ import chess
 
 from tactix.config import Settings
 from tactix.StockfishEngine import StockfishEngine
-from tactix.tactics_analyzer import analyze_position
+from tactix.analyze_position import analyze_position
 
 BASE_FEN = "6k1/4qp2/3p4/8/2B5/5N2/4R3/6K1 w - - 0 1"
 

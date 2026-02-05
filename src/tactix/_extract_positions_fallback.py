@@ -8,7 +8,7 @@ from tactix.extractor_context import ExtractorRequest
 
 def _resolve_position_extractor() -> object | None:
     try:
-        return importlib.import_module("tactix.position_extractor")
+        return importlib.import_module("tactix.extract_positions__pgn")
     except ImportError:  # pragma: no cover - optional dependency in some environments
         return None
 

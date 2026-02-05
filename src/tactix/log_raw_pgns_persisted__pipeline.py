@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from tactix.config import Settings
+from tactix.define_pipeline_state__pipeline import logger
 from tactix.GameRow import GameRow
-from tactix.pipeline_state__pipeline import logger
 
 
 def _log_raw_pgns_persisted(

@@ -8,6 +8,14 @@ from dataclasses import dataclass
 
 from tactix.chess_clients.chesscom_client import write_cursor as write_chesscom_cursor
 from tactix.config import Settings
+from tactix.define_pipeline_state__pipeline import (
+    CHESSCOM_BLACK_PROFILES,
+    INDEX_OFFSET,
+    LICHESS_BLACK_PROFILES,
+    ZERO_COUNT,
+    ProgressCallback,
+    logger,
+)
 from tactix.FetchContext import FetchContext
 from tactix.GameRow import GameRow
 from tactix.infra.clients.lichess_client import write_checkpoint
@@ -17,14 +25,6 @@ from tactix.no_games_payload_contexts import (
     build_no_games_payload_context,
 )
 from tactix.ops_event import OpsEvent
-from tactix.pipeline_state__pipeline import (
-    CHESSCOM_BLACK_PROFILES,
-    INDEX_OFFSET,
-    LICHESS_BLACK_PROFILES,
-    ZERO_COUNT,
-    ProgressCallback,
-    logger,
-)
 from tactix.record_ops_event import record_ops_event
 from tactix.sync_contexts import (
     DailySyncStartContext,

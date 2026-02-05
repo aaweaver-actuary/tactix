@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from typing import cast
 
 from tactix.config import Settings
+from tactix.define_pipeline_state__pipeline import ProgressCallback
 from tactix.FetchContext import FetchContext
 from tactix.GameRow import GameRow
-from tactix.pipeline_state__pipeline import ProgressCallback
 from tactix.ports.game_source_client import GameSourceClient
 
 

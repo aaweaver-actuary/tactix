@@ -26,7 +26,10 @@ from tactix.sync_contexts import (
 )
 from tactix.FetchContext import FetchContext
 from tactix.GameRow import GameRow
-from tactix.pipeline_state__pipeline import CHESSCOM_BLACK_PROFILES, LICHESS_BLACK_PROFILES
+from tactix.define_pipeline_state__pipeline import (
+    CHESSCOM_BLACK_PROFILES,
+    LICHESS_BLACK_PROFILES,
+)
 
 
 def _sample_game(last_timestamp_ms: int) -> GameRow:

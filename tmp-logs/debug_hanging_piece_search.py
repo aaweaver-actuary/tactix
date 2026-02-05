@@ -5,7 +5,7 @@ import chess
 
 from tactix.config import Settings
 from tactix.StockfishEngine import StockfishEngine
-from tactix.tactics_analyzer import analyze_position
+from tactix.analyze_position import analyze_position
 
 
 def find_missed_hanging_moves(fen: str) -> list[tuple[str, str, str]]:

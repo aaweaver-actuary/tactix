@@ -1,4 +1,15 @@
 Session summary (2026-02-05):
+- Consolidated remaining shim modules for tactics analysis, position extraction, pipeline state, and DuckDB helpers into canonical modules; archived shims in review-for-deletion and updated imports/tests.
+- Updated position extractor tests and debug scripts to use canonical helpers and patch targets.
+- Tests run: `make check` (green; existing vitest act() warnings unchanged).
+- Before→After map:
+	- src/tactix/tactics_analyzer.py → review-for-deletion/tactics_analyzer.py (callers now import analyze_position/analyze_tactics__positions/_is_profile_in).
+	- src/tactix/position_extractor.py → review-for-deletion/position_extractor.py (tests now import canonical helper modules).
+	- src/tactix/mock_db_store.py → review-for-deletion/mock_db_store.py (tests import define_mock_store__db.MockDbStore).
+	- src/tactix/pipeline_state__pipeline.py → review-for-deletion/pipeline_state__pipeline.py (imports now from define_pipeline_state__pipeline).
+	- src/tactix/db/get_connection.py, src/tactix/db/init_schema.py, src/tactix/db/fetch_metrics.py → review-for-deletion/db/* (callers now use duckdb_store).
+
+Session summary (2026-02-05):
 - Migrated practice queue/next, practice attempt, and game detail APIs plus related tests off duckdb_store wrappers to DuckDbTacticRepository via the new tactic_repository_provider factory.
 - Removed duckdb_store practice/game-detail wrappers; call sites now instantiate repositories directly with explicit dependencies.
 - Updated practice pipeline/practice grading tests to use repository methods; API tests patch tactic_repository instead of duckdb_store functions.

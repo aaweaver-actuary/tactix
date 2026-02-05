@@ -3,8 +3,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from tactix.db.raw_pgn_repository_provider import hash_pgn
+from tactix.define_pipeline_state__pipeline import ZERO_COUNT
 from tactix.GameRow import GameRow
-from tactix.pipeline_state__pipeline import ZERO_COUNT
 
 
 def _should_skip_backfill(

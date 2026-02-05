@@ -5,7 +5,7 @@ from __future__ import annotations
 from tactix.app.use_cases.pipeline_support import _emit_progress
 from tactix.config import Settings, get_settings
 from tactix.db.duckdb_store import get_connection, get_schema_version, migrate_schema
-from tactix.pipeline_state__pipeline import ProgressCallback
+from tactix.define_pipeline_state__pipeline import ProgressCallback
 
 
 def run_migrations(

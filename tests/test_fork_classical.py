@@ -14,7 +14,7 @@ from tactix.db.tactic_repository_provider import tactic_repository
 from tactix.pgn_utils import split_pgn_chunks
 from tactix.extract_positions import extract_positions
 from tactix.StockfishEngine import StockfishEngine
-from tactix.tactics_analyzer import analyze_position
+from tactix.analyze_position import analyze_position
 
 
 class TestForkClassical(unittest.TestCase):

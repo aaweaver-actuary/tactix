@@ -10,7 +10,7 @@ from tactix.chess_clients.chess_game_row import ChessGameRow
 from tactix.config import Settings
 from tactix.utils.logger import Logger
 from tactix.chess_clients.mock_chess_client import MockChessClient
-from tactix.mock_db_store import MockDbStore
+from tactix.define_mock_store__db import MockDbStore
 from tactix.pipeline import get_dashboard_payload
 
 

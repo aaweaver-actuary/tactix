@@ -9,7 +9,7 @@ from tactix.config import Settings
 from tactix.DailySyncStartContext import DailyGameSyncRequest
 from tactix.legacy_args import apply_legacy_args, apply_legacy_kwargs, init_legacy_values
 from tactix.pipeline import run_daily_game_sync, run_migrations, run_refresh_metrics
-from tactix.pipeline_state__pipeline import ProgressCallback
+from tactix.define_pipeline_state__pipeline import ProgressCallback
 from tactix.raise_unsupported_job__api_jobs import _raise_unsupported_job
 from tactix.run_airflow_daily_sync_job__job_stream import _run_airflow_daily_sync_job
 from tactix.stream_job_context import (

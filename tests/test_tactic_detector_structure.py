@@ -1,4 +1,4 @@
-import tactix.tactics_analyzer as analyzer
+import tactix.analyze_tactics__positions as analyzer
 from tactix.detect_tactics__motifs import MotifDetectorSuite
 
 

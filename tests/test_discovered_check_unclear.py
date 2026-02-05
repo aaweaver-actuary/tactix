@@ -17,7 +17,7 @@ from tactix.db.duckdb_store import (
 )
 from tactix.engine_result import EngineResult
 from tactix.pgn_utils import split_pgn_chunks
-from tactix.tactics_analyzer import analyze_position
+from tactix.analyze_position import analyze_position
 
 
 def _first_move_position(chunk: str, game_id: str) -> dict[str, object] | None:

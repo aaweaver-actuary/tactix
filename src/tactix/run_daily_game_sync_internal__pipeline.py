@@ -13,8 +13,7 @@ from tactix.app.use_cases.pipeline_support import (
 )
 from tactix.apply_backfill_filter__pipeline import _apply_backfill_filter
 from tactix.build_daily_sync_payload__pipeline import _build_daily_sync_payload
-from tactix.db.get_connection import get_connection
-from tactix.db.init_schema import init_schema
+from tactix.db.duckdb_store import get_connection, init_schema
 from tactix.is_backfill_mode__pipeline import _is_backfill_mode
 from tactix.log_raw_pgns_persisted__pipeline import _log_raw_pgns_persisted
 from tactix.prepare_analysis_inputs__pipeline import _prepare_analysis_inputs

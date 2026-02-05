@@ -12,7 +12,7 @@ from tactix.db.duckdb_store import (
     update_metrics_summary,
     write_metrics_version,
 )
-from tactix.pipeline_state__pipeline import ProgressCallback
+from tactix.define_pipeline_state__pipeline import ProgressCallback
 
 
 def run_refresh_metrics(

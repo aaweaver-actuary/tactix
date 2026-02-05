@@ -21,6 +21,7 @@ from tactix.check_airflow_enabled__airflow_settings import _airflow_enabled
 from tactix.config import Settings, get_settings
 from tactix.dashboard_query import DashboardQuery
 from tactix.dashboard_query_filters import DashboardQueryFilters
+from tactix.define_pipeline_state__pipeline import ProgressCallback
 from tactix.ensure_airflow_success__airflow_jobs import _ensure_airflow_success
 from tactix.format_sse__api_streaming import _format_sse
 from tactix.get_airflow_state__airflow_jobs import _airflow_state
@@ -33,7 +34,6 @@ from tactix.pipeline import (
     run_migrations,
     run_refresh_metrics,
 )
-from tactix.pipeline_state__pipeline import ProgressCallback
 from tactix.raise_unsupported_job__api_jobs import _raise_unsupported_job
 from tactix.refresh_dashboard_cache_async__api_cache import _refresh_dashboard_cache_async
 from tactix.resolve_backfill_end_ms__airflow_jobs import _resolve_backfill_end_ms

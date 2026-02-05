@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import duckdb
 
 from tactix.config import Settings
-from tactix.pipeline_state__pipeline import ProgressCallback
+from tactix.define_pipeline_state__pipeline import ProgressCallback
 from tactix.StockfishEngine import StockfishEngine
 
 

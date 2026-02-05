@@ -15,7 +15,7 @@ from tactix.db.duckdb_store import (
 )
 from tactix.pgn_utils import split_pgn_chunks
 from tactix.StockfishEngine import StockfishEngine
-from tactix.tactics_analyzer import analyze_position
+from tactix.analyze_position import analyze_position
 
 
 def _hanging_piece_fixture_position() -> dict[str, object]:

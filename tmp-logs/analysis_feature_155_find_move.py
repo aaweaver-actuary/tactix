@@ -5,7 +5,7 @@ import chess
 
 from tactix.config import DEFAULT_BULLET_STOCKFISH_DEPTH, Settings
 from tactix.StockfishEngine import StockfishEngine
-from tactix.tactics_analyzer import analyze_position
+from tactix.analyze_position import analyze_position
 
 FEN = "r6r/1b3pk1/p2p2p1/1p1Pp2p/4PP1q/2Pn2NP/BP3QPN/5RK1 w - - 3 35"
 

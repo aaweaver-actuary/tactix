@@ -11,7 +11,7 @@ from tactix.db.duckdb_store import (
     upsert_tactic_with_outcome,
 )
 from tactix.StockfishEngine import StockfishEngine
-from tactix.tactics_analyzer import analyze_position
+from tactix.analyze_position import analyze_position
 from tests.fixture_helpers import (
     hanging_piece_fixture_position,
     hanging_piece_high_fixture_position,

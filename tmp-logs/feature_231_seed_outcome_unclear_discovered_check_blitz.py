@@ -14,7 +14,7 @@ from tactix.db.duckdb_store import (
 )
 from tactix.engine_result import EngineResult
 from tactix.pgn_utils import split_pgn_chunks
-from tactix.tactics_analyzer import analyze_position
+from tactix.analyze_position import analyze_position
 from _seed_helpers import _ensure_position
 
 

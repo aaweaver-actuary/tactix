@@ -7,7 +7,7 @@ from typing import cast
 
 from tactix.config import Settings
 from tactix.FetchContext import FetchContext
-from tactix.lichess_client import LichessFetchRequest, read_checkpoint
+from tactix.infra.clients.lichess_client import LichessFetchRequest, read_checkpoint
 from tactix.pipeline_state__pipeline import ZERO_COUNT
 from tactix.ports.game_source_client import GameSourceClient
 

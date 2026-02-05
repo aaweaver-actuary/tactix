@@ -17,8 +17,8 @@ from tactix.DailySyncStartContext import (
 )
 from tactix.FetchContext import FetchContext
 from tactix.GameRow import GameRow
+from tactix.infra.clients.lichess_client import write_checkpoint
 from tactix.latest_timestamp import latest_timestamp
-from tactix.lichess_client import write_checkpoint
 from tactix.no_games_payload_contexts import (
     build_no_games_after_dedupe_payload_context,
     build_no_games_payload_context,

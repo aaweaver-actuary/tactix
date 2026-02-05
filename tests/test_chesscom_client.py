@@ -495,7 +495,7 @@ class ChesscomClientTests(unittest.TestCase):
             return FakeResponse(json_data={"games": [], "next_page": "https://example.com/loop"})
 
         with patch(
-            "tactix.chesscom_client.ChesscomClient._get_with_backoff",
+            "tactix.infra.clients.chesscom_client.ChesscomClient._get_with_backoff",
             side_effect=fake_get,
         ) as backoff:
             games = _fetch_archive_pages(settings, "https://example.com/loop")
@@ -516,14 +516,14 @@ class ChesscomClientTests(unittest.TestCase):
         settings.apply_source_defaults()
 
         with patch(
-            "tactix.chesscom_client.ChesscomClient._get_with_backoff",
+            "tactix.infra.clients.chesscom_client.ChesscomClient._get_with_backoff",
             side_effect=RuntimeError("boom"),
         ):
             fallback_games = _fetch_remote_games(settings, since_ms=0)
         self.assertGreaterEqual(len(fallback_games), 1)
 
         with patch(
-            "tactix.chesscom_client.ChesscomClient._get_with_backoff",
+            "tactix.infra.clients.chesscom_client.ChesscomClient._get_with_backoff",
             return_value=FakeResponse(json_data={"archives": []}),
         ):
             empty = _fetch_remote_games(settings, since_ms=0)

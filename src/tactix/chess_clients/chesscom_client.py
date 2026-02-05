@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import tactix.chesscom_client as _legacy
 from tactix.chess_clients.base_chess_client import (
     ChessFetchRequest as ChesscomFetchRequest,
 )
@@ -12,6 +11,7 @@ from tactix.chess_clients.base_chess_client import (
     ChessFetchResult as ChesscomFetchResult,
 )
 from tactix.errors import RateLimitError
+from tactix.infra.clients import chesscom_client as _legacy
 
 CHESSCOM_PUBLIC_EXPORTS = _legacy.CHESSCOM_PUBLIC_EXPORTS
 
@@ -43,7 +43,23 @@ __all__ += [
 ]
 
 _EXPORT_BINDINGS = (
-    *_legacy._EXPORT_BINDINGS,
+    ARCHIVES_URL,
+    ChesscomClient,
+    ChesscomClientContext,
+    _auth_headers,
+    _build_cursor,
+    _fetch_archive_pages,
+    _fetch_remote_games,
+    _filter_by_cursor,
+    _get_with_backoff,
+    _load_fixture_games,
+    _next_page_url,
+    _parse_cursor,
+    _parse_retry_after,
+    fetch_incremental_games,
+    read_cursor,
+    to_int,
+    write_cursor,
     ChesscomFetchRequest,
     ChesscomFetchResult,
     ChesscomRateLimitError,

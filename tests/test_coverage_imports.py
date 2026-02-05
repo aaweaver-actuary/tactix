@@ -17,7 +17,7 @@ MODULES = [
     "tactix.PGN_SCHEMA",
     "tactix.airflow_settings",
     "tactix.dashboard_cache_state__api_cache",
-    "tactix.stockfish_engine",
+    "tactix.StockfishEngine",
     "tactix.stockfish_runner",
 ]
 

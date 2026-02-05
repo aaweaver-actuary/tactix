@@ -1,6 +1,5 @@
 """Build PGN upsert plans from raw rows."""
 
-import importlib
 from collections.abc import Callable, Mapping
 from datetime import datetime
 from typing import cast
@@ -11,19 +10,8 @@ from tactix.PgnUpsertInputs import PgnUpsertHashing, PgnUpsertInputs, PgnUpsertT
 from tactix.PgnUpsertPlan import PgnUpsertPlan
 
 
-def _resolve_postgres_store() -> object | None:
-    try:
-        return importlib.import_module("tactix.postgres_store")
-    except ImportError:  # pragma: no cover - optional dependency in some environments
-        return None
-
-
-def _resolve_hash_pgn__pgn_upsert_plan(
-    postgres_store: object | None,
-) -> Callable[[str], str]:
-    if postgres_store is None:
-        return _hash_pgn_text
-    return getattr(postgres_store, "_hash_pgn_text", _hash_pgn_text)
+def _resolve_hash_pgn__pgn_upsert_plan() -> Callable[[str], str]:
+    return _hash_pgn_text
 
 
 def _build_pgn_upsert_hashing__pgn_upsert_plan(
@@ -67,7 +55,7 @@ def _build_pgn_upsert_plan(
     latest_version: int,
 ) -> PgnUpsertPlan | None:
     """Return a PGN upsert plan for the given raw row."""
-    hash_pgn = _resolve_hash_pgn__pgn_upsert_plan(_resolve_postgres_store())
+    hash_pgn = _resolve_hash_pgn__pgn_upsert_plan()
     inputs = _build_pgn_upsert_inputs__pgn_upsert_plan(
         row,
         latest_hash,

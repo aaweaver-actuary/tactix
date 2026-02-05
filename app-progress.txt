@@ -97,3 +97,13 @@ Session summary (2026-02-04):
 - Before→After map:
 	- stream_jobs__api / stream_job_* / streaming_response__job_stream → `job_stream.py`.
 	- Airflow trigger context → `airflow_daily_sync_context.py`.
+
+Session summary (2026-02-05):
+- Consolidated convenience export shims to canonical modules for chess clients, Postgres helpers, Stockfish, and Airflow helpers.
+- Updated chess client shims under `chess_clients/` to target infra client implementations.
+- Archived legacy convenience export modules in review-for-deletion/.
+- Tests run: `make check` (green).
+- Before→After map:
+	- `chesscom_client.py`, `lichess_client.py` → `infra/clients/*.py` and `chess_clients/*` shims.
+	- `postgres_store.py` dynamic import → direct helpers in `postgres_store_impl.py`.
+	- `stockfish_engine.py`, `airflow_client.py` → direct module imports.

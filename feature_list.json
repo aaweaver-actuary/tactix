@@ -1,6 +1,154 @@
 [
   {
     "category": "functional",
+    "description": "Tactic detection is fully object-driven: detectors are pure strategy objects, coordinated by a single TacticDetectionService, with no DB/HTTP dependencies in detectors",
+    "steps": [
+      "Step 1: Identify the canonical detector interface (Protocol/ABC) (e.g., ports/tactics.py:TacticDetector or domain/tactics/TacticDetector) and confirm all detectors implement it (e.g., HangingPieceDetector, MateDetector, ForkDetector, PinDetector, SkewerDetector)",
+      "Step 2: Verify each detector exposes a single intent method (e.g., detect(ctx) -> list[TacticFinding]) and does not accept DB handles, sessions, repositories, HTTP clients, or FastAPI dependencies as parameters",
+      "Step 3: Verify detectors return domain results (e.g., TacticFinding objects) and never return HTTP-shaped payloads or DB row dicts",
+      "Step 4: Verify a single coordinating service exists (e.g., app/services/TacticDetectionService or similar) that owns: detector list composition, ordering, filtering, deduplication, and conversion mapping",
+      "Step 5: Verify the pipeline/use-case calls only the coordinating service (not individual detectors) to compute opportunities for a position batch",
+      "Step 6: Verify persistence of detected tactics is performed by repositories (e.g., TacticRepository) and not inside detectors or the coordinating service unless explicitly the service’s single responsibility is persistence",
+      "Step 7: Verify unit tests exist that run detectors in isolation with small in-memory position contexts (no DB, no FastAPI app boot) and assert stable findings for known FEN fixtures",
+      "Step 8: Verify integration tests validate that the coordinating service produces the same set of findings as the legacy function-based approach for a fixed fixture set (characterization equivalence)",
+      "Step 9: Confirm no detector module imports FastAPI, SQLAlchemy, DuckDB, psycopg, httpx/requests, or UI code (import boundary enforcement)",
+      "Step 10: Confirm legacy detector helper functions (if any) are either wrapped by the detector objects or deleted once unused"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Database operations are organized into cohesive repository objects: the former 'monster store' is split into repositories with explicit responsibility boundaries and stable upsert semantics",
+    "steps": [
+      "Step 1: Identify the current primary DB access module(s) (e.g., DuckDbStore, PostgresRepository, repository providers) and enumerate responsibilities currently mixed together (games/raw_pgns, positions, tactics, conversions, practice_queue, dashboard queries)",
+      "Step 2: Verify repository interfaces (ports) exist for at least: GameRepository/RawPgnRepository, PositionRepository, TacticRepository, ConversionRepository, PracticeQueueRepository, DashboardRepository (names can vary but responsibilities must be separable)",
+      "Step 3: Verify concrete repository implementations exist for the chosen DB backend(s) (DuckDB and/or Postgres) and each repository contains only SQL/DB logic for its responsibility",
+      "Step 4: Verify pipeline/use-case orchestration depends only on repository interfaces (ports), not concrete DB implementations, and repository construction happens in a composition root (not scattered across modules)",
+      "Step 5: Verify there is no application-level inline SQL in routers or use-cases (SQL belongs in infra repositories only)",
+      "Step 6: Verify idempotency/upsert rules are implemented inside repositories (unique keys, upsert statements, conflict handling) rather than achieved by deleting and reinserting data at the orchestration layer",
+      "Step 7: Verify dashboard queries are isolated behind a DashboardRepository (or equivalent) so that DB-specific query logic is not mixed into general-purpose stores",
+      "Step 8: Verify unit tests exist for each repository using a temporary database (or test transaction) and assert: upsert behavior, unique constraints, and result shape stability",
+      "Step 9: Verify repository modules do not import FastAPI router code or React client code (boundary enforcement)",
+      "Step 10: Confirm the original monolithic store is either reduced to a thin façade delegating to repositories or deleted once all call-sites migrate"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "FastAPI routing layer is wiring-only: routers call use-case objects via dependency injection and contain zero business logic or database access",
+    "steps": [
+      "Step 1: Identify router modules for key endpoints (POST /api/pipeline/run, GET /api/dashboard/summary, GET /api/practice-queue) and verify route functions contain only: request parsing, calling a use-case/service, and response mapping",
+      "Step 2: Verify all domain/application branching logic (loops, multi-step flows, conditional business rules, retry logic) is moved into app/use_cases or app/services and not in routers",
+      "Step 3: Verify routers do not import repositories, DB engines, sessions, connections, or SQL fragments; they should depend on use-case constructors via FastAPI Depends",
+      "Step 4: Verify a single composition root exists (e.g., api/dependencies.py) that constructs: settings, client adapters (chess.com/lichess), repositories, services, and use-cases",
+      "Step 5: Verify dependency injection is explicit: constructors take typed dependencies (ports) and routers request the fully wired use-case",
+      "Step 6: Verify use-cases return domain/app result objects (not FastAPI Response/JSONResponse) and routers map them into response schemas",
+      "Step 7: Verify router unit tests can run without starting the full server by calling the route callable with injected mocks/fakes for the use-case",
+      "Step 8: Verify service and use-case unit tests do not require FastAPI app bootstrapping (no TestClient needed for core business logic)",
+      "Step 9: Confirm boundary enforcement: app/services and domain modules do not import FastAPI types",
+      "Step 10: Confirm legacy API helper modules (e.g., get_*__api.py, trigger_*__api_jobs.py style) are migrated behind routers or deleted if replaced"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Frontend component structure follows Base → Specific → Flow → Page layering with stable test IDs and no setter-prop drilling into leaf components",
+    "steps": [
+      "Step 1: Identify the primary dashboard page(s) and confirm that page components compose higher-level Flow components rather than owning multi-step logic inline",
+      "Step 2: Verify Flow components own state machines / data fetching coordination and expose intent callbacks upward (e.g., onFiltersChanged, onRunPipelineRequested) rather than passing setter props down to leaf components",
+      "Step 3: Verify Specific components encapsulate copy, layout, and stable data-testid values (no duplication of test IDs or copy across pages)",
+      "Step 4: Verify Base UI components are pure primitives and contain no business logic, API calls, or domain knowledge",
+      "Step 5: Confirm that no leaf component receives props named like setX, setOpen, setStatus, setFilters; leaf components must instead accept intent callbacks and data values",
+      "Step 6: Confirm that all existing data-testid values remain unchanged across the refactor (stable selectors for automated tests)",
+      "Step 7: Verify a mocked-client test exists for the dashboard flow that asserts rendering for a fixed API response: exactly N games displayed, exactly M practice items displayed, and filters reflected in UI state",
+      "Step 8: Verify Flow components have direct unit tests covering state transitions (loading → success → error) without requiring puppeteer",
+      "Step 9: Verify API calls are isolated in a single client module/hook layer (e.g., apiClient + hooks) and not scattered across components",
+      "Step 10: Verify E2E puppeteer test can drive the same flow using stable selectors (data-testid) with screenshot capture preserved"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Operational traceability exists end-to-end: pipeline run produces a correlation/run_id propagated through logs, DB records, and API responses for deterministic debugging and refactor safety",
+    "steps": [
+      "Step 1: Call POST /api/pipeline/run and confirm the API response includes a stable run_id/correlation_id field",
+      "Step 2: Verify the run_id is generated once per pipeline invocation at the orchestration/use-case layer (not per internal step) and is passed explicitly to downstream services/repositories",
+      "Step 3: Verify DB writes associated with the run include run_id where applicable (e.g., ops_events table, pipeline_runs table, or a run_id column on inserted records if that is the project convention)",
+      "Step 4: Verify logging includes run_id on every log line emitted during the run, including calls to GameSourceClient adapters, repository writes, and tactic detection service steps",
+      "Step 5: Verify log output uses normalized 'operation ids' (e.g., daily_sync.fetch_games, analysis.detect_tactics, analysis.persist_results) so duplicate behavior can be detected across refactors",
+      "Step 6: Verify the funclogger (or equivalent) records function identity + op_id + run_id, and does not require full payload logging to correlate behavior",
+      "Step 7: Confirm that a single failed step can be traced from API response → logs → DB records by run_id without searching by timestamps",
+      "Step 8: Verify tests assert presence and propagation of run_id (contract test: POST /api/pipeline/run returns run_id; subsequent DB query finds matching run record)",
+      "Step 9: Verify that adding run_id does not change externally observable behavior other than the additive field (no payload breaking changes; field optional for backwards compatibility if needed)",
+      "Step 10: Confirm run_id propagation is implemented via explicit parameters or a single context mechanism (ContextVar) and is not a global mutable singleton"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "E2E pipeline run (chess.com bullet date range) uses port/adapters + repositories + detectors to populate core tables and dashboard stats",
+    "steps": [
+      "Step 1: Set user_id to a test chess.com profile with known BULLET games in the chosen date range (fixtures allowed, but must route through the same client interface as production)",
+      "Step 2: Call POST /api/pipeline/run with (source=chess.com, time_control=bullet, start_date, end_date) covering the known bullet games",
+      "Step 3: Verify the pipeline entrypoint is an orchestration object (e.g., app/use_cases/PipelineRunUseCase or equivalent) and NOT a large function module; the router must be wiring-only (no business logic)",
+      "Step 4: Verify the orchestration depends on a GameSourceClient port and that the chess.com adapter (ChesscomClient) is the concrete implementation injected (no direct requests/http calls from the router or use case)",
+      "Step 5: Verify the orchestration uses repository objects for persistence (DuckDbStore / DuckDb*Repository / PostgresRepository) rather than inline SQL in the use case layer",
+      "Step 6: Verify API response reports games_fetched > 0 and includes a stable run identifier (run_id / correlation_id) to trace logs and DB writes for this single run",
+      "Step 7: Query games/raw_pgns tables for the date range and confirm rows exist for source=chess.com and time_control=bullet (row_count > 0; no NULL game_id values)",
+      "Step 8: Query positions table and confirm user_to_move positions were created for those games (row_count > 0; every row has a valid position_id and non-empty FEN)",
+      "Step 9: Query user_moves table and confirm exactly one move exists per position_id (no missing moves; no duplicate moves for the same position_id)",
+      "Step 10: Verify tactics detection is executed via tactic detector objects (e.g., BaseTacticDetector subclasses like ForkDetector/HangingPiece detectors) coordinated by a single service/orchestrator (no direct detector calls from router; no DB writes inside detectors)",
+      "Step 11: Query opportunities/tactics tables and confirm at least one hanging piece opportunity and at least one mate opportunity (mate-in-1 or mate-in-2) exist within the range (counts > 0 for each category)",
+      "Step 12: Query conversions/tactic_outcomes tables and confirm an outcome record exists for every opportunity/tactic_id in the range (no orphan tactics without outcomes unless explicitly documented as allowed)",
+      "Step 13: Query practice_queue (or equivalent queue table/view) and confirm missed items were inserted for the range (row_count > 0; items reference existing position_id/tactic_id)",
+      "Step 14: Call GET /api/dashboard/summary with the same filters (source=chess.com, time_control=bullet, start_date, end_date)",
+      "Step 15: Verify dashboard summary totals match DB aggregated counts for the same filters (games, positions, opportunities, converted, missed, practice_queue size)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "E2E pipeline run (lichess blitz date range) uses port/adapters + repositories + detectors to populate core tables and dashboard stats",
+    "steps": [
+      "Step 1: Set user_id to a test lichess profile with known BLITZ games in the chosen date range (fixtures allowed, but must route through the same client interface as production)",
+      "Step 2: Call POST /api/pipeline/run with (source=lichess, time_control=blitz, start_date, end_date) covering the known blitz games",
+      "Step 3: Verify the pipeline entrypoint is an orchestration object (e.g., app/use_cases/PipelineRunUseCase or equivalent) and NOT a large function module; the router must be wiring-only",
+      "Step 4: Verify the orchestration depends on a GameSourceClient port and that the lichess adapter (LichessClient) is the concrete implementation injected (no direct HTTP calls from router or use case)",
+      "Step 5: Verify the orchestration uses repository objects for persistence (DuckDbStore / DuckDb*Repository / PostgresRepository) rather than inline SQL in the use case layer",
+      "Step 6: Verify API response reports games_fetched > 0 and includes a stable run identifier (run_id / correlation_id) for traceability",
+      "Step 7: Query games/raw_pgns tables for the date range and confirm rows exist for source=lichess and time_control=blitz (row_count > 0; no NULL game_id values)",
+      "Step 8: Query positions table and confirm user_to_move positions were created for those games (row_count > 0; every row has a valid position_id and non-empty FEN)",
+      "Step 9: Query user_moves table and confirm exactly one move exists per position_id (no missing moves; no duplicate moves for the same position_id)",
+      "Step 10: Verify tactics detection is executed via tactic detector objects coordinated by a single service/orchestrator (no DB writes inside detectors; detectors return findings only)",
+      "Step 11: Query opportunities/tactics tables and confirm mate opportunities exist when applicable in the range (mate-in-1 or mate-in-2 count >= 0, but if the fixture set is known to contain mates, enforce count > 0)",
+      "Step 12: Query conversions/tactic_outcomes tables and confirm both converted and missed outcomes exist in the range (at least one of each unless fixtures explicitly do not contain one category)",
+      "Step 13: Query practice_queue (or equivalent) and confirm missed items were inserted for the range (row_count > 0; items reference existing position_id/tactic_id)",
+      "Step 14: Call GET /api/dashboard/summary with the same filters (source=lichess, time_control=blitz, start_date, end_date)",
+      "Step 15: Verify dashboard summary totals match DB aggregated counts for the same filters (games, positions, opportunities, converted, missed, practice_queue size)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "SyncGames / pipeline run is idempotent: repeating the same source + date range does not create duplicates and reuses natural keys",
+    "steps": [
+      "Step 1: Choose a fixed date range for chess.com (and optionally lock to a fixed time_control) where the test user has a stable known set of games",
+      "Step 2: Run POST /api/pipeline/run with (source=chess.com, start_date, end_date, time_control if supported) and wait for completion",
+      "Step 3: Record baseline DB counts for the fixed filter window: games/raw_pgns count, positions count, user_moves count, opportunities/tactics count, conversions/tactic_outcomes count, practice_queue count",
+      "Step 4: Record baseline natural keys/identifiers: set of game_id values; set of (game_id, ply) or (game_id, position_id) identifiers used for positions; set of (position_id, motif, best_uci) identifiers used for opportunities/tactics (or the project’s equivalent unique key)",
+      "Step 5: Run POST /api/pipeline/run again with the identical parameters (same user_id, same source, same date range, same time_control)",
+      "Step 6: Verify games/raw_pgns count does not increase and game_id set is unchanged (no duplicate game rows inserted; upserts behave correctly)",
+      "Step 7: Verify positions count does not increase and the (game_id, ply)/(position key) set is unchanged (no duplicate positions inserted)",
+      "Step 8: Verify user_moves count does not increase and still maintains exactly one move per position_id (no duplicates, no missing)",
+      "Step 9: Verify opportunities/tactics count does not increase and the unique key set for opportunities/tactics is unchanged (no duplicate opportunities inserted)",
+      "Step 10: Verify conversions/tactic_outcomes count does not increase and every opportunity/tactic_id still has exactly one corresponding outcome row per the project’s rules",
+      "Step 11: Verify practice_queue count does not increase (no duplicate queue items inserted for previously missed opportunities)",
+      "Step 12: Verify idempotency is enforced via repository-level upsert semantics (or equivalent) and not by fragile “delete and reinsert everything” logic in the router layer"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
     "description": "End-to-end pipeline run for chess.com bullet range populates games, positions, opportunities, conversions, practice queue, and dashboard stats",
     "steps": [
       "Step 1: Set user_id to a test chess.com profile",

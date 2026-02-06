@@ -79,7 +79,9 @@ def test_postgres_status_endpoint_returns_payload() -> None:
     token = get_settings().api_token
     with (
         patch("tactix.get_postgres_status__api.PostgresRepository.get_status") as get_status,
-        patch("tactix.get_postgres_status__api.PostgresRepository.fetch_ops_events", return_value=[]),
+        patch(
+            "tactix.get_postgres_status__api.PostgresRepository.fetch_ops_events", return_value=[]
+        ),
     ):
         get_status.return_value = type(
             "MockStatus",

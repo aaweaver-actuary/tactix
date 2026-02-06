@@ -1,4 +1,11 @@
 Session summary (2026-02-05):
+- Removed deprecated shim stubs for PGN hashing and Postgres store impl now that call sites use canonical modules.
+- Tests run: `make check` (after changes; green with existing Vitest act warnings and pycycle .venv parse warning).
+- Before→After map:
+	- tactix._hash_pgn_text shim → removed (callers already on canonical helpers).
+	- tactix.postgres_store_impl shim → removed (callers already on canonical repositories).
+
+Session summary (2026-02-05):
 - Removed the unused ports package re-export shim so callers rely on the canonical port module directly.
 - Tests run: `make check` (before changes); `make check` (after changes, interrupted at prospector/KeyboardInterrupt).
 - Before→After map:

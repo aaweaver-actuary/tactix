@@ -76,9 +76,7 @@ def test_practice_attempt_records_success_and_latency() -> None:
         )
         assert response.status_code == 200
 
-        row = conn.execute(
-            "SELECT correct, success, latency_ms FROM training_attempts"
-        ).fetchone()
+        row = conn.execute("SELECT correct, success, latency_ms FROM training_attempts").fetchone()
         assert row is not None
         assert row[0] is True
         assert row[1] is True

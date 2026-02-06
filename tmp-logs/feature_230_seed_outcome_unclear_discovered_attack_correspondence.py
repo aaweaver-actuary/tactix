@@ -75,7 +75,9 @@ def _discovered_attack_fixture_position() -> dict[str, object]:
     discovered_chunk = next(
         chunk for chunk in chunks if "Discovered Attack" in chunk and "High" not in chunk
     )
-    position = _first_move_position(discovered_chunk, game_id="correspondence-discovered-attack-unclear")
+    position = _first_move_position(
+        discovered_chunk, game_id="correspondence-discovered-attack-unclear"
+    )
     if not position:
         raise SystemExit("No discovered attack fixture game found")
     return position

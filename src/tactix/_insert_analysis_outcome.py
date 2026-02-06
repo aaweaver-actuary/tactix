@@ -1,29 +1,5 @@
 """Insert analysis outcome rows into Postgres."""
 
-from tactix.define_db_schemas__const import ANALYSIS_SCHEMA
-from tactix.define_outcome_insert_plan__db_store import OutcomeInsertPlan
+from tactix.db.postgres_analysis_repository import _insert_analysis_outcome
 
-
-def _insert_analysis_outcome(
-    cur,
-    tactic_id: int,
-    outcome_plan: OutcomeInsertPlan,
-) -> None:
-    """Insert an analysis outcome row for a tactic."""
-    cur.execute(
-        f"""
-        INSERT INTO {ANALYSIS_SCHEMA}.tactic_outcomes (
-            tactic_id,
-            result,
-            user_uci,
-            eval_delta
-        )
-        VALUES (%s, %s, %s, %s)
-        """,
-        (
-            tactic_id,
-            outcome_plan.result,
-            outcome_plan.user_uci,
-            outcome_plan.eval_delta,
-        ),
-    )
+__all__ = ["_insert_analysis_outcome"]

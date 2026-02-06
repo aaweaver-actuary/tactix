@@ -1,20 +1,5 @@
 """Delete existing analysis rows for a position."""
 
-from tactix.define_db_schemas__const import ANALYSIS_SCHEMA
+from tactix.db.postgres_analysis_repository import _delete_existing_analysis
 
-
-def _delete_existing_analysis(cur, position_id: int) -> None:
-    """Delete existing tactics and outcomes for a position id."""
-    cur.execute(
-        f"""
-        DELETE FROM {ANALYSIS_SCHEMA}.tactic_outcomes
-        WHERE tactic_id IN (
-            SELECT tactic_id FROM {ANALYSIS_SCHEMA}.tactics WHERE position_id = %s
-        )
-        """,
-        (position_id,),
-    )
-    cur.execute(
-        f"DELETE FROM {ANALYSIS_SCHEMA}.tactics WHERE position_id = %s",
-        (position_id,),
-    )
+__all__ = ["_delete_existing_analysis"]

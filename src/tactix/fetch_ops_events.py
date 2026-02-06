@@ -1,29 +1,5 @@
 """Fetch operations events from Postgres."""
 
-from typing import Any
+from tactix.db.postgres_ops_repository import fetch_ops_events
 
-from psycopg2.extras import RealDictCursor
-
-from tactix.config import Settings
-from tactix.init_postgres_schema import init_postgres_schema
-from tactix.postgres_connection import postgres_connection
-
-
-def fetch_ops_events(settings: Settings, limit: int = 10) -> list[dict[str, Any]]:
-    """Return recent ops events for the given settings."""
-    with postgres_connection(settings) as conn:
-        if conn is None:
-            return []
-        init_postgres_schema(conn)
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(
-                """
-                SELECT id, component, event_type, source, profile, metadata, created_at
-                FROM tactix_ops.ops_events
-                ORDER BY created_at DESC
-                LIMIT %s
-                """,
-                (limit,),
-            )
-            rows = cur.fetchall()
-        return [dict(row) for row in rows]
+__all__ = ["fetch_ops_events"]

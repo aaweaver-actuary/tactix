@@ -1,4 +1,16 @@
 Session summary (2026-02-06):
+- Added repository port Protocols for raw PGN/game, position, tactic/conversion, practice queue, dashboard, and metrics boundaries.
+- Moved Postgres analysis/ops SQL into db repository modules and left thin delegating wrappers in the legacy modules.
+- Added repository boundary test to enforce no FastAPI imports in repo modules.
+- Tests run: `make check` (before changes), `make check` (after changes).
+- Before→After map:
+	- record_ops_event/fetch_ops_events SQL helpers → db/postgres_ops_repository with wrapper delegation.
+	- fetch_analysis_tactics/upsert_analysis_tactic_with_outcome + analysis helpers → db/postgres_analysis_repository with wrapper delegation.
+	- ports/__init__.py + ports/repositories.py → repository port interfaces.
+- Follow-ups:
+	- Consider moving Postgres raw PGN SQL helpers into a db repository module to complete infra boundary alignment.
+
+Session summary (2026-02-06):
 - Completed Feature 001 object-driven tactic detection migration with TacticDetectionService parity coverage on fixture positions; pipeline helpers now reference BaseTacticDetector directly instead of detect_tactics__motifs imports.
 - Added characterization test to compare service findings against legacy-style detector iteration on pin/skewer/discovered-attack/hanging-piece fixtures.
 - Tests run: `make check` (before changes), `make check` (after changes).

@@ -14,7 +14,7 @@
       "Step 9: Confirm no detector module imports FastAPI, SQLAlchemy, DuckDB, psycopg, httpx/requests, or UI code (import boundary enforcement)",
       "Step 10: Confirm legacy detector helper functions (if any) are either wrapped by the detector objects or deleted once unused"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

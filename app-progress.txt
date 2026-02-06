@@ -1,3 +1,15 @@
+Session summary (2026-02-06):
+- Fixed fixture date-only timestamps to default to midday UTC so same-day SetUp PGNs stay within date filters; mate fixture now appears in dashboard motif counts.
+- Ensured SetUp PGNs use the Python extractor path to avoid missing SetUp positions when the Rust extractor is active.
+- UI verification: ran chess.com bullet backfill flow; screenshot updated at verification/feature-001-chesscom-bullet-pipeline-2026-02-04.png.
+- Tests run: `pytest tests/test_api_chesscom_bullet_pipeline_regression.py`, `make check` (pass; safety warnings ignored per policy).
+
+Session summary (2026-02-06):
+- Added an API-level regression test for the chess.com bullet fixture pipeline that exercises POST /api/pipeline/run, validates DB tables/views (games, positions, user_moves, opportunities, conversions, practice_queue), checks motif counts, and verifies GET /api/dashboard/summary totals against DB counts.
+- Adjusted the regression test to avoid asserting API payload motif_counts and instead rely on DB-derived motif totals.
+- Debug run shows fixture results include hanging_piece but no mate motif; regression now fails because mate is missing in opportunities.
+- Tests run: `make check` (before changes; failed in prospector with KeyboardInterrupt), `make check` (after changes; failed at pylint with R0903 in src/tactix/TacticDetector.py), `make check` (after regression-test update; failed because mate motif is missing in fixture output).
+
 Session summary (2026-02-05):
 - Removed deprecated shim stubs for PGN hashing and Postgres store impl now that call sites use canonical modules.
 - Tests run: `make check` (after changes; green with existing Vitest act warnings and pycycle .venv parse warning).

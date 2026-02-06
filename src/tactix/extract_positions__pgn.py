@@ -53,6 +53,8 @@ def _call_rust_extractor(
     rust_extractor,
     request: ExtractorRequest,
 ) -> list[dict[str, object]]:
+    if "[SetUp" in request.pgn:
+        return _extract_positions_fallback(request)
     try:
         result = rust_extractor(
             request.pgn,

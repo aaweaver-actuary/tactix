@@ -50,4 +50,4 @@ def _parse_date_time_value(date_value: str, end_time: str | None) -> datetime:
             f"{date_value} {time_match.group(1)}",
             "%Y.%m.%d %H:%M:%S",
         ).replace(tzinfo=UTC)
-    return datetime.strptime(date_value, "%Y.%m.%d").replace(tzinfo=UTC)
+    return datetime.strptime(f"{date_value} 12:00:00", "%Y.%m.%d %H:%M:%S").replace(tzinfo=UTC)

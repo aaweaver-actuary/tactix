@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 import chess
 from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from tactix.TacticFinding import TacticFinding
 
 PIECE_VALUES = {
     chess.KING: 10000,
@@ -143,8 +147,8 @@ class BaseTacticDetector:
 
     motif = "unknown"
 
-    def detect(self, _context: object) -> bool:
-        """Return True when the tactic is detected."""
+    def detect(self, _context: object) -> list[TacticFinding]:
+        """Return domain findings for a tactic context."""
         raise NotImplementedError
 
     @staticmethod

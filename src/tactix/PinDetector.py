@@ -9,6 +9,7 @@ from tactix._skewer_sources import _skewer_sources
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.LineTacticContext import LineTacticContext
 from tactix.TacticContext import TacticContext
+from tactix.TacticFinding import TacticFinding
 
 
 class PinDetector(BaseTacticDetector):
@@ -16,13 +17,15 @@ class PinDetector(BaseTacticDetector):
 
     motif = "pin"
 
-    def detect(self, context: TacticContext) -> bool:
-        """Return True when a pin is created."""
+    def detect(self, context: TacticContext) -> list[TacticFinding]:
+        """Return findings when a pin is created."""
         after_pins = self._pin_signatures(context.board_after, context.mover_color)
         if not after_pins:
-            return False
+            return []
         before_pins = self._pin_signatures(context.board_before, context.mover_color)
-        return bool(after_pins - before_pins)
+        if after_pins - before_pins:
+            return [TacticFinding(motif=self.motif)]
+        return []
 
     def _pin_signatures(self, board: chess.Board, mover_color: bool) -> set[tuple[int, int]]:
         opponent = not mover_color

@@ -3,7 +3,7 @@
 import chess
 
 from tactix.analyze_tactics__positions import MATE_IN_TWO
-from tactix.detect_tactics__motifs import BaseTacticDetector
+from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.StockfishEngine import StockfishEngine
 from tactix.utils.logger import funclogger
 

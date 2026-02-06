@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.TacticContext import TacticContext
+from tactix.TacticFinding import TacticFinding
 
 
 class CaptureDetector(BaseTacticDetector):
@@ -11,6 +12,8 @@ class CaptureDetector(BaseTacticDetector):
 
     motif = "capture"
 
-    def detect(self, context: TacticContext) -> bool:
-        """Return True when the move is a capture."""
-        return context.board_before.is_capture(context.best_move)
+    def detect(self, context: TacticContext) -> list[TacticFinding]:
+        """Return findings when the move is a capture."""
+        if context.board_before.is_capture(context.best_move):
+            return [TacticFinding(motif=self.motif)]
+        return []

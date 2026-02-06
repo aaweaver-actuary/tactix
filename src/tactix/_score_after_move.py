@@ -2,7 +2,7 @@
 
 import chess
 
-from tactix.detect_tactics__motifs import BaseTacticDetector
+from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.StockfishEngine import StockfishEngine
 from tactix.utils.logger import funclogger
 

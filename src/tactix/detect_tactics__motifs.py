@@ -19,6 +19,8 @@ from tactix.line_tactic_helpers import LineTacticInputs, build_line_tactic_conte
 from tactix.PinDetector import PinDetector
 from tactix.SkewerDetector import SkewerDetector
 from tactix.TacticContext import TacticContext
+from tactix.TacticDetectionService import TacticDetectionService
+from tactix.TacticFinding import TacticFinding
 
 MISSED_DELTA_THRESHOLD = -300
 FAILED_ATTEMPT_THRESHOLD = -100
@@ -73,9 +75,11 @@ class MateDetector(BaseTacticDetector):
 
     motif = "mate"
 
-    def detect(self, context: TacticContext) -> bool:
-        """Return True when the move delivers checkmate."""
-        return context.board_after.is_checkmate()
+    def detect(self, context: TacticContext) -> list[TacticFinding]:
+        """Return findings when the move delivers checkmate."""
+        if context.board_after.is_checkmate():
+            return [TacticFinding(motif=self.motif)]
+        return []
 
 
 class CheckDetector(BaseTacticDetector):
@@ -83,9 +87,11 @@ class CheckDetector(BaseTacticDetector):
 
     motif = "check"
 
-    def detect(self, context: TacticContext) -> bool:
-        """Return True when the move gives check."""
-        return context.board_after.is_check()
+    def detect(self, context: TacticContext) -> list[TacticFinding]:
+        """Return findings when the move gives check."""
+        if context.board_after.is_check():
+            return [TacticFinding(motif=self.motif)]
+        return []
 
 
 class EscapeDetector(BaseTacticDetector):
@@ -93,13 +99,15 @@ class EscapeDetector(BaseTacticDetector):
 
     motif = "escape"
 
-    def detect(self, context: TacticContext) -> bool:
-        """Return True when the moved piece escapes attack."""
-        return context.board_before.is_attacked_by(
+    def detect(self, context: TacticContext) -> list[TacticFinding]:
+        """Return findings when the moved piece escapes attack."""
+        if context.board_before.is_attacked_by(
             not context.mover_color, context.best_move.from_square
         ) and not context.board_before.is_attacked_by(
             not context.mover_color, context.best_move.to_square
-        )
+        ):
+            return [TacticFinding(motif=self.motif)]
+        return []
 
 
 class MotifDetectorSuite:
@@ -107,25 +115,11 @@ class MotifDetectorSuite:
 
     def __init__(self, detectors: Iterable[BaseTacticDetector]) -> None:
         """Initialize the detector suite."""
-        self._detectors = tuple(detectors)
+        self._service = TacticDetectionService(detectors)
 
     def infer_motif(self, board: chess.Board, best_move: chess.Move | None) -> str:
         """Infer the best motif label for a move on the given board."""
-        if best_move is None:
-            return "initiative"
-        mover_color = board.turn
-        board_after = board.copy()
-        board_after.push(best_move)
-        context = TacticContext(
-            board_before=board,
-            board_after=board_after,
-            best_move=best_move,
-            mover_color=mover_color,
-        )
-        for detector in self._detectors:
-            if detector.detect(context):
-                return detector.motif
-        return "initiative"
+        return self._service.infer_motif(board, best_move)
 
 
 def build_default_motif_detector_suite() -> MotifDetectorSuite:

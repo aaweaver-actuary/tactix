@@ -4,7 +4,7 @@ import chess
 
 from tactix._is_new_hanging_piece import _is_new_hanging_piece
 from tactix.analyze_tactics__positions import MOTIF_DETECTORS
-from tactix.detect_tactics__motifs import BaseTacticDetector
+from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.utils.logger import funclogger
 
 

@@ -1,4 +1,12 @@
 Session summary (2026-02-06):
+- Completed Feature 001 object-driven tactic detection migration with TacticDetectionService parity coverage on fixture positions; pipeline helpers now reference BaseTacticDetector directly instead of detect_tactics__motifs imports.
+- Added characterization test to compare service findings against legacy-style detector iteration on pin/skewer/discovered-attack/hanging-piece fixtures.
+- Tests run: `make check` (before changes), `make check` (after changes).
+- Before→After map:
+	- _evaluate_engine_position/_score_after_move/_infer_hanging_or_detected_motif BaseTacticDetector import → canonical BaseTacticDetector module.
+	- tests/test_tactic_detector_findings.py → added service-vs-legacy fixture parity test.
+
+Session summary (2026-02-06):
 - Fixed fixture date-only timestamps to default to midday UTC so same-day SetUp PGNs stay within date filters; mate fixture now appears in dashboard motif counts.
 - Ensured SetUp PGNs use the Python extractor path to avoid missing SetUp positions when the Rust extractor is active.
 - UI verification: ran chess.com bullet backfill flow; screenshot updated at verification/feature-001-chesscom-bullet-pipeline-2026-02-04.png.

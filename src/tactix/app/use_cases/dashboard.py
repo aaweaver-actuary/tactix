@@ -1,0 +1,161 @@
+"""Use cases for dashboard-related API endpoints."""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+from tactix._resolve_dashboard_filters import _resolve_dashboard_filters
+from tactix.build_dashboard_cache_key__api_cache import _dashboard_cache_key
+from tactix.config import Settings, get_settings
+from tactix.dashboard_query import DashboardQuery
+from tactix.dashboard_query_filters import DashboardQueryFilters
+from tactix.db.dashboard_repository_provider import (
+    fetch_motif_stats,
+    fetch_pipeline_table_counts,
+    fetch_trend_stats,
+)
+from tactix.db.duckdb_store import fetch_version, get_connection, init_schema
+from tactix.db.raw_pgn_repository_provider import fetch_raw_pgns_summary
+from tactix.get_cached_dashboard_payload__api_cache import _get_cached_dashboard_payload
+from tactix.normalize_source__source import _normalize_source
+from tactix.pipeline import get_dashboard_payload
+from tactix.set_dashboard_cache__api_cache import _set_dashboard_cache
+
+
+@dataclass
+class DashboardUseCase:  # pylint: disable=too-many-instance-attributes
+    resolve_dashboard_filters: Callable[
+        [DashboardQueryFilters],
+        tuple[Any, Any, str | None, Settings],
+    ] = _resolve_dashboard_filters
+    dashboard_cache_key: Callable[
+        [Settings, DashboardQuery],
+        tuple[object, ...],
+    ] = _dashboard_cache_key
+    get_cached_dashboard_payload: Callable[[tuple[object, ...]], dict[str, object] | None] = (
+        _get_cached_dashboard_payload
+    )
+    set_dashboard_cache: Callable[
+        [tuple[object, ...], dict[str, object]],
+        None,
+    ] = _set_dashboard_cache
+    get_dashboard_payload: Callable[[DashboardQuery, Settings], dict[str, object]] = (
+        get_dashboard_payload
+    )
+    fetch_pipeline_table_counts: Callable[[Any, DashboardQuery], dict[str, int]] = (
+        fetch_pipeline_table_counts
+    )
+    fetch_motif_stats: Callable[..., object] = fetch_motif_stats
+    fetch_trend_stats: Callable[..., object] = fetch_trend_stats
+    fetch_raw_pgns_summary: Callable[..., object] = fetch_raw_pgns_summary
+    fetch_version: Callable[[Any], int] = fetch_version
+    get_connection: Callable[[Path], Any] = get_connection
+    init_schema: Callable[[Any], None] = init_schema
+    get_settings: Callable[..., Settings] = get_settings
+    normalize_source: Callable[[str | None], str | None] = _normalize_source
+
+    def get_dashboard(
+        self,
+        filters: DashboardQueryFilters,
+        motif: str | None,
+    ) -> dict[str, object]:
+        start_datetime, end_datetime, normalized_source, settings = self.resolve_dashboard_filters(
+            filters
+        )
+        query = DashboardQuery(
+            source=normalized_source,
+            motif=motif,
+            rating_bucket=filters.rating_bucket,
+            time_control=filters.time_control,
+            start_date=start_datetime,
+            end_date=end_datetime,
+        )
+        cache_key = self.dashboard_cache_key(settings, query)
+        cached = self.get_cached_dashboard_payload(cache_key)
+        if cached is not None:
+            return cached
+        payload = self.get_dashboard_payload(query, settings)
+        self.set_dashboard_cache(cache_key, payload)
+        return payload
+
+    def get_summary(
+        self,
+        filters: DashboardQueryFilters,
+        db_name: str | None,
+    ) -> dict[str, object]:
+        start_datetime, end_datetime, normalized_source, settings = self.resolve_dashboard_filters(
+            filters
+        )
+        if db_name:
+            safe_name = Path(db_name).name
+            filename = safe_name if safe_name.endswith(".duckdb") else f"{safe_name}.duckdb"
+            settings.duckdb_path = settings.data_dir / filename
+        conn = self.get_connection(settings.duckdb_path)
+        try:
+            self.init_schema(conn)
+            summary = self.fetch_pipeline_table_counts(
+                conn,
+                DashboardQuery(
+                    source=normalized_source,
+                    rating_bucket=filters.rating_bucket,
+                    time_control=filters.time_control,
+                    start_date=start_datetime,
+                    end_date=end_datetime,
+                ),
+            )
+        finally:
+            conn.close()
+        response_source = "all" if normalized_source is None else normalized_source
+        return {"source": response_source, "summary": summary}
+
+    def get_motif_stats(self, filters: DashboardQueryFilters) -> dict[str, object]:
+        return self._build_stats_payload(filters, self.fetch_motif_stats, "motifs")
+
+    def get_trend_stats(self, filters: DashboardQueryFilters) -> dict[str, object]:
+        return self._build_stats_payload(filters, self.fetch_trend_stats, "trends")
+
+    def get_raw_pgns_summary(self, source: str | None) -> dict[str, object]:
+        normalized_source = self.normalize_source(source)
+        settings = self.get_settings(source=normalized_source)
+        conn = self.get_connection(settings.duckdb_path)
+        self.init_schema(conn)
+        active_source = normalized_source or settings.source
+        return {
+            "source": active_source,
+            "summary": self.fetch_raw_pgns_summary(conn, source=active_source),
+        }
+
+    def _build_stats_payload(
+        self,
+        filters: DashboardQueryFilters,
+        stats_fetcher: Callable[..., object],
+        stats_key: str,
+    ) -> dict[str, object]:
+        start_datetime, end_datetime, normalized_source, settings = self.resolve_dashboard_filters(
+            filters
+        )
+        conn = self.get_connection(settings.duckdb_path)
+        self.init_schema(conn)
+        response_source = "all" if normalized_source is None else normalized_source
+        return {
+            "source": response_source,
+            "metrics_version": self.fetch_version(conn),
+            stats_key: stats_fetcher(
+                conn,
+                source=normalized_source,
+                rating_bucket=filters.rating_bucket,
+                time_control=filters.time_control,
+                start_date=start_datetime,
+                end_date=end_datetime,
+            ),
+        }
+
+
+def get_dashboard_use_case() -> DashboardUseCase:
+    return DashboardUseCase()
+
+
+__all__ = ["DashboardUseCase", "get_dashboard_use_case"]

@@ -1,4 +1,16 @@
 Session summary (2026-02-06):
+- Refactored FastAPI handlers to delegate to DI-driven use cases (dashboard, practice, tactics search, pipeline run, Postgres), removing router-side DB access.
+- Updated API tests to use dependency overrides and added unit coverage for the new use cases.
+- Kept app/use_cases package exports limited to pipeline support to avoid circular imports during pipeline initialization.
+- Tests run: `make check` (before; failed due to circular import/vulture), `uv run pytest tests/ --cov=src/ --cov-config=./.coveragerc --cov-report=term-missing --cov-fail-under=95`, `make check` (after).
+- Before→After map:
+	- run_pipeline__api.run_pipeline → app/use_cases/pipeline_run.PipelineRunUseCase.run.
+	- get_dashboard__api/get_dashboard_summary__api/motif_stats/trend_stats/get_raw_pgns_summary__api → app/use_cases/dashboard.DashboardUseCase.
+	- get_practice_queue__api/get_practice_next__api/post_practice_attempt__api/get_game_detail__api → app/use_cases/practice.PracticeUseCase.
+	- get_tactics_search__api → app/use_cases/tactics_search.TacticsSearchUseCase.
+	- get_postgres_status__api/get_postgres_analysis__api/get_postgres_raw_pgns__api → app/use_cases/postgres.PostgresUseCase.
+
+Session summary (2026-02-06):
 - Added vulture markers for repository port protocols and legacy raw PGN helpers to keep dead-code checks clean after Postgres raw PGN repository extraction.
 - Tests run: `make check` (rerun; pylint/prospector runs intermittently interrupted with KeyboardInterrupt from the tool runner), `make check` (completed successfully after rerun).
 

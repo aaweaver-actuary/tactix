@@ -2,18 +2,15 @@
 
 from __future__ import annotations
 
-from tactix.config import get_settings
-from tactix.db.postgres_repository import (
-    PostgresRepository,
-    default_postgres_repository_dependencies,
-)
+from typing import Annotated
+
+from fastapi import Depends
+
+from tactix.app.use_cases.postgres import PostgresUseCase, get_postgres_use_case
 
 
-def postgres_raw_pgns() -> dict[str, object]:
+def postgres_raw_pgns(
+    use_case: Annotated[PostgresUseCase, Depends(get_postgres_use_case)],
+) -> dict[str, object]:
     """Return the raw PGN summary from Postgres."""
-    settings = get_settings()
-    repo = PostgresRepository(
-        settings,
-        dependencies=default_postgres_repository_dependencies(),
-    )
-    return repo.fetch_raw_pgns_summary()
+    return use_case.get_raw_pgns()

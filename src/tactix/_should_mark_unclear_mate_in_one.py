@@ -14,7 +14,7 @@ def _should_mark_unclear_mate_in_one(
             mate_in == MATE_IN_ONE,
             context.best_move is not None,
             context.user_move_uci != context.best_move,
-            context.result in {"missed", "failed_attempt"},
+            context.result in {"unclear", "failed_attempt"},
             after_cp >= _MATE_IN_ONE_UNCLEAR_SCORE_THRESHOLD,
         )
     )

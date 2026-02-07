@@ -21,13 +21,15 @@ from tactix._compute_severity__tactic import (
 )
 from tactix._evaluate_engine_position import _evaluate_engine_position
 from tactix._infer_hanging_or_detected_motif import _infer_hanging_or_detected_motif
-from tactix._is_moved_piece_hanging_after_move import _is_moved_piece_hanging_after_move
 from tactix._override_motif_for_missed import _override_motif_for_missed
 from tactix._parse_user_move import _parse_user_move
 from tactix._prepare_position_inputs import _prepare_position_inputs
 from tactix._reclassify_failed_attempt import _reclassify_failed_attempt
 from tactix._score_after_move import _score_after_move
-from tactix.analyze_tactics__positions import _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS
+from tactix.analyze_tactics__positions import (
+    _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS,
+    MATE_IN_ONE,
+)
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.config import Settings
 from tactix.format_tactics__explanation import format_tactic_explanation
@@ -77,6 +79,15 @@ class OutcomeOverridePositionContext:
     mate_in_one: bool
     mate_in_two: bool
     settings: Settings | None
+
+
+def _has_new_hanging_piece_for_mover(
+    board_before: chess.Board,
+    board_after: chess.Board,
+    mover_color: bool,
+) -> bool:
+    del board_before
+    return BaseTacticDetector.has_hanging_piece(board_after, mover_color)
 
 
 def _should_mark_missed_for_initiative(
@@ -307,10 +318,31 @@ def analyze_position(
         )
     )
     result = _finalize_hanging_piece_result(result, motif, delta, base_cp, settings)
-    if result != "found" and _is_moved_piece_hanging_after_move(
-        motif_board, board, user_move, mover_color
+    non_overrideable_hanging = {
+        "skewer",
+        "discovered_attack",
+        "discovered_check",
+        "mate",
+    }
+    should_override_hanging = motif not in non_overrideable_hanging
+    if (
+        result != "found"
+        and _has_new_hanging_piece_for_mover(motif_board, board, mover_color)
+        and should_override_hanging
     ):
         result = "missed"
+        motif = "hanging_piece"
+    if (
+        result == "found"
+        and motif == "mate"
+        and mate_in == MATE_IN_ONE
+        and BaseTacticDetector.is_hanging_capture(
+            motif_board,
+            board,
+            user_move,
+            mover_color,
+        )
+    ):
         motif = "hanging_piece"
     severity = _compute_severity_for_position(
         build_severity_context(

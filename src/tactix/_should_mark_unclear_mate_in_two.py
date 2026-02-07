@@ -12,7 +12,7 @@ def _should_mark_unclear_mate_in_two(
             mate_in == MATE_IN_TWO,
             context.best_move is not None,
             context.user_move_uci != context.best_move,
-            context.result in {"missed", "failed_attempt", "unclear"},
+            context.result == "unclear",
             _is_swing_at_least(context.swing, _MATE_IN_TWO_UNCLEAR_SWING_THRESHOLD),
         )
     )

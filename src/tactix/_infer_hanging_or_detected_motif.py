@@ -30,8 +30,7 @@ def _resolve_checkmate_capture_motif(
     is_high_value = BaseTacticDetector.piece_value(
         captured_piece.piece_type
     ) >= BaseTacticDetector.piece_value(chess.ROOK)
-    is_undefended = not motif_board.is_attacked_by(not mover_color, capture_square)
-    return "hanging_piece" if is_high_value and is_undefended else "mate"
+    return "hanging_piece" if is_high_value else "mate"
 
 
 def _resolve_capture_motif(
@@ -104,7 +103,6 @@ def _infer_hanging_or_detected_motif(
     elif capture_motif == "hanging_piece":
         if motif in {
             "skewer",
-            "pin",
             "discovered_attack",
             "discovered_check",
         }:

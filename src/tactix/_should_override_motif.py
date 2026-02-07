@@ -8,6 +8,8 @@ from tactix.utils.logger import funclogger
 
 @funclogger
 def _should_override_motif(user_motif: str, best_motif: str | None, result: str) -> bool:
+    if best_motif == "hanging_piece" and result in {"missed", "failed_attempt"}:
+        return user_motif not in {"skewer", "discovered_attack", "discovered_check"}
     if user_motif not in _OVERRIDEABLE_USER_MOTIFS:
         return False
     if result == "missed":

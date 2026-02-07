@@ -49,12 +49,16 @@ export default function BaseTable<TData>({
   });
 
   const safeData = useMemo(() => data ?? [], [data]);
+  let paginationHandler: typeof setPagination | undefined;
+  if (enablePagination) {
+    paginationHandler = setPagination;
+  }
   const table = useReactTable({
     data: safeData,
     columns,
     state: enablePagination ? { sorting, pagination } : { sorting },
     onSortingChange: setSorting,
-    onPaginationChange: enablePagination ? setPagination : undefined,
+    onPaginationChange: paginationHandler,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     ...(enablePagination

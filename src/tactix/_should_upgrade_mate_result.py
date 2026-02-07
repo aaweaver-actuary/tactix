@@ -20,9 +20,9 @@ def _should_upgrade_mate_result(
     """
     if mate_in not in {MATE_IN_ONE, MATE_IN_TWO}:
         return False
-    missed_threshold = _MATE_MISSED_SCORE_MULTIPLIER * mate_in
     if ctx.after_cp is None:
         return False
+    missed_threshold = _MATE_MISSED_SCORE_MULTIPLIER * mate_in
     if _is_missed_mate(ctx.result, ctx.after_cp, missed_threshold):
         return True
     if mate_in == MATE_IN_TWO:

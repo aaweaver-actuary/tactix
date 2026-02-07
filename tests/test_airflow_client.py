@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from tactix.config import Settings
 from tactix.fetch_dag_run__airflow_api import fetch_dag_run__airflow_api
 from tactix.fetch_json__airflow_api import fetch_json__airflow_api
 from tactix.gather_auth__airflow_credentials import gather_auth__airflow_credentials
@@ -10,14 +11,13 @@ from tactix.orchestrate_dag_run__airflow_trigger import (
     orchestrate_dag_run__airflow_trigger,
 )
 from tactix.prepare_error__http_status import prepare_error__http_status
-from tactix.config import Settings
 
 
 def _make_settings() -> Settings:
     settings = Settings()
     settings.airflow_base_url = "http://localhost:8080/"
     settings.airflow_username = "admin"
-    settings.airflow_password = "admin"
+    settings.airflow_password = "admin"  # noqa: S105
     settings.airflow_api_timeout_s = 5
     return settings
 

@@ -1,4 +1,10 @@
 Session summary (2026-02-07):
+- Added API-level regression coverage for the lichess blitz fixture pipeline using TestClient + DuckDB checks.
+- Tests run: make check (before; already running), make check (after)
+- Before→After map:
+	- tests/test_api_lichess_blitz_pipeline_regression.py → new E2E regression test for lichess blitz fixture pipeline.
+
+Session summary (2026-02-07):
 - Verified SyncGames idempotency via pytest: test_api_pipeline_chesscom_bullet_idempotency (fixture chesscom_bullet_mate_hanging_2026_02_01.pgn).
 - knip (client) reports no deadcode issues after make check reported js-deadcode failure.
 - Updated feature_list.json: marked "SyncGames is idempotent for repeated runs with identical date range and source" as passing.

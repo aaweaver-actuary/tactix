@@ -1,4 +1,9 @@
 Session summary (2026-02-07):
+- Added newly opened GitHub issues (#9-#22) to the top of feature_list.json as high-priority work items.
+- Issues added: UI enter-to-submit, game details modal, practice progress increment bug, Open in Lichess button, collapsible/movable cards, listudy assets, housekeeping merge policy, and architecture boundary items (use-case infra work, ports bypassed, empty domain, callable injection, function-module explosion, UnitOfWork abstraction, PGN fixture parsing test).
+- Fixed ruff PLR0911 lint in _infer_hanging_or_detected_motif by consolidating returns.
+
+Session summary (2026-02-07):
 - Implemented CI-ready canonical pipeline validation test for chess.com bullet (2026-02-01) via API + DuckDB checks (tests/test_api_chesscom_bullet_pipeline_canonical.py).
 - Extended canonical integration script to validate hanging knight/bishop tactics and pre-blunder positions via best_uci origin/destination inference.
 - Pipeline run (API): tmp-logs/feature_pipeline_validation_chesscom_bullet_2026_02_01.json.

@@ -98,20 +98,20 @@ def _infer_hanging_or_detected_motif(
     user_board.push(move)
     motif = MOTIF_DETECTORS.infer_motif(motif_board, move)
     capture_motif = _resolve_capture_motif(motif_board, user_board, move, mover_color)
+    result = motif
     if user_board.is_checkmate():
-        if capture_motif == "hanging_piece":
-            return "hanging_piece"
-        return "mate"
-    if capture_motif == "hanging_piece":
+        result = "hanging_piece" if capture_motif == "hanging_piece" else "mate"
+    elif capture_motif == "hanging_piece":
         if motif in {
             "skewer",
             "pin",
             "discovered_attack",
             "discovered_check",
         }:
-            return motif
-        return "hanging_piece"
-    if motif in {
+            result = motif
+        else:
+            result = "hanging_piece"
+    elif motif in {
         "skewer",
         "pin",
         "fork",
@@ -119,14 +119,16 @@ def _infer_hanging_or_detected_motif(
         "discovered_check",
         "mate",
     }:
-        return motif
-    return (
-        _resolve_initiative_hanging_piece(
-            motif,
-            motif_board,
-            user_board,
-            move,
-            mover_color,
+        result = motif
+    else:
+        result = (
+            _resolve_initiative_hanging_piece(
+                motif,
+                motif_board,
+                user_board,
+                move,
+                mover_color,
+            )
+            or motif
         )
-        or motif
-    )
+    return result

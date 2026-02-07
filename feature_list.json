@@ -82,7 +82,7 @@
       "Step 9: Verify that adding run_id does not change externally observable behavior other than the additive field (no payload breaking changes; field optional for backwards compatibility if needed)",
       "Step 10: Confirm run_id propagation is implemented via explicit parameters or a single context mechanism (ContextVar) and is not a global mutable singleton"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

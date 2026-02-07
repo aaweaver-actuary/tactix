@@ -1,4 +1,13 @@
 Session summary (2026-02-07):
+- Implemented CI-ready canonical pipeline validation test for chess.com bullet (2026-02-01) via API + DuckDB checks (tests/test_api_chesscom_bullet_pipeline_canonical.py).
+- Extended canonical integration script to validate hanging knight/bishop tactics and pre-blunder positions via best_uci origin/destination inference.
+- Pipeline run (API): tmp-logs/feature_pipeline_validation_chesscom_bullet_2026_02_01.json.
+- UI verification (Puppeteer): verification/feature-pipeline-validation-chesscom-bullet-2026-02-01-2026-02-07.png with log tmp-logs/feature_pipeline_validation_chesscom_bullet_ui_2026_02_07.json.
+- Integration verification: verification/integration_feature_chesscom_bullet_canonical_2026_02_01.js (log tmp-logs/feature_chesscom_bullet_canonical_integration_2026_02_07.json).
+- Tests run: runTests (all; summary passed=111), node verification/integration_feature_chesscom_bullet_canonical_2026_02_01.js.
+- Updated feature_list.json: marked "Pipeline validation: chess.com bullet games on 2026-02-01 (canonical scenario)" as passing.
+
+Session summary (2026-02-07):
 - Regression verification for chess.com bullet + lichess blitz pipelines (API + DB + UI screenshots).
 - Fixed lichess pipeline fixtures on API server: pipeline now applies fixture settings when fixture_name is provided (regression was 500/401 due to missing token when use_fixture parsing was not honored).
 - Chess.com bullet pipeline (2026-02-01, fixture chesscom_bullet_mate_hanging_2026_02_01.pgn): counts games=11, positions=101, user_moves=101, opportunities=81, conversions=41, practice_queue=16; dashboard summary matches DB.

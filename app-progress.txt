@@ -1,4 +1,23 @@
 Session summary (2026-02-06):
+- Feature 010 (lichess blitz MVP E2E) verification via API + DB using fixture data.
+- API (FastAPI TestClient) POST /api/pipeline/run?source=lichess&profile=blitz&user_id=lichess&start_date=2024-06-05&end_date=2024-06-06&use_fixture=true&fixture_name=lichess_blitz_sample.pgn&db_name=tactix_feature_010_lichess_blitz_mvp&reset_db=true
+	-> status=ok run_id=99d4350f385b4862b5601662bafb1edc fetched_games=2
+	-> counts={'games': 2, 'positions': 6, 'user_moves': 6, 'opportunities': 6, 'conversions': 6, 'practice_queue': 5}
+	-> motif_counts={'capture': 1, 'hanging_piece': 1, 'initiative': 4} (no mate motifs in fixture)
+- DuckDB checks (data/tactix_feature_010_lichess_blitz_mvp.duckdb, 2024-06-05..2024-06-06 fixture window):
+	-> games=2, raw_pgns=2, games_null_game_id=0, raw_pgns_null_game_id=0
+	-> positions_user_to_move=6, positions_missing_fen=0
+	-> user_moves=6, user_moves_missing=0, user_moves_duplicates=0
+	-> opportunities=6, conversions=6, conversions_missing_opportunity=0
+	-> tactic_outcomes=6, tactic_outcomes_missing_tactic=0
+	-> outcomes={'missed': 5, 'unclear': 1} (no converted outcomes in fixture)
+	-> practice_queue=5
+- API (FastAPI TestClient) GET /api/dashboard/summary?source=lichess&start_date=2024-06-05&end_date=2024-06-06&db_name=tactix_feature_010_lichess_blitz_mvp
+	-> summary={'games': 2, 'positions': 6, 'user_moves': 6, 'opportunities': 6, 'conversions': 6, 'practice_queue': 5}
+- Evidence log: tmp-logs/feature_010_lichess_blitz_output.json
+- Tests run: none
+
+Session summary (2026-02-06):
 - Feature 008 idempotency verification (chess.com bullet fixture) via API + DB using TestClient and fixture data.
 - POST /api/pipeline/run?source=chesscom&profile=bullet&user_id=groborger&start_date=2026-02-01&end_date=2026-02-01&use_fixture=true&fixture_name=chesscom_bullet_mate_hanging_2026_02_01.pgn&db_name=tactix_feature_008_chesscom_bullet_idempotent&reset_db=true
 	-> run_id=04028107b8b64126a4340b9b92022d6d fetched_games=3

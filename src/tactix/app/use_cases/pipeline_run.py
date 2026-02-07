@@ -125,6 +125,8 @@ class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
         if not use_fixture:
             return
         settings.chesscom.token = None
+        settings.lichess.token = None
+        settings.use_fixture_when_no_token = True
         settings.chesscom_use_fixture_when_no_token = True
         settings.stockfish_movetime_ms = 60
         settings.stockfish_depth = 8
@@ -133,7 +135,11 @@ class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
             return
         safe_name = Path(fixture_name).name
         repo_root = Path(__file__).resolve().parents[4]
+        settings.fixture_pgn_path = repo_root / "tests" / "fixtures" / safe_name
         settings.chesscom_fixture_pgn_path = repo_root / "tests" / "fixtures" / safe_name
+        settings.lichess_token_cache_path = settings.lichess_token_cache_path.with_name(
+            "lichess_token_fixture.json"
+        )
 
     def _apply_db_settings(self, settings: Settings, db_name: str | None, reset_db: bool) -> None:
         if not db_name:

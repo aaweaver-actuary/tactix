@@ -1,4 +1,22 @@
 Session summary (2026-02-06):
+- Feature 007 (lichess blitz E2E) verification via API + DB using fixture data.
+- API (FastAPI TestClient) POST /api/pipeline/run?source=lichess&profile=blitz&user_id=lichess&start_date=2024-06-05&end_date=2024-06-06&use_fixture=true&fixture_name=lichess_blitz_sample.pgn&db_name=tactix_feature_007_lichess_blitz&reset_db=true
+	-> status=ok run_id=7c1a39133d544a889d4945dfabd5bfdf fetched_games=2
+	-> counts={'games': 2, 'positions': 6, 'user_moves': 6, 'opportunities': 6, 'conversions': 6, 'practice_queue': 5}
+	-> motif_counts={'capture': 1, 'hanging_piece': 1, 'initiative': 4}
+- DuckDB checks (data/tactix_feature_007_lichess_blitz.duckdb, 2024-06-05..2024-06-06):
+	-> games=2, raw_pgns=2, games_null_game_id=0, raw_pgns_null_game_id=0
+	-> positions_user_to_move=6, positions_missing_fen=0
+	-> user_moves=6, user_moves_missing=0, user_moves_duplicates=0
+	-> opportunities=6, conversions=6, conversions_missing_opportunity=0
+	-> tactic_outcomes=6, tactic_outcomes_missing_tactic=0
+	-> practice_queue=5
+- API (FastAPI TestClient) GET /api/dashboard/summary?source=lichess&start_date=2024-06-05&end_date=2024-06-06&db_name=tactix_feature_007_lichess_blitz
+	-> summary={'games': 2, 'positions': 6, 'user_moves': 6, 'opportunities': 6, 'conversions': 6, 'practice_queue': 5}
+- Evidence log: tmp-logs/feature_007_lichess_blitz_output.json
+- Tests run: none
+
+Session summary (2026-02-06):
 - Verified Feature 006 via API+DB using fixture chesscom_bullet_mate_hanging_2026_02_01.pgn and user_id=groborger (UI has no pipeline run controls; no screenshots).
 - POST /api/pipeline/run?source=chesscom&profile=bullet&start_date=2026-02-01&end_date=2026-02-01&use_fixture=true&fixture_name=chesscom_bullet_mate_hanging_2026_02_01.pgn&db_name=tactix_feature_006_chesscom_bullet&reset_db=true
 	-> run_id=8c13266744d7447c9af60d7b3cc7f220, fetched_games=3

@@ -1,4 +1,14 @@
 Session summary (2026-02-06):
+- Moved Postgres raw PGN SQL into db/postgres_raw_pgn_repository and left legacy helper modules as thin delegating wrappers.
+- Updated pipelines and Postgres repository wiring to use PostgresRawPgnRepository + db-level summary helper; adjusted Postgres upsert tests to call the repository.
+- Added Postgres raw PGN repository to boundary coverage; kept summary payload builder as a legacy helper without SQL.
+- Tests run: `make check` (before changes; failed at pylint R0903 in src/tactix/ports/repositories.py), `make check` (after changes; same pylint failure).
+- Before→After map:
+	- upsert_postgres_raw_pgns/_upsert_postgres_raw_pgn_rows/_maybe_upsert_raw_pgn_row/_insert_raw_pgn_row/_fetch_latest_pgn_metadata/_fetch_raw_pgn_summary → db/postgres_raw_pgn_repository (wrappers delegate).
+	- fetch_postgres_raw_pgns_summary → db/postgres_raw_pgn_repository.fetch_postgres_raw_pgns_summary + PostgresRawPgnRepository.fetch_raw_pgns_summary.
+	- upsert_postgres_raw_pgns_if_enabled__pipeline + test_postgres_store imports → PostgresRawPgnRepository usage.
+
+Session summary (2026-02-06):
 - Added repository port Protocols for raw PGN/game, position, tactic/conversion, practice queue, dashboard, and metrics boundaries.
 - Moved Postgres analysis/ops SQL into db repository modules and left thin delegating wrappers in the legacy modules.
 - Added repository boundary test to enforce no FastAPI imports in repo modules.

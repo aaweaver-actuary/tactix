@@ -9,7 +9,7 @@ from typing import Any
 from tactix.config import Settings
 from tactix.db.postgres_analysis_repository import fetch_analysis_tactics
 from tactix.db.postgres_ops_repository import fetch_ops_events
-from tactix.fetch_postgres_raw_pgns_summary import fetch_postgres_raw_pgns_summary
+from tactix.db.postgres_raw_pgn_repository import fetch_postgres_raw_pgns_summary
 from tactix.get_postgres_status import get_postgres_status
 from tactix.postgres_status import PostgresStatus
 

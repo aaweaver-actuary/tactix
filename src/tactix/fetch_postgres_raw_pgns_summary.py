@@ -1,26 +1,7 @@
-"""Fetch raw PGN summary payloads from Postgres."""
+"""Legacy wrapper for Postgres raw PGN summary reads."""
 
-from typing import Any
+# pylint: disable=unused-import
 
-from psycopg2.extras import RealDictCursor
-
-from tactix._build_raw_pgn_summary import (
-    _build_raw_pgn_summary,
+from tactix.db.postgres_raw_pgn_repository import (  # noqa: F401
+    fetch_postgres_raw_pgns_summary,
 )
-from tactix._disabled_raw_pgn_summary import _disabled_raw_pgn_summary
-from tactix._fetch_raw_pgn_summary import _fetch_raw_pgn_summary
-from tactix.config import Settings
-from tactix.init_pgn_schema import init_pgn_schema
-from tactix.postgres_connection import postgres_connection
-from tactix.postgres_pgns_enabled import postgres_pgns_enabled
-
-
-def fetch_postgres_raw_pgns_summary(settings: Settings) -> dict[str, Any]:
-    """Return Postgres raw PGN summary payload."""
-    with postgres_connection(settings) as conn:
-        if conn is None or not postgres_pgns_enabled(settings):
-            return _disabled_raw_pgn_summary()
-        init_pgn_schema(conn)
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            sources, totals = _fetch_raw_pgn_summary(cur)
-        return _build_raw_pgn_summary(sources, totals)

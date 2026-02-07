@@ -8,7 +8,10 @@ from tactix.postgres_status import PostgresStatus
 from tactix.config import Settings
 from tactix.fetch_analysis_tactics import fetch_analysis_tactics
 from tactix.fetch_ops_events import fetch_ops_events
-from tactix.fetch_postgres_raw_pgns_summary import fetch_postgres_raw_pgns_summary
+from tactix.db.postgres_raw_pgn_repository import (
+    PostgresRawPgnRepository,
+    fetch_postgres_raw_pgns_summary,
+)
 from tactix.get_postgres_status import get_postgres_status
 from tactix.init_analysis_schema import init_analysis_schema
 from tactix.init_pgn_schema import init_pgn_schema
@@ -17,7 +20,6 @@ from tactix.postgres_enabled import postgres_enabled
 from tactix.postgres_pgns_enabled import postgres_pgns_enabled
 from tactix.record_ops_event import record_ops_event
 from tactix.upsert_analysis_tactic_with_outcome import upsert_analysis_tactic_with_outcome
-from tactix.upsert_postgres_raw_pgns import upsert_postgres_raw_pgns
 from tactix.serialize_status import (
     serialize_status,
 )
@@ -162,8 +164,8 @@ def test_upsert_postgres_raw_pgns_inserts_new_version() -> None:
     conn.cursor.return_value = cursor
     conn.autocommit = True
 
-    inserted = upsert_postgres_raw_pgns(
-        conn,
+    repo = PostgresRawPgnRepository(conn)
+    inserted = repo.upsert_raw_pgns(
         [
             {
                 "game_id": "game-1",
@@ -194,8 +196,8 @@ def test_upsert_postgres_raw_pgns_skips_duplicate_hash() -> None:
     conn.autocommit = True
 
     with patch("tactix._build_pgn_upsert_plan.BaseDbStore.hash_pgn", return_value="match"):
-        inserted = upsert_postgres_raw_pgns(
-            conn,
+        repo = PostgresRawPgnRepository(conn)
+        inserted = repo.upsert_raw_pgns(
             [
                 {
                     "game_id": "game-1",

@@ -1,4 +1,4 @@
-"""Build raw PGN summary payloads."""
+"""Legacy helper for building raw PGN summary payloads."""
 
 from collections.abc import Mapping
 from typing import Any

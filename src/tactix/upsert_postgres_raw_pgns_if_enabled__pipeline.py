@@ -9,6 +9,7 @@ import psycopg2
 
 from tactix.app.use_cases.pipeline_support import _emit_progress
 from tactix.config import Settings
+from tactix.db.postgres_raw_pgn_repository import PostgresRawPgnRepository
 from tactix.define_pipeline_state__pipeline import ProgressCallback, logger
 from tactix.GameRow import GameRow
 from tactix.init_pgn_schema import init_pgn_schema
@@ -18,7 +19,6 @@ from tactix.postgres_pgns_enabled import postgres_pgns_enabled
 from tactix.record_ops_event import (
     record_ops_event,
 )
-from tactix.upsert_postgres_raw_pgns import upsert_postgres_raw_pgns
 
 
 def _upsert_postgres_raw_pgns_if_enabled(
@@ -36,8 +36,8 @@ def _upsert_postgres_raw_pgns_if_enabled(
         else:
             init_pgn_schema(pg_conn)
             try:
-                inserted = upsert_postgres_raw_pgns(
-                    pg_conn,
+                repo = PostgresRawPgnRepository(pg_conn)
+                inserted = repo.upsert_raw_pgns(
                     cast(list[Mapping[str, object]], games_to_process),
                 )
             except psycopg2.Error as exc:

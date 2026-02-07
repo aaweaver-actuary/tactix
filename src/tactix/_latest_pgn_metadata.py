@@ -1,14 +1,7 @@
-from tactix._fetch_latest_pgn_metadata import _fetch_latest_pgn_metadata
+"""Legacy wrapper for Postgres raw PGN metadata cache updates."""
 
+# pylint: disable=unused-import
 
-def _latest_pgn_metadata(
-    cur,
-    key: tuple[str, str],
-    latest_cache: dict[tuple[str, str], tuple[str | None, int]],
-) -> tuple[str | None, int]:
-    cached = latest_cache.get(key)
-    if cached is not None:
-        return cached
-    latest_hash, latest_version = _fetch_latest_pgn_metadata(cur, key[0], key[1])
-    latest_cache[key] = (latest_hash, latest_version)
-    return latest_hash, latest_version
+from tactix.db.postgres_raw_pgn_repository import (  # noqa: F401
+    _latest_pgn_metadata,
+)

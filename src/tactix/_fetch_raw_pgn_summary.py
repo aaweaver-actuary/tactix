@@ -1,34 +1,7 @@
-"""Fetch raw PGN summary metrics from the database."""
+"""Legacy wrapper for Postgres raw PGN summary SQL."""
 
-from collections.abc import Mapping
-from typing import Any
+# pylint: disable=unused-import
 
-from tactix.define_db_schemas__const import PGN_SCHEMA
-
-
-def _fetch_raw_pgn_summary(cur) -> tuple[list[Mapping[str, Any]], Mapping[str, Any]]:
-    """Return per-source and total raw PGN summary data."""
-    cur.execute(
-        f"""
-        SELECT
-            source,
-            COUNT(*) AS total_rows,
-            COUNT(DISTINCT game_id) AS distinct_games,
-            MAX(ingested_at) AS latest_ingested_at
-        FROM {PGN_SCHEMA}.raw_pgns
-        GROUP BY source
-        ORDER BY source
-        """
-    )
-    sources = cur.fetchall()
-    cur.execute(
-        f"""
-        SELECT
-            COUNT(*) AS total_rows,
-            COUNT(DISTINCT game_id) AS distinct_games,
-            MAX(ingested_at) AS latest_ingested_at
-        FROM {PGN_SCHEMA}.raw_pgns
-        """
-    )
-    totals = cur.fetchone() or {}
-    return sources, totals if isinstance(totals, Mapping) else {}
+from tactix.db.postgres_raw_pgn_repository import (  # noqa: F401
+    _fetch_raw_pgn_summary,
+)

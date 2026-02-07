@@ -11,6 +11,7 @@ def test_repository_modules_do_not_import_fastapi() -> None:
         "src/tactix/db/duckdb_tactic_repository.py",
         "src/tactix/db/postgres_analysis_repository.py",
         "src/tactix/db/postgres_ops_repository.py",
+        "src/tactix/db/postgres_raw_pgn_repository.py",
     ]
     for rel_path in repo_paths:
         content = (repo_root / rel_path).read_text(encoding="utf-8")

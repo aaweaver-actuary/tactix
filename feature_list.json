@@ -1,6 +1,84 @@
 [
   {
     "category": "functional",
+    "description": "E2E canonical scenario: chess.com bullet games + missed tactics on 2026-02-01 are consistent across pipeline, DB, API, and client",
+    "steps": [
+      "Step 1: Run the pipeline for 2026-02-01 (chess.com, bullet) and confirm exactly 2 games are ingested (1 win, 1 loss)",
+      "Step 2: Confirm rating deltas match the canonical facts (loss game opponent rating - user rating > 50; win game opponent rating - user rating <= 50)",
+      "Step 3: Confirm missed tactics are detected for the loss game (hung knight and hung bishop)",
+      "Step 4: Confirm the pre-blunder positions for the hung knight and hung bishop are captured and stored",
+      "Step 5: Confirm database records match the pipeline output for games and practice positions",
+      "Step 6: Confirm API responses match database records for games and practice queue",
+      "Step 7: Confirm client renders the same canonical facts (2 games, 1 win, 1 loss, 2 practice positions)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Pipeline validation: chess.com bullet games on 2026-02-01 (canonical scenario)",
+    "steps": [
+      "Step 1: Run the pipeline for 2026-02-01 (source=chess.com, time_control=bullet)",
+      "Step 2: Verify exactly 2 bullet games are ingested (no more, no less)",
+      "Step 3: Verify outcomes include exactly 1 win and 1 loss",
+      "Step 4: Verify rating deltas: loss game opponent rating - user rating > 50; win game opponent rating - user rating <= 50",
+      "Step 5: Verify the loss game includes missed tactics for a hung knight and a hung bishop",
+      "Step 6: Verify the pre-blunder positions for both hangs are recorded",
+      "Step 7: Verify results are persisted for downstream verification"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Database verification (Postgres): chess.com bullet games + practice positions on 2026-02-01",
+    "steps": [
+      "Step 1: Query games tables for 2026-02-01 (source=chess.com, time_control=bullet) and confirm exactly 2 games",
+      "Step 2: Confirm outcomes include exactly 1 win and 1 loss",
+      "Step 3: Confirm rating deltas: loss game opponent rating - user rating > 50; win game opponent rating - user rating <= 50",
+      "Step 4: Query practice queue/tactics tables and confirm at least 2 practice positions for 2026-02-01",
+      "Step 5: Confirm both positions reference the loss game and are classified as missed tactics",
+      "Step 6: Confirm one position corresponds to a hung knight and one to a hung bishop",
+      "Step 7: Confirm each position includes game id, move number, and FEN"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Backend API verification (FastAPI): chess.com bullet games + practice queue on 2026-02-01",
+    "steps": [
+      "Step 1: Call API endpoints for games filtered to 2026-02-01 (source=chess.com, time_control=bullet)",
+      "Step 2: Confirm API returns exactly 2 games with exactly 1 win and 1 loss",
+      "Step 3: Confirm rating deltas match canonical facts (loss game opponent rating - user rating > 50; win game opponent rating - user rating <= 50)",
+      "Step 4: Call practice queue endpoint for the same filters",
+      "Step 5: Confirm API returns at least 2 practice positions from the loss game",
+      "Step 6: Confirm one position represents a hung knight and one represents a hung bishop"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Client verification (mocked, automated): chess.com bullet games + practice queue on 2026-02-01",
+    "steps": [
+      "Step 1: Use mocked API data for the canonical scenario",
+      "Step 2: Apply filters (date=2026-02-01, platform=chess.com, time_control=bullet)",
+      "Step 3: Verify exactly 2 games render with 1 win and 1 loss",
+      "Step 4: Verify exactly 2 practice positions render, both tied to the loss game and labeled as missed tactics"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Client E2E verification (Puppeteer): chess.com bullet games + practice queue on 2026-02-01",
+    "steps": [
+      "Step 1: Open the client in a real browser via Puppeteer",
+      "Step 2: Filter to date=2026-02-01, source=chess.com, time_control=bullet",
+      "Step 3: Verify exactly 2 games render with 1 win and 1 loss",
+      "Step 4: Verify exactly 2 practice positions render, both from the loss game",
+      "Step 5: Capture a screenshot showing active filters, two games, and two practice positions"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
     "description": "Tactic detection is fully object-driven: detectors are pure strategy objects, coordinated by a single TacticDetectionService, with no DB/HTTP dependencies in detectors",
     "steps": [
       "Step 1: Identify the canonical detector interface (Protocol/ABC) (e.g., ports/tactics.py:TacticDetector or domain/tactics/TacticDetector) and confirm all detectors implement it (e.g., HangingPieceDetector, MateDetector, ForkDetector, PinDetector, SkewerDetector)",

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from tactix.coerce_date_to_datetime__datetime import _coerce_date_to_datetime
 from tactix.config import Settings, get_settings
@@ -21,6 +22,7 @@ from tactix.normalize_source__source import _normalize_source
 from tactix.pipeline import run_daily_game_sync
 from tactix.pipeline_run_filters import PipelineRunFilters
 from tactix.refresh_dashboard_cache_async__api_cache import _refresh_dashboard_cache_async
+from tactix.trace_context import trace_context
 
 
 class PipelineWindowError(ValueError):
@@ -49,27 +51,31 @@ class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
     def run(self, filters: PipelineRunFilters) -> dict[str, object]:
         normalized_source = self.normalize_source(filters.source)
         settings = self._resolve_pipeline_settings(normalized_source, filters)
+        run_id = uuid4().hex
+        settings.run_id = run_id
         start_datetime, end_datetime, window_start_ms, window_end_ms = self._resolve_window_range(
             filters
         )
-        result = self.run_daily_game_sync(
-            settings,
-            source=normalized_source,
-            window_start_ms=window_start_ms,
-            window_end_ms=window_end_ms,
-            profile=None,
-        )
-        self.refresh_dashboard_cache_async(self.sources_for_cache_refresh(normalized_source))
-        counts, motif_counts = self._fetch_pipeline_counts(
-            settings.duckdb_path,
-            DashboardQuery(
+        with trace_context(run_id=run_id, op_id="pipeline.run"):
+            result = self.run_daily_game_sync(
+                settings,
                 source=normalized_source,
-                start_date=start_datetime,
-                end_date=end_datetime,
-            ),
-        )
+                window_start_ms=window_start_ms,
+                window_end_ms=window_end_ms,
+                profile=None,
+            )
+            self.refresh_dashboard_cache_async(self.sources_for_cache_refresh(normalized_source))
+            counts, motif_counts = self._fetch_pipeline_counts(
+                settings.duckdb_path,
+                DashboardQuery(
+                    source=normalized_source,
+                    start_date=start_datetime,
+                    end_date=end_datetime,
+                ),
+            )
         return {
             "status": "ok",
+            "run_id": run_id,
             "result": result,
             "counts": counts,
             "motif_counts": motif_counts,

@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from starlette.requests import Request
 
 from tactix.api import app
+from tactix.app.use_cases.pipeline_run import get_pipeline_run_use_case
 from tactix.build_airflow_conf__airflow_jobs import _airflow_conf
 from tactix.build_dashboard_cache_key__api_cache import _dashboard_cache_key
 from tactix.clear_dashboard_cache__api_cache import _clear_dashboard_cache
@@ -219,6 +220,22 @@ class ApiHelperTests(unittest.TestCase):
         ):
             state = _airflow_state(settings, "run-9")
         self.assertEqual(state, "success")
+
+    def test_pipeline_run_api_includes_run_id(self) -> None:
+        class DummyUseCase:
+            def run(self, _filters) -> dict[str, object]:
+                return {"status": "ok", "run_id": "run-123"}
+
+        app.dependency_overrides[get_pipeline_run_use_case] = lambda: DummyUseCase()
+        client = TestClient(app)
+        response = client.post(
+            "/api/pipeline/run",
+            headers={"Authorization": "Bearer local-dev-token"},
+        )
+        app.dependency_overrides.clear()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json().get("run_id"), "run-123")
 
     def test_event_stream_keep_alive(self) -> None:
         sentinel = object()

@@ -74,6 +74,7 @@ class Settings:
     )
     rapid_perf: str = os.getenv("TACTIX_PERF", "rapid")
     run_context: str = os.getenv("TACTIX_RUN_CONTEXT", "app")
+    run_id: str | None = None
     checkpoint_path: Path = DEFAULT_LICHESS_CHECKPOINT
     analysis_checkpoint_path: Path = DEFAULT_LICHESS_ANALYSIS_CHECKPOINT
     fixture_pgn_path: Path = DEFAULT_LICHESS_FIXTURE

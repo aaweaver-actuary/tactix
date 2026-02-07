@@ -8,11 +8,25 @@ import sys
 import time
 from functools import wraps
 
+from tactix.trace_context import get_op_id, get_run_id
+
 _DEFAULT_LOGGER_NAME = "tactix"
 _DEFAULT_LOG_LEVEL = logging.DEBUG
-_DEFAULT_FORMATTER = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+_DEFAULT_FORMATTER = logging.Formatter(
+    "%(asctime)s [%(levelname)s] %(name)s [run_id=%(run_id)s op_id=%(op_id)s]: %(message)s"
+)
 _DEFAULT_HANDLER = logging.StreamHandler(sys.stdout)
+
+
+class _TraceFilter(logging.Filter):  # pylint: disable=too-few-public-methods
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.run_id = get_run_id() or "-"
+        record.op_id = get_op_id() or "-"
+        return True
+
+
 _DEFAULT_HANDLER.setFormatter(_DEFAULT_FORMATTER)
+_DEFAULT_HANDLER.addFilter(_TraceFilter())
 
 
 def _configure_logger(logger: logging.Logger, level: int) -> None:

@@ -35,32 +35,35 @@ from tactix.sync_contexts import (
     PrepareGamesForSyncContext,
     RawPgnMetrics,
 )
+from tactix.trace_context import trace_context
 
 
-def _run_daily_game_sync(
+def _run_daily_game_sync(  # noqa: PLR0915
     context: DailyGameSyncContext,
 ) -> dict[str, object]:
     backfill_mode = _is_backfill_mode(context.window_start_ms, context.window_end_ms)
-    _emit_daily_sync_start(
-        DailySyncStartContext(
-            settings=context.settings,
-            progress=context.progress,
-            profile=context.profile,
-            backfill_mode=backfill_mode,
-            window_start_ms=context.window_start_ms,
-            window_end_ms=context.window_end_ms,
+    with trace_context(op_id="daily_sync.start"):
+        _emit_daily_sync_start(
+            DailySyncStartContext(
+                settings=context.settings,
+                progress=context.progress,
+                profile=context.profile,
+                backfill_mode=backfill_mode,
+                window_start_ms=context.window_start_ms,
+                window_end_ms=context.window_end_ms,
+            )
         )
-    )
-    games, fetch_context, window_filtered, last_timestamp_value = _prepare_games_for_sync(
-        PrepareGamesForSyncContext(
-            settings=context.settings,
-            client=context.client,
-            backfill_mode=backfill_mode,
-            window_start_ms=context.window_start_ms,
-            window_end_ms=context.window_end_ms,
-            progress=context.progress,
+    with trace_context(op_id="daily_sync.fetch_games"):
+        games, fetch_context, window_filtered, last_timestamp_value = _prepare_games_for_sync(
+            PrepareGamesForSyncContext(
+                settings=context.settings,
+                client=context.client,
+                backfill_mode=backfill_mode,
+                window_start_ms=context.window_start_ms,
+                window_end_ms=context.window_end_ms,
+                progress=context.progress,
+            )
         )
-    )
     conn = get_connection(context.settings.duckdb_path)
     init_schema(conn)
     window_context = NoGamesWindowContext(
@@ -69,40 +72,44 @@ def _run_daily_game_sync(
         window_filtered=window_filtered,
     )
     if not games:
-        return _handle_no_games(
-            NoGamesContext(
-                settings=context.settings,
-                conn=conn,
-                progress=context.progress,
-                backfill_mode=backfill_mode,
-                window=window_context,
+        with trace_context(op_id="daily_sync.no_games"):
+            return _handle_no_games(
+                NoGamesContext(
+                    settings=context.settings,
+                    conn=conn,
+                    progress=context.progress,
+                    backfill_mode=backfill_mode,
+                    window=window_context,
+                )
             )
+    with trace_context(op_id="daily_sync.backfill_filter"):
+        games_to_process, skipped_games = _apply_backfill_filter(
+            conn,
+            games,
+            backfill_mode,
+            context.settings.source,
         )
-    games_to_process, skipped_games = _apply_backfill_filter(
-        conn,
-        games,
-        backfill_mode,
-        context.settings.source,
-    )
     _log_skipped_backfill(context.settings, skipped_games)
     if not games_to_process:
-        return _handle_no_games_after_dedupe(
-            NoGamesAfterDedupeContext(
-                settings=context.settings,
-                conn=conn,
-                progress=context.progress,
-                backfill_mode=backfill_mode,
-                games=games,
-                window=window_context,
+        with trace_context(op_id="daily_sync.no_games_after_dedupe"):
+            return _handle_no_games_after_dedupe(
+                NoGamesAfterDedupeContext(
+                    settings=context.settings,
+                    conn=conn,
+                    progress=context.progress,
+                    backfill_mode=backfill_mode,
+                    games=games,
+                    window=window_context,
+                )
             )
+    with trace_context(op_id="analysis.prepare"):
+        analysis_prep = _prepare_analysis_inputs(
+            conn,
+            context.settings,
+            games_to_process,
+            context.progress,
+            context.profile,
         )
-    analysis_prep = _prepare_analysis_inputs(
-        conn,
-        context.settings,
-        games_to_process,
-        context.progress,
-        context.profile,
-    )
     _log_raw_pgns_persisted(
         context.settings,
         analysis_prep.raw_pgns_inserted,
@@ -111,19 +118,20 @@ def _run_daily_game_sync(
         games_to_process,
     )
     _emit_positions_ready(context.settings, context.progress, analysis_prep.positions)
-    analysis_result = _run_analysis_and_metrics(
-        AnalysisAndMetricsContext(
-            conn=conn,
-            settings=context.settings,
-            run=AnalysisRunInputs(
-                positions=analysis_prep.positions,
-                resume_index=analysis_prep.resume_index,
-                analysis_signature=analysis_prep.analysis_signature,
-                progress=context.progress,
-            ),
-            profile=context.profile,
+    with trace_context(op_id="analysis.detect_tactics"):
+        analysis_result = _run_analysis_and_metrics(
+            AnalysisAndMetricsContext(
+                conn=conn,
+                settings=context.settings,
+                run=AnalysisRunInputs(
+                    positions=analysis_prep.positions,
+                    resume_index=analysis_prep.resume_index,
+                    analysis_signature=analysis_prep.analysis_signature,
+                    progress=context.progress,
+                ),
+                profile=context.profile,
+            )
         )
-    )
     checkpoint_value, last_timestamp_value = _update_daily_checkpoint(
         context.settings,
         backfill_mode,
@@ -131,45 +139,47 @@ def _run_daily_game_sync(
         games,
         last_timestamp_value,
     )
-    _record_daily_sync_complete(
-        DailySyncCompleteContext(
-            settings=context.settings,
-            profile=context.profile,
-            games=games,
-            totals=DailySyncTotals(
-                raw_pgns_inserted=analysis_prep.raw_pgns_inserted,
-                postgres_raw_pgns_inserted=analysis_prep.postgres_raw_pgns_inserted,
-                positions_count=analysis_result.total_positions,
-                tactics_count=analysis_result.tactics_count,
-                postgres_written=analysis_result.postgres_written,
-                postgres_synced=analysis_result.postgres_synced,
-                metrics_version=analysis_result.metrics_version,
-            ),
-            backfill_mode=backfill_mode,
-        )
-    )
-    return _build_daily_sync_payload(
-        DailySyncPayloadContext(
-            settings=context.settings,
-            fetch_context=fetch_context,
-            games=games,
-            metrics=DailySyncPayloadMetrics(
-                raw_pgns=RawPgnMetrics(
+    with trace_context(op_id="daily_sync.complete"):
+        _record_daily_sync_complete(
+            DailySyncCompleteContext(
+                settings=context.settings,
+                profile=context.profile,
+                games=games,
+                totals=DailySyncTotals(
                     raw_pgns_inserted=analysis_prep.raw_pgns_inserted,
-                    raw_pgns_hashed=analysis_prep.raw_pgns_hashed,
-                    raw_pgns_matched=analysis_prep.raw_pgns_matched,
                     postgres_raw_pgns_inserted=analysis_prep.postgres_raw_pgns_inserted,
-                ),
-                analysis=AnalysisMetrics(
                     positions_count=analysis_result.total_positions,
                     tactics_count=analysis_result.tactics_count,
+                    postgres_written=analysis_result.postgres_written,
+                    postgres_synced=analysis_result.postgres_synced,
                     metrics_version=analysis_result.metrics_version,
                 ),
-                checkpoint=DailySyncCheckpoint(
-                    checkpoint_value=checkpoint_value,
-                    last_timestamp_value=last_timestamp_value,
-                ),
-            ),
-            backfill_mode=backfill_mode,
+                backfill_mode=backfill_mode,
+            )
         )
-    )
+    with trace_context(op_id="daily_sync.payload"):
+        return _build_daily_sync_payload(
+            DailySyncPayloadContext(
+                settings=context.settings,
+                fetch_context=fetch_context,
+                games=games,
+                metrics=DailySyncPayloadMetrics(
+                    raw_pgns=RawPgnMetrics(
+                        raw_pgns_inserted=analysis_prep.raw_pgns_inserted,
+                        raw_pgns_hashed=analysis_prep.raw_pgns_hashed,
+                        raw_pgns_matched=analysis_prep.raw_pgns_matched,
+                        postgres_raw_pgns_inserted=analysis_prep.postgres_raw_pgns_inserted,
+                    ),
+                    analysis=AnalysisMetrics(
+                        positions_count=analysis_result.total_positions,
+                        tactics_count=analysis_result.tactics_count,
+                        metrics_version=analysis_result.metrics_version,
+                    ),
+                    checkpoint=DailySyncCheckpoint(
+                        checkpoint_value=checkpoint_value,
+                        last_timestamp_value=last_timestamp_value,
+                    ),
+                ),
+                backfill_mode=backfill_mode,
+            )
+        )

@@ -335,6 +335,19 @@ def test_record_ops_event_no_connection() -> None:
     assert record_ops_event(settings, component="api", event_type="start") is False
 
 
+def test_record_ops_event_persists_run_id() -> None:
+    settings = _make_settings()
+    settings.run_id = "run-abc"
+    cursor = MagicMock()
+    cursor.__enter__.return_value = cursor
+    conn = MagicMock()
+    conn.cursor.return_value = cursor
+    with patch("tactix.postgres_connection.psycopg2.connect", return_value=conn):
+        record_ops_event(settings, component="api", event_type="start")
+    params = cursor.execute.call_args[0][1]
+    assert params[5] == "run-abc"
+
+
 def test_fetch_ops_events_with_rows() -> None:
     settings = _make_settings()
     cursor = MagicMock()

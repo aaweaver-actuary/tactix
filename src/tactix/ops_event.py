@@ -8,7 +8,7 @@ from tactix.config import Settings
 
 
 @dataclass(frozen=True)
-class OpsEvent:
+class OpsEvent:  # pylint: disable=too-many-instance-attributes
     """Structured event metadata for operational logging."""
 
     settings: Settings
@@ -17,3 +17,5 @@ class OpsEvent:
     source: str | None
     profile: str | None
     metadata: dict[str, object] | None = None
+    run_id: str | None = None
+    op_id: str | None = None

@@ -6,7 +6,7 @@ import {
 } from '../api';
 import { getAuthHeaders } from './streams';
 
-export async function fetchPostgresResource<T>(
+async function fetchPostgresResource<T>(
   path: string,
   errorLabel: string,
 ): Promise<T> {

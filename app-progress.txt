@@ -1,4 +1,16 @@
 Session summary (2026-02-06):
+- Implemented run-level traceability with run_id/op_id context, logging filter, pipeline op bindings, and ops_events schema/insert updates so run_id is persisted and emitted.
+- Pipeline run use case now generates a run_id and returns it in the API response; progress payloads include run_id/op_id for correlation.
+- Added API contract test for run_id plus ops-event persistence coverage, and asserted run_id in pipeline run use case tests.
+- Removed unused client utilities/exports flagged by knip during the run_id work to keep CI dead-code checks clean.
+- Tests run: `make check` (before; already running when session started), `make check` (after; completed successfully).
+- Before→After map:
+	- ops_events schema + db/postgres_ops_repository → added run_id/op_id columns and propagation.
+	- app/use_cases/pipeline_run.PipelineRunUseCase → generate/bind run_id and include in response.
+	- run_daily_game_sync_internal__pipeline op steps → bind op_id context for traceable logs.
+	- tests/test_api_helpers.py + tests/test_postgres_store.py + tests/test_use_cases_api_layer.py → run_id coverage.
+
+Session summary (2026-02-06):
 - Refactored dashboard UI into a dedicated Flow component and kept App as a page shell, aligning Base → Specific → Flow → Page layering.
 - Added Flow-focused tests for mocked dashboard rendering and loading/error transitions, and updated job stream tests to mock client-layer APIs.
 - Ensured API calls are centralized through the client module and preserved all existing dashboard data-testid values.

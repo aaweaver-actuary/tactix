@@ -35,6 +35,7 @@ from tactix.sync_contexts import (
     NoGamesPayloadContext,
     WindowFilterContext,
 )
+from tactix.trace_context import get_op_id, get_run_id
 from tactix.update_metrics_and_version__pipeline import _update_metrics_and_version
 from tactix.utils.normalize_string import normalize_string
 
@@ -114,6 +115,12 @@ class PipelineEmissions:  # pylint: disable=too-many-arguments,too-many-position
         if progress is None:
             return
         payload: dict[str, object] = {"step": step, "timestamp": time.time()}
+        run_id = get_run_id()
+        op_id = get_op_id()
+        if run_id:
+            payload["run_id"] = run_id
+        if op_id:
+            payload["op_id"] = op_id
         payload.update(fields)
         progress(payload)
 

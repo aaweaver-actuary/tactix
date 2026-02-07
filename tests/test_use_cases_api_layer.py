@@ -149,6 +149,7 @@ def test_pipeline_run_use_case_runs_and_returns_counts(tmp_path) -> None:
     result = use_case.run(PipelineRunFilters())
 
     assert result["status"] == "ok"
+    assert isinstance(result["run_id"], str)
     assert result["counts"] == {"games": 1}
     assert result["motif_counts"] == {"fork": 2}
     use_case.refresh_dashboard_cache_async.assert_called_once()

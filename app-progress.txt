@@ -1,4 +1,22 @@
 Session summary (2026-02-06):
+- Verified Feature 006 via API+DB using fixture chesscom_bullet_mate_hanging_2026_02_01.pgn and user_id=groborger (UI has no pipeline run controls; no screenshots).
+- POST /api/pipeline/run?source=chesscom&profile=bullet&start_date=2026-02-01&end_date=2026-02-01&use_fixture=true&fixture_name=chesscom_bullet_mate_hanging_2026_02_01.pgn&db_name=tactix_feature_006_chesscom_bullet&reset_db=true
+	-> run_id=8c13266744d7447c9af60d7b3cc7f220, fetched_games=3
+	-> counts={'games': 3, 'positions': 21, 'user_moves': 21, 'opportunities': 21, 'conversions': 21, 'practice_queue': 16}
+	-> motif_counts={'escape': 1, 'hanging_piece': 4, 'initiative': 10, 'mate': 1, 'pin': 1, 'skewer': 4}
+- DuckDB checks (data/tactix_feature_006_chesscom_bullet.duckdb, 2026-02-01):
+	-> games=3, raw_pgns=3, games_null_game_id=0, raw_pgns_null_game_id=0
+	-> positions_user_to_move=21, positions_missing_fen=0
+	-> user_moves=21, user_moves_bad_cardinality=0
+	-> opportunities_hanging_piece=4, opportunities_mate=1
+	-> conversions=21, conversions_missing_opportunity=0
+	-> tactic_outcomes=21, tactic_outcomes_missing_tactic=0
+	-> practice_queue=16, practice_queue_missed=16
+- GET /api/dashboard/summary?source=chesscom&start_date=2026-02-01&end_date=2026-02-01&db_name=tactix_feature_006_chesscom_bullet
+	-> summary={'games': 3, 'positions': 21, 'user_moves': 21, 'opportunities': 21, 'conversions': 21, 'practice_queue': 16}
+- Tests run: none
+
+Session summary (2026-02-06):
 - Implemented run-level traceability with run_id/op_id context, logging filter, pipeline op bindings, and ops_events schema/insert updates so run_id is persisted and emitted.
 - Pipeline run use case now generates a run_id and returns it in the API response; progress payloads include run_id/op_id for correlation.
 - Added API contract test for run_id plus ops-event persistence coverage, and asserted run_id in pipeline run use case tests.

@@ -1,6 +1,174 @@
 [
   {
     "category": "functional",
+    "description": "[Testing] Test fixture PGN is correctly parsed by tactix",
+    "steps": [
+      "Step 1: Load the canonical PGN fixture from the tests/fixtures directory using the standard parsing entrypoint",
+      "Step 2: Verify parsed headers include the expected date, site, time control, and result values",
+      "Step 3: Verify the parsed move list length and final FEN match fixture expectations",
+      "Step 4: Verify the derived game_id is stable and deterministic for the same PGN",
+      "Step 5: Confirm a unit test covers the fixture parse and assertions"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Missing explicit Unit-of-Work / DB session abstraction",
+    "steps": [
+      "Step 1: Define a UnitOfWork or session boundary interface in ports (or equivalent) with explicit begin/commit/rollback semantics",
+      "Step 2: Ensure services/use-cases depend on the UnitOfWork abstraction instead of creating DB connections or sessions directly",
+      "Step 3: Wire concrete UnitOfWork implementations in the composition root for each DB backend",
+      "Step 4: Verify DB operations that must be atomic are wrapped in a single unit of work",
+      "Step 5: Add unit tests for the UnitOfWork behavior using a fake or test database"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Function-module explosion indicates incomplete object migration",
+    "steps": [
+      "Step 1: Identify helper-only modules that should be consolidated into objects (services, repositories, or domain strategies)",
+      "Step 2: Introduce object-based replacements that encapsulate cohesive responsibility",
+      "Step 3: Migrate call sites to the new objects and remove or archive legacy helper modules",
+      "Step 4: Verify public behavior is unchanged via existing tests",
+      "Step 5: Add unit tests for any new objects introduced"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Callable-injection pattern causes bloated use-case objects",
+    "steps": [
+      "Step 1: Identify use-cases that accept many callable dependencies rather than typed objects",
+      "Step 2: Replace callable injection with explicit service/repository interfaces and constructor injection",
+      "Step 3: Ensure use-cases delegate to the injected objects without embedding logic inline",
+      "Step 4: Confirm tests use fakes/mocks that implement the same interfaces",
+      "Step 5: Verify no behavior change through existing test coverage"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Domain layer is empty; logic remains scattered in helper modules",
+    "steps": [
+      "Step 1: Identify core domain logic that belongs in domain modules (tactics rules, conversion rules, practice scheduling)",
+      "Step 2: Move the logic into domain-layer modules that have no framework or DB dependencies",
+      "Step 3: Update services/use-cases to call the domain functions/objects",
+      "Step 4: Add unit tests that cover the domain logic in isolation",
+      "Step 5: Confirm no domain module imports FastAPI, DB drivers, or client SDKs"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Ports exist but are bypassed by use cases",
+    "steps": [
+      "Step 1: Identify use-cases that import concrete infra repositories or clients directly",
+      "Step 2: Introduce or reuse ports/interfaces and update use-cases to depend on ports only",
+      "Step 3: Wire concrete implementations in the composition root",
+      "Step 4: Remove direct infra imports from use-case modules",
+      "Step 5: Confirm tests provide port-compliant fakes"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Use cases perform infrastructure work (DuckDB connections, schema init)",
+    "steps": [
+      "Step 1: Identify use-case code that opens DB connections or initializes schemas",
+      "Step 2: Move infra setup into adapter/repository layers or composition root wiring",
+      "Step 3: Ensure use-cases only orchestrate through ports or services",
+      "Step 4: Verify tests still pass without use-cases touching infra APIs",
+      "Step 5: Add unit tests that exercise use-cases with fake ports"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[UI] Pressing enter inside a text box should submit when something has been typed into the box",
+    "steps": [
+      "Step 1: Open the client dashboard and focus the primary text input used to submit actions",
+      "Step 2: Type valid input into the text box",
+      "Step 3: Press Enter and confirm the same action as clicking the submit button occurs",
+      "Step 4: Verify the UI updates appropriately without errors",
+      "Step 5: Add or update a UI test that asserts Enter submits the form"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[UI] Clicking on a game opens a details box at the bottom of the page, instead of the expected overlay modal view",
+    "steps": [
+      "Step 1: Open the games table on the dashboard",
+      "Step 2: Click a game row",
+      "Step 3: Confirm a modal overlay opens (not an inline bottom panel)",
+      "Step 4: Verify the modal includes game details and a close control",
+      "Step 5: Add or update a UI test that asserts the modal overlay behavior"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[Bug] Practice attempt card shows a progress 0/5 that increments both the numerator and denominator on success",
+    "steps": [
+      "Step 1: Open a practice attempt card with progress tracking",
+      "Step 2: Complete a successful attempt",
+      "Step 3: Verify only the numerator increases while the denominator remains fixed",
+      "Step 4: Confirm the progress display matches the underlying attempt target",
+      "Step 5: Add or update a test that asserts progress increments correctly"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[UI] Add \"Open in Lichess\" button on table rows containing a game.",
+    "steps": [
+      "Step 1: Identify games sourced from lichess in the games table",
+      "Step 2: Render an \"Open in Lichess\" action for those rows only",
+      "Step 3: Confirm the link opens the correct Lichess game URL",
+      "Step 4: Verify the button is not shown for non-Lichess games",
+      "Step 5: Add or update a UI test for the Lichess link action"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[UI] All cards on the main page should be able to be collapsed and moved",
+    "steps": [
+      "Step 1: List all main dashboard cards",
+      "Step 2: Verify each card has a collapse control and can be collapsed/expanded",
+      "Step 3: Verify each card supports drag/move reordering",
+      "Step 4: Ensure the layout remains stable and accessible after reordering",
+      "Step 5: Add or update UI tests covering collapse and move actions"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[UI] Incorporate assets from listudy.",
+    "steps": [
+      "Step 1: Identify the listudy asset set to incorporate (icons, illustrations, or board assets)",
+      "Step 2: Add the assets to the client build and reference them in the UI",
+      "Step 3: Update styling to use the assets consistently across key views",
+      "Step 4: Verify assets load in the client without console errors",
+      "Step 5: Add a UI test or snapshot that verifies asset rendering"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[Housekeeping] Feature branches should be merged when the feature is complete.",
+    "steps": [
+      "Step 1: Confirm feature branch work is fully verified and passing",
+      "Step 2: Merge the feature branch into main using the repo's merge strategy",
+      "Step 3: Verify the main branch builds and passes checks",
+      "Step 4: Delete the feature branch if no longer needed",
+      "Step 5: Update progress notes with the merge status"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
     "description": "E2E canonical scenario: chess.com bullet games + missed tactics on 2026-02-01 are consistent across pipeline, DB, API, and client",
     "steps": [
       "Step 1: Run the pipeline for 2026-02-01 (chess.com, bullet) and confirm exactly 2 games are ingested (1 win, 1 loss)",

@@ -145,7 +145,7 @@
       "Step 11: Verify practice_queue count does not increase (no duplicate queue items inserted for previously missed opportunities)",
       "Step 12: Verify idempotency is enforced via repository-level upsert semantics (or equivalent) and not by fragile “delete and reinsert everything” logic in the router layer"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

@@ -21,6 +21,7 @@ from tactix._compute_severity__tactic import (
 )
 from tactix._evaluate_engine_position import _evaluate_engine_position
 from tactix._infer_hanging_or_detected_motif import _infer_hanging_or_detected_motif
+from tactix._is_moved_piece_hanging_after_move import _is_moved_piece_hanging_after_move
 from tactix._override_motif_for_missed import _override_motif_for_missed
 from tactix._parse_user_move import _parse_user_move
 from tactix._prepare_position_inputs import _prepare_position_inputs
@@ -306,6 +307,11 @@ def analyze_position(
         )
     )
     result = _finalize_hanging_piece_result(result, motif, delta, base_cp, settings)
+    if result != "found" and _is_moved_piece_hanging_after_move(
+        motif_board, board, user_move, mover_color
+    ):
+        result = "missed"
+        motif = "hanging_piece"
     severity = _compute_severity_for_position(
         build_severity_context(
             SeverityInputs(

@@ -43,7 +43,12 @@ The content is organized as follows:
 app/
   use_cases/
     __init__.py
+    dashboard.py
+    pipeline_run.py
     pipeline_support.py
+    postgres.py
+    practice.py
+    tactics_search.py
   __init__.py
 chess_clients/
   __init__.py
@@ -88,6 +93,9 @@ db/
   fetch_unanalyzed_positions.py
   metrics_repository_provider.py
   position_repository_provider.py
+  postgres_analysis_repository.py
+  postgres_ops_repository.py
+  postgres_raw_pgn_repository.py
   postgres_repository.py
   query_helpers.py
   raw_pgn_repository_provider.py
@@ -115,6 +123,7 @@ models/
 ports/
   __init__.py
   game_source_client.py
+  repositories.py
 tactics/
   __init__.py
 utils/
@@ -512,9 +521,13 @@ sync_contexts.py
 sync_postgres_analysis_results__pipeline.py
 TacticContext.py
 TacticDetails.py
+TacticDetectionService.py
+TacticDetector.py
+TacticFinding.py
 TacticRow.py
 TacticRowInput.py
 tactics_search_filters.py
+trace_context.py
 trend_stats.py
 trigger_airflow_daily_sync__airflow_jobs.py
 trigger_daily_sync__api_jobs.py
@@ -569,6 +582,360 @@ __all__ = [
 ]
 </file>
 
+<file path="app/use_cases/dashboard.py">
+"""Use cases for dashboard-related API endpoints."""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+from tactix._resolve_dashboard_filters import _resolve_dashboard_filters
+from tactix.build_dashboard_cache_key__api_cache import _dashboard_cache_key
+from tactix.config import Settings, get_settings
+from tactix.dashboard_query import DashboardQuery
+from tactix.dashboard_query_filters import DashboardQueryFilters
+from tactix.db.dashboard_repository_provider import (
+    fetch_motif_stats,
+    fetch_pipeline_table_counts,
+    fetch_trend_stats,
+)
+from tactix.db.duckdb_store import fetch_version, get_connection, init_schema
+from tactix.db.raw_pgn_repository_provider import fetch_raw_pgns_summary
+from tactix.get_cached_dashboard_payload__api_cache import _get_cached_dashboard_payload
+from tactix.normalize_source__source import _normalize_source
+from tactix.pipeline import get_dashboard_payload
+from tactix.set_dashboard_cache__api_cache import _set_dashboard_cache
+
+
+@dataclass
+class DashboardUseCase:  # pylint: disable=too-many-instance-attributes
+    resolve_dashboard_filters: Callable[
+        [DashboardQueryFilters],
+        tuple[Any, Any, str | None, Settings],
+    ] = _resolve_dashboard_filters
+    dashboard_cache_key: Callable[
+        [Settings, DashboardQuery],
+        tuple[object, ...],
+    ] = _dashboard_cache_key
+    get_cached_dashboard_payload: Callable[[tuple[object, ...]], dict[str, object] | None] = (
+        _get_cached_dashboard_payload
+    )
+    set_dashboard_cache: Callable[
+        [tuple[object, ...], dict[str, object]],
+        None,
+    ] = _set_dashboard_cache
+    get_dashboard_payload: Callable[[DashboardQuery, Settings], dict[str, object]] = (
+        get_dashboard_payload
+    )
+    fetch_pipeline_table_counts: Callable[[Any, DashboardQuery], dict[str, int]] = (
+        fetch_pipeline_table_counts
+    )
+    fetch_motif_stats: Callable[..., object] = fetch_motif_stats
+    fetch_trend_stats: Callable[..., object] = fetch_trend_stats
+    fetch_raw_pgns_summary: Callable[..., object] = fetch_raw_pgns_summary
+    fetch_version: Callable[[Any], int] = fetch_version
+    get_connection: Callable[[Path], Any] = get_connection
+    init_schema: Callable[[Any], None] = init_schema
+    get_settings: Callable[..., Settings] = get_settings
+    normalize_source: Callable[[str | None], str | None] = _normalize_source
+
+    def get_dashboard(
+        self,
+        filters: DashboardQueryFilters,
+        motif: str | None,
+    ) -> dict[str, object]:
+        start_datetime, end_datetime, normalized_source, settings = self.resolve_dashboard_filters(
+            filters
+        )
+        query = DashboardQuery(
+            source=normalized_source,
+            motif=motif,
+            rating_bucket=filters.rating_bucket,
+            time_control=filters.time_control,
+            start_date=start_datetime,
+            end_date=end_datetime,
+        )
+        cache_key = self.dashboard_cache_key(settings, query)
+        cached = self.get_cached_dashboard_payload(cache_key)
+        if cached is not None:
+            return cached
+        payload = self.get_dashboard_payload(query, settings)
+        self.set_dashboard_cache(cache_key, payload)
+        return payload
+
+    def get_summary(
+        self,
+        filters: DashboardQueryFilters,
+        db_name: str | None,
+    ) -> dict[str, object]:
+        start_datetime, end_datetime, normalized_source, settings = self.resolve_dashboard_filters(
+            filters
+        )
+        if db_name:
+            safe_name = Path(db_name).name
+            filename = safe_name if safe_name.endswith(".duckdb") else f"{safe_name}.duckdb"
+            settings.duckdb_path = settings.data_dir / filename
+        conn = self.get_connection(settings.duckdb_path)
+        try:
+            self.init_schema(conn)
+            summary = self.fetch_pipeline_table_counts(
+                conn,
+                DashboardQuery(
+                    source=normalized_source,
+                    rating_bucket=filters.rating_bucket,
+                    time_control=filters.time_control,
+                    start_date=start_datetime,
+                    end_date=end_datetime,
+                ),
+            )
+        finally:
+            conn.close()
+        response_source = "all" if normalized_source is None else normalized_source
+        return {"source": response_source, "summary": summary}
+
+    def get_motif_stats(self, filters: DashboardQueryFilters) -> dict[str, object]:
+        return self._build_stats_payload(filters, self.fetch_motif_stats, "motifs")
+
+    def get_trend_stats(self, filters: DashboardQueryFilters) -> dict[str, object]:
+        return self._build_stats_payload(filters, self.fetch_trend_stats, "trends")
+
+    def get_raw_pgns_summary(self, source: str | None) -> dict[str, object]:
+        normalized_source = self.normalize_source(source)
+        settings = self.get_settings(source=normalized_source)
+        conn = self.get_connection(settings.duckdb_path)
+        self.init_schema(conn)
+        active_source = normalized_source or settings.source
+        return {
+            "source": active_source,
+            "summary": self.fetch_raw_pgns_summary(conn, source=active_source),
+        }
+
+    def _build_stats_payload(
+        self,
+        filters: DashboardQueryFilters,
+        stats_fetcher: Callable[..., object],
+        stats_key: str,
+    ) -> dict[str, object]:
+        start_datetime, end_datetime, normalized_source, settings = self.resolve_dashboard_filters(
+            filters
+        )
+        conn = self.get_connection(settings.duckdb_path)
+        self.init_schema(conn)
+        response_source = "all" if normalized_source is None else normalized_source
+        return {
+            "source": response_source,
+            "metrics_version": self.fetch_version(conn),
+            stats_key: stats_fetcher(
+                conn,
+                source=normalized_source,
+                rating_bucket=filters.rating_bucket,
+                time_control=filters.time_control,
+                start_date=start_datetime,
+                end_date=end_datetime,
+            ),
+        }
+
+
+def get_dashboard_use_case() -> DashboardUseCase:
+    return DashboardUseCase()
+
+
+__all__ = ["DashboardUseCase", "get_dashboard_use_case"]
+</file>
+
+<file path="app/use_cases/pipeline_run.py">
+"""Use case for pipeline run endpoints."""
+
+from __future__ import annotations
+
+import shutil
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+from uuid import uuid4
+
+from tactix.coerce_date_to_datetime__datetime import _coerce_date_to_datetime
+from tactix.config import Settings, get_settings
+from tactix.dashboard_query import DashboardQuery
+from tactix.db.dashboard_repository_provider import (
+    fetch_opportunity_motif_counts,
+    fetch_pipeline_table_counts,
+)
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.list_sources_for_cache_refresh__api_cache import _sources_for_cache_refresh
+from tactix.normalize_source__source import _normalize_source
+from tactix.pipeline import run_daily_game_sync
+from tactix.pipeline_run_filters import PipelineRunFilters
+from tactix.refresh_dashboard_cache_async__api_cache import _refresh_dashboard_cache_async
+from tactix.trace_context import trace_context
+
+
+class PipelineWindowError(ValueError):
+    """Raised when a pipeline run window is invalid."""
+
+
+@dataclass
+class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
+    get_settings: Callable[..., Settings] = get_settings
+    normalize_source: Callable[[str | None], str | None] = _normalize_source
+    coerce_date_to_datetime: Callable[..., Any] = _coerce_date_to_datetime
+    run_daily_game_sync: Callable[..., object] = run_daily_game_sync
+    refresh_dashboard_cache_async: Callable[[list[str | None]], None] = (
+        _refresh_dashboard_cache_async
+    )
+    sources_for_cache_refresh: Callable[[str | None], list[str | None]] = _sources_for_cache_refresh
+    fetch_pipeline_table_counts: Callable[[Any, DashboardQuery], dict[str, int]] = (
+        fetch_pipeline_table_counts
+    )
+    fetch_opportunity_motif_counts: Callable[[Any, DashboardQuery], dict[str, int]] = (
+        fetch_opportunity_motif_counts
+    )
+    get_connection: Callable[[Path], Any] = get_connection
+    init_schema: Callable[[Any], None] = init_schema
+
+    def run(self, filters: PipelineRunFilters) -> dict[str, object]:
+        normalized_source = self.normalize_source(filters.source)
+        settings = self._resolve_pipeline_settings(normalized_source, filters)
+        run_id = uuid4().hex
+        settings.run_id = run_id
+        start_datetime, end_datetime, window_start_ms, window_end_ms = self._resolve_window_range(
+            filters
+        )
+        with trace_context(run_id=run_id, op_id="pipeline.run"):
+            result = self.run_daily_game_sync(
+                settings,
+                source=normalized_source,
+                window_start_ms=window_start_ms,
+                window_end_ms=window_end_ms,
+                profile=None,
+            )
+            self.refresh_dashboard_cache_async(self.sources_for_cache_refresh(normalized_source))
+            counts, motif_counts = self._fetch_pipeline_counts(
+                settings.duckdb_path,
+                DashboardQuery(
+                    source=normalized_source,
+                    start_date=start_datetime,
+                    end_date=end_datetime,
+                ),
+            )
+        return {
+            "status": "ok",
+            "run_id": run_id,
+            "result": result,
+            "counts": counts,
+            "motif_counts": motif_counts,
+            "window_start_ms": window_start_ms,
+            "window_end_ms": window_end_ms,
+        }
+
+    def _fetch_pipeline_counts(
+        self,
+        db_path: Path,
+        query: DashboardQuery,
+    ) -> tuple[dict[str, int], dict[str, int]]:
+        conn = self.get_connection(db_path)
+        try:
+            self.init_schema(conn)
+            return (
+                self.fetch_pipeline_table_counts(conn, query),
+                self.fetch_opportunity_motif_counts(conn, query),
+            )
+        finally:
+            conn.close()
+
+    def _resolve_pipeline_settings(
+        self,
+        normalized_source: str | None,
+        filters: PipelineRunFilters,
+    ) -> Settings:
+        settings = self.get_settings(source=normalized_source, profile=filters.profile)
+        self._apply_user_settings(settings, filters.user_id)
+        self._apply_fixture_settings(settings, filters.use_fixture, filters.fixture_name)
+        self._apply_db_settings(settings, filters.db_name, filters.reset_db)
+        return settings
+
+    def _apply_user_settings(self, settings: Settings, user_id: str | None) -> None:
+        if not user_id:
+            return
+        settings.user = user_id
+        settings.lichess.user = user_id
+        settings.chesscom.user = user_id
+
+    def _apply_fixture_settings(
+        self,
+        settings: Settings,
+        use_fixture: bool,
+        fixture_name: str | None,
+    ) -> None:
+        if not use_fixture and not fixture_name:
+            return
+        settings.chesscom.token = None
+        settings.lichess.token = None
+        settings.use_fixture_when_no_token = True
+        settings.chesscom_use_fixture_when_no_token = True
+        settings.stockfish_movetime_ms = 60
+        settings.stockfish_depth = 8
+        settings.stockfish_multipv = 2
+        resolved_stockfish = shutil.which(str(settings.stockfish_path)) or shutil.which("stockfish")
+        if resolved_stockfish:
+            settings.stockfish_path = Path(resolved_stockfish)
+        if not fixture_name:
+            return
+        safe_name = Path(fixture_name).name
+        repo_root = Path(__file__).resolve().parents[4]
+        settings.fixture_pgn_path = repo_root / "tests" / "fixtures" / safe_name
+        settings.chesscom_fixture_pgn_path = repo_root / "tests" / "fixtures" / safe_name
+        settings.lichess_token_cache_path = settings.lichess_token_cache_path.with_name(
+            "lichess_token_fixture.json"
+        )
+
+    def _apply_db_settings(self, settings: Settings, db_name: str | None, reset_db: bool) -> None:
+        if not db_name:
+            return
+        safe_name = Path(db_name).name
+        filename = safe_name if safe_name.endswith(".duckdb") else f"{safe_name}.duckdb"
+        settings.duckdb_path = settings.data_dir / filename
+        if reset_db and settings.duckdb_path.exists():
+            settings.duckdb_path.unlink()
+
+    def _resolve_window_range(
+        self,
+        filters: PipelineRunFilters,
+    ) -> tuple[datetime | None, datetime | None, int | None, int | None]:
+        start_datetime = self.coerce_date_to_datetime(filters.start_date)
+        end_datetime = self.coerce_date_to_datetime(filters.end_date, end_of_day=True)
+        window_start_ms = self._datetime_to_ms(start_datetime)
+        window_end_ms = self._datetime_to_ms(end_datetime)
+        if window_end_ms is not None:
+            window_end_ms += 1
+        if (
+            window_start_ms is not None
+            and window_end_ms is not None
+            and window_start_ms >= window_end_ms
+        ):
+            raise PipelineWindowError("start_date must be before end_date")
+        return start_datetime, end_datetime, window_start_ms, window_end_ms
+
+    def _datetime_to_ms(self, value: datetime | None) -> int | None:
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=UTC)
+        return int(value.timestamp() * 1000)
+
+
+def get_pipeline_run_use_case() -> PipelineRunUseCase:
+    return PipelineRunUseCase()
+
+
+__all__ = ["PipelineRunUseCase", "PipelineWindowError", "get_pipeline_run_use_case"]
+</file>
+
 <file path="app/use_cases/pipeline_support.py">
 """Object-backed pipeline helpers consolidated from small pipeline modules."""
 
@@ -607,6 +974,7 @@ from tactix.sync_contexts import (
     NoGamesPayloadContext,
     WindowFilterContext,
 )
+from tactix.trace_context import get_op_id, get_run_id
 from tactix.update_metrics_and_version__pipeline import _update_metrics_and_version
 from tactix.utils.normalize_string import normalize_string
 
@@ -686,6 +1054,12 @@ class PipelineEmissions:  # pylint: disable=too-many-arguments,too-many-position
         if progress is None:
             return
         payload: dict[str, object] = {"step": step, "timestamp": time.time()}
+        run_id = get_run_id()
+        op_id = get_op_id()
+        if run_id:
+            payload["run_id"] = run_id
+        if op_id:
+            payload["op_id"] = op_id
         payload.update(fields)
         progress(payload)
 
@@ -1319,6 +1693,245 @@ __all__ = [
     "_update_lichess_checkpoint",
     "_write_analysis_checkpoint",
 ]
+</file>
+
+<file path="app/use_cases/postgres.py">
+"""Use cases for Postgres API endpoints."""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
+
+from tactix.config import Settings, get_settings
+from tactix.db.postgres_repository import (
+    PostgresRepository,
+    default_postgres_repository_dependencies,
+)
+from tactix.postgres_status import PostgresStatus
+from tactix.serialize_status import serialize_status
+
+
+def _default_postgres_repository(settings: Settings) -> PostgresRepository:
+    return PostgresRepository(
+        settings,
+        dependencies=default_postgres_repository_dependencies(),
+    )
+
+
+@dataclass
+class PostgresUseCase:
+    get_settings: Callable[[], Settings] = get_settings
+    repository_factory: Callable[[Settings], PostgresRepository] = _default_postgres_repository
+    serialize_status: Callable[[PostgresStatus], dict[str, Any]] = serialize_status
+
+    def get_status(self, limit: int) -> dict[str, Any]:
+        settings = self.get_settings()
+        repo = self.repository_factory(settings)
+        status = repo.get_status()
+        payload = self.serialize_status(status)
+        payload["events"] = repo.fetch_ops_events(limit=limit)
+        return payload
+
+    def get_analysis(self, limit: int) -> dict[str, object]:
+        settings = self.get_settings()
+        repo = self.repository_factory(settings)
+        tactics = repo.fetch_analysis_tactics(limit=limit)
+        return {"status": "ok", "tactics": tactics}
+
+    def get_raw_pgns(self) -> dict[str, object]:
+        settings = self.get_settings()
+        repo = self.repository_factory(settings)
+        return repo.fetch_raw_pgns_summary()
+
+
+def get_postgres_use_case() -> PostgresUseCase:
+    return PostgresUseCase()
+
+
+__all__ = ["PostgresUseCase", "get_postgres_use_case"]
+</file>
+
+<file path="app/use_cases/practice.py">
+"""Use cases for practice-related API endpoints."""
+
+from __future__ import annotations
+
+import time as time_module
+from collections.abc import Callable
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+from tactix.config import Settings, get_settings
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.tactic_repository_provider import tactic_repository
+from tactix.models import PracticeAttemptRequest
+from tactix.normalize_source__source import _normalize_source
+
+
+class PracticeAttemptError(ValueError):
+    """Raised when a practice attempt cannot be graded."""
+
+
+class GameNotFoundError(LookupError):
+    """Raised when a game detail payload is missing a PGN."""
+
+
+@dataclass
+class PracticeUseCase:
+    get_settings: Callable[..., Settings] = get_settings
+    get_connection: Callable[[Path], Any] = get_connection
+    init_schema: Callable[[Any], None] = init_schema
+    repository_factory: Callable[[Any], Any] = tactic_repository
+    normalize_source: Callable[[str | None], str | None] = _normalize_source
+    time_provider: Callable[[], float] = time_module.time
+
+    def get_queue(
+        self,
+        source: str | None,
+        include_failed_attempt: bool,
+        limit: int,
+    ) -> dict[str, object]:
+        normalized_source = self.normalize_source(source)
+        settings = self.get_settings(source=normalized_source)
+        conn = self.get_connection(settings.duckdb_path)
+        self.init_schema(conn)
+        queue = self.repository_factory(conn).fetch_practice_queue(
+            limit=limit,
+            source=normalized_source or settings.source,
+            include_failed_attempt=include_failed_attempt,
+        )
+        return {
+            "source": normalized_source or settings.source,
+            "include_failed_attempt": include_failed_attempt,
+            "items": queue,
+        }
+
+    def get_next(
+        self,
+        source: str | None,
+        include_failed_attempt: bool,
+    ) -> dict[str, object]:
+        normalized_source = self.normalize_source(source)
+        settings = self.get_settings(source=normalized_source)
+        conn = self.get_connection(settings.duckdb_path)
+        self.init_schema(conn)
+        items = self.repository_factory(conn).fetch_practice_queue(
+            limit=1,
+            source=normalized_source or settings.source,
+            include_failed_attempt=include_failed_attempt,
+            exclude_seen=True,
+        )
+        return {
+            "source": normalized_source or settings.source,
+            "include_failed_attempt": include_failed_attempt,
+            "item": items[0] if items else None,
+        }
+
+    def submit_attempt(self, payload: PracticeAttemptRequest) -> dict[str, object]:
+        settings = self.get_settings(source=payload.source)
+        conn = self.get_connection(settings.duckdb_path)
+        self.init_schema(conn)
+        latency_ms: int | None = None
+        if payload.served_at_ms is not None:
+            now_ms = int(self.time_provider() * 1000)
+            latency_ms = max(0, now_ms - payload.served_at_ms)
+        try:
+            repo = self.repository_factory(conn)
+            return repo.grade_practice_attempt(
+                payload.tactic_id,
+                payload.position_id,
+                payload.attempted_uci,
+                latency_ms=latency_ms,
+            )
+        except ValueError as exc:
+            raise PracticeAttemptError(str(exc)) from exc
+
+    def get_game_detail(self, game_id: str, source: str | None) -> dict[str, object]:
+        normalized_source = self.normalize_source(source)
+        settings = self.get_settings(source=normalized_source)
+        conn = self.get_connection(settings.duckdb_path)
+        self.init_schema(conn)
+        payload = self.repository_factory(conn).fetch_game_detail(
+            game_id,
+            settings.user,
+            normalized_source,
+        )
+        if not payload.get("pgn"):
+            raise GameNotFoundError("Game not found")
+        return payload
+
+
+def get_practice_use_case() -> PracticeUseCase:
+    return PracticeUseCase()
+
+
+__all__ = [
+    "GameNotFoundError",
+    "PracticeAttemptError",
+    "PracticeUseCase",
+    "get_practice_use_case",
+]
+</file>
+
+<file path="app/use_cases/tactics_search.py">
+"""Use case for tactics search endpoints."""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+from tactix.coerce_date_to_datetime__datetime import _coerce_date_to_datetime
+from tactix.config import Settings, get_settings
+from tactix.dashboard_query import DashboardQuery
+from tactix.db.dashboard_repository_provider import fetch_recent_tactics
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.normalize_source__source import _normalize_source
+from tactix.tactics_search_filters import TacticsSearchFilters
+
+
+@dataclass
+class TacticsSearchUseCase:
+    get_settings: Callable[..., Settings] = get_settings
+    get_connection: Callable[[Path], Any] = get_connection
+    init_schema: Callable[[Any], None] = init_schema
+    fetch_recent_tactics: Callable[..., list[dict[str, object]]] = fetch_recent_tactics
+    coerce_date_to_datetime: Callable[..., Any] = _coerce_date_to_datetime
+    normalize_source: Callable[[str | None], str | None] = _normalize_source
+
+    def search(self, filters: TacticsSearchFilters, limit: int) -> dict[str, object]:
+        normalized_source = self.normalize_source(filters.source)
+        settings = self.get_settings(source=normalized_source)
+        start_datetime = self.coerce_date_to_datetime(filters.start_date)
+        end_datetime = self.coerce_date_to_datetime(filters.end_date, end_of_day=True)
+        conn = self.get_connection(settings.duckdb_path)
+        self.init_schema(conn)
+        tactics = self.fetch_recent_tactics(
+            conn,
+            DashboardQuery(
+                source=normalized_source,
+                motif=filters.motif,
+                rating_bucket=filters.rating_bucket,
+                time_control=filters.time_control,
+                start_date=start_datetime,
+                end_date=end_datetime,
+            ),
+            limit=limit,
+        )
+        response_source = "all" if normalized_source is None else normalized_source
+        return {"source": response_source, "limit": limit, "tactics": tactics}
+
+
+def get_tactics_search_use_case() -> TacticsSearchUseCase:
+    return TacticsSearchUseCase()
+
+
+__all__ = ["TacticsSearchUseCase", "get_tactics_search_use_case"]
 </file>
 
 <file path="app/__init__.py">
@@ -5022,6 +5635,671 @@ def insert_positions(
     return position_repository(conn).insert_positions(positions)
 </file>
 
+<file path="db/postgres_analysis_repository.py">
+"""Postgres repository for analysis tactics and outcomes."""
+
+from __future__ import annotations
+
+from collections.abc import Mapping
+from typing import Any, cast
+
+from psycopg2.extensions import connection as PgConnection  # noqa: N812
+from psycopg2.extras import RealDictCursor
+
+from tactix.config import Settings
+from tactix.define_base_db_store__db_store import BaseDbStore
+from tactix.define_db_schemas__const import ANALYSIS_SCHEMA
+from tactix.define_outcome_insert_plan__db_store import OutcomeInsertPlan
+from tactix.define_tactic_insert_plan__db_store import TacticInsertPlan
+from tactix.init_analysis_schema import init_analysis_schema
+from tactix.postgres_analysis_enabled import postgres_analysis_enabled
+from tactix.postgres_connection import postgres_connection
+
+
+def fetch_analysis_tactics(settings: Settings, limit: int = 10) -> list[dict[str, Any]]:
+    """Return recent tactics for the given settings."""
+    with postgres_connection(settings) as conn:
+        if conn is None or not postgres_analysis_enabled(settings):
+            return []
+        init_analysis_schema(conn)
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                f"""
+                SELECT
+                    t.tactic_id,
+                    t.game_id,
+                    t.position_id,
+                    t.motif,
+                    t.severity,
+                    t.best_uci,
+                    t.best_san,
+                    t.explanation,
+                    t.eval_cp,
+                    t.created_at,
+                    o.result,
+                    o.user_uci,
+                    o.eval_delta,
+                    o.created_at AS outcome_created_at
+                FROM {ANALYSIS_SCHEMA}.tactics t
+                LEFT JOIN {ANALYSIS_SCHEMA}.tactic_outcomes o
+                    ON o.tactic_id = t.tactic_id
+                ORDER BY t.created_at DESC
+                LIMIT %s
+                """,
+                (limit,),
+            )
+            rows = cur.fetchall()
+        return [dict(row) for row in rows]
+
+
+def _delete_existing_analysis(cur, position_id: int) -> None:
+    """Delete existing tactics and outcomes for a position id."""
+    cur.execute(
+        f"""
+        DELETE FROM {ANALYSIS_SCHEMA}.tactic_outcomes
+        WHERE tactic_id IN (
+            SELECT tactic_id FROM {ANALYSIS_SCHEMA}.tactics WHERE position_id = %s
+        )
+        """,
+        (position_id,),
+    )
+    cur.execute(
+        f"DELETE FROM {ANALYSIS_SCHEMA}.tactics WHERE position_id = %s",
+        (position_id,),
+    )
+
+
+def _insert_analysis_tactic(cur, tactic_plan: TacticInsertPlan) -> int:
+    """Insert a tactic row and return its id."""
+    cur.execute(
+        f"""
+        INSERT INTO {ANALYSIS_SCHEMA}.tactics (
+            game_id,
+            position_id,
+            motif,
+            severity,
+            best_uci,
+            best_san,
+            explanation,
+            eval_cp
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING tactic_id
+        """,
+        (
+            tactic_plan.game_id,
+            tactic_plan.position_id,
+            tactic_plan.motif,
+            tactic_plan.severity,
+            tactic_plan.best_uci,
+            tactic_plan.best_san,
+            tactic_plan.explanation,
+            tactic_plan.eval_cp,
+        ),
+    )
+    tactic_id_row = cur.fetchone()
+    return int(tactic_id_row[0]) if tactic_id_row else 0
+
+
+def _insert_analysis_outcome(
+    cur,
+    tactic_id: int,
+    outcome_plan: OutcomeInsertPlan,
+) -> None:
+    """Insert an analysis outcome row for a tactic."""
+    cur.execute(
+        f"""
+        INSERT INTO {ANALYSIS_SCHEMA}.tactic_outcomes (
+            tactic_id,
+            result,
+            user_uci,
+            eval_delta
+        )
+        VALUES (%s, %s, %s, %s)
+        """,
+        (
+            tactic_id,
+            outcome_plan.result,
+            outcome_plan.user_uci,
+            outcome_plan.eval_delta,
+        ),
+    )
+
+
+def upsert_analysis_tactic_with_outcome(
+    conn: PgConnection,
+    tactic_row: Mapping[str, object],
+    outcome_row: Mapping[str, object],
+) -> int:
+    """Upsert a tactic and its outcome and return the tactic id."""
+    position_id = cast(
+        int,
+        BaseDbStore.require_position_id(
+            tactic_row,
+            "position_id is required for Postgres analysis upsert",
+        ),
+    )
+    tactic_plan = BaseDbStore.build_tactic_insert_plan(
+        game_id=tactic_row.get("game_id"),
+        position_id=position_id,
+        tactic_row=tactic_row,
+    )
+    outcome_plan = BaseDbStore.build_outcome_insert_plan(outcome_row)
+    autocommit_state = conn.autocommit
+    conn.autocommit = False
+    try:
+        with conn.cursor() as cur:
+            _delete_existing_analysis(cur, position_id)
+            tactic_id = _insert_analysis_tactic(cur, tactic_plan)
+            _insert_analysis_outcome(cur, tactic_id, outcome_plan)
+    except Exception:
+        conn.rollback()
+        raise
+    else:
+        conn.commit()
+        return tactic_id
+    finally:
+        conn.autocommit = autocommit_state
+</file>
+
+<file path="db/postgres_ops_repository.py">
+"""Postgres repository for ops event reads and writes."""
+
+from __future__ import annotations
+
+from dataclasses import replace
+from typing import Any, cast
+
+from psycopg2.extras import Json, RealDictCursor
+
+from tactix.config import Settings
+from tactix.init_postgres_schema import init_postgres_schema
+from tactix.legacy_args import apply_legacy_args, apply_legacy_kwargs, init_legacy_values
+from tactix.ops_event import OpsEvent
+from tactix.postgres_connection import postgres_connection
+from tactix.trace_context import get_op_id, get_run_id
+
+
+def _collect_ops_event_values(
+    args: tuple[object, ...],
+    legacy: dict[str, object],
+) -> dict[str, object]:
+    ordered_keys = ("component", "event_type", "source", "profile", "metadata", "run_id", "op_id")
+    values = init_legacy_values(ordered_keys)
+    apply_legacy_kwargs(values, ordered_keys, legacy)
+    apply_legacy_args(values, ordered_keys, args)
+    return values
+
+
+def _build_ops_event(settings: Settings, values: dict[str, object]) -> OpsEvent:
+    if values["component"] is None or values["event_type"] is None:
+        raise TypeError("component and event_type are required")
+    return OpsEvent(
+        settings=settings,
+        component=cast(str, values["component"]),
+        event_type=cast(str, values["event_type"]),
+        source=cast(str | None, values["source"]),
+        profile=cast(str | None, values["profile"]),
+        metadata=cast(dict[str, object] | None, values["metadata"]),
+        run_id=_resolve_run_id(settings, cast(str | None, values["run_id"])),
+        op_id=_resolve_op_id(cast(str | None, values["op_id"])),
+    )
+
+
+def _resolve_run_id(settings: Settings, value: str | None) -> str | None:
+    if value:
+        return value
+    if settings.run_id:
+        return settings.run_id
+    return get_run_id()
+
+
+def _resolve_op_id(value: str | None) -> str | None:
+    if value:
+        return value
+    return get_op_id()
+
+
+def _resolve_ops_event(
+    event: OpsEvent | Settings,
+    args: tuple[object, ...],
+    legacy: dict[str, object],
+) -> OpsEvent:
+    if isinstance(event, OpsEvent):
+        return event
+    values = _collect_ops_event_values(args, legacy)
+    return _build_ops_event(event, values)
+
+
+def _apply_trace_defaults(event: OpsEvent) -> OpsEvent:
+    run_id = _resolve_run_id(event.settings, event.run_id)
+    op_id = _resolve_op_id(event.op_id)
+    if run_id == event.run_id and op_id == event.op_id:
+        return event
+    return replace(event, run_id=run_id, op_id=op_id)
+
+
+def record_ops_event(
+    event: OpsEvent | Settings,
+    *args: object,
+    **legacy: object,
+) -> bool:
+    """Insert an ops event into Postgres if available."""
+    resolved = _resolve_ops_event(event, args, legacy)
+    resolved = _apply_trace_defaults(resolved)
+    with postgres_connection(resolved.settings) as conn:
+        if conn is None:
+            return False
+        init_postgres_schema(conn)
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO tactix_ops.ops_events
+                    (component, event_type, source, profile, metadata, run_id, op_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    resolved.component,
+                    resolved.event_type,
+                    resolved.source,
+                    resolved.profile,
+                    Json(resolved.metadata or {}),
+                    resolved.run_id,
+                    resolved.op_id,
+                ),
+            )
+        return True
+
+
+def fetch_ops_events(settings: Settings, limit: int = 10) -> list[dict[str, Any]]:
+    """Return recent ops events for the given settings."""
+    with postgres_connection(settings) as conn:
+        if conn is None:
+            return []
+        init_postgres_schema(conn)
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT id, component, event_type, source, profile,
+                       metadata, run_id, op_id, created_at
+                FROM tactix_ops.ops_events
+                ORDER BY created_at DESC
+                LIMIT %s
+                """,
+                (limit,),
+            )
+            rows = cur.fetchall()
+        return [dict(row) for row in rows]
+</file>
+
+<file path="db/postgres_raw_pgn_repository.py">
+"""Postgres raw PGN repository for persistence and summaries."""
+
+from __future__ import annotations
+
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
+from typing import Any
+
+import psycopg2
+from psycopg2.extensions import connection as PgConnection  # noqa: N812
+from psycopg2.extras import RealDictCursor
+
+from tactix._build_pgn_upsert_plan import _build_pgn_upsert_plan
+from tactix._has_game_source import _has_game_source
+from tactix._parse_game_source import _parse_game_source
+from tactix.config import Settings
+from tactix.db.raw_pgn_summary import (
+    build_raw_pgn_summary_payload,
+    coerce_raw_pgn_summary_rows,
+)
+from tactix.define_db_schemas__const import PGN_SCHEMA
+from tactix.init_pgn_schema import init_pgn_schema
+from tactix.PgnUpsertPlan import PgnUpsertPlan
+from tactix.postgres_connection import postgres_connection
+from tactix.postgres_pgns_enabled import postgres_pgns_enabled
+
+
+@dataclass(frozen=True)
+class _RawPgnUpsertContext:
+    cur: object
+    key: tuple[str, str]
+    row: Mapping[str, object]
+    latest_meta: tuple[str | None, int]
+    latest_cache: dict[tuple[str, str], tuple[str | None, int]]
+
+
+def _disabled_raw_pgn_summary() -> dict[str, Any]:
+    """Return the default disabled raw PGN summary payload."""
+    return {
+        "status": "disabled",
+        "total_rows": 0,
+        "distinct_games": 0,
+        "latest_ingested_at": None,
+        "sources": [],
+    }
+
+
+def _fetch_latest_pgn_metadata(
+    cur,
+    game_id: str,
+    source: str,
+) -> tuple[str | None, int]:
+    """Return latest PGN hash/version for a game and source."""
+    cur.execute(
+        f"""
+        SELECT pgn_hash, pgn_version
+        FROM {PGN_SCHEMA}.raw_pgns
+        WHERE game_id = %s AND source = %s
+        ORDER BY pgn_version DESC
+        LIMIT 1
+        """,
+        (game_id, source),
+    )
+    existing = cur.fetchone()
+    if existing:
+        return existing[0], int(existing[1] or 0)
+    return None, 0
+
+
+def _latest_pgn_metadata(
+    cur,
+    key: tuple[str, str],
+    latest_cache: dict[tuple[str, str], tuple[str | None, int]],
+) -> tuple[str | None, int]:
+    cached = latest_cache.get(key)
+    if cached is not None:
+        return cached
+    latest_hash, latest_version = _fetch_latest_pgn_metadata(cur, key[0], key[1])
+    latest_cache[key] = (latest_hash, latest_version)
+    return latest_hash, latest_version
+
+
+def _insert_raw_pgn_row(
+    cur,
+    game_id: str,
+    source: str,
+    row: Mapping[str, object],
+    plan: PgnUpsertPlan,
+) -> None:
+    cur.execute(
+        f"""
+        INSERT INTO {PGN_SCHEMA}.raw_pgns (
+            game_id,
+            source,
+            player_username,
+            fetched_at,
+            pgn_raw,
+            pgn_normalized,
+            pgn_hash,
+            pgn_version,
+            user_rating,
+            time_control,
+            ingested_at,
+            last_timestamp_ms,
+            cursor,
+            white_player,
+            black_player,
+            white_elo,
+            black_elo,
+            result,
+            event,
+            site,
+            utc_date,
+            utc_time,
+            termination,
+            start_timestamp_ms
+        )
+        VALUES (
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+        )
+        ON CONFLICT DO NOTHING
+        """,
+        (
+            game_id,
+            source,
+            row.get("user"),
+            plan.fetched_at,
+            plan.pgn_text,
+            plan.normalized_pgn,
+            plan.pgn_hash,
+            plan.pgn_version,
+            plan.metadata.get("user_rating"),
+            plan.metadata.get("time_control"),
+            plan.ingested_at,
+            plan.last_timestamp_ms,
+            plan.cursor,
+            plan.metadata.get("white_player"),
+            plan.metadata.get("black_player"),
+            plan.metadata.get("white_elo"),
+            plan.metadata.get("black_elo"),
+            plan.metadata.get("result"),
+            plan.metadata.get("event"),
+            plan.metadata.get("site"),
+            plan.metadata.get("utc_date"),
+            plan.metadata.get("utc_time"),
+            plan.metadata.get("termination"),
+            plan.metadata.get("start_timestamp_ms"),
+        ),
+    )
+
+
+def _record_upsert_result(
+    cur,
+    key: tuple[str, str],
+    plan: PgnUpsertPlan,
+    latest_cache: dict[tuple[str, str], tuple[str | None, int]],
+) -> int:
+    """Update the latest cache and return rows affected."""
+    if not cur.rowcount:
+        return 0
+    latest_cache[key] = (plan.pgn_hash, plan.pgn_version)
+    return 1
+
+
+def _apply_pgn_upsert_plan__raw_pgn_row(
+    context: _RawPgnUpsertContext,
+    plan: PgnUpsertPlan | None,
+) -> int:
+    """Return the upsert outcome for a plan."""
+    if plan is None:
+        context.latest_cache[context.key] = context.latest_meta
+        return 0
+    game_id, source = context.key
+    _insert_raw_pgn_row(
+        context.cur,
+        game_id,
+        source,
+        context.row,
+        plan,
+    )
+    return _record_upsert_result(
+        context.cur,
+        context.key,
+        plan,
+        context.latest_cache,
+    )
+
+
+def _maybe_upsert_raw_pgn_row(
+    cur,
+    row: Mapping[str, object],
+    latest_cache: dict[tuple[str, str], tuple[str | None, int]],
+) -> int:
+    """Upsert a row if newer metadata is available."""
+    game_id, source = _parse_game_source(row)
+    if not _has_game_source(game_id, source):
+        return 0
+    key = (game_id, source)
+    latest_hash, latest_version = _latest_pgn_metadata(cur, key, latest_cache)
+    plan = _build_pgn_upsert_plan(row, latest_hash, latest_version)
+    context = _RawPgnUpsertContext(
+        cur=cur,
+        key=key,
+        row=row,
+        latest_meta=(latest_hash, latest_version),
+        latest_cache=latest_cache,
+    )
+    return _apply_pgn_upsert_plan__raw_pgn_row(context, plan)
+
+
+def _upsert_postgres_raw_pgn_rows(
+    cur,
+    rows: list[Mapping[str, object]],
+) -> int:
+    """Upsert rows and return the number inserted."""
+    latest_cache: dict[tuple[str, str], tuple[str | None, int]] = {}
+    inserted = 0
+    for row in rows:
+        inserted += _maybe_upsert_raw_pgn_row(cur, row, latest_cache)
+    return inserted
+
+
+def _fetch_raw_pgn_summary(cur) -> tuple[list[Mapping[str, Any]], Mapping[str, Any]]:
+    """Return per-source and total raw PGN summary data."""
+    cur.execute(
+        f"""
+        SELECT
+            source,
+            COUNT(*) AS total_rows,
+            COUNT(DISTINCT game_id) AS distinct_games,
+            MAX(ingested_at) AS latest_ingested_at
+        FROM {PGN_SCHEMA}.raw_pgns
+        GROUP BY source
+        ORDER BY source
+        """
+    )
+    sources = cur.fetchall()
+    cur.execute(
+        f"""
+        SELECT
+            COUNT(*) AS total_rows,
+            COUNT(DISTINCT game_id) AS distinct_games,
+            MAX(ingested_at) AS latest_ingested_at
+        FROM {PGN_SCHEMA}.raw_pgns
+        """
+    )
+    totals = cur.fetchone() or {}
+    return sources, totals if isinstance(totals, Mapping) else {}
+
+
+class PostgresRawPgnRepository:
+    """Encapsulates Postgres-backed raw PGN persistence and reads."""
+
+    def __init__(self, conn: PgConnection) -> None:
+        self._conn = conn
+
+    def upsert_raw_pgns(self, rows: Iterable[Mapping[str, object]]) -> int:
+        """Insert raw PGN rows inside a transaction."""
+        rows_list = list(rows)
+        if not rows_list:
+            return 0
+        autocommit_state = self._conn.autocommit
+        self._conn.autocommit = False
+        try:
+            with self._conn.cursor() as cur:
+                inserted = _upsert_postgres_raw_pgn_rows(cur, rows_list)
+        except psycopg2.Error:
+            self._conn.rollback()
+            raise
+        else:
+            self._conn.commit()
+            return inserted
+        finally:
+            self._conn.autocommit = autocommit_state
+
+    def fetch_latest_pgn_hashes(
+        self,
+        game_ids: list[str],
+        source: str | None,
+    ) -> dict[str, str]:
+        """Fetch latest PGN hashes for the provided game ids."""
+        if not game_ids:
+            return {}
+        where_parts = ["game_id = ANY(%s)"]
+        params: list[object] = [game_ids]
+        if source:
+            where_parts.append("source = %s")
+            params.append(source)
+        where_clause = " AND ".join(where_parts)
+        with self._conn.cursor() as cur:
+            cur.execute(
+                f"""
+                SELECT game_id, pgn_hash
+                FROM (
+                    SELECT
+                        game_id,
+                        pgn_hash,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY game_id, source
+                            ORDER BY pgn_version DESC
+                        ) AS rn
+                    FROM {PGN_SCHEMA}.raw_pgns
+                    WHERE {where_clause}
+                ) AS latest
+                WHERE rn = 1
+                """,
+                params,
+            )
+            rows = cur.fetchall()
+        return {str(game_id): str(pgn_hash) for game_id, pgn_hash in rows if pgn_hash}
+
+    def fetch_latest_raw_pgns(
+        self,
+        source: str | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, object]]:
+        """Fetch the latest raw PGN rows for a source."""
+        params: list[object] = []
+        where_clause = ""
+        if source:
+            where_clause = "WHERE source = %s"
+            params.append(source)
+        sql = f"""
+            SELECT * FROM (
+                SELECT
+                    *,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY game_id, source
+                        ORDER BY pgn_version DESC
+                    ) AS rn
+                FROM {PGN_SCHEMA}.raw_pgns
+                {where_clause}
+            ) AS latest
+            WHERE rn = 1
+            ORDER BY ingested_at DESC
+        """
+        if limit is not None:
+            sql += " LIMIT %s"
+            params.append(limit)
+        with self._conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(sql, params)
+            rows = cur.fetchall()
+        for row in rows:
+            row.pop("rn", None)
+        return rows
+
+    def fetch_raw_pgns_summary(self) -> dict[str, Any]:
+        """Return the raw PGN summary payload."""
+        with self._conn.cursor(cursor_factory=RealDictCursor) as cur:
+            sources, totals = _fetch_raw_pgn_summary(cur)
+        return build_raw_pgn_summary_payload(
+            sources=coerce_raw_pgn_summary_rows(sources),
+            totals=totals,
+        )
+
+
+def fetch_postgres_raw_pgns_summary(settings: Settings) -> dict[str, Any]:
+    """Return Postgres raw PGN summary payload."""
+    with postgres_connection(settings) as conn:
+        if conn is None or not postgres_pgns_enabled(settings):
+            return _disabled_raw_pgn_summary()
+        init_pgn_schema(conn)
+        repo = PostgresRawPgnRepository(conn)
+        return repo.fetch_raw_pgns_summary()
+</file>
+
 <file path="db/postgres_repository.py">
 """Postgres repository adapter for read-only endpoints."""
 
@@ -5032,9 +6310,9 @@ from dataclasses import dataclass
 from typing import Any
 
 from tactix.config import Settings
-from tactix.fetch_analysis_tactics import fetch_analysis_tactics
-from tactix.fetch_ops_events import fetch_ops_events
-from tactix.fetch_postgres_raw_pgns_summary import fetch_postgres_raw_pgns_summary
+from tactix.db.postgres_analysis_repository import fetch_analysis_tactics
+from tactix.db.postgres_ops_repository import fetch_ops_events
+from tactix.db.postgres_raw_pgn_repository import fetch_postgres_raw_pgns_summary
 from tactix.get_postgres_status import get_postgres_status
 from tactix.postgres_status import PostgresStatus
 
@@ -6837,6 +8115,17 @@ class PracticeAttemptRequest(BaseModel):
 
 <file path="ports/__init__.py">
 """Port interfaces for the tactix application."""
+
+from tactix.ports.repositories import (  # noqa: F401
+    ConversionRepository,
+    DashboardRepository,
+    GameRepository,
+    MetricsRepository,
+    PositionRepository,
+    PracticeQueueRepository,
+    RawPgnRepository,
+    TacticRepository,
+)
 </file>
 
 <file path="ports/game_source_client.py">
@@ -6856,6 +8145,147 @@ class GameSourceClient(Protocol):
 
     def fetch_incremental_games(self, request: ChessFetchRequest) -> ChessFetchResult:
         """Fetch games incrementally for the requested source."""
+</file>
+
+<file path="ports/repositories.py">
+"""Repository port interfaces for database access boundaries."""
+
+# pylint: disable=too-few-public-methods
+
+from __future__ import annotations
+
+from collections.abc import Iterable, Mapping
+from typing import Protocol
+
+
+class RawPgnRepository(Protocol):
+    """Repository interface for raw PGN persistence and lookup."""
+
+    def upsert_raw_pgns(self, rows: Iterable[Mapping[str, object]]) -> int:
+        """Insert or update raw PGN rows and return insert count."""
+
+    def fetch_latest_pgn_hashes(
+        self,
+        game_ids: list[str],
+        source: str,
+    ) -> dict[str, str]:
+        """Return latest hashes for the provided game ids."""
+
+    def fetch_latest_raw_pgns(self, source: str, limit: int) -> list[dict[str, object]]:
+        """Return the latest raw PGN rows for the given source."""
+
+    def fetch_raw_pgns_summary(self, source: str | None = None) -> dict[str, object]:
+        """Return the raw PGN summary payload."""
+
+
+class GameRepository(RawPgnRepository, Protocol):
+    """Alias interface for raw PGN-backed game storage."""
+
+
+class PositionRepository(Protocol):
+    """Repository interface for position storage."""
+
+    def fetch_position_counts(self, game_ids: list[str], source: str) -> dict[str, int]:
+        """Return per-game position counts for the provided games."""
+
+    def fetch_positions_for_games(self, game_ids: list[str]) -> list[dict[str, object]]:
+        """Return stored positions for the provided games."""
+
+    def insert_positions(self, positions: list[Mapping[str, object]]) -> list[int]:
+        """Insert position rows and return new ids."""
+
+
+class ConversionRepository(Protocol):
+    """Repository interface for conversion/outcome persistence."""
+
+    def insert_tactic_outcomes(self, rows: list[Mapping[str, object]]) -> list[int]:
+        """Insert outcome rows and return ids."""
+
+    def upsert_tactic_with_outcome(
+        self,
+        tactic_row: Mapping[str, object],
+        outcome_row: Mapping[str, object],
+    ) -> int:
+        """Upsert a tactic with its outcome and return the tactic id."""
+
+
+class PracticeQueueRepository(Protocol):
+    """Repository interface for practice queue retrieval."""
+
+    def fetch_practice_tactic(self, tactic_id: int) -> dict[str, object] | None:
+        """Return the tactic payload for a practice item."""
+
+    def fetch_practice_queue(
+        self,
+        source: str,
+        include_failed_attempt: bool = False,
+    ) -> list[dict[str, object]]:
+        """Return practice queue items for the given source."""
+
+
+class TacticRepository(ConversionRepository, PracticeQueueRepository, Protocol):
+    """Repository interface for tactics and practice workflows."""
+
+    def insert_tactics(self, rows: list[Mapping[str, object]]) -> list[int]:
+        """Insert tactic rows and return ids."""
+
+    def grade_practice_attempt(
+        self,
+        payload: Mapping[str, object],
+    ) -> dict[str, object]:
+        """Grade a practice attempt payload."""
+
+    def record_training_attempt(self, payload: Mapping[str, object]) -> int:
+        """Insert a training attempt and return its id."""
+
+    def fetch_game_detail(self, game_id: str) -> dict[str, object] | None:
+        """Return detailed game payloads when available."""
+
+
+class DashboardRepository(Protocol):
+    """Repository interface for dashboard queries."""
+
+    def fetch_pipeline_table_counts(
+        self,
+        query,
+        **kwargs: object,
+    ) -> dict[str, int]:
+        """Return pipeline table counts for the dashboard."""
+
+    def fetch_opportunity_motif_counts(
+        self,
+        query,
+        **kwargs: object,
+    ) -> dict[str, int]:
+        """Return opportunity motif counts for the dashboard."""
+
+    def fetch_metrics(self, query, **kwargs: object) -> dict[str, object]:
+        """Return aggregated metrics for the dashboard."""
+
+    def fetch_recent_games(self, query, **kwargs: object) -> list[dict[str, object]]:
+        """Return recent games for the dashboard."""
+
+    def fetch_recent_positions(self, query, **kwargs: object) -> list[dict[str, object]]:
+        """Return recent positions for the dashboard."""
+
+    def fetch_recent_tactics(self, query, **kwargs: object) -> list[dict[str, object]]:
+        """Return recent tactics for the dashboard."""
+
+
+class MetricsRepository(Protocol):
+    """Repository interface for metrics updates."""
+
+    def update_metrics_summary(self) -> None:
+        """Update the metrics summary tables."""
+
+
+_VULTURE_USED = (
+    GameRepository,
+    PositionRepository,
+    TacticRepository,
+    DashboardRepository,
+    MetricsRepository,
+)
 </file>
 
 <file path="tactics/__init__.py">
@@ -7025,11 +8455,25 @@ import sys
 import time
 from functools import wraps
 
+from tactix.trace_context import get_op_id, get_run_id
+
 _DEFAULT_LOGGER_NAME = "tactix"
 _DEFAULT_LOG_LEVEL = logging.DEBUG
-_DEFAULT_FORMATTER = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+_DEFAULT_FORMATTER = logging.Formatter(
+    "%(asctime)s [%(levelname)s] %(name)s [run_id=%(run_id)s op_id=%(op_id)s]: %(message)s"
+)
 _DEFAULT_HANDLER = logging.StreamHandler(sys.stdout)
+
+
+class _TraceFilter(logging.Filter):  # pylint: disable=too-few-public-methods
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.run_id = get_run_id() or "-"
+        record.op_id = get_op_id() or "-"
+        return True
+
+
 _DEFAULT_HANDLER.setFormatter(_DEFAULT_FORMATTER)
+_DEFAULT_HANDLER.addFilter(_TraceFilter())
 
 
 def _configure_logger(logger: logging.Logger, level: int) -> None:
@@ -8116,7 +9560,7 @@ def _build_pgn_upsert_plan(
 </file>
 
 <file path="_build_raw_pgn_summary.py">
-"""Build raw PGN summary payloads."""
+"""Legacy helper for building raw PGN summary payloads."""
 
 from collections.abc import Mapping
 from typing import Any
@@ -8129,6 +9573,9 @@ def _build_raw_pgn_summary(
 ) -> dict[str, Any]:
     """Return a normalized raw PGN summary payload."""
     return build_raw_pgn_summary_payload(sources=sources, totals=totals)
+
+
+_VULTURE_USED = (_build_raw_pgn_summary,)
 </file>
 
 <file path="_build_schema_label.py">
@@ -8630,41 +10077,19 @@ def hello_from_bin() -> str: ...
 <file path="_delete_existing_analysis.py">
 """Delete existing analysis rows for a position."""
 
-from tactix.define_db_schemas__const import ANALYSIS_SCHEMA
+from tactix.db.postgres_analysis_repository import _delete_existing_analysis
 
-
-def _delete_existing_analysis(cur, position_id: int) -> None:
-    """Delete existing tactics and outcomes for a position id."""
-    cur.execute(
-        f"""
-        DELETE FROM {ANALYSIS_SCHEMA}.tactic_outcomes
-        WHERE tactic_id IN (
-            SELECT tactic_id FROM {ANALYSIS_SCHEMA}.tactics WHERE position_id = %s
-        )
-        """,
-        (position_id,),
-    )
-    cur.execute(
-        f"DELETE FROM {ANALYSIS_SCHEMA}.tactics WHERE position_id = %s",
-        (position_id,),
-    )
+__all__ = ["_delete_existing_analysis"]
 </file>
 
 <file path="_disabled_raw_pgn_summary.py">
-"""Helpers for disabled raw PGN summaries."""
+"""Legacy wrapper for the Postgres raw PGN summary default."""
 
-from typing import Any
+# pylint: disable=unused-import
 
-
-def _disabled_raw_pgn_summary() -> dict[str, Any]:
-    """Return the default disabled raw PGN summary payload."""
-    return {
-        "status": "disabled",
-        "total_rows": 0,
-        "distinct_games": 0,
-        "latest_ingested_at": None,
-        "sources": [],
-    }
+from tactix.db.postgres_raw_pgn_repository import (  # noqa: F401
+    _disabled_raw_pgn_summary,
+)
 </file>
 
 <file path="_empty_pgn_metadata.py">
@@ -8734,7 +10159,7 @@ def _ensure_chesscom_site_url(pgn: str) -> str:
 import chess
 
 from tactix.analyze_tactics__positions import MATE_IN_TWO
-from tactix.detect_tactics__motifs import BaseTacticDetector
+from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.StockfishEngine import StockfishEngine
 from tactix.utils.logger import funclogger
 
@@ -8918,68 +10343,23 @@ class _FallbackKwargs(TypedDict):
 </file>
 
 <file path="_fetch_latest_pgn_metadata.py">
-"""Fetch the latest PGN metadata for a game."""
+"""Legacy wrapper for Postgres raw PGN metadata reads."""
 
-from tactix.define_db_schemas__const import PGN_SCHEMA
+# pylint: disable=unused-import
 
-
-def _fetch_latest_pgn_metadata(
-    cur,
-    game_id: str,
-    source: str,
-) -> tuple[str | None, int]:
-    """Return latest PGN hash/version for a game and source."""
-    cur.execute(
-        f"""
-        SELECT pgn_hash, pgn_version
-        FROM {PGN_SCHEMA}.raw_pgns
-        WHERE game_id = %s AND source = %s
-        ORDER BY pgn_version DESC
-        LIMIT 1
-        """,
-        (game_id, source),
-    )
-    existing = cur.fetchone()
-    if existing:
-        return existing[0], int(existing[1] or 0)
-    return None, 0
+from tactix.db.postgres_raw_pgn_repository import (  # noqa: F401
+    _fetch_latest_pgn_metadata,
+)
 </file>
 
 <file path="_fetch_raw_pgn_summary.py">
-"""Fetch raw PGN summary metrics from the database."""
+"""Legacy wrapper for Postgres raw PGN summary SQL."""
 
-from collections.abc import Mapping
-from typing import Any
+# pylint: disable=unused-import
 
-from tactix.define_db_schemas__const import PGN_SCHEMA
-
-
-def _fetch_raw_pgn_summary(cur) -> tuple[list[Mapping[str, Any]], Mapping[str, Any]]:
-    """Return per-source and total raw PGN summary data."""
-    cur.execute(
-        f"""
-        SELECT
-            source,
-            COUNT(*) AS total_rows,
-            COUNT(DISTINCT game_id) AS distinct_games,
-            MAX(ingested_at) AS latest_ingested_at
-        FROM {PGN_SCHEMA}.raw_pgns
-        GROUP BY source
-        ORDER BY source
-        """
-    )
-    sources = cur.fetchall()
-    cur.execute(
-        f"""
-        SELECT
-            COUNT(*) AS total_rows,
-            COUNT(DISTINCT game_id) AS distinct_games,
-            MAX(ingested_at) AS latest_ingested_at
-        FROM {PGN_SCHEMA}.raw_pgns
-        """
-    )
-    totals = cur.fetchone() or {}
-    return sources, totals if isinstance(totals, Mapping) else {}
+from tactix.db.postgres_raw_pgn_repository import (  # noqa: F401
+    _fetch_raw_pgn_summary,
+)
 </file>
 
 <file path="_filter_fixture_games.py">
@@ -9414,7 +10794,7 @@ import chess
 
 from tactix._is_new_hanging_piece import _is_new_hanging_piece
 from tactix.analyze_tactics__positions import MOTIF_DETECTORS
-from tactix.detect_tactics__motifs import BaseTacticDetector
+from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.utils.logger import funclogger
 
 
@@ -9555,149 +10935,27 @@ def _initialize_engine(command: str, settings: Settings) -> chess.engine.SimpleE
 <file path="_insert_analysis_outcome.py">
 """Insert analysis outcome rows into Postgres."""
 
-from tactix.define_db_schemas__const import ANALYSIS_SCHEMA
-from tactix.define_outcome_insert_plan__db_store import OutcomeInsertPlan
+from tactix.db.postgres_analysis_repository import _insert_analysis_outcome
 
-
-def _insert_analysis_outcome(
-    cur,
-    tactic_id: int,
-    outcome_plan: OutcomeInsertPlan,
-) -> None:
-    """Insert an analysis outcome row for a tactic."""
-    cur.execute(
-        f"""
-        INSERT INTO {ANALYSIS_SCHEMA}.tactic_outcomes (
-            tactic_id,
-            result,
-            user_uci,
-            eval_delta
-        )
-        VALUES (%s, %s, %s, %s)
-        """,
-        (
-            tactic_id,
-            outcome_plan.result,
-            outcome_plan.user_uci,
-            outcome_plan.eval_delta,
-        ),
-    )
+__all__ = ["_insert_analysis_outcome"]
 </file>
 
 <file path="_insert_analysis_tactic.py">
 """Insert analysis tactic rows into Postgres."""
 
-from tactix.define_db_schemas__const import ANALYSIS_SCHEMA
-from tactix.define_tactic_insert_plan__db_store import TacticInsertPlan
+from tactix.db.postgres_analysis_repository import _insert_analysis_tactic
 
-
-def _insert_analysis_tactic(cur, tactic_plan: TacticInsertPlan) -> int:
-    """Insert a tactic row and return its id."""
-    cur.execute(
-        f"""
-        INSERT INTO {ANALYSIS_SCHEMA}.tactics (
-            game_id,
-            position_id,
-            motif,
-            severity,
-            best_uci,
-            best_san,
-            explanation,
-            eval_cp
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        RETURNING tactic_id
-        """,
-        (
-            tactic_plan.game_id,
-            tactic_plan.position_id,
-            tactic_plan.motif,
-            tactic_plan.severity,
-            tactic_plan.best_uci,
-            tactic_plan.best_san,
-            tactic_plan.explanation,
-            tactic_plan.eval_cp,
-        ),
-    )
-    tactic_id_row = cur.fetchone()
-    return int(tactic_id_row[0]) if tactic_id_row else 0
+__all__ = ["_insert_analysis_tactic"]
 </file>
 
 <file path="_insert_raw_pgn_row.py">
-from collections.abc import Mapping
+"""Legacy wrapper for Postgres raw PGN inserts."""
 
-from tactix.define_db_schemas__const import PGN_SCHEMA
-from tactix.PgnUpsertPlan import PgnUpsertPlan
+# pylint: disable=unused-import
 
-
-def _insert_raw_pgn_row(
-    cur,
-    game_id: str,
-    source: str,
-    row: Mapping[str, object],
-    plan: PgnUpsertPlan,
-) -> None:
-    cur.execute(
-        f"""
-        INSERT INTO {PGN_SCHEMA}.raw_pgns (
-            game_id,
-            source,
-            player_username,
-            fetched_at,
-            pgn_raw,
-            pgn_normalized,
-            pgn_hash,
-            pgn_version,
-            user_rating,
-            time_control,
-            ingested_at,
-            last_timestamp_ms,
-            cursor,
-            white_player,
-            black_player,
-            white_elo,
-            black_elo,
-            result,
-            event,
-            site,
-            utc_date,
-            utc_time,
-            termination,
-            start_timestamp_ms
-        )
-        VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-        )
-        ON CONFLICT DO NOTHING
-        """,
-        (
-            game_id,
-            source,
-            row.get("user"),
-            plan.fetched_at,
-            plan.pgn_text,
-            plan.normalized_pgn,
-            plan.pgn_hash,
-            plan.pgn_version,
-            plan.metadata.get("user_rating"),
-            plan.metadata.get("time_control"),
-            plan.ingested_at,
-            plan.last_timestamp_ms,
-            plan.cursor,
-            plan.metadata.get("white_player"),
-            plan.metadata.get("black_player"),
-            plan.metadata.get("white_elo"),
-            plan.metadata.get("black_elo"),
-            plan.metadata.get("result"),
-            plan.metadata.get("event"),
-            plan.metadata.get("site"),
-            plan.metadata.get("utc_date"),
-            plan.metadata.get("utc_time"),
-            plan.metadata.get("termination"),
-            plan.metadata.get("start_timestamp_ms"),
-        ),
-    )
+from tactix.db.postgres_raw_pgn_repository import (  # noqa: F401
+    _insert_raw_pgn_row,
+)
 </file>
 
 <file path="_is_discovered_check_slider.py">
@@ -10091,20 +11349,13 @@ def _iter_position_contexts(
 </file>
 
 <file path="_latest_pgn_metadata.py">
-from tactix._fetch_latest_pgn_metadata import _fetch_latest_pgn_metadata
+"""Legacy wrapper for Postgres raw PGN metadata cache updates."""
 
+# pylint: disable=unused-import
 
-def _latest_pgn_metadata(
-    cur,
-    key: tuple[str, str],
-    latest_cache: dict[tuple[str, str], tuple[str | None, int]],
-) -> tuple[str | None, int]:
-    cached = latest_cache.get(key)
-    if cached is not None:
-        return cached
-    latest_hash, latest_version = _fetch_latest_pgn_metadata(cur, key[0], key[1])
-    latest_cache[key] = (latest_hash, latest_version)
-    return latest_hash, latest_version
+from tactix.db.postgres_raw_pgn_repository import (  # noqa: F401
+    _latest_pgn_metadata,
+)
 </file>
 
 <file path="_list_tables.py">
@@ -10173,76 +11424,13 @@ def _has_digits(value: str) -> bool:
 </file>
 
 <file path="_maybe_upsert_raw_pgn_row.py">
-"""Conditionally upsert a raw PGN row."""
+"""Legacy wrapper for Postgres raw PGN upsert decisions."""
 
-from collections.abc import Mapping
-from dataclasses import dataclass
+# pylint: disable=unused-import
 
-from tactix._build_pgn_upsert_plan import _build_pgn_upsert_plan
-from tactix._has_game_source import _has_game_source
-from tactix._insert_raw_pgn_row import _insert_raw_pgn_row
-from tactix._latest_pgn_metadata import _latest_pgn_metadata
-from tactix._parse_game_source import _parse_game_source
-from tactix._record_upsert_result import (
-    _record_upsert_result,
+from tactix.db.postgres_raw_pgn_repository import (  # noqa: F401
+    _maybe_upsert_raw_pgn_row,
 )
-from tactix.PgnUpsertPlan import PgnUpsertPlan
-
-
-@dataclass(frozen=True)
-class _RawPgnUpsertContext:
-    cur: object
-    key: tuple[str, str]
-    row: Mapping[str, object]
-    latest_meta: tuple[str | None, int]
-    latest_cache: dict[tuple[str, str], tuple[str | None, int]]
-
-
-def _maybe_upsert_raw_pgn_row(
-    cur,
-    row: Mapping[str, object],
-    latest_cache: dict[tuple[str, str], tuple[str | None, int]],
-) -> int:
-    """Upsert a row if newer metadata is available."""
-    game_id, source = _parse_game_source(row)
-    if not _has_game_source(game_id, source):
-        return 0
-    key = (game_id, source)
-    latest_hash, latest_version = _latest_pgn_metadata(cur, key, latest_cache)
-    plan = _build_pgn_upsert_plan(row, latest_hash, latest_version)
-    context = _RawPgnUpsertContext(
-        cur=cur,
-        key=key,
-        row=row,
-        latest_meta=(latest_hash, latest_version),
-        latest_cache=latest_cache,
-    )
-    return _apply_pgn_upsert_plan__raw_pgn_row(context, plan)
-
-
-def _apply_pgn_upsert_plan__raw_pgn_row(
-    context: _RawPgnUpsertContext,
-    plan: PgnUpsertPlan | None,
-) -> int:
-    """Return the upsert outcome for a plan."""
-    # Justification: the upsert path has to handle both skip and write branches.
-    if plan is None:
-        context.latest_cache[context.key] = context.latest_meta
-        return 0
-    game_id, source = context.key
-    _insert_raw_pgn_row(
-        context.cur,
-        game_id,
-        source,
-        context.row,
-        plan,
-    )
-    return _record_upsert_result(
-        context.cur,
-        context.key,
-        plan,
-        context.latest_cache,
-    )
 </file>
 
 <file path="_normalize_clock_parts.py">
@@ -10623,22 +11811,13 @@ def _reclassify_motif(motif: str, user_motif: str) -> str | None:
 </file>
 
 <file path="_record_upsert_result.py">
-"""Record upsert results into the cache."""
+"""Legacy wrapper for raw PGN upsert result tracking."""
 
-from tactix.PgnUpsertPlan import PgnUpsertPlan
+# pylint: disable=unused-import
 
-
-def _record_upsert_result(
-    cur,
-    key: tuple[str, str],
-    plan: PgnUpsertPlan,
-    latest_cache: dict[tuple[str, str], tuple[str | None, int]],
-) -> int:
-    """Update the latest cache and return rows affected."""
-    if not cur.rowcount:
-        return 0
-    latest_cache[key] = (plan.pgn_hash, plan.pgn_version)
-    return 1
+from tactix.db.postgres_raw_pgn_repository import (  # noqa: F401
+    _record_upsert_result,
+)
 </file>
 
 <file path="_resolve_chesscom_profile_value.py">
@@ -10786,7 +11965,7 @@ def _schema_tables(conn: PgConnection, schema: str, label: str) -> list[str]:
 
 import chess
 
-from tactix.detect_tactics__motifs import BaseTacticDetector
+from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.StockfishEngine import StockfishEngine
 from tactix.utils.logger import funclogger
 
@@ -11385,23 +12564,13 @@ def _skewer_sources(
 </file>
 
 <file path="_upsert_postgres_raw_pgn_rows.py">
-"""Upsert raw PGN rows into Postgres."""
+"""Legacy wrapper for Postgres raw PGN upsert batches."""
 
-from collections.abc import Mapping
+# pylint: disable=unused-import
 
-from tactix._maybe_upsert_raw_pgn_row import _maybe_upsert_raw_pgn_row
-
-
-def _upsert_postgres_raw_pgn_rows(
-    cur,
-    rows: list[Mapping[str, object]],
-) -> int:
-    """Upsert rows and return the number inserted."""
-    latest_cache: dict[tuple[str, str], tuple[str | None, int]] = {}
-    inserted = 0
-    for row in rows:
-        inserted += _maybe_upsert_raw_pgn_row(cur, row, latest_cache)
-    return inserted
+from tactix.db.postgres_raw_pgn_repository import (  # noqa: F401
+    _upsert_postgres_raw_pgn_rows,
+)
 </file>
 
 <file path="airflow_daily_sync_context.py">
@@ -12719,9 +13888,13 @@ def _attach_position_ids(
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 import chess
 from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from tactix.TacticFinding import TacticFinding
 
 PIECE_VALUES = {
     chess.KING: 10000,
@@ -12859,8 +14032,8 @@ class BaseTacticDetector:
 
     motif = "unknown"
 
-    def detect(self, _context: object) -> bool:
-        """Return True when the tactic is detected."""
+    def detect(self, _context: object) -> list[TacticFinding]:
+        """Return domain findings for a tactic context."""
         raise NotImplementedError
 
     @staticmethod
@@ -13149,40 +14322,9 @@ def _dashboard_cache_key(
 </file>
 
 <file path="build_dashboard_stats_payload__api.py">
-"""Build dashboard stats payloads for API responses."""
+"""Deprecated dashboard stats helper retained for import compatibility."""
 
-from __future__ import annotations
-
-from collections.abc import Callable
-
-from tactix._resolve_dashboard_filters import _resolve_dashboard_filters
-from tactix.dashboard_query_filters import DashboardQueryFilters
-from tactix.db.duckdb_store import fetch_version, get_connection, init_schema
-
-
-def _build_dashboard_stats_payload(
-    filters: DashboardQueryFilters,
-    stats_fetcher: Callable[..., object],
-    stats_key: str,
-) -> dict[str, object]:
-    start_datetime, end_datetime, normalized_source, settings = _resolve_dashboard_filters(
-        filters,
-    )
-    conn = get_connection(settings.duckdb_path)
-    init_schema(conn)
-    response_source = "all" if normalized_source is None else normalized_source
-    return {
-        "source": response_source,
-        "metrics_version": fetch_version(conn),
-        stats_key: stats_fetcher(
-            conn,
-            source=normalized_source,
-            rating_bucket=filters.rating_bucket,
-            time_control=filters.time_control,
-            start_date=start_datetime,
-            end_date=end_datetime,
-        ),
-    }
+__all__: list[str] = []
 </file>
 
 <file path="build_extractor_request.py">
@@ -13229,6 +14371,7 @@ from __future__ import annotations
 
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.TacticContext import TacticContext
+from tactix.TacticFinding import TacticFinding
 
 
 class CaptureDetector(BaseTacticDetector):
@@ -13236,9 +14379,11 @@ class CaptureDetector(BaseTacticDetector):
 
     motif = "capture"
 
-    def detect(self, context: TacticContext) -> bool:
-        """Return True when the move is a capture."""
-        return context.board_before.is_capture(context.best_move)
+    def detect(self, context: TacticContext) -> list[TacticFinding]:
+        """Return findings when the move is a capture."""
+        if context.board_before.is_capture(context.best_move):
+            return [TacticFinding(motif=self.motif)]
+        return []
 </file>
 
 <file path="check_airflow_enabled__airflow_settings.py">
@@ -14788,6 +15933,7 @@ class Settings:
     )
     rapid_perf: str = os.getenv("TACTIX_PERF", "rapid")
     run_context: str = os.getenv("TACTIX_RUN_CONTEXT", "app")
+    run_id: str | None = None
     checkpoint_path: Path = DEFAULT_LICHESS_CHECKPOINT
     analysis_checkpoint_path: Path = DEFAULT_LICHESS_ANALYSIS_CHECKPOINT
     fixture_pgn_path: Path = DEFAULT_LICHESS_FIXTURE
@@ -15439,6 +16585,8 @@ from tactix.line_tactic_helpers import LineTacticInputs, build_line_tactic_conte
 from tactix.PinDetector import PinDetector
 from tactix.SkewerDetector import SkewerDetector
 from tactix.TacticContext import TacticContext
+from tactix.TacticDetectionService import TacticDetectionService
+from tactix.TacticFinding import TacticFinding
 
 MISSED_DELTA_THRESHOLD = -300
 FAILED_ATTEMPT_THRESHOLD = -100
@@ -15493,9 +16641,11 @@ class MateDetector(BaseTacticDetector):
 
     motif = "mate"
 
-    def detect(self, context: TacticContext) -> bool:
-        """Return True when the move delivers checkmate."""
-        return context.board_after.is_checkmate()
+    def detect(self, context: TacticContext) -> list[TacticFinding]:
+        """Return findings when the move delivers checkmate."""
+        if context.board_after.is_checkmate():
+            return [TacticFinding(motif=self.motif)]
+        return []
 
 
 class CheckDetector(BaseTacticDetector):
@@ -15503,9 +16653,11 @@ class CheckDetector(BaseTacticDetector):
 
     motif = "check"
 
-    def detect(self, context: TacticContext) -> bool:
-        """Return True when the move gives check."""
-        return context.board_after.is_check()
+    def detect(self, context: TacticContext) -> list[TacticFinding]:
+        """Return findings when the move gives check."""
+        if context.board_after.is_check():
+            return [TacticFinding(motif=self.motif)]
+        return []
 
 
 class EscapeDetector(BaseTacticDetector):
@@ -15513,13 +16665,15 @@ class EscapeDetector(BaseTacticDetector):
 
     motif = "escape"
 
-    def detect(self, context: TacticContext) -> bool:
-        """Return True when the moved piece escapes attack."""
-        return context.board_before.is_attacked_by(
+    def detect(self, context: TacticContext) -> list[TacticFinding]:
+        """Return findings when the moved piece escapes attack."""
+        if context.board_before.is_attacked_by(
             not context.mover_color, context.best_move.from_square
         ) and not context.board_before.is_attacked_by(
             not context.mover_color, context.best_move.to_square
-        )
+        ):
+            return [TacticFinding(motif=self.motif)]
+        return []
 
 
 class MotifDetectorSuite:
@@ -15527,25 +16681,11 @@ class MotifDetectorSuite:
 
     def __init__(self, detectors: Iterable[BaseTacticDetector]) -> None:
         """Initialize the detector suite."""
-        self._detectors = tuple(detectors)
+        self._service = TacticDetectionService(detectors)
 
     def infer_motif(self, board: chess.Board, best_move: chess.Move | None) -> str:
         """Infer the best motif label for a move on the given board."""
-        if best_move is None:
-            return "initiative"
-        mover_color = board.turn
-        board_after = board.copy()
-        board_after.push(best_move)
-        context = TacticContext(
-            board_before=board,
-            board_after=board_after,
-            best_move=best_move,
-            mover_color=mover_color,
-        )
-        for detector in self._detectors:
-            if detector.detect(context):
-                return detector.motif
-        return "initiative"
+        return self._service.infer_motif(board, best_move)
 
 
 def build_default_motif_detector_suite() -> MotifDetectorSuite:
@@ -15604,6 +16744,7 @@ from tactix._has_discovered_attack import _has_discovered_attack
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.DiscoveredAttackContext import DiscoveredAttackContext
 from tactix.TacticContext import TacticContext
+from tactix.TacticFinding import TacticFinding
 
 
 class DiscoveredAttackDetector(BaseTacticDetector):
@@ -15611,9 +16752,9 @@ class DiscoveredAttackDetector(BaseTacticDetector):
 
     motif = "discovered_attack"
 
-    def detect(self, context: TacticContext) -> bool:
-        """Return True when a discovered attack is present."""
-        return _has_discovered_attack(
+    def detect(self, context: TacticContext) -> list[TacticFinding]:
+        """Return findings when a discovered attack is present."""
+        if _has_discovered_attack(
             DiscoveredAttackContext(
                 detector=self,
                 board_before=context.board_before,
@@ -15622,7 +16763,9 @@ class DiscoveredAttackDetector(BaseTacticDetector):
                 opponent=not context.mover_color,
                 exclude_square=context.best_move.to_square,
             )
-        )
+        ):
+            return [TacticFinding(motif=self.motif)]
+        return []
 </file>
 
 <file path="DiscoveredCheckContext.py">
@@ -15661,6 +16804,7 @@ from tactix._opponent_king_square import _opponent_king_square
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.DiscoveredCheckContext import DiscoveredCheckContext
 from tactix.TacticContext import TacticContext
+from tactix.TacticFinding import TacticFinding
 
 
 class DiscoveredCheckDetector(BaseTacticDetector):
@@ -15668,12 +16812,12 @@ class DiscoveredCheckDetector(BaseTacticDetector):
 
     motif = "discovered_check"
 
-    def detect(self, context: TacticContext) -> bool:
-        """Return True when a discovered check is present."""
+    def detect(self, context: TacticContext) -> list[TacticFinding]:
+        """Return findings when a discovered check is present."""
         king_square = _opponent_king_square(context.board_after, context.mover_color)
         if king_square is None:
-            return False
-        return _has_discovered_check(
+            return []
+        if _has_discovered_check(
             DiscoveredCheckContext(
                 detector=self,
                 board_before=context.board_before,
@@ -15682,7 +16826,9 @@ class DiscoveredCheckDetector(BaseTacticDetector):
                 king_square=king_square,
                 exclude_square=context.best_move.to_square,
             )
-        )
+        ):
+            return [TacticFinding(motif=self.motif)]
+        return []
 </file>
 
 <file path="empty_conversion_payload__pipeline.py">
@@ -15957,7 +17103,7 @@ def _parse_date_time_value(date_value: str, end_time: str | None) -> datetime:
             f"{date_value} {time_match.group(1)}",
             "%Y.%m.%d %H:%M:%S",
         ).replace(tzinfo=UTC)
-    return datetime.strptime(date_value, "%Y.%m.%d").replace(tzinfo=UTC)
+    return datetime.strptime(f"{date_value} 12:00:00", "%Y.%m.%d %H:%M:%S").replace(tzinfo=UTC)
 </file>
 
 <file path="extract_pgn_metadata.py">
@@ -16037,6 +17183,8 @@ def _call_rust_extractor(
     rust_extractor,
     request: ExtractorRequest,
 ) -> list[dict[str, object]]:
+    if "[SetUp" in request.pgn:
+        return _extract_positions_fallback(request)
     try:
         result = rust_extractor(
             request.pgn,
@@ -16236,51 +17384,9 @@ class ExtractorDependencies:
 <file path="fetch_analysis_tactics.py">
 """Fetch recent analysis tactics from Postgres."""
 
-from typing import Any
+from tactix.db.postgres_analysis_repository import fetch_analysis_tactics
 
-from psycopg2.extras import RealDictCursor
-
-from tactix.config import Settings
-from tactix.define_db_schemas__const import ANALYSIS_SCHEMA
-from tactix.init_analysis_schema import init_analysis_schema
-from tactix.postgres_analysis_enabled import postgres_analysis_enabled
-from tactix.postgres_connection import postgres_connection
-
-
-def fetch_analysis_tactics(settings: Settings, limit: int = 10) -> list[dict[str, Any]]:
-    """Return recent tactics for the given settings."""
-    with postgres_connection(settings) as conn:
-        if conn is None or not postgres_analysis_enabled(settings):
-            return []
-        init_analysis_schema(conn)
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(
-                f"""
-                SELECT
-                    t.tactic_id,
-                    t.game_id,
-                    t.position_id,
-                    t.motif,
-                    t.severity,
-                    t.best_uci,
-                    t.best_san,
-                    t.explanation,
-                    t.eval_cp,
-                    t.created_at,
-                    o.result,
-                    o.user_uci,
-                    o.eval_delta,
-                    o.created_at AS outcome_created_at
-                FROM {ANALYSIS_SCHEMA}.tactics t
-                LEFT JOIN {ANALYSIS_SCHEMA}.tactic_outcomes o
-                    ON o.tactic_id = t.tactic_id
-                ORDER BY t.created_at DESC
-                LIMIT %s
-                """,
-                (limit,),
-            )
-            rows = cur.fetchall()
-        return [dict(row) for row in rows]
+__all__ = ["fetch_analysis_tactics"]
 </file>
 
 <file path="fetch_chesscom_games__pipeline.py">
@@ -16466,62 +17572,19 @@ def _fetch_lichess_games(
 <file path="fetch_ops_events.py">
 """Fetch operations events from Postgres."""
 
-from typing import Any
+from tactix.db.postgres_ops_repository import fetch_ops_events
 
-from psycopg2.extras import RealDictCursor
-
-from tactix.config import Settings
-from tactix.init_postgres_schema import init_postgres_schema
-from tactix.postgres_connection import postgres_connection
-
-
-def fetch_ops_events(settings: Settings, limit: int = 10) -> list[dict[str, Any]]:
-    """Return recent ops events for the given settings."""
-    with postgres_connection(settings) as conn:
-        if conn is None:
-            return []
-        init_postgres_schema(conn)
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(
-                """
-                SELECT id, component, event_type, source, profile, metadata, created_at
-                FROM tactix_ops.ops_events
-                ORDER BY created_at DESC
-                LIMIT %s
-                """,
-                (limit,),
-            )
-            rows = cur.fetchall()
-        return [dict(row) for row in rows]
+__all__ = ["fetch_ops_events"]
 </file>
 
 <file path="fetch_postgres_raw_pgns_summary.py">
-"""Fetch raw PGN summary payloads from Postgres."""
+"""Legacy wrapper for Postgres raw PGN summary reads."""
 
-from typing import Any
+# pylint: disable=unused-import
 
-from psycopg2.extras import RealDictCursor
-
-from tactix._build_raw_pgn_summary import (
-    _build_raw_pgn_summary,
+from tactix.db.postgres_raw_pgn_repository import (  # noqa: F401
+    fetch_postgres_raw_pgns_summary,
 )
-from tactix._disabled_raw_pgn_summary import _disabled_raw_pgn_summary
-from tactix._fetch_raw_pgn_summary import _fetch_raw_pgn_summary
-from tactix.config import Settings
-from tactix.init_pgn_schema import init_pgn_schema
-from tactix.postgres_connection import postgres_connection
-from tactix.postgres_pgns_enabled import postgres_pgns_enabled
-
-
-def fetch_postgres_raw_pgns_summary(settings: Settings) -> dict[str, Any]:
-    """Return Postgres raw PGN summary payload."""
-    with postgres_connection(settings) as conn:
-        if conn is None or not postgres_pgns_enabled(settings):
-            return _disabled_raw_pgn_summary()
-        init_pgn_schema(conn)
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            sources, totals = _fetch_raw_pgn_summary(cur)
-        return _build_raw_pgn_summary(sources, totals)
 </file>
 
 <file path="FetchContext.py">
@@ -16671,6 +17734,7 @@ from tactix._forks_meet_threshold import _forks_meet_threshold
 from tactix._is_fork_piece import _is_fork_piece
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.TacticContext import TacticContext
+from tactix.TacticFinding import TacticFinding
 
 
 class ForkDetector(BaseTacticDetector):
@@ -16678,18 +17742,20 @@ class ForkDetector(BaseTacticDetector):
 
     motif = "fork"
 
-    def detect(self, context: TacticContext) -> bool:
-        """Return True when the move creates a fork."""
+    def detect(self, context: TacticContext) -> list[TacticFinding]:
+        """Return findings when the move creates a fork."""
         to_square = context.best_move.to_square
         piece = context.board_after.piece_at(to_square)
         if not _is_fork_piece(piece):
-            return False
+            return []
         fork_targets = self.count_high_value_targets(
             context.board_after,
             to_square,
             context.mover_color,
         )
-        return _forks_meet_threshold(fork_targets, context.board_after)
+        if _forks_meet_threshold(fork_targets, context.board_after):
+            return [TacticFinding(motif=self.motif)]
+        return []
 </file>
 
 <file path="format_sse__api_streaming.py">
@@ -16881,45 +17947,20 @@ from typing import Annotated
 
 from fastapi import Depends, Query
 
-from tactix._resolve_dashboard_filters import _resolve_dashboard_filters
-from tactix.build_dashboard_cache_key__api_cache import _dashboard_cache_key
-from tactix.dashboard_query import DashboardQuery
+from tactix.app.use_cases.dashboard import DashboardUseCase, get_dashboard_use_case
 from tactix.dashboard_query_filters import DashboardQueryFilters
-from tactix.get_cached_dashboard_payload__api_cache import _get_cached_dashboard_payload
-from tactix.pipeline import get_dashboard_payload
-from tactix.set_dashboard_cache__api_cache import _set_dashboard_cache
 
 
 def get_dashboard(
     filters: Annotated[DashboardQueryFilters, Depends()],
+    use_case: Annotated[DashboardUseCase, Depends(get_dashboard_use_case)],
     motif: Annotated[str | None, Query()] = None,
 ) -> dict[str, object]:
     """Return dashboard payload for the provided filters."""
-    start_datetime, end_datetime, normalized_source, settings = _resolve_dashboard_filters(
-        filters,
-    )
-    query = DashboardQuery(
-        source=normalized_source,
-        motif=motif,
-        rating_bucket=filters.rating_bucket,
-        time_control=filters.time_control,
-        start_date=start_datetime,
-        end_date=end_datetime,
-    )
-    cache_key = _dashboard_cache_key(settings, query)
-    cached = _get_cached_dashboard_payload(cache_key)
-    if cached is not None:
-        return cached
-    payload = get_dashboard_payload(query, settings)
-    _set_dashboard_cache(cache_key, payload)
-    return payload
+    return use_case.get_dashboard(filters, motif)
 
 
-__all__ = [
-    "_get_cached_dashboard_payload",
-    "get_dashboard",
-    "get_dashboard_payload",
-]
+__all__ = ["get_dashboard"]
 </file>
 
 <file path="get_dashboard_payload__pipeline.py">
@@ -16977,50 +18018,21 @@ def _resolve_dashboard_settings(
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, Query
 
-from tactix._resolve_dashboard_filters import _resolve_dashboard_filters
-from tactix.dashboard_query import DashboardQuery
+from tactix.app.use_cases.dashboard import DashboardUseCase, get_dashboard_use_case
 from tactix.dashboard_query_filters import DashboardQueryFilters
-from tactix.db.dashboard_repository_provider import fetch_pipeline_table_counts
-from tactix.db.duckdb_store import get_connection, init_schema
 
 
 def dashboard_summary(  # pragma: no cover
     filters: Annotated[DashboardQueryFilters, Depends()],
+    use_case: Annotated[DashboardUseCase, Depends(get_dashboard_use_case)],
     db_name: Annotated[str | None, Query()] = None,
 ) -> dict[str, object]:
     """Return dashboard summary totals for the provided filters."""
-    start_datetime, end_datetime, normalized_source, settings = _resolve_dashboard_filters(
-        filters,
-    )
-    if db_name:
-        safe_name = Path(db_name).name
-        filename = safe_name if safe_name.endswith(".duckdb") else f"{safe_name}.duckdb"
-        settings.duckdb_path = settings.data_dir / filename
-    conn = get_connection(settings.duckdb_path)
-    try:
-        init_schema(conn)
-        summary = fetch_pipeline_table_counts(
-            conn,
-            DashboardQuery(
-                source=normalized_source,
-                rating_bucket=filters.rating_bucket,
-                time_control=filters.time_control,
-                start_date=start_datetime,
-                end_date=end_datetime,
-            ),
-        )
-    finally:
-        conn.close()
-    response_source = "all" if normalized_source is None else normalized_source
-    return {
-        "source": response_source,
-        "summary": summary,
-    }
+    return use_case.get_summary(filters, db_name)
 
 
 __all__ = ["dashboard_summary"]
@@ -17033,31 +18045,25 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import HTTPException, Query
+from fastapi import Depends, HTTPException, Query
 
-from tactix.config import get_settings
-from tactix.db.duckdb_store import get_connection, init_schema
-from tactix.db.tactic_repository_provider import tactic_repository
-from tactix.normalize_source__source import _normalize_source
+from tactix.app.use_cases.practice import (
+    GameNotFoundError,
+    PracticeUseCase,
+    get_practice_use_case,
+)
 
 
 def game_detail(
     game_id: str,
+    use_case: Annotated[PracticeUseCase, Depends(get_practice_use_case)],
     source: Annotated[str | None, Query()] = None,
 ) -> dict[str, object]:
     """Return game detail payload for a game id."""
-    normalized_source = _normalize_source(source)
-    settings = get_settings(source=normalized_source)
-    conn = get_connection(settings.duckdb_path)
-    init_schema(conn)
-    payload = tactic_repository(conn).fetch_game_detail(
-        game_id,
-        settings.user,
-        normalized_source,
-    )
-    if not payload.get("pgn"):
-        raise HTTPException(status_code=404, detail="Game not found")
-    return payload
+    try:
+        return use_case.get_game_detail(game_id, source)
+    except GameNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 </file>
 
 <file path="get_health__api.py">
@@ -17157,23 +18163,18 @@ def get_material_value(piece_type: chess.PieceType | str) -> int:
 <file path="get_postgres_analysis__api.py">
 from __future__ import annotations
 
-from fastapi import Query
+from typing import Annotated
 
-from tactix.config import get_settings
-from tactix.db.postgres_repository import (
-    PostgresRepository,
-    default_postgres_repository_dependencies,
-)
+from fastapi import Depends, Query
+
+from tactix.app.use_cases.postgres import PostgresUseCase, get_postgres_use_case
 
 
-def postgres_analysis(limit: int = Query(10, ge=1, le=200)) -> dict[str, object]:  # noqa: B008
-    settings = get_settings()
-    repo = PostgresRepository(
-        settings,
-        dependencies=default_postgres_repository_dependencies(),
-    )
-    tactics = repo.fetch_analysis_tactics(limit=limit)
-    return {"status": "ok", "tactics": tactics}
+def postgres_analysis(
+    use_case: Annotated[PostgresUseCase, Depends(get_postgres_use_case)],
+    limit: int = Query(10, ge=1, le=200),  # noqa: B008
+) -> dict[str, object]:
+    return use_case.get_analysis(limit)
 </file>
 
 <file path="get_postgres_raw_pgns__api.py">
@@ -17181,21 +18182,18 @@ def postgres_analysis(limit: int = Query(10, ge=1, le=200)) -> dict[str, object]
 
 from __future__ import annotations
 
-from tactix.config import get_settings
-from tactix.db.postgres_repository import (
-    PostgresRepository,
-    default_postgres_repository_dependencies,
-)
+from typing import Annotated
+
+from fastapi import Depends
+
+from tactix.app.use_cases.postgres import PostgresUseCase, get_postgres_use_case
 
 
-def postgres_raw_pgns() -> dict[str, object]:
+def postgres_raw_pgns(
+    use_case: Annotated[PostgresUseCase, Depends(get_postgres_use_case)],
+) -> dict[str, object]:
     """Return the raw PGN summary from Postgres."""
-    settings = get_settings()
-    repo = PostgresRepository(
-        settings,
-        dependencies=default_postgres_repository_dependencies(),
-    )
-    return repo.fetch_raw_pgns_summary()
+    return use_case.get_raw_pgns()
 </file>
 
 <file path="get_postgres_status__api.py">
@@ -17203,27 +18201,19 @@ def postgres_raw_pgns() -> dict[str, object]:
 
 from __future__ import annotations
 
-from fastapi import Query
+from typing import Annotated
 
-from tactix.config import get_settings
-from tactix.db.postgres_repository import (
-    PostgresRepository,
-    default_postgres_repository_dependencies,
-)
-from tactix.serialize_status import serialize_status
+from fastapi import Depends, Query
+
+from tactix.app.use_cases.postgres import PostgresUseCase, get_postgres_use_case
 
 
-def postgres_status(limit: int = Query(10, ge=1, le=50)) -> dict[str, object]:  # noqa: B008
+def postgres_status(
+    use_case: Annotated[PostgresUseCase, Depends(get_postgres_use_case)],
+    limit: int = Query(10, ge=1, le=50),  # noqa: B008
+) -> dict[str, object]:
     """Return Postgres status and recent ops events."""
-    settings = get_settings()
-    repo = PostgresRepository(
-        settings,
-        dependencies=default_postgres_repository_dependencies(),
-    )
-    status = repo.get_status()
-    payload = serialize_status(status)
-    payload["events"] = repo.fetch_ops_events(limit=limit)
-    return payload
+    return use_case.get_status(limit)
 </file>
 
 <file path="get_postgres_status.py">
@@ -17282,34 +18272,21 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Query
+from fastapi import Depends, Query
 
-from tactix.config import get_settings
-from tactix.db.duckdb_store import get_connection, init_schema
-from tactix.db.tactic_repository_provider import tactic_repository
-from tactix.normalize_source__source import _normalize_source
+from tactix.app.use_cases.practice import PracticeUseCase, get_practice_use_case
 
 
 def practice_next(
+    use_case: Annotated[PracticeUseCase, Depends(get_practice_use_case)],
     source: Annotated[str | None, Query()] = None,
     include_failed_attempt: bool = Query(False),  # noqa: B008
 ) -> dict[str, object]:
     """Fetch the next practice item for the requested source."""
-    normalized_source = _normalize_source(source)
-    settings = get_settings(source=normalized_source)
-    conn = get_connection(settings.duckdb_path)
-    init_schema(conn)
-    items = tactic_repository(conn).fetch_practice_queue(
-        limit=1,
-        source=normalized_source or settings.source,
+    return use_case.get_next(
+        source=source,
         include_failed_attempt=include_failed_attempt,
-        exclude_seen=True,
     )
-    return {
-        "source": normalized_source or settings.source,
-        "include_failed_attempt": include_failed_attempt,
-        "item": items[0] if items else None,
-    }
 </file>
 
 <file path="get_practice_queue__api.py">
@@ -17319,34 +18296,23 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Query
+from fastapi import Depends, Query
 
-from tactix.config import get_settings
-from tactix.db.duckdb_store import get_connection, init_schema
-from tactix.db.tactic_repository_provider import tactic_repository
-from tactix.normalize_source__source import _normalize_source
+from tactix.app.use_cases.practice import PracticeUseCase, get_practice_use_case
 
 
 def practice_queue(
+    use_case: Annotated[PracticeUseCase, Depends(get_practice_use_case)],
     source: Annotated[str | None, Query()] = None,
     include_failed_attempt: bool = Query(False),  # noqa: B008
     limit: int = Query(20, ge=1, le=200),  # noqa: B008
 ) -> dict[str, object]:
     """Fetch a practice queue payload for the requested source."""
-    normalized_source = _normalize_source(source)
-    settings = get_settings(source=normalized_source)
-    conn = get_connection(settings.duckdb_path)
-    init_schema(conn)
-    queue = tactic_repository(conn).fetch_practice_queue(
-        limit=limit,
-        source=normalized_source or settings.source,
+    return use_case.get_queue(
+        source=source,
         include_failed_attempt=include_failed_attempt,
+        limit=limit,
     )
-    return {
-        "source": normalized_source or settings.source,
-        "include_failed_attempt": include_failed_attempt,
-        "items": queue,
-    }
 </file>
 
 <file path="get_raw_pgns_summary__api.py">
@@ -17356,27 +18322,17 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Query
+from fastapi import Depends, Query
 
-from tactix.config import get_settings
-from tactix.db.duckdb_store import get_connection, init_schema
-from tactix.db.raw_pgn_repository_provider import fetch_raw_pgns_summary
-from tactix.normalize_source__source import _normalize_source
+from tactix.app.use_cases.dashboard import DashboardUseCase, get_dashboard_use_case
 
 
 def raw_pgns_summary(
+    use_case: Annotated[DashboardUseCase, Depends(get_dashboard_use_case)],
     source: Annotated[str | None, Query()] = None,
 ) -> dict[str, object]:
     """Return raw PGN summary payload for the given source."""
-    normalized_source = _normalize_source(source)
-    settings = get_settings(source=normalized_source)
-    conn = get_connection(settings.duckdb_path)
-    init_schema(conn)
-    active_source = normalized_source or settings.source
-    return {
-        "source": active_source,
-        "summary": fetch_raw_pgns_summary(conn, source=active_source),
-    }
+    return use_case.get_raw_pgns_summary(source)
 </file>
 
 <file path="get_settings__config.py">
@@ -17423,40 +18379,20 @@ from typing import Annotated
 
 from fastapi import Depends, Query
 
-from tactix.coerce_date_to_datetime__datetime import _coerce_date_to_datetime
-from tactix.config import get_settings
-from tactix.dashboard_query import DashboardQuery
-from tactix.db.dashboard_repository_provider import fetch_recent_tactics
-from tactix.db.duckdb_store import get_connection, init_schema
-from tactix.normalize_source__source import _normalize_source
+from tactix.app.use_cases.tactics_search import (
+    TacticsSearchUseCase,
+    get_tactics_search_use_case,
+)
 from tactix.tactics_search_filters import TacticsSearchFilters
 
 
 def tactics_search(
     filters: Annotated[TacticsSearchFilters, Depends()],
+    use_case: Annotated[TacticsSearchUseCase, Depends(get_tactics_search_use_case)],
     limit: int = Query(20, ge=1, le=200),  # noqa: B008
 ) -> dict[str, object]:
     """Fetch recent tactics that match the given filters."""
-    normalized_source = _normalize_source(filters.source)
-    settings = get_settings(source=normalized_source)
-    start_datetime = _coerce_date_to_datetime(filters.start_date)
-    end_datetime = _coerce_date_to_datetime(filters.end_date, end_of_day=True)
-    conn = get_connection(settings.duckdb_path)
-    init_schema(conn)
-    tactics = fetch_recent_tactics(
-        conn,
-        DashboardQuery(
-            source=normalized_source,
-            motif=filters.motif,
-            rating_bucket=filters.rating_bucket,
-            time_control=filters.time_control,
-            start_date=start_datetime,
-            end_date=end_datetime,
-        ),
-        limit=limit,
-    )
-    response_source = "all" if normalized_source is None else normalized_source
-    return {"source": response_source, "limit": limit, "tactics": tactics}
+    return use_case.search(filters, limit)
 </file>
 
 <file path="HangingPieceDetector.py">
@@ -17466,6 +18402,7 @@ from __future__ import annotations
 
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.TacticContext import TacticContext
+from tactix.TacticFinding import TacticFinding
 
 
 class HangingPieceDetector(BaseTacticDetector):
@@ -17473,14 +18410,16 @@ class HangingPieceDetector(BaseTacticDetector):
 
     motif = "hanging_piece"
 
-    def detect(self, context: TacticContext) -> bool:
-        """Return True when the move captures a hanging piece."""
-        return self.is_hanging_capture(
+    def detect(self, context: TacticContext) -> list[TacticFinding]:
+        """Return findings when the move captures a hanging piece."""
+        if self.is_hanging_capture(
             context.board_before,
             context.board_after,
             context.best_move,
             context.mover_color,
-        )
+        ):
+            return [TacticFinding(motif=self.motif)]
+        return []
 </file>
 
 <file path="init_analysis_schema_if_needed__pipeline.py">
@@ -17685,13 +18624,20 @@ def init_postgres_schema(conn: PgConnection) -> None:
                 source TEXT,
                 profile TEXT,
                 metadata JSONB,
+                run_id TEXT,
+                op_id TEXT,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
             """
         )
+        cur.execute("ALTER TABLE tactix_ops.ops_events ADD COLUMN IF NOT EXISTS run_id TEXT")
+        cur.execute("ALTER TABLE tactix_ops.ops_events ADD COLUMN IF NOT EXISTS op_id TEXT")
         cur.execute(
             "CREATE INDEX IF NOT EXISTS ops_events_created_at_idx "
             "ON tactix_ops.ops_events (created_at DESC)"
+        )
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS ops_events_run_id_idx ON tactix_ops.ops_events (run_id)"
         )
 </file>
 
@@ -18936,16 +19882,16 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from tactix.build_dashboard_stats_payload__api import _build_dashboard_stats_payload
+from tactix.app.use_cases.dashboard import DashboardUseCase, get_dashboard_use_case
 from tactix.dashboard_query_filters import DashboardQueryFilters
-from tactix.db.dashboard_repository_provider import fetch_motif_stats
 
 
 def motif_stats(
     filters: Annotated[DashboardQueryFilters, Depends()],
+    use_case: Annotated[DashboardUseCase, Depends(get_dashboard_use_case)],
 ) -> dict[str, object]:
     """Return motif statistics payload for the dashboard."""
-    return _build_dashboard_stats_payload(filters, fetch_motif_stats, "motifs")
+    return use_case.get_motif_stats(filters)
 </file>
 
 <file path="no_games_payload_contexts.py">
@@ -19091,7 +20037,7 @@ from tactix.config import Settings
 
 
 @dataclass(frozen=True)
-class OpsEvent:
+class OpsEvent:  # pylint: disable=too-many-instance-attributes
     """Structured event metadata for operational logging."""
 
     settings: Settings
@@ -19100,6 +20046,8 @@ class OpsEvent:
     source: str | None
     profile: str | None
     metadata: dict[str, object] | None = None
+    run_id: str | None = None
+    op_id: str | None = None
 </file>
 
 <file path="orchestrate_dag_run__airflow_trigger.py">
@@ -19272,7 +20220,7 @@ def _persist_and_extract_positions(
             settings=context.settings,
             progress=context.progress,
             profile=context.profile,
-            delete_existing=True,
+            delete_existing=False,
             emit_start=True,
         )
     )
@@ -19953,6 +20901,7 @@ from tactix._skewer_sources import _skewer_sources
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.LineTacticContext import LineTacticContext
 from tactix.TacticContext import TacticContext
+from tactix.TacticFinding import TacticFinding
 
 
 class PinDetector(BaseTacticDetector):
@@ -19960,13 +20909,15 @@ class PinDetector(BaseTacticDetector):
 
     motif = "pin"
 
-    def detect(self, context: TacticContext) -> bool:
-        """Return True when a pin is created."""
+    def detect(self, context: TacticContext) -> list[TacticFinding]:
+        """Return findings when a pin is created."""
         after_pins = self._pin_signatures(context.board_after, context.mover_color)
         if not after_pins:
-            return False
+            return []
         before_pins = self._pin_signatures(context.board_before, context.mover_color)
-        return bool(after_pins - before_pins)
+        if after_pins - before_pins:
+            return [TacticFinding(motif=self.motif)]
+        return []
 
     def _pin_signatures(self, board: chess.Board, mover_color: bool) -> set[tuple[int, int]]:
         opponent = not mover_color
@@ -20311,36 +21262,27 @@ _VULTURE_USED = (_vulture_use_user_to_move,)
 
 from __future__ import annotations
 
-import time as time_module
+from typing import Annotated
 
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
 
-from tactix.config import get_settings
-from tactix.db.duckdb_store import get_connection, init_schema
-from tactix.db.tactic_repository_provider import tactic_repository
+from tactix.app.use_cases.practice import (
+    PracticeAttemptError,
+    PracticeUseCase,
+    get_practice_use_case,
+)
 from tactix.models import PracticeAttemptRequest
 
 
-def practice_attempt(payload: PracticeAttemptRequest) -> dict[str, object]:
+def practice_attempt(
+    payload: PracticeAttemptRequest,
+    use_case: Annotated[PracticeUseCase, Depends(get_practice_use_case)],
+) -> dict[str, object]:
     """Grade a practice attempt and return the result."""
-    settings = get_settings(source=payload.source)
-    conn = get_connection(settings.duckdb_path)
-    init_schema(conn)
-    latency_ms: int | None = None
-    if payload.served_at_ms is not None:
-        now_ms = int(time_module.time() * 1000)
-        latency_ms = max(0, now_ms - payload.served_at_ms)
     try:
-        repo = tactic_repository(conn)
-        result = repo.grade_practice_attempt(
-            payload.tactic_id,
-            payload.position_id,
-            payload.attempted_uci,
-            latency_ms=latency_ms,
-        )
-    except ValueError as exc:
+        return use_case.submit_attempt(payload)
+    except PracticeAttemptError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return result
 </file>
 
 <file path="postgres_analysis_enabled.py">
@@ -21045,72 +21987,9 @@ def _record_daily_sync_complete(
 <file path="record_ops_event.py">
 """Persist operational events to Postgres."""
 
-from typing import cast
+from tactix.db.postgres_ops_repository import record_ops_event
 
-from psycopg2.extras import Json
-
-from tactix.config import Settings
-from tactix.init_postgres_schema import init_postgres_schema
-from tactix.legacy_args import apply_legacy_args, apply_legacy_kwargs, init_legacy_values
-from tactix.ops_event import OpsEvent
-from tactix.postgres_connection import postgres_connection
-
-
-def _collect_ops_event_values(
-    args: tuple[object, ...],
-    legacy: dict[str, object],
-) -> dict[str, object]:
-    ordered_keys = ("component", "event_type", "source", "profile", "metadata")
-    values = init_legacy_values(ordered_keys)
-    apply_legacy_kwargs(values, ordered_keys, legacy)
-    apply_legacy_args(values, ordered_keys, args)
-    return values
-
-
-def _build_ops_event(settings: Settings, values: dict[str, object]) -> OpsEvent:
-    if values["component"] is None or values["event_type"] is None:
-        raise TypeError("component and event_type are required")
-    return OpsEvent(
-        settings=settings,
-        component=cast(str, values["component"]),
-        event_type=cast(str, values["event_type"]),
-        source=cast(str | None, values["source"]),
-        profile=cast(str | None, values["profile"]),
-        metadata=cast(dict[str, object] | None, values["metadata"]),
-    )
-
-
-def record_ops_event(
-    event: OpsEvent | Settings,
-    *args: object,
-    **legacy: object,
-) -> bool:
-    """Insert an ops event into Postgres if available."""
-    if isinstance(event, OpsEvent):
-        resolved = event
-    else:
-        values = _collect_ops_event_values(args, legacy)
-        resolved = _build_ops_event(event, values)
-    with postgres_connection(resolved.settings) as conn:
-        if conn is None:
-            return False
-        init_postgres_schema(conn)
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO tactix_ops.ops_events
-                    (component, event_type, source, profile, metadata)
-                VALUES (%s, %s, %s, %s, %s)
-                """,
-                (
-                    resolved.component,
-                    resolved.event_type,
-                    resolved.source,
-                    resolved.profile,
-                    Json(resolved.metadata or {}),
-                ),
-            )
-        return True
+__all__ = ["record_ops_event"]
 </file>
 
 <file path="refresh_dashboard_cache_async__api_cache.py">
@@ -21668,32 +22547,35 @@ from tactix.sync_contexts import (
     PrepareGamesForSyncContext,
     RawPgnMetrics,
 )
+from tactix.trace_context import trace_context
 
 
-def _run_daily_game_sync(
+def _run_daily_game_sync(  # noqa: PLR0915
     context: DailyGameSyncContext,
 ) -> dict[str, object]:
     backfill_mode = _is_backfill_mode(context.window_start_ms, context.window_end_ms)
-    _emit_daily_sync_start(
-        DailySyncStartContext(
-            settings=context.settings,
-            progress=context.progress,
-            profile=context.profile,
-            backfill_mode=backfill_mode,
-            window_start_ms=context.window_start_ms,
-            window_end_ms=context.window_end_ms,
+    with trace_context(op_id="daily_sync.start"):
+        _emit_daily_sync_start(
+            DailySyncStartContext(
+                settings=context.settings,
+                progress=context.progress,
+                profile=context.profile,
+                backfill_mode=backfill_mode,
+                window_start_ms=context.window_start_ms,
+                window_end_ms=context.window_end_ms,
+            )
         )
-    )
-    games, fetch_context, window_filtered, last_timestamp_value = _prepare_games_for_sync(
-        PrepareGamesForSyncContext(
-            settings=context.settings,
-            client=context.client,
-            backfill_mode=backfill_mode,
-            window_start_ms=context.window_start_ms,
-            window_end_ms=context.window_end_ms,
-            progress=context.progress,
+    with trace_context(op_id="daily_sync.fetch_games"):
+        games, fetch_context, window_filtered, last_timestamp_value = _prepare_games_for_sync(
+            PrepareGamesForSyncContext(
+                settings=context.settings,
+                client=context.client,
+                backfill_mode=backfill_mode,
+                window_start_ms=context.window_start_ms,
+                window_end_ms=context.window_end_ms,
+                progress=context.progress,
+            )
         )
-    )
     conn = get_connection(context.settings.duckdb_path)
     init_schema(conn)
     window_context = NoGamesWindowContext(
@@ -21702,40 +22584,44 @@ def _run_daily_game_sync(
         window_filtered=window_filtered,
     )
     if not games:
-        return _handle_no_games(
-            NoGamesContext(
-                settings=context.settings,
-                conn=conn,
-                progress=context.progress,
-                backfill_mode=backfill_mode,
-                window=window_context,
+        with trace_context(op_id="daily_sync.no_games"):
+            return _handle_no_games(
+                NoGamesContext(
+                    settings=context.settings,
+                    conn=conn,
+                    progress=context.progress,
+                    backfill_mode=backfill_mode,
+                    window=window_context,
+                )
             )
+    with trace_context(op_id="daily_sync.backfill_filter"):
+        games_to_process, skipped_games = _apply_backfill_filter(
+            conn,
+            games,
+            backfill_mode,
+            context.settings.source,
         )
-    games_to_process, skipped_games = _apply_backfill_filter(
-        conn,
-        games,
-        backfill_mode,
-        context.settings.source,
-    )
     _log_skipped_backfill(context.settings, skipped_games)
     if not games_to_process:
-        return _handle_no_games_after_dedupe(
-            NoGamesAfterDedupeContext(
-                settings=context.settings,
-                conn=conn,
-                progress=context.progress,
-                backfill_mode=backfill_mode,
-                games=games,
-                window=window_context,
+        with trace_context(op_id="daily_sync.no_games_after_dedupe"):
+            return _handle_no_games_after_dedupe(
+                NoGamesAfterDedupeContext(
+                    settings=context.settings,
+                    conn=conn,
+                    progress=context.progress,
+                    backfill_mode=backfill_mode,
+                    games=games,
+                    window=window_context,
+                )
             )
+    with trace_context(op_id="analysis.prepare"):
+        analysis_prep = _prepare_analysis_inputs(
+            conn,
+            context.settings,
+            games_to_process,
+            context.progress,
+            context.profile,
         )
-    analysis_prep = _prepare_analysis_inputs(
-        conn,
-        context.settings,
-        games_to_process,
-        context.progress,
-        context.profile,
-    )
     _log_raw_pgns_persisted(
         context.settings,
         analysis_prep.raw_pgns_inserted,
@@ -21744,19 +22630,20 @@ def _run_daily_game_sync(
         games_to_process,
     )
     _emit_positions_ready(context.settings, context.progress, analysis_prep.positions)
-    analysis_result = _run_analysis_and_metrics(
-        AnalysisAndMetricsContext(
-            conn=conn,
-            settings=context.settings,
-            run=AnalysisRunInputs(
-                positions=analysis_prep.positions,
-                resume_index=analysis_prep.resume_index,
-                analysis_signature=analysis_prep.analysis_signature,
-                progress=context.progress,
-            ),
-            profile=context.profile,
+    with trace_context(op_id="analysis.detect_tactics"):
+        analysis_result = _run_analysis_and_metrics(
+            AnalysisAndMetricsContext(
+                conn=conn,
+                settings=context.settings,
+                run=AnalysisRunInputs(
+                    positions=analysis_prep.positions,
+                    resume_index=analysis_prep.resume_index,
+                    analysis_signature=analysis_prep.analysis_signature,
+                    progress=context.progress,
+                ),
+                profile=context.profile,
+            )
         )
-    )
     checkpoint_value, last_timestamp_value = _update_daily_checkpoint(
         context.settings,
         backfill_mode,
@@ -21764,48 +22651,50 @@ def _run_daily_game_sync(
         games,
         last_timestamp_value,
     )
-    _record_daily_sync_complete(
-        DailySyncCompleteContext(
-            settings=context.settings,
-            profile=context.profile,
-            games=games,
-            totals=DailySyncTotals(
-                raw_pgns_inserted=analysis_prep.raw_pgns_inserted,
-                postgres_raw_pgns_inserted=analysis_prep.postgres_raw_pgns_inserted,
-                positions_count=analysis_result.total_positions,
-                tactics_count=analysis_result.tactics_count,
-                postgres_written=analysis_result.postgres_written,
-                postgres_synced=analysis_result.postgres_synced,
-                metrics_version=analysis_result.metrics_version,
-            ),
-            backfill_mode=backfill_mode,
-        )
-    )
-    return _build_daily_sync_payload(
-        DailySyncPayloadContext(
-            settings=context.settings,
-            fetch_context=fetch_context,
-            games=games,
-            metrics=DailySyncPayloadMetrics(
-                raw_pgns=RawPgnMetrics(
+    with trace_context(op_id="daily_sync.complete"):
+        _record_daily_sync_complete(
+            DailySyncCompleteContext(
+                settings=context.settings,
+                profile=context.profile,
+                games=games,
+                totals=DailySyncTotals(
                     raw_pgns_inserted=analysis_prep.raw_pgns_inserted,
-                    raw_pgns_hashed=analysis_prep.raw_pgns_hashed,
-                    raw_pgns_matched=analysis_prep.raw_pgns_matched,
                     postgres_raw_pgns_inserted=analysis_prep.postgres_raw_pgns_inserted,
-                ),
-                analysis=AnalysisMetrics(
                     positions_count=analysis_result.total_positions,
                     tactics_count=analysis_result.tactics_count,
+                    postgres_written=analysis_result.postgres_written,
+                    postgres_synced=analysis_result.postgres_synced,
                     metrics_version=analysis_result.metrics_version,
                 ),
-                checkpoint=DailySyncCheckpoint(
-                    checkpoint_value=checkpoint_value,
-                    last_timestamp_value=last_timestamp_value,
-                ),
-            ),
-            backfill_mode=backfill_mode,
+                backfill_mode=backfill_mode,
+            )
         )
-    )
+    with trace_context(op_id="daily_sync.payload"):
+        return _build_daily_sync_payload(
+            DailySyncPayloadContext(
+                settings=context.settings,
+                fetch_context=fetch_context,
+                games=games,
+                metrics=DailySyncPayloadMetrics(
+                    raw_pgns=RawPgnMetrics(
+                        raw_pgns_inserted=analysis_prep.raw_pgns_inserted,
+                        raw_pgns_hashed=analysis_prep.raw_pgns_hashed,
+                        raw_pgns_matched=analysis_prep.raw_pgns_matched,
+                        postgres_raw_pgns_inserted=analysis_prep.postgres_raw_pgns_inserted,
+                    ),
+                    analysis=AnalysisMetrics(
+                        positions_count=analysis_result.total_positions,
+                        tactics_count=analysis_result.tactics_count,
+                        metrics_version=analysis_result.metrics_version,
+                    ),
+                    checkpoint=DailySyncCheckpoint(
+                        checkpoint_value=checkpoint_value,
+                        last_timestamp_value=last_timestamp_value,
+                    ),
+                ),
+                backfill_mode=backfill_mode,
+            )
+        )
 </file>
 
 <file path="run_migrations__pipeline.py">
@@ -21932,150 +22821,27 @@ def run_monitor_new_positions(
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, HTTPException
 
-from tactix.coerce_date_to_datetime__datetime import _coerce_date_to_datetime
-from tactix.config import get_settings
-from tactix.dashboard_query import DashboardQuery
-from tactix.db.dashboard_repository_provider import (
-    fetch_opportunity_motif_counts,
-    fetch_pipeline_table_counts,
+from tactix.app.use_cases.pipeline_run import (
+    PipelineRunUseCase,
+    PipelineWindowError,
+    get_pipeline_run_use_case,
 )
-from tactix.db.duckdb_store import get_connection, init_schema
-from tactix.list_sources_for_cache_refresh__api_cache import _sources_for_cache_refresh
-from tactix.normalize_source__source import _normalize_source
-from tactix.pipeline import run_daily_game_sync
 from tactix.pipeline_run_filters import PipelineRunFilters
-from tactix.refresh_dashboard_cache_async__api_cache import _refresh_dashboard_cache_async
 
 
 def run_pipeline(  # pragma: no cover
     filters: Annotated[PipelineRunFilters, Depends()],
+    use_case: Annotated[PipelineRunUseCase, Depends(get_pipeline_run_use_case)],
 ) -> dict[str, object]:
     """Run the pipeline for the provided date range and return counts."""
-    normalized_source = _normalize_source(filters.source)
-    settings = _resolve_pipeline_settings(
-        normalized_source,
-        filters,
-    )
-    start_datetime, end_datetime, window_start_ms, window_end_ms = _resolve_window_range(filters)
-    result = run_daily_game_sync(
-        settings,
-        source=normalized_source,
-        window_start_ms=window_start_ms,
-        window_end_ms=window_end_ms,
-        profile=None,
-    )
-    _refresh_dashboard_cache_async(_sources_for_cache_refresh(normalized_source))
-    counts, motif_counts = _fetch_pipeline_counts(
-        settings.duckdb_path,
-        DashboardQuery(
-            source=normalized_source,
-            start_date=start_datetime,
-            end_date=end_datetime,
-        ),
-    )
-    return {
-        "status": "ok",
-        "result": result,
-        "counts": counts,
-        "motif_counts": motif_counts,
-        "window_start_ms": window_start_ms,
-        "window_end_ms": window_end_ms,
-    }
-
-
-def _fetch_pipeline_counts(  # pragma: no cover
-    db_path: Path,
-    query: DashboardQuery,
-) -> tuple[dict[str, int], dict[str, int]]:
-    conn = get_connection(db_path)
     try:
-        init_schema(conn)
-        return (
-            fetch_pipeline_table_counts(conn, query),
-            fetch_opportunity_motif_counts(conn, query),
-        )
-    finally:
-        conn.close()
-
-
-def _resolve_pipeline_settings(  # pragma: no cover
-    normalized_source: str | None,
-    filters: PipelineRunFilters,
-):
-    settings = get_settings(source=normalized_source, profile=filters.profile)
-    _apply_user_settings(settings, filters.user_id)
-    _apply_fixture_settings(settings, filters.use_fixture, filters.fixture_name)
-    _apply_db_settings(settings, filters.db_name, filters.reset_db)
-    return settings
-
-
-def _apply_user_settings(settings, user_id: str | None) -> None:  # pragma: no cover
-    if not user_id:
-        return
-    settings.user = user_id
-    settings.lichess.user = user_id
-    settings.chesscom.user = user_id
-
-
-def _apply_fixture_settings(  # pragma: no cover
-    settings,
-    use_fixture: bool,
-    fixture_name: str | None,
-) -> None:
-    if not use_fixture:
-        return
-    settings.chesscom.token = None
-    settings.chesscom_use_fixture_when_no_token = True
-    settings.stockfish_movetime_ms = 60
-    settings.stockfish_depth = 8
-    settings.stockfish_multipv = 2
-    if not fixture_name:
-        return
-    safe_name = Path(fixture_name).name
-    repo_root = Path(__file__).resolve().parents[2]
-    settings.chesscom_fixture_pgn_path = repo_root / "tests" / "fixtures" / safe_name
-
-
-def _apply_db_settings(settings, db_name: str | None, reset_db: bool) -> None:  # pragma: no cover
-    if not db_name:
-        return
-    safe_name = Path(db_name).name
-    filename = safe_name if safe_name.endswith(".duckdb") else f"{safe_name}.duckdb"
-    settings.duckdb_path = settings.data_dir / filename
-    if reset_db and settings.duckdb_path.exists():
-        settings.duckdb_path.unlink()
-
-
-def _resolve_window_range(  # pragma: no cover
-    filters: PipelineRunFilters,
-) -> tuple[datetime | None, datetime | None, int | None, int | None]:
-    start_datetime = _coerce_date_to_datetime(filters.start_date)
-    end_datetime = _coerce_date_to_datetime(filters.end_date, end_of_day=True)
-    window_start_ms = _datetime_to_ms(start_datetime)
-    window_end_ms = _datetime_to_ms(end_datetime)
-    if window_end_ms is not None:
-        window_end_ms += 1
-    if (
-        window_start_ms is not None
-        and window_end_ms is not None
-        and window_start_ms >= window_end_ms
-    ):
-        raise HTTPException(status_code=400, detail="start_date must be before end_date")
-    return start_datetime, end_datetime, window_start_ms, window_end_ms
-
-
-def _datetime_to_ms(value: datetime | None) -> int | None:  # pragma: no cover
-    if value is None:
-        return None
-    if value.tzinfo is None:
-        value = value.replace(tzinfo=UTC)
-    return int(value.timestamp() * 1000)
+        return use_case.run(filters)
+    except PipelineWindowError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 __all__ = ["run_pipeline"]
@@ -22240,6 +23006,7 @@ from tactix._has_skewer_in_steps import _has_skewer_in_steps
 from tactix._skewer_sources import _skewer_sources
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.TacticContext import TacticContext
+from tactix.TacticFinding import TacticFinding
 
 
 class SkewerDetector(BaseTacticDetector):
@@ -22247,8 +23014,8 @@ class SkewerDetector(BaseTacticDetector):
 
     motif = "skewer"
 
-    def detect(self, context: TacticContext) -> bool:
-        """Return True when a skewer is created."""
+    def detect(self, context: TacticContext) -> list[TacticFinding]:
+        """Return findings when a skewer is created."""
         for square, steps in _skewer_sources(context.board_after, context.mover_color):
             if _has_skewer_in_steps(
                 self,
@@ -22257,8 +23024,8 @@ class SkewerDetector(BaseTacticDetector):
                 steps,
                 opponent=not context.mover_color,
             ):
-                return True
-        return False
+                return [TacticFinding(motif=self.motif)]
+        return []
 </file>
 
 <file path="split_pgn_chunks.py">
@@ -23250,6 +24017,119 @@ class TacticDetails:
     explanation: str | None
 </file>
 
+<file path="TacticDetectionService.py">
+"""Coordinate tactic detectors and normalize findings."""
+
+from __future__ import annotations
+
+from collections.abc import Collection, Iterable, Mapping
+
+import chess
+
+from tactix.TacticContext import TacticContext
+from tactix.TacticDetector import TacticDetector
+from tactix.TacticFinding import TacticFinding
+
+
+class TacticDetectionService:
+    """Coordinate detectors and return normalized findings."""
+
+    def __init__(
+        self,
+        detectors: Iterable[TacticDetector],
+        *,
+        motif_aliases: Mapping[str, str] | None = None,
+        motif_filter: Collection[str] | None = None,
+    ) -> None:
+        self._detectors = tuple(detectors)
+        self._motif_aliases = dict(motif_aliases or {})
+        self._motif_filter = set(motif_filter) if motif_filter else None
+
+    def detect(self, context: TacticContext) -> list[TacticFinding]:
+        findings: list[TacticFinding] = []
+        for detector in self._detectors:
+            for finding in detector.detect(context):
+                normalized = self._normalize_finding(finding)
+                if normalized is not None:
+                    findings.append(normalized)
+        return self._dedupe_findings(findings)
+
+    def infer_motif(self, board: chess.Board, best_move: chess.Move | None) -> str:
+        if best_move is None:
+            return "initiative"
+        context = self._build_context(board, best_move)
+        findings = self.detect(context)
+        return findings[0].motif if findings else "initiative"
+
+    @staticmethod
+    def _build_context(board: chess.Board, move: chess.Move) -> TacticContext:
+        board_after = board.copy()
+        board_after.push(move)
+        return TacticContext(
+            board_before=board,
+            board_after=board_after,
+            best_move=move,
+            mover_color=board.turn,
+        )
+
+    def _normalize_finding(self, finding: TacticFinding) -> TacticFinding | None:
+        motif = self._motif_aliases.get(finding.motif, finding.motif)
+        if self._motif_filter is not None and motif not in self._motif_filter:
+            return None
+        if motif == finding.motif:
+            return finding
+        return TacticFinding(motif=motif)
+
+    @staticmethod
+    def _dedupe_findings(findings: Iterable[TacticFinding]) -> list[TacticFinding]:
+        seen: set[str] = set()
+        ordered: list[TacticFinding] = []
+        for finding in findings:
+            if finding.motif in seen:
+                continue
+            seen.add(finding.motif)
+            ordered.append(finding)
+        return ordered
+</file>
+
+<file path="TacticDetector.py">
+"""Protocol for tactic detector strategy objects."""
+
+# pylint: disable=too-few-public-methods
+
+from __future__ import annotations
+
+from typing import Protocol, runtime_checkable
+
+from tactix.TacticContext import TacticContext
+from tactix.TacticFinding import TacticFinding
+
+
+@runtime_checkable
+class TacticDetector(Protocol):
+    """Interface for tactic detector strategies."""
+
+    motif: str
+
+    def detect(self, context: TacticContext) -> list[TacticFinding]:
+        """Return domain findings for a tactic context."""
+</file>
+
+<file path="TacticFinding.py">
+"""Domain finding for a detected tactic."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class TacticFinding:
+    """A detected tactical motif."""
+
+    motif: str
+</file>
+
 <file path="TacticRow.py">
 from __future__ import annotations
 
@@ -23342,6 +24222,78 @@ class TacticsSearchFilters(BaseModel):
     end_date: date | None = None
 </file>
 
+<file path="trace_context.py">
+"""Context helpers for run-level traceability."""
+
+from __future__ import annotations
+
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
+
+_RUN_ID: ContextVar[str | None] = ContextVar("tactix_run_id", default=None)
+_OP_ID: ContextVar[str | None] = ContextVar("tactix_op_id", default=None)
+
+
+def get_run_id() -> str | None:
+    """Return the active run id for the current context."""
+    return _RUN_ID.get()
+
+
+def get_op_id() -> str | None:
+    """Return the active operation id for the current context."""
+    return _OP_ID.get()
+
+
+def set_run_id(value: str | None) -> ContextVar[str | None].Token:
+    """Bind a run id to the current context."""
+    return _RUN_ID.set(value)
+
+
+def reset_run_id(token: ContextVar[str | None].Token) -> None:
+    """Reset the run id context to a previous value."""
+    _RUN_ID.reset(token)
+
+
+def set_op_id(value: str | None) -> ContextVar[str | None].Token:
+    """Bind an operation id to the current context."""
+    return _OP_ID.set(value)
+
+
+def reset_op_id(token: ContextVar[str | None].Token) -> None:
+    """Reset the operation id context to a previous value."""
+    _OP_ID.reset(token)
+
+
+@contextmanager
+def trace_context(
+    *,
+    run_id: str | None = None,
+    op_id: str | None = None,
+) -> Iterator[None]:
+    """Temporarily bind run/op identifiers to the current context."""
+    run_token = set_run_id(run_id) if run_id is not None else None
+    op_token = set_op_id(op_id) if op_id is not None else None
+    try:
+        yield
+    finally:
+        if op_token is not None:
+            reset_op_id(op_token)
+        if run_token is not None:
+            reset_run_id(run_token)
+
+
+__all__ = [
+    "get_op_id",
+    "get_run_id",
+    "reset_op_id",
+    "reset_run_id",
+    "set_op_id",
+    "set_run_id",
+    "trace_context",
+]
+</file>
+
 <file path="trend_stats.py">
 """API handler for trend stats."""
 
@@ -23349,16 +24301,16 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from tactix.build_dashboard_stats_payload__api import _build_dashboard_stats_payload
+from tactix.app.use_cases.dashboard import DashboardUseCase, get_dashboard_use_case
 from tactix.dashboard_query_filters import DashboardQueryFilters
-from tactix.db.dashboard_repository_provider import fetch_trend_stats
 
 
 def trend_stats(
     filters: Annotated[DashboardQueryFilters, Depends()],
+    use_case: Annotated[DashboardUseCase, Depends(get_dashboard_use_case)],
 ) -> dict[str, object]:
     """Return trend stats payload for the provided filters."""
-    return _build_dashboard_stats_payload(filters, fetch_trend_stats, "trends")
+    return use_case.get_trend_stats(filters)
 </file>
 
 <file path="trigger_airflow_daily_sync__airflow_jobs.py">
@@ -23584,51 +24536,9 @@ def _update_metrics_and_version(settings: Settings, conn) -> int:
 <file path="upsert_analysis_tactic_with_outcome.py">
 """Upsert tactics and outcome rows into Postgres."""
 
-from collections.abc import Mapping
-from typing import cast
+from tactix.db.postgres_analysis_repository import upsert_analysis_tactic_with_outcome
 
-from psycopg2.extensions import connection as PgConnection  # noqa: N812
-
-from tactix._delete_existing_analysis import _delete_existing_analysis
-from tactix._insert_analysis_outcome import _insert_analysis_outcome
-from tactix._insert_analysis_tactic import _insert_analysis_tactic
-from tactix.define_base_db_store__db_store import BaseDbStore
-
-
-def upsert_analysis_tactic_with_outcome(
-    conn: PgConnection,
-    tactic_row: Mapping[str, object],
-    outcome_row: Mapping[str, object],
-) -> int:
-    """Upsert a tactic and its outcome and return the tactic id."""
-    position_id = cast(
-        int,
-        BaseDbStore.require_position_id(
-            tactic_row,
-            "position_id is required for Postgres analysis upsert",
-        ),
-    )
-    tactic_plan = BaseDbStore.build_tactic_insert_plan(
-        game_id=tactic_row.get("game_id"),
-        position_id=position_id,
-        tactic_row=tactic_row,
-    )
-    outcome_plan = BaseDbStore.build_outcome_insert_plan(outcome_row)
-    autocommit_state = conn.autocommit
-    conn.autocommit = False
-    try:
-        with conn.cursor() as cur:
-            _delete_existing_analysis(cur, position_id)
-            tactic_id = _insert_analysis_tactic(cur, tactic_plan)
-            _insert_analysis_outcome(cur, tactic_id, outcome_plan)
-    except Exception:
-        conn.rollback()
-        raise
-    else:
-        conn.commit()
-        return tactic_id
-    finally:
-        conn.autocommit = autocommit_state
+__all__ = ["upsert_analysis_tactic_with_outcome"]
 </file>
 
 <file path="upsert_postgres_raw_pgns_if_enabled__pipeline.py">
@@ -23643,6 +24553,7 @@ import psycopg2
 
 from tactix.app.use_cases.pipeline_support import _emit_progress
 from tactix.config import Settings
+from tactix.db.postgres_raw_pgn_repository import PostgresRawPgnRepository
 from tactix.define_pipeline_state__pipeline import ProgressCallback, logger
 from tactix.GameRow import GameRow
 from tactix.init_pgn_schema import init_pgn_schema
@@ -23652,7 +24563,6 @@ from tactix.postgres_pgns_enabled import postgres_pgns_enabled
 from tactix.record_ops_event import (
     record_ops_event,
 )
-from tactix.upsert_postgres_raw_pgns import upsert_postgres_raw_pgns
 
 
 def _upsert_postgres_raw_pgns_if_enabled(
@@ -23670,8 +24580,8 @@ def _upsert_postgres_raw_pgns_if_enabled(
         else:
             init_pgn_schema(pg_conn)
             try:
-                inserted = upsert_postgres_raw_pgns(
-                    pg_conn,
+                repo = PostgresRawPgnRepository(pg_conn)
+                inserted = repo.upsert_raw_pgns(
                     cast(list[Mapping[str, object]], games_to_process),
                 )
             except psycopg2.Error as exc:
@@ -23700,14 +24610,13 @@ def _upsert_postgres_raw_pgns_if_enabled(
 </file>
 
 <file path="upsert_postgres_raw_pgns.py">
-"""Persist raw PGN rows into Postgres."""
+"""Legacy wrapper for Postgres raw PGN upsert operations."""
 
 from collections.abc import Mapping
 
-import psycopg2
 from psycopg2.extensions import connection as PgConnection  # noqa: N812
 
-from tactix._upsert_postgres_raw_pgn_rows import _upsert_postgres_raw_pgn_rows
+from tactix.db.postgres_raw_pgn_repository import PostgresRawPgnRepository
 
 
 def upsert_postgres_raw_pgns(
@@ -23715,21 +24624,10 @@ def upsert_postgres_raw_pgns(
     rows: list[Mapping[str, object]],
 ) -> int:
     """Insert raw PGN rows inside a transaction."""
-    if not rows:
-        return 0
-    autocommit_state = conn.autocommit
-    conn.autocommit = False
-    try:
-        with conn.cursor() as cur:
-            inserted = _upsert_postgres_raw_pgn_rows(cur, rows)
-    except psycopg2.Error:
-        conn.rollback()
-        raise
-    else:
-        conn.commit()
-        return inserted
-    finally:
-        conn.autocommit = autocommit_state
+    return PostgresRawPgnRepository(conn).upsert_raw_pgns(rows)
+
+
+_VULTURE_USED = (upsert_postgres_raw_pgns,)
 </file>
 
 <file path="validate_backfill_window__airflow_jobs.py">

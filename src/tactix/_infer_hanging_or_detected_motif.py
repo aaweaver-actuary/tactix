@@ -96,12 +96,30 @@ def _infer_hanging_or_detected_motif(
 ) -> str:
     user_board = motif_board.copy()
     user_board.push(move)
-    result = _resolve_capture_motif(motif_board, user_board, move, mover_color)
-    if result is not None:
-        return result
-    if user_board.is_checkmate():
-        return "mate"
     motif = MOTIF_DETECTORS.infer_motif(motif_board, move)
+    capture_motif = _resolve_capture_motif(motif_board, user_board, move, mover_color)
+    if user_board.is_checkmate():
+        if capture_motif == "hanging_piece":
+            return "hanging_piece"
+        return "mate"
+    if capture_motif == "hanging_piece":
+        if motif in {
+            "skewer",
+            "pin",
+            "discovered_attack",
+            "discovered_check",
+        }:
+            return motif
+        return "hanging_piece"
+    if motif in {
+        "skewer",
+        "pin",
+        "fork",
+        "discovered_attack",
+        "discovered_check",
+        "mate",
+    }:
+        return motif
     return (
         _resolve_initiative_hanging_piece(
             motif,

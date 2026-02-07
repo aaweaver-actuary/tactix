@@ -17,7 +17,7 @@ client = TestClient(app)
 START_DATE = "2024-06-05"
 END_DATE = "2024-06-06"
 DB_NAME = "tactix_feature_010_lichess_blitz_mvp"
-FIXTURE_NAME = "lichess_blitz_sample.pgn"
+FIXTURE_NAME = "lichess_blitz_converted_sample.pgn"
 
 headers = {"Authorization": "Bearer local-dev-token"}
 

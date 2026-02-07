@@ -1,4 +1,23 @@
 Session summary (2026-02-06):
+- Feature 010 (lichess blitz MVP E2E) re-verification with converted outcome fixture.
+- API (FastAPI TestClient) POST /api/pipeline/run?source=lichess&profile=blitz&user_id=lichess&start_date=2024-06-05&end_date=2024-06-06&use_fixture=true&fixture_name=lichess_blitz_converted_sample.pgn&db_name=tactix_feature_010_lichess_blitz_mvp&reset_db=true
+	-> status=ok run_id=d72cf5a5604941d28ec7efbcc8865c4b fetched_games=3
+	-> counts={'games': 3, 'positions': 7, 'user_moves': 7, 'opportunities': 7, 'conversions': 7, 'practice_queue': 5}
+	-> motif_counts={'capture': 1, 'hanging_piece': 1, 'initiative': 4, 'mate': 1}
+- DuckDB checks (data/tactix_feature_010_lichess_blitz_mvp.duckdb, 2024-06-05..2024-06-06 fixture window):
+	-> games=3, raw_pgns=3, games_null_game_id=0, raw_pgns_null_game_id=0
+	-> positions_user_to_move=7, positions_missing_fen=0
+	-> user_moves=7, user_moves_missing=0, user_moves_duplicates=0
+	-> opportunities=7, conversions=7, conversions_missing_opportunity=0
+	-> tactic_outcomes=7, tactic_outcomes_missing_tactic=0
+	-> outcomes={'found': 1, 'missed': 5, 'unclear': 1} (converted outcome now present)
+	-> practice_queue=5
+- API (FastAPI TestClient) GET /api/dashboard/summary?source=lichess&start_date=2024-06-05&end_date=2024-06-06&db_name=tactix_feature_010_lichess_blitz_mvp
+	-> summary={'games': 3, 'positions': 7, 'user_moves': 7, 'opportunities': 7, 'conversions': 7, 'practice_queue': 5}
+- Evidence log: tmp-logs/feature_010_lichess_blitz_output.json
+- Tests run: none
+
+Session summary (2026-02-06):
 - Feature 010 (lichess blitz MVP E2E) verification via API + DB using fixture data.
 - API (FastAPI TestClient) POST /api/pipeline/run?source=lichess&profile=blitz&user_id=lichess&start_date=2024-06-05&end_date=2024-06-06&use_fixture=true&fixture_name=lichess_blitz_sample.pgn&db_name=tactix_feature_010_lichess_blitz_mvp&reset_db=true
 	-> status=ok run_id=99d4350f385b4862b5601662bafb1edc fetched_games=2

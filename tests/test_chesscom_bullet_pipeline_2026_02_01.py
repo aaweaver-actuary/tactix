@@ -5,12 +5,13 @@
 
 import shutil
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 
 import chess
 import pytest
 
+from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.config import Settings
 from tactix.db.dashboard_repository_provider import fetch_recent_games
 from tactix.db.duckdb_store import get_connection
@@ -122,7 +123,7 @@ def _base_seconds(time_control: str | None) -> int | None:
         return None
 
 
-def _time_control_class(time_control: str | None) -> str:
+def _time_control_class(time_control: str | None) -> str:  # noqa: PLR0911
     base = _base_seconds(time_control)
     if base is None:
         return "unknown"
@@ -176,19 +177,49 @@ def _is_attacked_by(
     return attacker_square in board.attackers(attacker_color, square)
 
 
-def _captured_piece_label(fen: str, best_uci: str) -> str | None:
-    if not best_uci:
-        return None
+def _capture_square(board: chess.Board, move: chess.Move) -> chess.Square:
+    if board.is_en_passant(move):
+        return move.to_square + (-8 if board.turn == chess.WHITE else 8)
+    return move.to_square
+
+
+def _hanging_user_piece_labels_after_move(fen: str, user_move_uci: str) -> set[str]:  # noqa: PLR0912, PLR0915
+    if not user_move_uci:
+        return set()
     board = chess.Board(fen)
-    move = chess.Move.from_uci(best_uci)
-    piece = board.piece_at(move.to_square)
-    if not piece:
-        return None
-    if piece.piece_type == chess.KNIGHT:
-        return "knight"
-    if piece.piece_type == chess.BISHOP:
-        return "bishop"
-    return None
+    move = chess.Move.from_uci(user_move_uci)
+    if move not in board.legal_moves:
+        return set()
+    moved_piece = board.piece_at(move.from_square)
+    user_color = board.turn
+    board.push(move)
+    if moved_piece is None:
+        return set()
+    target_square = move.to_square
+    labels: set[str] = set()
+    if board.is_attacked_by(not user_color, target_square):
+        is_unprotected = not board.is_attacked_by(user_color, target_square)
+        is_favorable = False
+        for response in board.legal_moves:
+            if not board.is_capture(response):
+                continue
+            capture_square = _capture_square(board, response)
+            if capture_square != target_square:
+                continue
+            mover_piece = board.piece_at(response.from_square)
+            if mover_piece is None:
+                continue
+            is_favorable = BaseTacticDetector.piece_value(
+                moved_piece.piece_type
+            ) > BaseTacticDetector.piece_value(mover_piece.piece_type)
+            if is_favorable:
+                break
+        if is_unprotected or is_favorable:
+            if moved_piece.piece_type == chess.KNIGHT:
+                labels.add("knight")
+            elif moved_piece.piece_type == chess.BISHOP:
+                labels.add("bishop")
+    return labels
 
 
 @pytest.fixture(scope="module")
@@ -274,12 +305,12 @@ def test_losing_game_user_played_6_e4_hanging_a_knight_on_c6(games_data):
     assert _is_attacked_by(board, chess.C6, chess.WHITE, chess.D5)
 
 
-def test_canonical_practice_queue_contains_two_missed_hanging_pieces(
+def test_canonical_practice_queue_contains_two_missed_hanging_pieces(  # noqa: PLR0915
     pipeline_db_path: Path,
 ) -> None:
     conn = get_connection(pipeline_db_path)
-    start_date = datetime(2026, 2, 1, tzinfo=timezone.utc)
-    end_date = datetime(2026, 2, 1, 23, 59, 59, tzinfo=timezone.utc)
+    start_date = datetime(2026, 2, 1, tzinfo=UTC)
+    end_date = datetime(2026, 2, 1, 23, 59, 59, tzinfo=UTC)
     try:
         recent_games = fetch_recent_games(
             conn,
@@ -311,7 +342,7 @@ def test_canonical_practice_queue_contains_two_missed_hanging_pieces(
 
         tactic_rows = conn.execute(
             """
-            SELECT t.best_uci, p.fen
+            SELECT t.best_uci, p.fen, p.uci
             FROM tactics t
             JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
             JOIN positions p ON p.position_id = t.position_id
@@ -321,22 +352,20 @@ def test_canonical_practice_queue_contains_two_missed_hanging_pieces(
             """,
             [loss_game_id],
         ).fetchall()
-        labels = {
-            label
-            for best_uci, fen in tactic_rows
-            if (label := _captured_piece_label(fen, best_uci)) is not None
-        }
-        assert labels == {"knight", "bishop"}
+        labels: set[str] = set()
+        for _best_uci, fen, user_move_uci in tactic_rows:
+            labels.update(_hanging_user_piece_labels_after_move(fen, user_move_uci))
+        assert {"knight", "bishop"}.issubset(labels)
     finally:
         conn.close()
 
 
-def test_missed_hanging_piece_positions_are_pre_blunder_positions(
+def test_missed_hanging_piece_positions_are_pre_blunder_positions(  # noqa: PLR0915
     pipeline_db_path: Path,
 ) -> None:
     conn = get_connection(pipeline_db_path)
-    start_date = datetime(2026, 2, 1, tzinfo=timezone.utc)
-    end_date = datetime(2026, 2, 1, 23, 59, 59, tzinfo=timezone.utc)
+    start_date = datetime(2026, 2, 1, tzinfo=UTC)
+    end_date = datetime(2026, 2, 1, 23, 59, 59, tzinfo=UTC)
     try:
         recent_games = fetch_recent_games(
             conn,
@@ -352,7 +381,7 @@ def test_missed_hanging_piece_positions_are_pre_blunder_positions(
 
         tactic_rows = conn.execute(
             """
-            SELECT t.tactic_id, t.position_id, t.best_uci, p.fen
+            SELECT t.tactic_id, t.position_id, t.best_uci, p.fen, p.uci
             FROM tactics t
             JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
             JOIN positions p ON p.position_id = t.position_id
@@ -364,10 +393,11 @@ def test_missed_hanging_piece_positions_are_pre_blunder_positions(
         ).fetchall()
 
         canonical: dict[str, tuple[object, object, object, object]] = {}
-        for tactic_id, position_id, best_uci, fen in tactic_rows:
-            label = _captured_piece_label(fen, best_uci)
-            if label in {"knight", "bishop"} and label not in canonical:
-                canonical[label] = (tactic_id, position_id, best_uci, fen)
+        for tactic_id, position_id, best_uci, fen, user_move_uci in tactic_rows:
+            labels = _hanging_user_piece_labels_after_move(fen, user_move_uci)
+            for label in labels:
+                if label in {"knight", "bishop"} and label not in canonical:
+                    canonical[label] = (tactic_id, position_id, best_uci, fen)
 
         assert set(canonical.keys()) == {"knight", "bishop"}
 
@@ -381,7 +411,7 @@ def test_missed_hanging_piece_positions_are_pre_blunder_positions(
         ).fetchall()
         queue_by_id = {row[0]: row for row in queue_rows}
 
-        for _, (tactic_id, position_id, best_uci, fen) in canonical.items():
+        for tactic_id, position_id, best_uci, fen in canonical.values():
             queue_row = queue_by_id.get(tactic_id)
             assert queue_row is not None
             assert queue_row[1] == position_id

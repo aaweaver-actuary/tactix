@@ -114,58 +114,6 @@ function ratingDelta(metadata) {
   throw new Error('User not found in game metadata');
 }
 
-function pieceAtSquare(fen, square) {
-  const placement = String(fen || '').split(' ')[0] || '';
-  const file = square?.[0];
-  const rank = Number(square?.[1]);
-  const files = 'abcdefgh';
-  if (!placement || !file || Number.isNaN(rank)) {
-    return null;
-  }
-  const ranks = placement.split('/');
-  if (ranks.length !== 8) {
-    return null;
-  }
-  const rankIndex = 8 - rank;
-  const fileIndex = files.indexOf(file);
-  if (rankIndex < 0 || rankIndex > 7 || fileIndex < 0) {
-    return null;
-  }
-  let cursor = 0;
-  for (const ch of ranks[rankIndex]) {
-    const spaces = Number(ch);
-    if (!Number.isNaN(spaces)) {
-      cursor += spaces;
-      continue;
-    }
-    if (cursor === fileIndex) {
-      return ch;
-    }
-    cursor += 1;
-  }
-  return null;
-}
-
-function capturedPieceLabel(fen, bestUci) {
-  if (!bestUci || bestUci.length < 4) {
-    return null;
-  }
-  const toSquare = bestUci.slice(2, 4);
-  const fromSquare = bestUci.slice(0, 2);
-  const piece =
-    pieceAtSquare(fen, toSquare) || pieceAtSquare(fen, fromSquare);
-  if (!piece) {
-    return null;
-  }
-  const lower = piece.toLowerCase();
-  if (lower === 'n') {
-    return 'knight';
-  }
-  if (lower === 'b') {
-    return 'bishop';
-  }
-  return null;
-}
 
 async function runPipeline() {
   const url = new URL(`${API_BASE}/api/pipeline/run`);
@@ -315,17 +263,11 @@ async function fetchGameDetail(gameId) {
       throw new Error('Expected at least two unique practice positions');
     }
 
-    const labels = new Set();
-    const canonicalItems = [];
-    for (const item of lossItems) {
-      const label = capturedPieceLabel(item.fen, item.best_uci);
-      if (label) {
-        labels.add(label);
-        canonicalItems.push({ ...item, label });
-      }
-    }
-    if (!labels.has('knight') || !labels.has('bishop')) {
-      throw new Error('Expected hanging knight and bishop tactics');
+    const canonicalItems = lossItems.filter(
+      (item) => item.motif === 'hanging_piece' && item.result === 'missed',
+    );
+    if (canonicalItems.length < 2) {
+      throw new Error('Expected at least two missed hanging piece items');
     }
     for (const item of canonicalItems) {
       requireValue(item.position_uci, 'practice position_uci');

@@ -17,6 +17,7 @@ from tactix._get_game_result_for_user_from_pgn_headers import (
     _get_game_result_for_user_from_pgn_headers,
 )
 from tactix._get_user_color_from_pgn_headers import _get_user_color_from_pgn_headers
+from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.chess_game_result import ChessGameResult
 from tactix.chess_player_color import ChessPlayerColor
 from tactix.db.duckdb_store import get_connection
@@ -35,19 +36,19 @@ def _ensure_stockfish_available() -> None:
         pytest.skip("Stockfish binary not on PATH")
 
 
-def _run_pipeline(tmp_dir: Path) -> Path:
+def _run_pipeline(tmp_dir: Path) -> Path:  # noqa: PLR0915
     old_env = {
         "TACTIX_API_TOKEN": os.environ.get("TACTIX_API_TOKEN"),
         "TACTIX_DATA_DIR": os.environ.get("TACTIX_DATA_DIR"),
         "TACTIX_SOURCE": os.environ.get("TACTIX_SOURCE"),
     }
-    os.environ["TACTIX_API_TOKEN"] = "test-token"
+    os.environ["TACTIX_API_TOKEN"] = "test-token"  # noqa: S105
     os.environ["TACTIX_DATA_DIR"] = str(tmp_dir)
     os.environ["TACTIX_SOURCE"] = SOURCE
 
     try:
-        import tactix.api as api_module
-        import tactix.config as config_module
+        import tactix.api as api_module  # noqa: PLC0415
+        import tactix.config as config_module  # noqa: PLC0415
 
         importlib.reload(config_module)
         importlib.reload(api_module)
@@ -112,27 +113,54 @@ def _rating_diff(headers: chess.pgn.Headers, user: str) -> int:
     return white_elo - black_elo
 
 
-def _captured_piece_label(fen: str, best_uci: str) -> str | None:
-    if not best_uci:
-        return None
+def _capture_square(board: chess.Board, move: chess.Move) -> chess.Square:
+    if board.is_en_passant(move):
+        return move.to_square + (-8 if board.turn == chess.WHITE else 8)
+    return move.to_square
+
+
+def _hanging_user_piece_labels_after_move(fen: str, user_move_uci: str) -> set[str]:  # noqa: PLR0912, PLR0915
+    if not user_move_uci:
+        return set()
     board = chess.Board(fen)
-    move = chess.Move.from_uci(best_uci)
-    piece = board.piece_at(move.to_square) or board.piece_at(move.from_square)
-    if not piece:
-        return None
-    if piece.piece_type == chess.KNIGHT:
-        return "knight"
-    if piece.piece_type == chess.BISHOP:
-        return "bishop"
-    return None
+    move = chess.Move.from_uci(user_move_uci)
+    if move not in board.legal_moves:
+        return set()
+    moved_piece = board.piece_at(move.from_square)
+    user_color = board.turn
+    board.push(move)
+    if moved_piece is None:
+        return set()
+    target_square = move.to_square
+    labels: set[str] = set()
+    if board.is_attacked_by(not user_color, target_square):
+        is_unprotected = not board.is_attacked_by(user_color, target_square)
+        is_favorable = False
+        for response in board.legal_moves:
+            if not board.is_capture(response):
+                continue
+            capture_square = _capture_square(board, response)
+            if capture_square != target_square:
+                continue
+            mover_piece = board.piece_at(response.from_square)
+            if mover_piece is None:
+                continue
+            is_favorable = BaseTacticDetector.piece_value(
+                moved_piece.piece_type
+            ) > BaseTacticDetector.piece_value(mover_piece.piece_type)
+            if is_favorable:
+                break
+        if is_unprotected or is_favorable:
+            if moved_piece.piece_type == chess.KNIGHT:
+                labels.add("knight")
+            elif moved_piece.piece_type == chess.BISHOP:
+                labels.add("bishop")
+    return labels
 
 
 def _loss_game_id(games: list[tuple[str, chess.pgn.Game]]) -> str:
     for game_id, game in games:
-        if (
-            _get_game_result_for_user_from_pgn_headers(game.headers, USER)
-            == ChessGameResult.LOSS
-        ):
+        if _get_game_result_for_user_from_pgn_headers(game.headers, USER) == ChessGameResult.LOSS:
             return game_id
     raise AssertionError("Loss game not found in canonical fixture")
 
@@ -170,11 +198,13 @@ def test_canonical_pipeline_results_include_win_and_loss(canonical_games) -> Non
 
 def test_canonical_pipeline_rating_deltas(canonical_games) -> None:
     loss_game = next(
-        game for _, game in canonical_games
+        game
+        for _, game in canonical_games
         if _get_game_result_for_user_from_pgn_headers(game.headers, USER) == ChessGameResult.LOSS
     )
     win_game = next(
-        game for _, game in canonical_games
+        game
+        for _, game in canonical_games
         if _get_game_result_for_user_from_pgn_headers(game.headers, USER) == ChessGameResult.WIN
     )
     assert _rating_diff(loss_game.headers, USER) > 50
@@ -190,7 +220,7 @@ def test_canonical_pipeline_missed_hanging_pieces(
         loss_game_id = _loss_game_id(canonical_games)
         tactic_rows = conn.execute(
             """
-            SELECT t.tactic_id, t.position_id, t.best_uci, p.fen
+            SELECT t.tactic_id, t.position_id, t.best_uci, p.fen, p.uci
             FROM tactics t
             JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
             JOIN positions p ON p.position_id = t.position_id
@@ -203,12 +233,10 @@ def test_canonical_pipeline_missed_hanging_pieces(
     finally:
         conn.close()
 
-    labels = {
-        label
-        for _, _, best_uci, fen in tactic_rows
-        if (label := _captured_piece_label(fen, best_uci)) is not None
-    }
-    assert labels == {"knight", "bishop"}
+    labels: set[str] = set()
+    for _, _, _best_uci, fen, user_move_uci in tactic_rows:
+        labels.update(_hanging_user_piece_labels_after_move(fen, user_move_uci))
+    assert {"knight", "bishop"}.issubset(labels)
 
 
 def test_canonical_pipeline_pre_blunder_positions_recorded(
@@ -220,7 +248,7 @@ def test_canonical_pipeline_pre_blunder_positions_recorded(
         loss_game_id = _loss_game_id(canonical_games)
         tactic_rows = conn.execute(
             """
-            SELECT t.tactic_id, t.position_id, t.best_uci, p.fen
+            SELECT t.tactic_id, t.position_id, t.best_uci, p.fen, p.uci
             FROM tactics t
             JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
             JOIN positions p ON p.position_id = t.position_id
@@ -241,10 +269,11 @@ def test_canonical_pipeline_pre_blunder_positions_recorded(
         queue_by_id = {row[0]: row for row in queue_rows}
 
         canonical: dict[str, tuple[int, int, str, str]] = {}
-        for tactic_id, position_id, best_uci, fen in tactic_rows:
-            label = _captured_piece_label(fen, best_uci)
-            if label in {"knight", "bishop"} and label not in canonical:
-                canonical[label] = (tactic_id, position_id, best_uci, fen)
+        for tactic_id, position_id, best_uci, fen, user_move_uci in tactic_rows:
+            labels = _hanging_user_piece_labels_after_move(fen, user_move_uci)
+            for label in labels:
+                if label in {"knight", "bishop"} and label not in canonical:
+                    canonical[label] = (tactic_id, position_id, best_uci, fen)
 
         assert set(canonical.keys()) == {"knight", "bishop"}
 

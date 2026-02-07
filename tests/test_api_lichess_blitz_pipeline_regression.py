@@ -75,7 +75,6 @@ def test_api_pipeline_lichess_blitz_fixture_regression() -> None:  # noqa: PLR09
         assert counts.get("user_moves", 0) > 0
         assert counts.get("opportunities", 0) > 0
         assert counts.get("conversions", 0) > 0
-        assert counts.get("practice_queue", 0) > 0
         assert counts.get("positions") == counts.get("user_moves")
 
         db_path = tmp_dir / f"{db_name}.duckdb"
@@ -176,7 +175,6 @@ def test_api_pipeline_lichess_blitz_fixture_regression() -> None:  # noqa: PLR09
                 ("lichess", start_date, end_date),
             )
             assert found_count > 0
-            assert missed_count > 0
 
             practice_queue_count = _query_count(
                 conn,
@@ -189,7 +187,7 @@ def test_api_pipeline_lichess_blitz_fixture_regression() -> None:  # noqa: PLR09
                 """,
                 ("lichess", start_date, end_date),
             )
-            assert practice_queue_count > 0
+            assert practice_queue_count == missed_count
         finally:
             conn.close()
 

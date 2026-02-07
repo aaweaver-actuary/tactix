@@ -1,4 +1,15 @@
 Session summary (2026-02-06):
+- Refactored dashboard UI into a dedicated Flow component and kept App as a page shell, aligning Base → Specific → Flow → Page layering.
+- Added Flow-focused tests for mocked dashboard rendering and loading/error transitions, and updated job stream tests to mock client-layer APIs.
+- Ensured API calls are centralized through the client module and preserved all existing dashboard data-testid values.
+- Tests run: `make check` (before), `runTests` (/Users/andy/tactix/client/src/flows/DashboardFlow.test.tsx; coverage mode too), `runTests` (/Users/andy/tactix/client/src/App.stream.test.tsx), `make check` (after).
+- Before→After map:
+	- client/src/App.tsx DashboardFlow logic → client/src/flows/DashboardFlow.tsx.
+	- client/src/App.tsx → page shell rendering `DashboardFlow`.
+	- client/src/App.stream.test.tsx mocks (utils/*) → client/src/client/* + client/src/client/streams.
+	- client/src/flows/DashboardFlow.test.tsx → added Flow state/rendering coverage.
+
+Session summary (2026-02-06):
 - Refactored FastAPI handlers to delegate to DI-driven use cases (dashboard, practice, tactics search, pipeline run, Postgres), removing router-side DB access.
 - Updated API tests to use dependency overrides and added unit coverage for the new use cases.
 - Kept app/use_cases package exports limited to pipeline support to avoid circular imports during pipeline initialization.

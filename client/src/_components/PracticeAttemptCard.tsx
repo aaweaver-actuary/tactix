@@ -1,4 +1,4 @@
-import type { CSSProperties, Dispatch, SetStateAction } from 'react';
+import type { CSSProperties } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { PracticeAttemptResponse, PracticeQueueItem } from '../api';
 import isPiecePlayable from '../utils/isPiecePlayable';
@@ -21,7 +21,7 @@ interface PracticeAttemptCardProps {
   practiceSubmitError: string | null;
   practiceHighlightStyles: Record<string, CSSProperties>;
   practiceOrientation: 'white' | 'black';
-  setPracticeMove: Dispatch<SetStateAction<string>>;
+  onPracticeMoveChange: (value: string) => void;
   handlePracticeAttempt: (overrideMove?: string) => Promise<void>;
   handlePracticeDrop: (from: string, to: string, piece: string) => boolean;
 }
@@ -36,7 +36,7 @@ export default function PracticeAttemptCard({
   practiceSubmitError,
   practiceHighlightStyles,
   practiceOrientation,
-  setPracticeMove,
+  onPracticeMoveChange,
   handlePracticeAttempt,
   handlePracticeDrop,
 }: PracticeAttemptCardProps) {
@@ -88,7 +88,7 @@ export default function PracticeAttemptCard({
               <div className="flex flex-wrap items-center gap-3">
                 <PracticeMoveInput
                   practiceMove={practiceMove}
-                  setPracticeMove={setPracticeMove}
+                  onPracticeMoveChange={onPracticeMoveChange}
                   practiceSubmitting={practiceSubmitting}
                 />
                 <PracticeAttemptButton

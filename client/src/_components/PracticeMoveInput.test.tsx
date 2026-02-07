@@ -8,7 +8,7 @@ describe('PracticeMoveInput', () => {
     render(
       <PracticeMoveInput
         practiceMove="e2e4"
-        setPracticeMove={() => {}}
+        onPracticeMoveChange={() => {}}
         practiceSubmitting={false}
       />,
     );
@@ -24,7 +24,7 @@ describe('PracticeMoveInput', () => {
     render(
       <PracticeMoveInput
         practiceMove=""
-        setPracticeMove={() => {}}
+        onPracticeMoveChange={() => {}}
         practiceSubmitting={true}
       />,
     );
@@ -35,12 +35,12 @@ describe('PracticeMoveInput', () => {
     expect(input).toBeDisabled();
   });
 
-  it('calls setPracticeMove on change', () => {
-    const setPracticeMove = vi.fn();
+  it('calls onPracticeMoveChange on change', () => {
+    const onPracticeMoveChange = vi.fn();
     render(
       <PracticeMoveInput
         practiceMove=""
-        setPracticeMove={setPracticeMove}
+        onPracticeMoveChange={onPracticeMoveChange}
         practiceSubmitting={false}
       />,
     );
@@ -50,6 +50,6 @@ describe('PracticeMoveInput', () => {
     );
     fireEvent.change(input, { target: { value: 'g1f3' } });
 
-    expect(setPracticeMove).toHaveBeenCalledWith('g1f3');
+    expect(onPracticeMoveChange).toHaveBeenCalledWith('g1f3');
   });
 });

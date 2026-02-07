@@ -2,27 +2,44 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
 import App from './App';
-import fetchDashboard from './utils/fetchDashboard';
-import fetchPracticeQueue from './utils/fetchPracticeQueue';
-import fetchPostgresStatus from './utils/fetchPostgresStatus';
-import fetchPostgresAnalysis from './utils/fetchPostgresAnalysis';
-import fetchPostgresRawPgns from './utils/fetchPostgresRawPgns';
-import fetchGameDetail from './utils/fetchGameDetail';
-import submitPracticeAttempt from './utils/submitPracticeAttempt';
-import getJobStreamUrl from './utils/getJobStreamUrl';
-import getMetricsStreamUrl from './utils/getMetricsStreamUrl';
-import { getAuthHeaders } from './utils/getAuthHeaders';
+import { fetchDashboard, fetchGameDetail } from './client/dashboard';
+import { fetchPracticeQueue, submitPracticeAttempt } from './client/practice';
+import {
+  fetchPostgresStatus,
+  fetchPostgresAnalysis,
+  fetchPostgresRawPgns,
+} from './client/postgres';
+import {
+  getJobStreamUrl,
+  getMetricsStreamUrl,
+  getAuthHeaders,
+} from './client/streams';
 
-vi.mock('./utils/fetchDashboard', () => ({ default: vi.fn() }));
-vi.mock('./utils/fetchPracticeQueue', () => ({ default: vi.fn() }));
-vi.mock('./utils/fetchPostgresStatus', () => ({ default: vi.fn() }));
-vi.mock('./utils/fetchPostgresAnalysis', () => ({ default: vi.fn() }));
-vi.mock('./utils/fetchPostgresRawPgns', () => ({ default: vi.fn() }));
-vi.mock('./utils/fetchGameDetail', () => ({ default: vi.fn() }));
-vi.mock('./utils/submitPracticeAttempt', () => ({ default: vi.fn() }));
-vi.mock('./utils/getJobStreamUrl', () => ({ default: vi.fn() }));
-vi.mock('./utils/getMetricsStreamUrl', () => ({ default: vi.fn() }));
-vi.mock('./utils/getAuthHeaders', () => ({ getAuthHeaders: vi.fn() }));
+vi.mock('./client/dashboard', () => ({
+  fetchDashboard: vi.fn(),
+  fetchGameDetail: vi.fn(),
+}));
+vi.mock('./client/practice', () => ({
+  fetchPracticeQueue: vi.fn(),
+  submitPracticeAttempt: vi.fn(),
+}));
+vi.mock('./client/postgres', () => ({
+  fetchPostgresStatus: vi.fn(),
+  fetchPostgresAnalysis: vi.fn(),
+  fetchPostgresRawPgns: vi.fn(),
+}));
+vi.mock('./client/streams', async () => {
+  const actual =
+    await vi.importActual<typeof import('./client/streams')>(
+      './client/streams',
+    );
+  return {
+    ...actual,
+    getJobStreamUrl: vi.fn(),
+    getMetricsStreamUrl: vi.fn(),
+    getAuthHeaders: vi.fn(),
+  };
+});
 
 const dashboardPayload = {
   source: 'lichess',
@@ -126,7 +143,9 @@ describe('App job stream', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/jobs/stream?job=daily_game_sync',
       expect.objectContaining({
-        headers: {},
+        headers: {
+          Authorization: 'Bearer local-dev-token',
+        },
         signal: expect.any(AbortSignal),
       }),
     );
@@ -171,7 +190,9 @@ describe('App job stream', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/metrics/stream?source=lichess',
       expect.objectContaining({
-        headers: {},
+        headers: {
+          Authorization: 'Bearer local-dev-token',
+        },
         signal: expect.any(AbortSignal),
       }),
     );

@@ -1,4 +1,8 @@
 Session summary (2026-02-06):
+- Added vulture markers for repository port protocols and legacy raw PGN helpers to keep dead-code checks clean after Postgres raw PGN repository extraction.
+- Tests run: `make check` (rerun; pylint/prospector runs intermittently interrupted with KeyboardInterrupt from the tool runner).
+
+Session summary (2026-02-06):
 - Moved Postgres raw PGN SQL into db/postgres_raw_pgn_repository and left legacy helper modules as thin delegating wrappers.
 - Updated pipelines and Postgres repository wiring to use PostgresRawPgnRepository + db-level summary helper; adjusted Postgres upsert tests to call the repository.
 - Added Postgres raw PGN repository to boundary coverage; kept summary payload builder as a legacy helper without SQL.

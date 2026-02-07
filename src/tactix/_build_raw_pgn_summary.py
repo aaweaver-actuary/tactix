@@ -11,3 +11,6 @@ def _build_raw_pgn_summary(
 ) -> dict[str, Any]:
     """Return a normalized raw PGN summary payload."""
     return build_raw_pgn_summary_payload(sources=sources, totals=totals)
+
+
+_VULTURE_USED = (_build_raw_pgn_summary,)

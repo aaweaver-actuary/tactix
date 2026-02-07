@@ -13,3 +13,6 @@ def upsert_postgres_raw_pgns(
 ) -> int:
     """Insert raw PGN rows inside a transaction."""
     return PostgresRawPgnRepository(conn).upsert_raw_pgns(rows)
+
+
+_VULTURE_USED = (upsert_postgres_raw_pgns,)

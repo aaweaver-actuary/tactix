@@ -1,5 +1,7 @@
 """Repository port interfaces for database access boundaries."""
 
+# pylint: disable=too-few-public-methods
+
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
@@ -125,3 +127,12 @@ class MetricsRepository(Protocol):
 
     def update_metrics_summary(self) -> None:
         """Update the metrics summary tables."""
+
+
+_VULTURE_USED = (
+    GameRepository,
+    PositionRepository,
+    TacticRepository,
+    DashboardRepository,
+    MetricsRepository,
+)

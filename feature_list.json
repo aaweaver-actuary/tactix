@@ -199,7 +199,7 @@
       "Step 10: Confirm game_id values are unchanged",
       "Step 11: Confirm no duplicate rows were inserted"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

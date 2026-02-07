@@ -1,3 +1,9 @@
+Session summary (2026-02-07):
+- Verified SyncGames idempotency via pytest: test_api_pipeline_chesscom_bullet_idempotency (fixture chesscom_bullet_mate_hanging_2026_02_01.pgn).
+- knip (client) reports no deadcode issues after make check reported js-deadcode failure.
+- Updated feature_list.json: marked "SyncGames is idempotent for repeated runs with identical date range and source" as passing.
+- Tests run: pytest tests/test_api_chesscom_bullet_pipeline_regression.py -k test_api_pipeline_chesscom_bullet_idempotency
+
 Session summary (2026-02-06):
 - Feature 010 (lichess blitz MVP E2E) re-verification with converted outcome fixture.
 - API (FastAPI TestClient) POST /api/pipeline/run?source=lichess&profile=blitz&user_id=lichess&start_date=2024-06-05&end_date=2024-06-06&use_fixture=true&fixture_name=lichess_blitz_converted_sample.pgn&db_name=tactix_feature_010_lichess_blitz_mvp&reset_db=true

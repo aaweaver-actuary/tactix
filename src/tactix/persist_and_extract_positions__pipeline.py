@@ -41,7 +41,7 @@ def _persist_and_extract_positions(
             settings=context.settings,
             progress=context.progress,
             profile=context.profile,
-            delete_existing=True,
+            delete_existing=False,
             emit_start=True,
         )
     )

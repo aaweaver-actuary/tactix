@@ -1,4 +1,17 @@
 Session summary (2026-02-06):
+- Feature 008 idempotency verification (chess.com bullet fixture) via API + DB using TestClient and fixture data.
+- POST /api/pipeline/run?source=chesscom&profile=bullet&user_id=groborger&start_date=2026-02-01&end_date=2026-02-01&use_fixture=true&fixture_name=chesscom_bullet_mate_hanging_2026_02_01.pgn&db_name=tactix_feature_008_chesscom_bullet_idempotent&reset_db=true
+	-> run_id=04028107b8b64126a4340b9b92022d6d fetched_games=3
+- POST /api/pipeline/run (same params, reset_db=false)
+	-> run_id=db4ea231fa9d4053885d00ea27fe6644 fetched_games=3
+- DuckDB checks (data/tactix_feature_008_chesscom_bullet_idempotent.duckdb, 2026-02-01):
+	-> counts_first={'raw_pgns': 3, 'games': 3, 'positions': 21, 'user_moves': 21, 'opportunities': 21, 'conversions': 21, 'practice_queue': 16}
+	-> counts_second={'raw_pgns': 3, 'games': 3, 'positions': 21, 'user_moves': 21, 'opportunities': 21, 'conversions': 21, 'practice_queue': 16}
+	-> key_sets_match={'game_ids': True, 'position_keys': True, 'move_keys': True, 'opportunity_keys': True, 'conversion_keys': True, 'practice_keys': True, 'raw_pgn_keys': True}
+- Evidence log: tmp-logs/feature_008_chesscom_bullet_idempotent.json
+- Tests run: runTests(/Users/andy/tactix/tests/test_api_chesscom_bullet_pipeline_regression.py::test_api_pipeline_chesscom_bullet_idempotency) -> no tests found by runner
+
+Session summary (2026-02-06):
 - Feature 007 (lichess blitz E2E) verification via API + DB using fixture data.
 - API (FastAPI TestClient) POST /api/pipeline/run?source=lichess&profile=blitz&user_id=lichess&start_date=2024-06-05&end_date=2024-06-06&use_fixture=true&fixture_name=lichess_blitz_sample.pgn&db_name=tactix_feature_007_lichess_blitz&reset_db=true
 	-> status=ok run_id=7c1a39133d544a889d4945dfabd5bfdf fetched_games=2

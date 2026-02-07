@@ -26,6 +26,192 @@ def _query_count(
     return int(conn.execute(sql, params).fetchone()[0])
 
 
+def _snapshot_idempotency_state(
+    conn,
+    source: str,
+    start_date: date,
+    end_date: date,
+) -> dict[str, object]:
+    init_schema(conn)
+    counts = {
+        "raw_pgns": _query_count(
+            conn,
+            """
+            SELECT COUNT(*)
+            FROM raw_pgns r
+            WHERE r.source = ?
+            """,
+            (source,),
+        ),
+        "games": _query_count(
+            conn,
+            """
+            SELECT COUNT(*)
+            FROM games g
+            WHERE g.source = ?
+            AND CAST(g.played_at AS DATE) BETWEEN ? AND ?
+            """,
+            (source, start_date, end_date),
+        ),
+        "positions": _query_count(
+            conn,
+            """
+            SELECT COUNT(*)
+            FROM positions p
+            JOIN games g ON g.game_id = p.game_id AND g.source = p.source
+            WHERE p.user_to_move IS TRUE
+            AND g.source = ?
+            AND CAST(g.played_at AS DATE) BETWEEN ? AND ?
+            """,
+            (source, start_date, end_date),
+        ),
+        "user_moves": _query_count(
+            conn,
+            """
+            SELECT COUNT(*)
+            FROM user_moves u
+            JOIN games g ON g.game_id = u.game_id AND g.source = u.source
+            WHERE g.source = ?
+            AND CAST(g.played_at AS DATE) BETWEEN ? AND ?
+            """,
+            (source, start_date, end_date),
+        ),
+        "opportunities": _query_count(
+            conn,
+            """
+            SELECT COUNT(*)
+            FROM opportunities o
+            JOIN games g ON g.game_id = o.game_id AND g.source = o.source
+            WHERE g.source = ?
+            AND CAST(g.played_at AS DATE) BETWEEN ? AND ?
+            """,
+            (source, start_date, end_date),
+        ),
+        "conversions": _query_count(
+            conn,
+            """
+            SELECT COUNT(*)
+            FROM conversions c
+            JOIN games g ON g.game_id = c.game_id AND g.source = c.source
+            WHERE g.source = ?
+            AND CAST(g.played_at AS DATE) BETWEEN ? AND ?
+            """,
+            (source, start_date, end_date),
+        ),
+        "practice_queue": _query_count(
+            conn,
+            """
+            SELECT COUNT(*)
+            FROM practice_queue q
+            JOIN games g ON g.game_id = q.game_id AND g.source = q.source
+            WHERE g.source = ?
+            AND CAST(g.played_at AS DATE) BETWEEN ? AND ?
+            """,
+            (source, start_date, end_date),
+        ),
+    }
+    game_ids = {
+        row[0]
+        for row in conn.execute(
+            """
+            SELECT DISTINCT g.game_id
+            FROM games g
+            WHERE g.source = ?
+            AND CAST(g.played_at AS DATE) BETWEEN ? AND ?
+            ORDER BY g.game_id
+            """,
+            (source, start_date, end_date),
+        ).fetchall()
+    }
+    position_keys = {
+        (row[0], row[1])
+        for row in conn.execute(
+            """
+            SELECT p.game_id, p.ply
+            FROM positions p
+            JOIN games g ON g.game_id = p.game_id AND g.source = p.source
+            WHERE p.user_to_move IS TRUE
+            AND g.source = ?
+            AND CAST(g.played_at AS DATE) BETWEEN ? AND ?
+            """,
+            (source, start_date, end_date),
+        ).fetchall()
+    }
+    move_keys = {
+        row[0]
+        for row in conn.execute(
+            """
+            SELECT u.position_id
+            FROM user_moves u
+            JOIN games g ON g.game_id = u.game_id AND g.source = u.source
+            WHERE g.source = ?
+            AND CAST(g.played_at AS DATE) BETWEEN ? AND ?
+            """,
+            (source, start_date, end_date),
+        ).fetchall()
+    }
+    opportunity_keys = {
+        (row[0], row[1], row[2] or "")
+        for row in conn.execute(
+            """
+            SELECT o.position_id, o.motif, o.best_uci
+            FROM opportunities o
+            JOIN games g ON g.game_id = o.game_id AND g.source = o.source
+            WHERE g.source = ?
+            AND CAST(g.played_at AS DATE) BETWEEN ? AND ?
+            """,
+            (source, start_date, end_date),
+        ).fetchall()
+    }
+    conversion_keys = {
+        (row[0], row[1] or "", row[2] or "")
+        for row in conn.execute(
+            """
+            SELECT c.opportunity_id, c.result, c.user_uci
+            FROM conversions c
+            JOIN games g ON g.game_id = c.game_id AND g.source = c.source
+            WHERE g.source = ?
+            AND CAST(g.played_at AS DATE) BETWEEN ? AND ?
+            """,
+            (source, start_date, end_date),
+        ).fetchall()
+    }
+    practice_keys = {
+        (row[0], row[1])
+        for row in conn.execute(
+            """
+            SELECT q.opportunity_id, q.position_id
+            FROM practice_queue q
+            JOIN games g ON g.game_id = q.game_id AND g.source = q.source
+            WHERE g.source = ?
+            AND CAST(g.played_at AS DATE) BETWEEN ? AND ?
+            """,
+            (source, start_date, end_date),
+        ).fetchall()
+    }
+    raw_pgn_keys = {
+        (row[0], row[1] or "", int(row[2] or 0))
+        for row in conn.execute(
+            """
+            SELECT r.game_id, r.pgn_hash, r.pgn_version
+            FROM raw_pgns r
+            WHERE r.source = ?
+            """,
+            (source,),
+        ).fetchall()
+    }
+    return {
+        "counts": counts,
+        "game_ids": game_ids,
+        "position_keys": position_keys,
+        "move_keys": move_keys,
+        "opportunity_keys": opportunity_keys,
+        "conversion_keys": conversion_keys,
+        "practice_keys": practice_keys,
+        "raw_pgn_keys": raw_pgn_keys,
+    }
+
+
 def test_api_pipeline_chesscom_bullet_fixture_regression() -> None:
     _ensure_stockfish_available()
 
@@ -199,6 +385,99 @@ def test_api_pipeline_chesscom_bullet_fixture_regression() -> None:
         assert summary.get("opportunities") == opportunities_count
         assert summary.get("conversions") == conversions_count
         assert summary.get("practice_queue") == practice_queue_count
+    finally:
+        for key, value in old_env.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
+def test_api_pipeline_chesscom_bullet_idempotency() -> None:
+    _ensure_stockfish_available()
+
+    tmp_dir = Path(tempfile.mkdtemp())
+    db_name = "tactix_feature_008_chesscom_bullet_idempotent"
+
+    old_env = {
+        "TACTIX_API_TOKEN": os.environ.get("TACTIX_API_TOKEN"),
+        "TACTIX_DATA_DIR": os.environ.get("TACTIX_DATA_DIR"),
+        "TACTIX_SOURCE": os.environ.get("TACTIX_SOURCE"),
+    }
+
+    os.environ["TACTIX_API_TOKEN"] = "test-token"
+    os.environ["TACTIX_DATA_DIR"] = str(tmp_dir)
+    os.environ["TACTIX_SOURCE"] = "chesscom"
+
+    try:
+        import tactix.api as api_module
+        import tactix.config as config_module
+
+        importlib.reload(config_module)
+        importlib.reload(api_module)
+
+        client = TestClient(api_module.app)
+        params = {
+            "source": "chesscom",
+            "profile": "bullet",
+            "user_id": "groborger",
+            "start_date": "2026-02-01",
+            "end_date": "2026-02-01",
+            "use_fixture": "true",
+            "fixture_name": "chesscom_bullet_mate_hanging_2026_02_01.pgn",
+            "db_name": db_name,
+            "reset_db": "true",
+        }
+
+        response_first = client.post(
+            "/api/pipeline/run",
+            headers={"Authorization": "Bearer test-token"},
+            params=params,
+        )
+        assert response_first.status_code == 200
+
+        db_path = tmp_dir / f"{db_name}.duckdb"
+        conn = get_connection(db_path)
+        try:
+            snapshot_first = _snapshot_idempotency_state(
+                conn,
+                "chesscom",
+                date(2026, 2, 1),
+                date(2026, 2, 1),
+            )
+        finally:
+            conn.close()
+
+        params_second = {**params, "reset_db": "false"}
+        response_second = client.post(
+            "/api/pipeline/run",
+            headers={"Authorization": "Bearer test-token"},
+            params=params_second,
+        )
+        assert response_second.status_code == 200
+
+        conn = get_connection(db_path)
+        try:
+            snapshot_second = _snapshot_idempotency_state(
+                conn,
+                "chesscom",
+                date(2026, 2, 1),
+                date(2026, 2, 1),
+            )
+        finally:
+            conn.close()
+
+        assert snapshot_second["counts"] == snapshot_first["counts"]
+        assert snapshot_second["game_ids"] == snapshot_first["game_ids"]
+        assert snapshot_second["position_keys"] == snapshot_first["position_keys"]
+        assert snapshot_second["move_keys"] == snapshot_first["move_keys"]
+        assert snapshot_second["opportunity_keys"] == snapshot_first["opportunity_keys"]
+        assert snapshot_second["conversion_keys"] == snapshot_first["conversion_keys"]
+        assert snapshot_second["practice_keys"] == snapshot_first["practice_keys"]
+        assert snapshot_second["raw_pgn_keys"] == snapshot_first["raw_pgn_keys"]
+
+        counts = snapshot_second["counts"]
+        assert counts["positions"] == counts["user_moves"]
     finally:
         for key, value in old_env.items():
             if value is None:

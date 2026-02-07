@@ -1,0 +1,25 @@
+{
+  "db_path": "data/tactix.duckdb",
+  "source": "lichess",
+  "start_date": "2024-06-05",
+  "end_date": "2024-06-06",
+  "games": 8,
+  "positions_user_to_move": 11,
+  "user_moves": 11,
+  "opportunities": 11,
+  "opportunity_type_counts": {
+    "capture": 1,
+    "hanging_piece": 1,
+    "initiative": 8,
+    "mate": 1
+  },
+  "conversions": 11,
+  "conversion_result_counts": {
+    "found": 4,
+    "missed": 5,
+    "unclear": 2
+  },
+  "conversions_found": 4,
+  "conversions_missed": 5,
+  "practice_queue": 5
+}

@@ -1,4 +1,13 @@
 Session summary (2026-02-07):
+- Regression verification for chess.com bullet + lichess blitz pipelines (API + DB + UI screenshots).
+- Fixed lichess pipeline fixtures on API server: pipeline now applies fixture settings when fixture_name is provided (regression was 500/401 due to missing token when use_fixture parsing was not honored).
+- Chess.com bullet pipeline (2026-02-01, fixture chesscom_bullet_mate_hanging_2026_02_01.pgn): counts games=11, positions=101, user_moves=101, opportunities=81, conversions=41, practice_queue=16; dashboard summary matches DB.
+- Lichess blitz pipeline (2024-06-05..2024-06-06, fixture lichess_blitz_converted_sample.pgn): counts games=8, positions=11, user_moves=11, opportunities=11, conversions=11, practice_queue=5; dashboard summary matches DB; conversions include found+missed.
+- UI verification screenshots saved: verification/regression-chesscom-bullet-pipeline-2026-02-07.png, verification/regression-lichess-blitz-pipeline-2026-02-07.png.
+- Evidence logs: tmp-logs/regression_chesscom_bullet_pipeline_2026-02-07.json, tmp-logs/regression_chesscom_bullet_db_checks_2026-02-07.json, tmp-logs/regression_chesscom_bullet_dashboard_summary_2026-02-07.json, tmp-logs/regression_chesscom_bullet_ui_2026-02-07.log; tmp-logs/regression_lichess_blitz_pipeline_2026-02-07.json, tmp-logs/regression_lichess_blitz_db_checks_2026-02-07.json, tmp-logs/regression_lichess_blitz_dashboard_summary_2026-02-07.json, tmp-logs/regression_lichess_blitz_ui_2026-02-07.log.
+- Tests run: none (manual API, DB, and puppeteer checks only).
+
+Session summary (2026-02-07):
 - Added API-level regression coverage for the lichess blitz fixture pipeline using TestClient + DuckDB checks.
 - Tests run: make check (before; already running), make check (after)
 - Before→After map:

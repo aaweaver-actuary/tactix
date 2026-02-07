@@ -122,7 +122,7 @@ class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
         use_fixture: bool,
         fixture_name: str | None,
     ) -> None:
-        if not use_fixture:
+        if not use_fixture and not fixture_name:
             return
         settings.chesscom.token = None
         settings.lichess.token = None

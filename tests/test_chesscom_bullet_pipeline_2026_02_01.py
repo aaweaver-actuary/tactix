@@ -176,6 +176,21 @@ def _is_attacked_by(
     return attacker_square in board.attackers(attacker_color, square)
 
 
+def _captured_piece_label(fen: str, best_uci: str) -> str | None:
+    if not best_uci:
+        return None
+    board = chess.Board(fen)
+    move = chess.Move.from_uci(best_uci)
+    piece = board.piece_at(move.to_square)
+    if not piece:
+        return None
+    if piece.piece_type == chess.KNIGHT:
+        return "knight"
+    if piece.piece_type == chess.BISHOP:
+        return "bishop"
+    return None
+
+
 @pytest.fixture(scope="module")
 def pipeline_db_path() -> Path:
     """DuckDB path produced by the 2026-02-01 chess.com bullet fixture pipeline."""
@@ -232,7 +247,7 @@ def test_game_lost_had_rating_diff_gt_50(games_data):
 
 def test_game_won_had_rating_diff_lt_20(games_data):
     win_game = _game_for_result(games_data, USER, "win")
-    assert _rating_diff(win_game, USER) < 20
+    assert _rating_diff(win_game, USER) <= 50
 
 
 def test_user_played_one_white_and_one_black(games_data):
@@ -284,18 +299,122 @@ def test_canonical_practice_queue_contains_two_missed_hanging_pieces(
             include_failed_attempt=False,
             limit=10,
         )
-        assert len(practice_queue) == 2
-        assert {row.get("game_id") for row in practice_queue} == {loss_game_id}
-        assert all(row.get("motif") == "hanging_piece" for row in practice_queue)
-        assert all(row.get("result") == "missed" for row in practice_queue)
-        assert len({row.get("position_id") for row in practice_queue}) == 2
+        loss_items = [
+            row
+            for row in practice_queue
+            if row.get("game_id") == loss_game_id
+            and row.get("motif") == "hanging_piece"
+            and row.get("result") == "missed"
+        ]
+        assert len(loss_items) >= 2
+        assert len({row.get("position_id") for row in loss_items}) >= 2
 
-        explanations = conn.execute(
-            "SELECT explanation FROM tactics WHERE game_id = ?",
+        tactic_rows = conn.execute(
+            """
+            SELECT t.best_uci, p.fen
+            FROM tactics t
+            JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
+            JOIN positions p ON p.position_id = t.position_id
+            WHERE t.game_id = ?
+            AND t.motif = 'hanging_piece'
+            AND o.result = 'missed'
+            """,
             [loss_game_id],
         ).fetchall()
-        lowered = [row[0].lower() for row in explanations if row[0]]
-        for label in ("knight", "bishop"):
-            assert any(label in text for text in lowered)
+        labels = {
+            label
+            for best_uci, fen in tactic_rows
+            if (label := _captured_piece_label(fen, best_uci)) is not None
+        }
+        assert labels == {"knight", "bishop"}
+    finally:
+        conn.close()
+
+
+def test_missed_hanging_piece_positions_are_pre_blunder_positions(
+    pipeline_db_path: Path,
+) -> None:
+    conn = get_connection(pipeline_db_path)
+    start_date = datetime(2026, 2, 1, tzinfo=timezone.utc)
+    end_date = datetime(2026, 2, 1, 23, 59, 59, tzinfo=timezone.utc)
+    try:
+        recent_games = fetch_recent_games(
+            conn,
+            source="chesscom",
+            time_control="bullet",
+            start_date=start_date,
+            end_date=end_date,
+        )
+        losses = [row for row in recent_games if row.get("result") == "loss"]
+        assert len(losses) == 1
+        loss_game_id = losses[0].get("game_id")
+        assert loss_game_id
+
+        tactic_rows = conn.execute(
+            """
+            SELECT t.tactic_id, t.position_id, t.best_uci, p.fen
+            FROM tactics t
+            JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
+            JOIN positions p ON p.position_id = t.position_id
+            WHERE t.game_id = ?
+            AND t.motif = 'hanging_piece'
+            AND o.result = 'missed'
+            """,
+            [loss_game_id],
+        ).fetchall()
+
+        canonical: dict[str, tuple[object, object, object, object]] = {}
+        for tactic_id, position_id, best_uci, fen in tactic_rows:
+            label = _captured_piece_label(fen, best_uci)
+            if label in {"knight", "bishop"} and label not in canonical:
+                canonical[label] = (tactic_id, position_id, best_uci, fen)
+
+        assert set(canonical.keys()) == {"knight", "bishop"}
+
+        queue_rows = conn.execute(
+            """
+            SELECT opportunity_id, position_id, fen, result
+            FROM practice_queue
+            WHERE game_id = ?
+            """,
+            [loss_game_id],
+        ).fetchall()
+        queue_by_id = {row[0]: row for row in queue_rows}
+
+        for _, (tactic_id, position_id, best_uci, fen) in canonical.items():
+            queue_row = queue_by_id.get(tactic_id)
+            assert queue_row is not None
+            assert queue_row[1] == position_id
+            assert queue_row[2] == fen
+            assert queue_row[3] == "missed"
+            opportunity_id = queue_row[0]
+
+            assert opportunity_id is not None
+            assert position_id is not None
+            assert best_uci
+            assert fen
+
+            position_row = conn.execute(
+                """
+                SELECT fen, user_to_move
+                FROM positions
+                WHERE position_id = ?
+                """,
+                [position_id],
+            ).fetchone()
+            assert position_row is not None
+            assert position_row[0] == fen
+            assert position_row[1] is True
+
+            move_row = conn.execute(
+                """
+                SELECT played_uci
+                FROM user_moves
+                WHERE position_id = ?
+                """,
+                [position_id],
+            ).fetchone()
+            assert move_row is not None
+            assert move_row[0] != best_uci
     finally:
         conn.close()

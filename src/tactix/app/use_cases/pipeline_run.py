@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -131,6 +132,9 @@ class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
         settings.stockfish_movetime_ms = 60
         settings.stockfish_depth = 8
         settings.stockfish_multipv = 2
+        resolved_stockfish = shutil.which(str(settings.stockfish_path)) or shutil.which("stockfish")
+        if resolved_stockfish:
+            settings.stockfish_path = Path(resolved_stockfish)
         if not fixture_name:
             return
         safe_name = Path(fixture_name).name

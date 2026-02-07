@@ -65,7 +65,7 @@
       "Step 9: Verify API calls are isolated in a single client module/hook layer (e.g., apiClient + hooks) and not scattered across components",
       "Step 10: Verify E2E puppeteer test can drive the same flow using stable selectors (data-testid) with screenshot capture preserved"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

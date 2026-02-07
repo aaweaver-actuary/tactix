@@ -505,3 +505,8 @@ Session summary (2026-02-05):
 - Tests run: `make check` (green; existing Vitest act warnings and pycycle .venv parse warning unchanged).
 - Before→After map:
 	- src/tactix/postgres_store_impl.py shim re-exports → deprecated stub (canonical repository modules only).
+
+Session summary (2026-02-07):
+- Added GitHub issue-derived canonical chess.com verification items to feature_list.json (issues #1-#6).
+- Ran regression verification for chess.com bullet and lichess blitz pipeline E2E flows; captured UI screenshots and DB/API artifacts.
+- Tests run: `make check` before dispatch; regression runTests attempt reported "No tests found" for the selected regression files.

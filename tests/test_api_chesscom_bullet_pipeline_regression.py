@@ -266,7 +266,6 @@ def test_api_pipeline_chesscom_bullet_fixture_regression() -> None:
         assert counts.get("practice_queue", 0) > 0
         assert counts.get("positions") == counts.get("user_moves")
 
-
         db_path = tmp_dir / f"{db_name}.duckdb"
         conn = get_connection(db_path)
         try:

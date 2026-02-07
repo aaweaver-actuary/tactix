@@ -104,7 +104,7 @@
       "Step 14: Call GET /api/dashboard/summary with the same filters (source=chess.com, time_control=bullet, start_date, end_date)",
       "Step 15: Verify dashboard summary totals match DB aggregated counts for the same filters (games, positions, opportunities, converted, missed, practice_queue size)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

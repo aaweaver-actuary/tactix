@@ -130,20 +130,22 @@ if __name__ == "__main__":
                         responder_piece = after_board.piece_at(response.from_square)
                         if responder_piece is None:
                             continue
-                        if BaseTacticDetector.piece_value(moved_piece.piece_type) > BaseTacticDetector.piece_value(
-                            responder_piece.piece_type
-                        ):
+                        if BaseTacticDetector.piece_value(
+                            moved_piece.piece_type
+                        ) > BaseTacticDetector.piece_value(responder_piece.piece_type):
                             favorable.append(response.uci())
-                    inspected.append((
-                        board.fullmove_number,
-                        move.uci(),
-                        moved_piece.piece_type,
-                        label_move,
-                        attackers,
-                        defenders,
-                        favorable,
-                        board.fen(),
-                    ))
+                    inspected.append(
+                        (
+                            board.fullmove_number,
+                            move.uci(),
+                            moved_piece.piece_type,
+                            label_move,
+                            attackers,
+                            defenders,
+                            favorable,
+                            board.fen(),
+                        )
+                    )
                 if label_move:
                     moves.append((board.fullmove_number, move.uci(), label_move, board.fen()))
             board.push(move)

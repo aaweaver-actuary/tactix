@@ -48,7 +48,7 @@
       "Step 9: Confirm boundary enforcement: app/services and domain modules do not import FastAPI types",
       "Step 10: Confirm legacy API helper modules (e.g., get_*__api.py, trigger_*__api_jobs.py style) are migrated behind routers or deleted if replaced"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

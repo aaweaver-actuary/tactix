@@ -31,7 +31,7 @@
       "Step 9: Verify repository modules do not import FastAPI router code or React client code (boundary enforcement)",
       "Step 10: Confirm the original monolithic store is either reduced to a thin façade delegating to repositories or deleted once all call-sites migrate"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

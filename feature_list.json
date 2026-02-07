@@ -181,7 +181,7 @@
       "Step 10: Call GET /api/dashboard/summary with same filters",
       "Step 11: Verify summary totals match DB counts for the range"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

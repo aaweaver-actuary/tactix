@@ -1,4 +1,13 @@
 Session summary (2026-02-08):
+- Refactored canonical verification scripts to share backend setup helpers and a single run-date constant.
+- Tests run: make check (before; task), make check (after; task).
+- Commit: cb960e3
+- Before→After map:
+	- verification/helpers/backend_canonical_helpers.js → shared pipeline setup helpers.
+	- verification/puppeteer_issue_6_canonical_scenario.js → reuse backend helper.
+	- verification/integration_feature_chesscom_bullet_canonical_2026_02_01.js → reuse backend helper.
+
+Session summary (2026-02-08):
 - Stabilized Puppeteer helpers and practice verification scripts (source selection waits, expanded practice cards, canonical UI result parsing).
 - Canonical E2E verification: pipeline + DB + API integration script now snapshots DuckDB and compares practice queue positions.
 - UI verification (Puppeteer): verification/issue-6-chesscom-bullet-canonical-2026-02-01.png.

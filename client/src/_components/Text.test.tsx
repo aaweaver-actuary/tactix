@@ -1,11 +1,15 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import puppeteer, { Browser, Page } from 'puppeteer';
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import Text from './Text';
 
-let browser: Browser;
-let page: Page;
+let browser: Browser | undefined;
+let page: Page | undefined;
+let userDataDir: string | undefined;
 
 function renderHtml(element: React.ReactElement) {
   const markup = ReactDOMServer.renderToStaticMarkup(element);
@@ -13,6 +17,9 @@ function renderHtml(element: React.ReactElement) {
 }
 
 async function getRenderedInfo(element: React.ReactElement) {
+  if (!page) {
+    throw new Error('Puppeteer page is not initialized');
+  }
   const html = renderHtml(element);
   await page.setContent(html);
   return page.$eval('#root p', (el) => ({
@@ -22,13 +29,21 @@ async function getRenderedInfo(element: React.ReactElement) {
 }
 
 beforeAll(async () => {
-  browser = await puppeteer.launch({ headless: 'new' });
+  userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tactix-puppeteer-'));
+  browser = await puppeteer.launch({ headless: 'new', userDataDir });
   page = await browser.newPage();
 });
 
 afterAll(async () => {
-  await page.close();
-  await browser.close();
+  if (page) {
+    await page.close();
+  }
+  if (browser) {
+    await browser.close();
+  }
+  if (userDataDir) {
+    fs.rmSync(userDataDir, { recursive: true, force: true });
+  }
 });
 
 describe('Text', () => {

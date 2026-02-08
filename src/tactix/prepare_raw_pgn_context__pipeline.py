@@ -1,10 +1,13 @@
+"""Prepare context for raw PGN operations."""
+
 from __future__ import annotations
 
 import duckdb
 
 from tactix.build_pipeline_settings__pipeline import _build_pipeline_settings
 from tactix.config import Settings
-from tactix.db.duckdb_store import fetch_latest_raw_pgns, get_connection, init_schema
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.raw_pgn_repository_provider import fetch_latest_raw_pgns
 
 
 def _prepare_raw_pgn_context(
@@ -13,6 +16,7 @@ def _prepare_raw_pgn_context(
     profile: str | None = None,
     limit: int | None = None,
 ) -> tuple[Settings, duckdb.DuckDBPyConnection, list[dict[str, object]]]:
+    """Build settings, connection, and raw PGN rows for a pipeline."""
     settings = _build_pipeline_settings(settings, source=source, profile=profile)
     conn = get_connection(settings.duckdb_path)
     init_schema(conn)

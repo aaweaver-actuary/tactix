@@ -1,12 +1,16 @@
+"""API handler for Postgres raw PGN summaries."""
+
 from __future__ import annotations
 
-from tactix.api_logger__tactix import logger
-from tactix.base_db_store import BaseDbStoreContext
-from tactix.config import get_settings
-from tactix.postgres_store import PostgresStore
+from typing import Annotated
+
+from fastapi import Depends
+
+from tactix.app.use_cases.postgres import PostgresUseCase, get_postgres_use_case
 
 
-def postgres_raw_pgns() -> dict[str, object]:
-    settings = get_settings()
-    store = PostgresStore(BaseDbStoreContext(settings=settings, logger=logger))
-    return store.fetch_raw_pgns_summary()
+def postgres_raw_pgns(
+    use_case: Annotated[PostgresUseCase, Depends(get_postgres_use_case)],
+) -> dict[str, object]:
+    """Return the raw PGN summary from Postgres."""
+    return use_case.get_raw_pgns()

@@ -8,7 +8,8 @@ import chess.engine
 import pytest
 
 from tactix.config import Settings
-from tactix.stockfish_runner import StockfishEngine, verify_stockfish_checksum
+from tactix.StockfishEngine import StockfishEngine
+from tactix.verify_stockfish_checksum import verify_stockfish_checksum
 
 
 def _sha256_for_bytes(payload: bytes) -> str:
@@ -71,8 +72,8 @@ def test_resolve_command_uses_shutil_which() -> None:
     engine = StockfishEngine(settings)
 
     with (
-        patch("tactix.stockfish_runner.Path.exists", return_value=False),
-        patch("tactix.stockfish_runner.shutil.which", return_value="/usr/bin/stockfish"),
+        patch("tactix.StockfishEngine.Path.exists", return_value=False),
+        patch("tactix.StockfishEngine.shutil.which", return_value="/usr/bin/stockfish"),
     ):
         resolved = engine._resolve_command()
 

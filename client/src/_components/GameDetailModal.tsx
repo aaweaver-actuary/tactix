@@ -1,5 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { GameDetailResponse } from '../api';
 import BaseTable from './BaseTable';
 import Badge from './Badge';
@@ -16,6 +17,28 @@ type AnalysisRow = {
   evalDelta: number | null;
   blunder: boolean;
 };
+
+const formatEvalValue = (value: number | null) =>
+  value !== null ? value : '--';
+
+const renderEvalFlag = (blunder: boolean, evalDelta: number | null) => {
+  if (blunder) return <Badge label="Blunder" />;
+  if (evalDelta !== null) return <span className="text-sand/60">OK</span>;
+  return <span className="text-sand/40">--</span>;
+};
+
+const AnalysisMoveCell = ({
+  moveLabel,
+  moveSan,
+}: {
+  moveLabel: string;
+  moveSan: string;
+}) => (
+  <div>
+    <div className="text-sand/70">{moveLabel}</div>
+    <div className="font-mono text-xs">{moveSan}</div>
+  </div>
+);
 
 interface GameDetailModalProps {
   open: boolean;
@@ -70,10 +93,10 @@ export default function GameDetailModal({
         header: 'Move',
         accessorKey: 'moveLabel',
         cell: ({ row }) => (
-          <div>
-            <div className="text-sand/70">{row.original.moveLabel}</div>
-            <div className="font-mono text-xs">{row.original.moveSan}</div>
-          </div>
+          <AnalysisMoveCell
+            moveLabel={row.original.moveLabel}
+            moveSan={row.original.moveSan}
+          />
         ),
       },
       {
@@ -88,7 +111,7 @@ export default function GameDetailModal({
         accessorKey: 'evalCp',
         cell: ({ row }) => (
           <span className="font-mono">
-            {row.original.evalCp !== null ? row.original.evalCp : '--'}
+            {formatEvalValue(row.original.evalCp)}
           </span>
         ),
       },
@@ -97,7 +120,7 @@ export default function GameDetailModal({
         accessorKey: 'evalDelta',
         cell: ({ row }) => (
           <span className="font-mono">
-            {row.original.evalDelta !== null ? row.original.evalDelta : '--'}
+            {formatEvalValue(row.original.evalDelta)}
           </span>
         ),
       },
@@ -105,13 +128,7 @@ export default function GameDetailModal({
         header: 'Flags',
         id: 'flags',
         cell: ({ row }) =>
-          row.original.blunder ? (
-            <Badge label="Blunder" />
-          ) : row.original.evalDelta !== null ? (
-            <span className="text-sand/60">OK</span>
-          ) : (
-            <span className="text-sand/40">--</span>
-          ),
+          renderEvalFlag(row.original.blunder, row.original.evalDelta),
       },
     ],
     [],
@@ -185,19 +202,26 @@ export default function GameDetailModal({
     return null;
   }
 
-  return (
-    <div data-testid="game-detail-modal">
-      <div>
-        <div>
-          <BaseTable
-            data={analysisRows}
-            columns={analysisColumns}
-            emptyMessage="No analysis rows found."
-            enablePagination={false}
-            tableClassName="text-xs"
-            headerCellClassName="py-1"
-            cellClassName="py-1"
-          />
+  const modalBody = (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 px-4 py-6 backdrop-blur-sm sm:items-center"
+      role="dialog"
+      aria-modal="true"
+      data-testid="game-detail-modal"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/95 p-5 shadow-2xl">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <Text mode="uppercase" value="Game details" />
+            <div className="text-xs text-sand/60">
+              Review moves, metadata, and analysis
+            </div>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -207,6 +231,18 @@ export default function GameDetailModal({
           >
             Close
           </button>
+        </div>
+
+        <div className="mt-4">
+          <BaseTable
+            data={analysisRows}
+            columns={analysisColumns}
+            emptyMessage="No analysis rows found."
+            enablePagination={false}
+            tableClassName="text-xs"
+            headerCellClassName="py-1"
+            cellClassName="py-1"
+          />
         </div>
 
         {loading ? (
@@ -413,30 +449,22 @@ export default function GameDetailModal({
                         analysisRows.map((row) => (
                           <tr key={row.key} className="border-b border-white/5">
                             <td className="py-1">
-                              <div className="text-sand/70">
-                                {row.moveLabel}
-                              </div>
-                              <div className="font-mono text-xs">
-                                {row.moveSan}
-                              </div>
+                              <AnalysisMoveCell
+                                moveLabel={row.moveLabel}
+                                moveSan={row.moveSan}
+                              />
                             </td>
                             <td className="py-1 uppercase tracking-wide">
                               {row.motif}
                             </td>
                             <td className="py-1 font-mono">
-                              {row.evalCp !== null ? row.evalCp : '--'}
+                              {formatEvalValue(row.evalCp)}
                             </td>
                             <td className="py-1 font-mono">
-                              {row.evalDelta !== null ? row.evalDelta : '--'}
+                              {formatEvalValue(row.evalDelta)}
                             </td>
                             <td className="py-1">
-                              {row.blunder ? (
-                                <Badge label="Blunder" />
-                              ) : row.evalDelta !== null ? (
-                                <span className="text-sand/60">OK</span>
-                              ) : (
-                                <span className="text-sand/40">--</span>
-                              )}
+                              {renderEvalFlag(row.blunder, row.evalDelta)}
                             </td>
                           </tr>
                         ))
@@ -457,4 +485,6 @@ export default function GameDetailModal({
       </div>
     </div>
   );
+
+  return createPortal(modalBody, document.body);
 }

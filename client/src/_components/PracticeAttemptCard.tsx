@@ -1,27 +1,36 @@
-import type { CSSProperties, Dispatch, SetStateAction } from 'react';
+import type { CSSProperties, RefObject } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { PracticeAttemptResponse, PracticeQueueItem } from '../api';
 import isPiecePlayable from '../utils/isPiecePlayable';
 import buildPracticeFeedback from '../utils/buildPracticeFeedback';
+import {
+  listudyBoardStyle,
+  listudyDarkSquareStyle,
+  listudyLightSquareStyle,
+  listudyNotationStyle,
+  listudyPreviewPieceIds,
+  listudyPieces,
+} from '../utils/listudyAssets';
 import Badge from './Badge';
-import BaseCard from './BaseCard';
+import BaseCard, { BaseCardDragProps } from './BaseCard';
 import PracticeAttemptButton from './PracticeAttemptButton';
 import PracticeMoveInput from './PracticeMoveInput';
 import PracticeSessionProgress from './PracticeSessionProgress';
 import Text from './Text';
 import type { PracticeSessionStats } from '../utils/practiceSession';
 
-interface PracticeAttemptCardProps {
+interface PracticeAttemptCardProps extends BaseCardDragProps {
   currentPractice: PracticeQueueItem | null;
   practiceSession: PracticeSessionStats;
   practiceFen: string;
   practiceMove: string;
+  practiceMoveRef: RefObject<HTMLInputElement>;
   practiceSubmitting: boolean;
   practiceFeedback: PracticeAttemptResponse | null;
   practiceSubmitError: string | null;
   practiceHighlightStyles: Record<string, CSSProperties>;
   practiceOrientation: 'white' | 'black';
-  setPracticeMove: Dispatch<SetStateAction<string>>;
+  onPracticeMoveChange: (value: string) => void;
   handlePracticeAttempt: (overrideMove?: string) => Promise<void>;
   handlePracticeDrop: (from: string, to: string, piece: string) => boolean;
 }
@@ -31,29 +40,50 @@ export default function PracticeAttemptCard({
   practiceSession,
   practiceFen,
   practiceMove,
+  practiceMoveRef,
   practiceSubmitting,
   practiceFeedback,
   practiceSubmitError,
   practiceHighlightStyles,
   practiceOrientation,
-  setPracticeMove,
+  onPracticeMoveChange,
   handlePracticeAttempt,
   handlePracticeDrop,
+  ...dragProps
 }: PracticeAttemptCardProps) {
+  const handleInputSubmit = (move: string) => {
+    void handlePracticeAttempt(move);
+  };
+
+  const handleAttemptClick = () => {
+    void handlePracticeAttempt(practiceMoveRef.current?.value);
+  };
+
   return (
     <BaseCard
       className="p-4"
-      collapsible={false}
       header={
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-display text-sand">Practice attempt</h3>
             <Text value="Play the best move for the current tactic." />
           </div>
-          {currentPractice ? <Badge label={currentPractice.motif} /> : null}
+          <div className="flex items-center gap-2">
+            <div
+              className="hidden sm:flex items-center gap-1 opacity-80"
+              aria-hidden="true"
+            >
+              {listudyPreviewPieceIds.map((pieceId) => {
+                const Piece = listudyPieces[pieceId];
+                return <Piece key={pieceId} squareWidth={18} />;
+              })}
+            </div>
+            {currentPractice ? <Badge label={currentPractice.motif} /> : null}
+          </div>
         </div>
       }
       contentClassName="pt-3"
+      {...dragProps}
     >
       <PracticeSessionProgress stats={practiceSession} />
       {currentPractice ? (
@@ -67,6 +97,13 @@ export default function PracticeAttemptCard({
                 boardOrientation={practiceOrientation}
                 arePiecesDraggable={!practiceSubmitting}
                 isDraggablePiece={isPiecePlayable(practiceFen, currentPractice)}
+                boardWidth={320}
+                showBoardNotation
+                customNotationStyle={listudyNotationStyle}
+                customBoardStyle={listudyBoardStyle}
+                customLightSquareStyle={listudyLightSquareStyle}
+                customDarkSquareStyle={listudyDarkSquareStyle}
+                customPieces={listudyPieces}
                 customSquareStyles={practiceHighlightStyles}
               />
               <Text mt="2" value="Legal moves only. Drag a piece to submit." />
@@ -88,11 +125,13 @@ export default function PracticeAttemptCard({
               <div className="flex flex-wrap items-center gap-3">
                 <PracticeMoveInput
                   practiceMove={practiceMove}
-                  setPracticeMove={setPracticeMove}
+                  onPracticeMoveChange={onPracticeMoveChange}
+                  onPracticeSubmit={handleInputSubmit}
                   practiceSubmitting={practiceSubmitting}
+                  inputRef={practiceMoveRef}
                 />
                 <PracticeAttemptButton
-                  handlePracticeAttempt={handlePracticeAttempt}
+                  onPracticeAttempt={handleAttemptClick}
                   practiceSubmitting={practiceSubmitting}
                 />
               </div>

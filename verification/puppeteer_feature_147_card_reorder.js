@@ -12,7 +12,7 @@ const DUCKDB_PATH =
 const DASHBOARD_URL = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const SCREENSHOT_NAME =
   process.env.TACTIX_SCREENSHOT_NAME ||
-  'feature-147-card-reorder-2026-01-28.png';
+  'feature-147-card-reorder-2026-02-08.png';
 const DASHBOARD_PARSED = new URL(DASHBOARD_URL);
 const UI_HOST = DASHBOARD_PARSED.hostname || '127.0.0.1';
 const UI_PORT = Number(DASHBOARD_PARSED.port || '5173');

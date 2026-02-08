@@ -1,3 +1,5 @@
+"""Database schema name definitions."""
+
 from dataclasses import dataclass
 
 
@@ -13,3 +15,13 @@ class DbSchemas:
 
     analysis: str = "tactix_analysis"
     pgn: str = "tactix_pgns"
+
+
+ANALYSIS_SCHEMA = DbSchemas().analysis
+PGN_SCHEMA = DbSchemas().pgn
+
+__all__ = [
+    "ANALYSIS_SCHEMA",
+    "PGN_SCHEMA",
+    "DbSchemas",
+]

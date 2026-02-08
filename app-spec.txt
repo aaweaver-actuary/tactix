@@ -1,191 +1,386 @@
 # TACTIX — Personal Chess Tactics Intelligence & Training Platform
 
-## 1. Project Name
+**MAJOR REFACTORING NOTE:** This spec is a complete rewrite of the original "Chess Tactics Trainer" spec, with a focus on clarity, precision, and a more modular architecture. All previous requirements are superseded by this document.
+
+### MVP Spec
+
+## Project Name
 **TACTIX** (Tactics Analysis, Collection, Training, and Insight eXplorer)
 
 ---
 
-## 2. High-Level Goal
+## Goal
 
-Build an automated, reproducible system that:
+Build a daily-usable system that helps the user (900 blitz / 1100 rapid) improve by:
+1) **Avoiding obvious blunders** (hanging own pieces)
+2) **Taking obvious opportunities** (capturing opponent hanging pieces)
+3) **Spotting forced finishes** (mate in 1 / mate in 2)
+4) Turning misses into a **practice queue** of concrete positions
 
-1. Ingests your games from **Lichess** and **Chess.com**
-2. Extracts all positions where **you had to make a move**
-3. Analyzes those positions for **basic tactical opportunities**
-4. Records which tactics were **available, found, missed, or failed**
-5. Aggregates long-term statistics on tactical performance
-6. Provides an interactive dashboard to:
-   - explore trends
-   - drill missed tactics from *your own games*
-   - track improvement over time
-
-**Non-goal:** a generic tactics trainer.  
-**Goal:** diagnostics + training grounded in your real decisions.
+This MVP intentionally prioritizes **high precision** over exhaustive tactics coverage.
 
 ---
 
-## 3. Design Principles
+## Canonical Definitions (MVP)
 
-- **Batch-first, UI-second**: full headless execution (Airflow/cron).
-- **Reproducibility**: deterministic engine settings; versioned datasets.
-- **Separation of concerns**:
-  - Rust: PGN parsing + position enumeration
-  - Python: orchestration + engine integration + analytics
-  - React: exploration + training UX
-- **DuckDB as system-of-record**
-- **Explainability**: each tactic includes a human-readable explanation.
+### Time window
+- MVP supports filtering by:
+  - date range (inclusive)
+  - source (`chess.com`, `lichess`)
+  - time control (`bullet`, `blitz`, `rapid`)
+- “Opening phase” detection is deferred; opening-trap tracking is **not** required in MVP.
 
----
+### Side
+- “User” is always the tracked account. Each game has `user_color` = `white|black`.
 
-## 4. Key Questions This Should Answer
+### Opportunity types (MVP)
+Only these are required:
+- `OPP_HANGING_PIECE` — opponent has a capturable piece that is “free enough” to take
+- `USER_HANGING_PIECE` — after the user’s move, the user has left a piece hanging
+- `MATE_IN_1`
+- `MATE_IN_2`
 
-- What motifs do I consistently miss?
-- How does miss-rate change with rating?
-- Do I miss tactics more in time trouble?
-- Does finding/missing a tactic correlate with winning?
-- What should I drill this week?
-- Am I improving (rolling 7/30 game averages)?
+### Conversion (MVP)
+- An opportunity is “converted” if the user’s move:
+  - captures the hanging piece (for `OPP_HANGING_PIECE`), OR
+  - plays a move that is part of the forced mate line (`MATE_IN_1/2`)
 
----
+### Practice queue triggers (MVP)
+Add a practice position when:
+1) User **misses** an `OPP_HANGING_PIECE` opportunity (did not capture when available)
+2) User **misses** `MATE_IN_1` or `MATE_IN_2`
+3) User **creates** a `USER_HANGING_PIECE` blunder (their move leaves a piece en prise)
 
-## 5. Technology Stack
-
-### Backend / Analysis
-- Orchestration: **Apache Airflow**
-- Runtime: **Python 3.12**
-- Performance chess logic: **Rust via `maturin`**
-- Engine: **Stockfish via `python-chess`**
-- Database: **DuckDB**
-- Storage: **Parquet** (local filesystem)
-- API: **FastAPI**
-- Streaming: **Server-Sent Events (SSE)**
-
-### Frontend
-- Framework: **React + Vite**
-- Styling: **Tailwind CSS**
-- State: hooks + context
-- Routing: **React Router**
-- Chess UI: **react-chessboard**
-- Charts: lightweight (SVG/Canvas)
-- Auth: local token-based (single user initially)
+Practice queue stores the **pre-decision position**:
+- missed hanging piece / missed mate: the FEN **before the user’s move**
+- hanging own piece: the FEN **after the user’s move** (i.e., position where the piece is now hanging)
+  - also store the “blunder move” UCI for context
 
 ---
 
-## 6. System Architecture
+## System Scope (MVP)
 
-Airflow DAGs orchestrate ingestion, analysis, and metric refresh.  
-FastAPI serves analytics and practice endpoints.  
-React provides exploration and training UI.
+### Inputs
+- Games fetched from chess.com and/or lichess APIs.
+- PGN is source of truth.
 
----
-
-## 7. Core Features
-
-### 7.1 Game Ingestion
-- Sources: Lichess API, Chess.com API
-- Incremental sync
-- Raw PGN preserved verbatim
-- Metadata: rating, time control, result, color, timestamps
-
-### 7.2 Position Extraction (Rust)
-- Replay games move-by-move
-- Extract FENs only when the user is to move
-- Record move number, ply, time remaining, and user move
-
-### 7.3 Tactical Detection
-- Fixed Stockfish version and settings
-- Motifs:
-  - Mate in 1
-  - Mate in 2
-  - Fork / double attack
-  - Pin
-  - Skewer
-  - Discovered attack
-  - Discovered check
-  - Hanging piece
-- Each tactic includes best line, evaluation delta, severity, explanation
-
-### 7.4 Outcome Classification
-- found / missed / failed_attempt / unclear
-- Based on user move vs engine best line and eval swing
-
-### 7.5 Aggregation & Metrics
-- Miss rate by motif
-- Trends by rating and time control
-- Win rate conditional on tactic outcome
-- Rolling averages
+### Outputs
+- Stored analyzed opportunities per user-move position
+- Stored practice queue items
+- Dashboard API returning:
+  - summary stats
+  - game list for filters
+  - practice queue list for filters
 
 ---
 
-## 8. Dashboard
+## Architecture (Recommended)
 
-### Analytics
-- Motif breakdowns
-- Timelines
-- Filters (date, rating, motif, site, time control)
+Use a ports/adapters + use-case layout:
 
-### Practice Mode
-- Drill missed tactics from your own games
-- Interactive board
-- Immediate feedback and explanation
-- Track practice success over time
-
----
-
-## 9. DuckDB Schema (Initial)
-
-Tables:
-- games
-- raw_pgns
-- positions
-- tactics
-- tactic_outcomes
-- training_attempts
-
----
-
-## 10. API (FastAPI)
-
-- `GET /api/stats/*`
-- `GET /api/tactics/search`
-- `GET /api/practice/next`
-- `POST /api/practice/attempt`
-- `POST /api/jobs/*`
-- `GET /api/jobs/{id}/stream`
+- `domain/`
+  - chess primitives (FEN, move UCI, piece IDs)
+  - tactics detection (detectors + shared predicates)
+- `ports/`
+  - `GameSourceClient`
+  - `GameStore`
+  - `AnalysisStore`
+  - `PracticeStore`
+- `app/use_cases/`
+  - `SyncGames`
+  - `ExtractUserMovePositions`
+  - `AnalyzeOpportunities`
+  - `UpdatePracticeQueue`
+  - `BuildDashboard`
+- `infra/clients/`
+  - `ChessComClientAdapter`
+  - `LichessClientAdapter`
+- `infra/db/`
+  - `DuckDbAnalysisStoreAdapter` (optional)
+  - `PostgresStoreAdapter` (canonical MVP verification target)
+- `api/` (FastAPI thin layer)
+- `client/` (React dashboard)
 
 ---
 
-## 11. Automation (Airflow)
+## Data Model (Postgres) — MVP Tables
 
-DAGs:
-1. daily_game_sync
-2. extract_positions
-3. analyze_tactics
-4. refresh_metrics
+### 1) games
+**Purpose:** canonical game metadata and identity.
 
-All DAGs must be idempotent and resumable.
+Columns:
+- `game_id` (PK, stable string; include source prefix)
+- `source` (`chess.com|lichess`)
+- `played_at` (timestamp)
+- `time_control` (`bullet|blitz|rapid|classical|unknown`)
+- `user_id` (tracked account id)
+- `user_color` (`white|black`)
+- `user_rating` (int, nullable)
+- `opp_rating` (int, nullable)
+- `result` (`win|loss|draw|unknown`)
+- `pgn` (text or stored externally with pointer)
 
----
-
-## 12. Testing
-
-- Rust: PGN → FEN golden tests
-- Python: deterministic Stockfish tests
-- Integration: end-to-end pipeline assertions
-
----
-
-## 13. Non-Goals
-
-- Social features
-- Cloud hosting
-- Opening theory tooling
-- Endgame tablebases
+Indexes:
+- `(user_id, played_at)`
+- `(user_id, source, time_control, played_at)`
 
 ---
 
-## 14. Success Criteria
+### 2) positions
+**Purpose:** every position where the user is to move (and optionally post-move position for blunder checks).
 
-- Reproducible analysis
-- Clear tactical weaknesses identified
-- Measurable improvement via practice loop
+Columns:
+- `position_id` (PK; hash of fen + side-to-move)
+- `game_id` (FK)
+- `ply` (int; halfmove index)
+- `fen` (text)
+- `user_to_move` (bool; should be true for primary records)
+- `created_at` (timestamp)
+
+Indexes:
+- `(game_id, ply)`
+- `(user_id, created_at)` via join to games or denormalize `user_id`
+
+---
+
+### 3) opportunities
+**Purpose:** detected opportunities for a given position.
+
+Columns:
+- `opportunity_id` (PK)
+- `position_id` (FK)
+- `type` (`OPP_HANGING_PIECE|USER_HANGING_PIECE|MATE_IN_1|MATE_IN_2`)
+- `target_piece` (nullable; e.g. `n/b/r/q/p`)
+- `target_square` (nullable; e.g. `e5`)
+- `best_line_uci` (nullable; space-separated UCI moves)
+- `engine_depth` (nullable)
+- `confidence` (`high|medium|low`)
+- `created_at` (timestamp)
+
+Indexes:
+- `(position_id)`
+- `(type, created_at)`
+
+---
+
+### 4) user_moves
+**Purpose:** what the user actually played from each position.
+
+Columns:
+- `user_move_id` (PK)
+- `position_id` (FK; pre-move position where user decided)
+- `played_uci` (text)
+- `played_at` (timestamp; from game)
+- `created_at` (timestamp)
+
+Indexes:
+- `(position_id)`
+
+---
+
+### 5) conversions
+**Purpose:** computed mapping between opportunities and user actions (conversion vs miss).
+
+Columns:
+- `conversion_id` (PK)
+- `opportunity_id` (FK)
+- `position_id` (FK)
+- `converted` (bool)
+- `conversion_reason` (text; e.g., `captured_target`, `played_mate_line`, `other`)
+- `created_at` (timestamp)
+
+Indexes:
+- `(opportunity_id)`
+- `(position_id, converted)`
+
+---
+
+### 6) practice_queue
+**Purpose:** positions to drill (missed or blundered).
+
+Columns:
+- `practice_id` (PK)
+- `user_id` (tracked account id)
+- `source` (`chess.com|lichess`)
+- `time_control` (`bullet|blitz|rapid|unknown`)
+- `game_id` (FK)
+- `position_id` (FK)
+- `tactic_type` (same as opportunity type + possibly `MISSED_...` prefix)
+- `trigger` (`missed_opportunity|created_blunder`)
+- `due_at` (timestamp; initial = now)
+- `interval_days` (int; initial = 0 or 1)
+- `ease` (float; initial = 2.5)
+- `created_at` (timestamp)
+
+Indexes:
+- `(user_id, due_at)`
+- `(user_id, source, time_control, created_at)`
+
+---
+
+## Detection Rules (MVP) — Required Behavior
+
+### A) Opponent Hanging Piece (OPP_HANGING_PIECE)
+At each **pre-move** position for the user:
+- Identify opponent pieces that are capturable by a legal move.
+- “High confidence” when:
+  - captured piece is undefended OR
+  - simple exchange check suggests material win
+- Must exclude illegal captures and king-in-check violations.
+
+Output:
+- opportunity record with `target_piece`, `target_square`
+- `best_line_uci` optional (nice-to-have)
+
+Conversion:
+- converted if user’s actual move captures that target square / piece.
+
+Practice trigger:
+- add to practice queue if not converted.
+
+---
+
+### B) Mate in 1 / Mate in 2
+At each pre-move position:
+- If engine finds forced mate in 1 or 2, record the opportunity.
+- `best_line_uci` is required (first move at minimum).
+
+Conversion:
+- converted if user played the first move in `best_line_uci`.
+
+Practice trigger:
+- add if not converted.
+
+---
+
+### C) User Hanging Piece (USER_HANGING_PIECE)
+After user plays move:
+- Evaluate the **post-move** position:
+  - if a user piece becomes capturable “for free enough”
+- Create opportunity attached to a position record representing the post-move position
+  - or store post-move fen + link it to the pre-move decision
+
+Practice trigger:
+- always add pre/post as defined above (prefer post-move FEN for drill: “spot your blunder”).
+
+---
+
+## Use-Cases (MVP)
+
+### 1) SyncGames(date_range, source)
+- fetch games from API client
+- persist `games` (+ pgn)
+- idempotent and incremental
+
+### 2) ExtractUserMovePositions(game_id)
+- parse PGN
+- create `positions` for each user-to-move turn
+- persist `user_moves` per position (actual move played)
+
+### 3) AnalyzeOpportunities(position_id)
+- run detectors for hanging pieces + mate in 1/2
+- persist `opportunities`
+
+### 4) ComputeConversions(position_id)
+- compare opportunities to user move
+- persist `conversions`
+
+### 5) UpdatePracticeQueue(position_id)
+- apply practice triggers
+- insert practice items (dedupe by `(user_id, position_id, tactic_type)`)
+
+### 6) BuildDashboard(filters)
+- query summary stats + list views
+
+---
+
+## API (FastAPI) — MVP Endpoints
+
+All endpoints accept:
+- `user_id` (or implicit current user)
+- optional filters: `start_date`, `end_date`, `source`, `time_control`
+
+### GET /api/dashboard/summary
+Returns:
+- total_games
+- total_positions_analyzed
+- opportunities_by_type:
+  - count
+  - converted_count
+  - conversion_rate
+- blunders_by_piece_type (derived from USER_HANGING_PIECE opportunities)
+- recent_trends (optional: last 7 days)
+
+### GET /api/dashboard/games
+Returns list of games for filters:
+- game_id, played_at, source, time_control, result
+- user_rating, opp_rating, rating_diff
+
+### GET /api/practice-queue
+Returns due and/or recent items:
+- practice_id
+- position fen (or position_id + resolve)
+- tactic_type, trigger
+- game_id, ply
+- (optional) target_square, best_line_uci
+
+### POST /api/pipeline/run?start_date=...&end_date=...&source=...
+Kicks off pipeline run (synchronous MVP OK, async later):
+- returns run summary (games fetched, positions analyzed, opportunities found, practice items added)
+
+---
+
+## Client (React) — MVP Screens
+
+### A) Filters Bar (Global)
+- Date range picker
+- Source dropdown (All, chess.com, lichess)
+- Time control dropdown (All, bullet, blitz, rapid)
+- Apply button
+- Stable `data-testid` for each control
+
+### B) Summary Cards
+Cards:
+1. Games analyzed
+2. Positions analyzed
+3. Opportunities by type + conversion rate
+4. “You left pieces hanging” rate
+5. “You missed free pieces” rate
+
+### C) Games Table
+- shows filtered games
+- exactly matches API results
+- clickable row shows details (optional in MVP)
+
+### D) Practice Queue Panel
+- list of due positions
+- shows FEN + tactic type + “why it’s here”
+- (optional) mini board rendering later
+
+---
+
+## Tests (MVP) — What Must Exist
+
+### Layered tests
+1) **DB-level** SQL assertions for canonical scenario(s)
+2) **API-level** contract tests for endpoints
+3) **Client mocked** rendering tests (CI gate)
+4) **Client E2E** puppeteer test with screenshot artifact (CI gate when stable)
+
+### Canonical historical test case
+- Use the 2026-02-01 chess.com bullet scenario as a “golden truth” verification (already defined elsewhere).
+
+---
+
+## Definition of Done (MVP)
+
+- Pipeline runs end-to-end for a date range
+- Dashboard summary matches DB truth
+- Practice queue is populated based on missed tactics/blunders
+- Client shows:
+  - correct filtered games
+  - opportunity conversion rates
+  - practice queue items
+- Canonical scenario tests pass across DB + API + client (mocked + puppeteer)
+
+END OF MVP SPEC

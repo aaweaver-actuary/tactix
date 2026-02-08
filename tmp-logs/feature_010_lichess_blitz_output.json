@@ -1,0 +1,82 @@
+{
+  "db_checks": {
+    "conversions_missing_opportunity": 0,
+    "games_null_game_id": 0,
+    "opportunity_motifs": {
+      "capture": 1,
+      "hanging_piece": 1,
+      "initiative": 4,
+      "mate": 1
+    },
+    "outcome_counts": {
+      "found": 1,
+      "missed": 5,
+      "unclear": 1
+    },
+    "positions_missing_fen": 0,
+    "positions_user_to_move": 7,
+    "raw_pgns_null_game_id": 0,
+    "tactic_outcomes_missing_tactic": 0,
+    "user_moves_duplicates": 0,
+    "user_moves_missing": 0
+  },
+  "pipeline_response": {
+    "counts": {
+      "conversions": 7,
+      "games": 3,
+      "opportunities": 7,
+      "positions": 7,
+      "practice_queue": 5,
+      "user_moves": 7
+    },
+    "motif_counts": {
+      "capture": 1,
+      "hanging_piece": 1,
+      "initiative": 4,
+      "mate": 1
+    },
+    "result": {
+      "checkpoint_ms": null,
+      "cursor": null,
+      "fetched_games": 3,
+      "last_timestamp_ms": 1717699200000,
+      "metrics_version": 1,
+      "positions": 7,
+      "postgres_raw_pgns_inserted": 0,
+      "raw_pgns_hashed": 3,
+      "raw_pgns_inserted": 3,
+      "raw_pgns_matched": 3,
+      "since_ms": 1717545600000,
+      "source": "lichess",
+      "tactics": 7,
+      "user": "lichess"
+    },
+    "run_id": "1b965c103d7f4919ad18edbd58833920",
+    "status": "ok",
+    "window_end_ms": 1717718400000,
+    "window_start_ms": 1717545600000
+  },
+  "pipeline_status": 200,
+  "summary_response": {
+    "source": "lichess",
+    "summary": {
+      "conversions": 7,
+      "games": 3,
+      "opportunities": 7,
+      "positions": 7,
+      "practice_queue": 5,
+      "user_moves": 7
+    }
+  },
+  "summary_status": 200,
+  "table_counts": {
+    "conversions": 7,
+    "games": 3,
+    "opportunities": 7,
+    "positions": 7,
+    "practice_queue": 5,
+    "raw_pgns": 3,
+    "tactic_outcomes": 7,
+    "user_moves": 7
+  }
+}

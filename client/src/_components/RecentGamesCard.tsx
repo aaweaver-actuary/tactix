@@ -1,10 +1,10 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
-import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
+import BaseCard, { BaseCardDragProps } from './BaseCard';
 import RecentGamesTable from './RecentGamesTable';
 
-interface RecentGamesCardProps {
+interface RecentGamesCardProps extends BaseCardDragProps {
   data: DashboardPayload['recent_games'];
   columns: ColumnDef<DashboardPayload['recent_games'][number]>[];
   onRowClick?: (row: DashboardPayload['recent_games'][number]) => void;
@@ -12,9 +12,6 @@ interface RecentGamesCardProps {
     row: DashboardPayload['recent_games'][number],
     index: number,
   ) => string;
-  dragHandleProps?: BaseCardDragHandleProps;
-  dragHandleLabel?: string;
-  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 export default function RecentGamesCard({
@@ -22,9 +19,7 @@ export default function RecentGamesCard({
   columns,
   onRowClick,
   rowTestId,
-  dragHandleProps,
-  dragHandleLabel,
-  onCollapsedChange,
+  ...dragProps
 }: RecentGamesCardProps) {
   return (
     <BaseCard
@@ -37,9 +32,7 @@ export default function RecentGamesCard({
         </div>
       }
       contentClassName="pt-3"
-      dragHandleProps={dragHandleProps}
-      dragHandleLabel={dragHandleLabel}
-      onCollapsedChange={onCollapsedChange}
+      {...dragProps}
     >
       <RecentGamesTable
         data={data}

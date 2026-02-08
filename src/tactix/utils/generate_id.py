@@ -1,3 +1,5 @@
+"""Helpers for generating unique identifiers."""
+
 from uuid import uuid4
 
 

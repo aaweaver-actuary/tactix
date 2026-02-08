@@ -1,7 +1,10 @@
+"""Maybe upsert analysis rows into Postgres."""
+
 from __future__ import annotations
 
-from tactix.pipeline_state__pipeline import logger
-from tactix.postgres_store import upsert_analysis_tactic_with_outcome
+# pylint: disable=broad-exception-caught
+from tactix.define_pipeline_state__pipeline import logger
+from tactix.upsert_analysis_tactic_with_outcome import upsert_analysis_tactic_with_outcome
 
 
 def _maybe_upsert_postgres_analysis(
@@ -21,5 +24,4 @@ def _maybe_upsert_postgres_analysis(
     except Exception as exc:
         logger.warning("Postgres analysis upsert failed: %s", exc)
         return False
-    else:
-        return True
+    return True

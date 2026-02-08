@@ -1,9 +1,9 @@
 import { PostgresAnalysisRow } from '../api';
 import Badge from './Badge';
-import BaseCard from './BaseCard';
+import BaseCard, { BaseCardDragProps } from './BaseCard';
 import Text from './Text';
 
-interface PostgresAnalysisCardProps {
+interface PostgresAnalysisCardProps extends BaseCardDragProps {
   rows: PostgresAnalysisRow[];
   loading: boolean;
 }
@@ -11,13 +11,13 @@ interface PostgresAnalysisCardProps {
 export default function PostgresAnalysisCard({
   rows,
   loading,
+  ...dragProps
 }: PostgresAnalysisCardProps) {
   if (!rows.length && !loading) return null;
 
   return (
     <BaseCard
       className="p-4"
-      collapsible={false}
       header={
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-display text-sand">
@@ -28,6 +28,7 @@ export default function PostgresAnalysisCard({
       }
       contentClassName="pt-3"
       data-testid="postgres-analysis"
+      {...dragProps}
     >
       {rows.length ? (
         <ul className="space-y-2 text-xs text-sand/70">

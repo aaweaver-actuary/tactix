@@ -4,7 +4,7 @@ import sys
 import time
 
 from tactix.config import Settings
-from tactix.postgres_store import postgres_connection
+from tactix.postgres_connection import postgres_connection
 
 
 def build_table_name() -> str:

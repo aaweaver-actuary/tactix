@@ -1,15 +1,20 @@
+"""Retry wrapper for Stockfish analysis."""
+
 from __future__ import annotations
 
 import time
+from importlib import import_module
 
 import chess.engine
 
+from tactix.analyze_position import analyze_position
 from tactix.config import Settings
-from tactix.utils.logger import get_logger
+from tactix.utils import Logger, funclogger
 
-logger = get_logger(__name__)
+logger = Logger(__name__)
 
 
+@funclogger
 def _analyse_with_retries(
     engine,
     position: dict[str, object],
@@ -23,7 +28,6 @@ def _analyse_with_retries(
         except (
             chess.engine.EngineTerminatedError,
             chess.engine.EngineError,
-            BrokenPipeError,
             OSError,
         ) as exc:
             if attempt >= max_retries:
@@ -32,16 +36,41 @@ def _analyse_with_retries(
     return None
 
 
+def analyse_with_retries(
+    engine,
+    position: dict[str, object],
+    settings: Settings,
+) -> tuple[dict[str, object], dict[str, object]] | None:
+    """Analyze a position with Stockfish retry logic."""
+    return _analyse_with_retries(engine, position, settings)
+
+
+@funclogger
 def _analyse_position__pipeline(
     position: dict[str, object],
     engine,
     settings: Settings,
 ) -> tuple[dict[str, object], dict[str, object]] | None:
-    from tactix import pipeline as pipeline_module  # noqa: PLC0415
+    """
+    Analyzes a chess position using the provided engine and settings,
+    with support for pipeline integration.
 
-    return pipeline_module.analyze_position(position, engine, settings=settings)
+    Args:
+        position (dict[str, object]): The chess position to analyze, represented as a dictionary.
+        engine: The chess engine instance to use for analysis.
+        settings (Settings): Configuration settings for the analysis.
+
+    Returns:
+        tuple[dict[str, object], dict[str, object]] | None:
+            A tuple containing the analysis results and additional information as dictionaries,
+            or None if the analysis could not be performed.
+    """
+    pipeline_module = import_module("tactix.pipeline")
+    analyze_fn = getattr(pipeline_module, "analyze_position", analyze_position)
+    return analyze_fn(position, engine, settings=settings)
 
 
+@funclogger
 def _handle_stockfish_retry(
     engine,
     attempt: int,
@@ -60,6 +89,7 @@ def _handle_stockfish_retry(
     _sleep_with_backoff(backoff_seconds, attempt)
 
 
+@funclogger
 def _sleep_with_backoff(backoff_seconds: float, attempt: int) -> None:
     if backoff_seconds:
         time.sleep(backoff_seconds * (2 ** (attempt - 1)))

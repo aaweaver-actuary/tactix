@@ -4,14 +4,11 @@ import unittest
 from pathlib import Path
 
 from tactix.config import DEFAULT_BLITZ_STOCKFISH_DEPTH, Settings
-from tactix.db.duckdb_store import (
-    get_connection,
-    init_schema,
-    insert_positions,
-    upsert_tactic_with_outcome,
-)
-from tactix.stockfish_runner import StockfishEngine
-from tactix.tactics_analyzer import analyze_position
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.position_repository_provider import insert_positions
+from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
+from tactix.StockfishEngine import StockfishEngine
+from tactix.analyze_position import analyze_position
 from tests.fixture_helpers import pin_fixture_position
 
 

@@ -71,6 +71,15 @@ async function startFrontendIfNeeded() {
   }
 }
 
+async function isBackendRunning() {
+  try {
+    await waitForPort('127.0.0.1', 8000, 1000);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
 function startBackend() {
   return new Promise((resolve, reject) => {
     const proc = spawn(
@@ -118,8 +127,9 @@ function startBackend() {
 
 (async () => {
   await startFrontendIfNeeded();
+  const backendRunning = await isBackendRunning();
   console.log('Starting backend...');
-  const backend = await startBackend();
+  const backend = backendRunning ? null : await startBackend();
   try {
     console.log('Launching browser...');
     const browser = await puppeteer.launch({ headless: 'new' });
@@ -161,6 +171,8 @@ function startBackend() {
 
     await browser.close();
   } finally {
-    backend.kill();
+    if (backend) {
+      backend.kill();
+    }
   }
 })();

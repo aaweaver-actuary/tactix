@@ -1,3 +1,5 @@
+"""Pydantic models for chess positions."""
+
 import chess
 from pydantic import BaseModel
 

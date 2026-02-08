@@ -1,3 +1,5 @@
+"""API handler for checking job status."""
+
 from __future__ import annotations
 
 import time as time_module
@@ -24,6 +26,7 @@ def get_job_status(
     backfill_start_ms: Annotated[int | None, Query(ge=0)] = None,
     backfill_end_ms: Annotated[int | None, Query(ge=0)] = None,
 ) -> dict[str, object]:
+    """Return metadata for a supported job id."""
     if job_id not in _SUPPORTED_JOBS:
         raise HTTPException(status_code=404, detail="Job not supported")
     normalized_source = _normalize_source(source)

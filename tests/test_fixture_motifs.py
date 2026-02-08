@@ -8,8 +8,8 @@ import chess.pgn
 
 from tactix.config import Settings
 from tactix.pgn_utils import extract_game_id, split_pgn_chunks
-from tactix.stockfish_runner import StockfishEngine
-from tactix.tactics_analyzer import analyze_position
+from tactix.StockfishEngine import StockfishEngine
+from tactix.analyze_position import analyze_position
 
 
 def _fixture_positions(fixture_path: Path) -> list[dict[str, object]]:

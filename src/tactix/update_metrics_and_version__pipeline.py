@@ -1,7 +1,10 @@
+"""Update metrics summary and version counters."""
+
 from __future__ import annotations
 
 from tactix.config import Settings
-from tactix.db.duckdb_store import update_metrics_summary, write_metrics_version
+from tactix.db.duckdb_store import write_metrics_version
+from tactix.db.metrics_repository_provider import update_metrics_summary
 
 
 def _update_metrics_and_version(settings: Settings, conn) -> int:

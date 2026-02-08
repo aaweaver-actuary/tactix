@@ -32,7 +32,7 @@ class AirflowDagHelpersTests(unittest.TestCase):
         self.assertEqual(custom["retries"], 5)
 
     def test_to_epoch_ms_handles_naive_and_aware(self) -> None:
-        naive = datetime(2026, 1, 30, 12, 0, 0)
+        naive = datetime(2026, 1, 30, 12, 0, 0)  # noqa: DTZ001
         expected = int(naive.replace(tzinfo=timezone.utc).timestamp() * 1000)
         self.assertEqual(to_epoch_ms(naive), expected)
 

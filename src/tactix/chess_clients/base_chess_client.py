@@ -1,3 +1,5 @@
+"""Base chess client classes and helpers."""
+
 from __future__ import annotations
 
 import logging

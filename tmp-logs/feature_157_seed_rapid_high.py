@@ -13,16 +13,14 @@ from tactix.db.duckdb_store import (
     upsert_tactic_with_outcome,
 )
 from tactix.pgn_utils import split_pgn_chunks
-from tactix.stockfish_runner import StockfishEngine
-from tactix.tactics_analyzer import analyze_position
+from tactix.StockfishEngine import StockfishEngine
+from tactix.analyze_position import analyze_position
 
 
 def _discovered_attack_high_fixture_position() -> dict[str, object]:
     fixture_path = Path("tests/fixtures/chesscom_rapid_sample.pgn")
     chunks = split_pgn_chunks(fixture_path.read_text())
-    discovered_chunk = next(
-        chunk for chunk in chunks if "Discovered Attack High" in chunk
-    )
+    discovered_chunk = next(chunk for chunk in chunks if "Discovered Attack High" in chunk)
     game = chess.pgn.read_game(StringIO(discovered_chunk))
     if not game:
         raise SystemExit("No discovered attack high fixture game found")

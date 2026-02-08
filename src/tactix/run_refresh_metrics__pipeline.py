@@ -1,15 +1,18 @@
+"""Refresh metrics summaries and version metadata."""
+
 from __future__ import annotations
 
+from tactix.app.use_cases.pipeline_support import _emit_progress
 from tactix.config import Settings, get_settings
+from tactix.dashboard_query import DashboardQuery
+from tactix.db.dashboard_repository_provider import fetch_metrics
 from tactix.db.duckdb_store import (
-    fetch_metrics,
     get_connection,
     init_schema,
-    update_metrics_summary,
     write_metrics_version,
 )
-from tactix.emit_progress__pipeline import _emit_progress
-from tactix.pipeline_state__pipeline import ProgressCallback
+from tactix.db.metrics_repository_provider import update_metrics_summary
+from tactix.define_pipeline_state__pipeline import ProgressCallback
 
 
 def run_refresh_metrics(
@@ -17,6 +20,7 @@ def run_refresh_metrics(
     source: str | None = None,
     progress: ProgressCallback | None = None,
 ) -> dict[str, object]:
+    """Refresh metrics summary rows and return metadata."""
     settings = settings or get_settings(source=source)
     if source:
         settings.source = source
@@ -47,5 +51,5 @@ def run_refresh_metrics(
         "source": settings.source,
         "user": settings.user,
         "metrics_version": metrics_version,
-        "metrics_rows": len(fetch_metrics(conn, source=settings.source)),
+        "metrics_rows": len(fetch_metrics(conn, DashboardQuery(source=settings.source))),
     }

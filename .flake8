@@ -1,0 +1,31 @@
+[flake8]
+max-line-length = 100
+select =
+    E,
+    F,
+    W
+extend-exclude =
+    *.pyi
+extend-ignore =
+    CFQ001,
+    CFQ004,
+    D100,
+    D101,
+    D102,
+    D103,
+    D104,
+    D105,
+    D106,
+    D107,
+    D202,
+    D205,
+    D400,
+    D401,
+    ECE001,
+    E203,
+    Q000,
+    TAE002,
+    W503
+per-file-ignores =
+    src/tactix/chess_clients/__init__.py:F401
+    src/tactix/models/__init__.py:F401

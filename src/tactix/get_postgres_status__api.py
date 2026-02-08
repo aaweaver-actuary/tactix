@@ -1,17 +1,17 @@
+"""API endpoint for Postgres status payloads."""
+
 from __future__ import annotations
 
-from fastapi import Query
+from typing import Annotated
 
-from tactix.api_logger__tactix import logger
-from tactix.base_db_store import BaseDbStoreContext
-from tactix.config import get_settings
-from tactix.postgres_store import PostgresStore, serialize_status
+from fastapi import Depends, Query
+
+from tactix.app.use_cases.postgres import PostgresUseCase, get_postgres_use_case
 
 
-def postgres_status(limit: int = Query(10, ge=1, le=50)) -> dict[str, object]:
-    settings = get_settings()
-    store = PostgresStore(BaseDbStoreContext(settings=settings, logger=logger))
-    status = store.get_status()
-    payload = serialize_status(status)
-    payload["events"] = store.fetch_ops_events(limit=limit)
-    return payload
+def postgres_status(
+    use_case: Annotated[PostgresUseCase, Depends(get_postgres_use_case)],
+    limit: int = Query(10, ge=1, le=50),  # noqa: B008
+) -> dict[str, object]:
+    """Return Postgres status and recent ops events."""
+    return use_case.get_status(limit)

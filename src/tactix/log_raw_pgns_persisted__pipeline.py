@@ -1,7 +1,10 @@
+"""Log counts of raw PGNs persisted during sync."""
+
 from __future__ import annotations
 
 from tactix.config import Settings
-from tactix.pipeline_state__pipeline import GameRow, logger
+from tactix.define_pipeline_state__pipeline import logger
+from tactix.GameRow import GameRow
 
 
 def _log_raw_pgns_persisted(

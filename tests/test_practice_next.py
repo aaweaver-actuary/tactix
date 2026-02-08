@@ -5,10 +5,9 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from tactix.db.duckdb_store import (
-    get_connection,
-    init_schema,
-    insert_positions,
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.position_repository_provider import insert_positions
+from tactix.db.tactic_repository_provider import (
     record_training_attempt,
     upsert_tactic_with_outcome,
 )

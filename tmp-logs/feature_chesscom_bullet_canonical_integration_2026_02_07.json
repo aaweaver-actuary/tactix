@@ -1,0 +1,105 @@
+{
+  "pipeline": {
+    "status": "ok",
+    "run_id": "df98dc7034084621a11eaaec3645acfc",
+    "result": {
+      "source": "chesscom",
+      "user": "groborger",
+      "fetched_games": 2,
+      "raw_pgns_inserted": 2,
+      "raw_pgns_hashed": 2,
+      "raw_pgns_matched": 2,
+      "postgres_raw_pgns_inserted": 0,
+      "positions": 20,
+      "tactics": 20,
+      "metrics_version": 1,
+      "checkpoint_ms": null,
+      "cursor": "1720740300000:2234567898",
+      "last_timestamp_ms": 1769953679000,
+      "since_ms": 0
+    },
+    "counts": {
+      "games": 2,
+      "positions": 20,
+      "user_moves": 20,
+      "opportunities": 20,
+      "conversions": 20,
+      "practice_queue": 2
+    },
+    "motif_counts": {
+      "escape": 1,
+      "hanging_piece": 5,
+      "initiative": 7,
+      "pin": 1,
+      "skewer": 6
+    },
+    "window_start_ms": 1769904000000,
+    "window_end_ms": 1769990400000
+  },
+  "recent_games": [
+    {
+      "game_id": "4857464682112090072",
+      "source": "chesscom",
+      "opponent": "skchess12ka4",
+      "result": "win",
+      "played_at": "2026-02-01T13:47:59+00:00",
+      "time_control": "120+1",
+      "user_color": "white"
+    },
+    {
+      "game_id": "3703973804664264256",
+      "source": "chesscom",
+      "opponent": "naveenaar",
+      "result": "loss",
+      "played_at": "2026-02-01T13:44:13+00:00",
+      "time_control": "120+1",
+      "user_color": "black"
+    }
+  ],
+  "win_delta": -6,
+  "loss_delta": 80,
+  "practice_queue": [
+    {
+      "tactic_id": 11,
+      "game_id": "3703973804664264256",
+      "position_id": 11,
+      "motif": "hanging_piece",
+      "severity": 1.5,
+      "best_uci": "d7f6",
+      "eval_cp": -455,
+      "created_at": "2026-02-07T08:15:52.279588",
+      "result": "missed",
+      "user_uci": "d7e5",
+      "eval_delta": -129,
+      "source": "chesscom",
+      "fen": "r1bqkr2/pppnbp1Q/8/3P4/P1B1p3/2P5/1P1PNPPP/RNB1K2R b KQq - 0 11",
+      "position_uci": "d7e5",
+      "san": "Ne5",
+      "ply": 21,
+      "move_number": 11,
+      "side_to_move": "black",
+      "clock_seconds": 106.4
+    },
+    {
+      "tactic_id": 10,
+      "game_id": "3703973804664264256",
+      "position_id": 10,
+      "motif": "hanging_piece",
+      "severity": 1.5,
+      "best_uci": "e7f6",
+      "eval_cp": -423,
+      "created_at": "2026-02-07T08:15:52.260005",
+      "result": "missed",
+      "user_uci": "h8f8",
+      "eval_delta": -110,
+      "source": "chesscom",
+      "fen": "r1bqk2r/pppnbpQp/8/3P4/P1B1p3/2P5/1P1PNPPP/RNB1K2R b KQkq - 0 10",
+      "position_uci": "h8f8",
+      "san": "Rf8",
+      "ply": 19,
+      "move_number": 10,
+      "side_to_move": "black",
+      "clock_seconds": 107.2
+    }
+  ]
+}

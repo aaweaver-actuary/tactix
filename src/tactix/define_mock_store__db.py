@@ -1,10 +1,14 @@
+"""Mock database store implementation."""
+
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from datetime import date, datetime
 from typing import cast
 
-from tactix.base_db_store import BaseDbStore, BaseDbStoreContext
+from tactix.dashboard_query import DashboardQuery, resolve_dashboard_query
+from tactix.define_base_db_store__db_store import BaseDbStore
+from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
 
 
 class MockDbStore(BaseDbStore):
@@ -26,65 +30,66 @@ class MockDbStore(BaseDbStore):
 
     def get_dashboard_payload(
         self,
-        source: str | None = None,
-        motif: str | None = None,
-        rating_bucket: str | None = None,
-        time_control: str | None = None,
-        start_date: datetime | None = None,
-        end_date: datetime | None = None,
+        query: DashboardQuery | str | None = None,
+        *,
+        filters: DashboardQuery | None = None,
+        **legacy: object,
     ) -> dict[str, object]:
+        query = resolve_dashboard_query(query, filters=filters, **legacy)
         payload = dict(self._payload)
-        normalized_source = None if source in (None, "all") else source
+        normalized_source = None if query.source in (None, "all") else query.source
         payload["source"] = normalized_source or "all"
         payload["user"] = self.settings.user
         payload["metrics"] = _filter_rows(
-            payload.get("metrics", []),
-            source=normalized_source,
-            motif=motif,
-            rating_bucket=rating_bucket,
-            time_control=time_control,
-            start_date=start_date,
-            end_date=end_date,
+            cast(Iterable[object], payload.get("metrics", [])),
+            DashboardQuery(
+                source=normalized_source,
+                motif=query.motif,
+                rating_bucket=query.rating_bucket,
+                time_control=query.time_control,
+                start_date=query.start_date,
+                end_date=query.end_date,
+            ),
         )
         payload["recent_games"] = _filter_rows(
-            payload.get("recent_games", []),
-            source=normalized_source,
-            motif=motif,
-            rating_bucket=rating_bucket,
-            time_control=time_control,
-            start_date=start_date,
-            end_date=end_date,
+            cast(Iterable[object], payload.get("recent_games", [])),
+            DashboardQuery(
+                source=normalized_source,
+                motif=query.motif,
+                rating_bucket=query.rating_bucket,
+                time_control=query.time_control,
+                start_date=query.start_date,
+                end_date=query.end_date,
+            ),
         )
         payload["positions"] = _filter_rows(
-            payload.get("positions", []),
-            source=normalized_source,
-            motif=motif,
-            rating_bucket=rating_bucket,
-            time_control=time_control,
-            start_date=start_date,
-            end_date=end_date,
+            cast(Iterable[object], payload.get("positions", [])),
+            DashboardQuery(
+                source=normalized_source,
+                motif=query.motif,
+                rating_bucket=query.rating_bucket,
+                time_control=query.time_control,
+                start_date=query.start_date,
+                end_date=query.end_date,
+            ),
         )
         payload["tactics"] = _filter_rows(
-            payload.get("tactics", []),
-            source=normalized_source,
-            motif=motif,
-            rating_bucket=rating_bucket,
-            time_control=time_control,
-            start_date=start_date,
-            end_date=end_date,
+            cast(Iterable[object], payload.get("tactics", [])),
+            DashboardQuery(
+                source=normalized_source,
+                motif=query.motif,
+                rating_bucket=query.rating_bucket,
+                time_control=query.time_control,
+                start_date=query.start_date,
+                end_date=query.end_date,
+            ),
         )
         return payload
 
 
 def _filter_rows(
     rows: Iterable[object],
-    *,
-    source: str | None,
-    motif: str | None,
-    rating_bucket: str | None,
-    time_control: str | None,
-    start_date: datetime | None,
-    end_date: datetime | None,
+    query: DashboardQuery,
 ) -> list[object]:
     filtered: list[object] = []
     for row in rows:
@@ -94,12 +99,7 @@ def _filter_rows(
         row_dict = cast(Mapping[str, object], row)
         if not _row_matches_filters(
             row_dict,
-            source=source,
-            motif=motif,
-            rating_bucket=rating_bucket,
-            time_control=time_control,
-            start_date=start_date,
-            end_date=end_date,
+            query,
         ):
             continue
         filtered.append(row)
@@ -108,21 +108,15 @@ def _filter_rows(
 
 def _row_matches_filters(
     row: Mapping[str, object],
-    *,
-    source: str | None,
-    motif: str | None,
-    rating_bucket: str | None,
-    time_control: str | None,
-    start_date: datetime | None,
-    end_date: datetime | None,
+    query: DashboardQuery,
 ) -> bool:
     return all(
         (
-            _matches_value(row, "source", source),
-            _matches_value(row, "motif", motif),
-            _matches_value(row, "rating_bucket", rating_bucket),
-            _matches_value(row, "time_control", time_control),
-            _matches_date_range(row, start_date, end_date),
+            _matches_value(row, "source", query.source),
+            _matches_value(row, "motif", query.motif),
+            _matches_value(row, "rating_bucket", query.rating_bucket),
+            _matches_value(row, "time_control", query.time_control),
+            _matches_date_range(row, query.start_date, query.end_date),
         )
     )
 

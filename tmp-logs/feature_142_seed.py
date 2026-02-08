@@ -13,8 +13,8 @@ from tactix.db.duckdb_store import (
     upsert_tactic_with_outcome,
 )
 from tactix.pgn_utils import split_pgn_chunks
-from tactix.stockfish_runner import StockfishEngine
-from tactix.tactics_analyzer import analyze_position
+from tactix.StockfishEngine import StockfishEngine
+from tactix.analyze_position import analyze_position
 
 
 def _skewer_blitz_high_position() -> dict[str, object]:

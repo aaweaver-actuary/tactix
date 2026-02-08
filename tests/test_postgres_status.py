@@ -1,7 +1,8 @@
 from fastapi.testclient import TestClient
-from unittest.mock import patch
+from unittest.mock import MagicMock
 
 from tactix.api import app
+from tactix.app.use_cases.postgres import get_postgres_use_case
 from tactix.config import get_settings
 
 
@@ -41,14 +42,16 @@ def test_postgres_raw_pgns_endpoint_returns_summary() -> None:
         ],
     }
 
-    with patch(
-        "tactix.get_postgres_raw_pgns__api.PostgresStore.fetch_raw_pgns_summary",
-        return_value=payload,
-    ):
+    use_case = MagicMock()
+    use_case.get_raw_pgns.return_value = payload
+    app.dependency_overrides[get_postgres_use_case] = lambda: use_case
+    try:
         response = client.get(
             "/api/postgres/raw_pgns",
             headers={"Authorization": f"Bearer {token}"},
         )
+    finally:
+        app.dependency_overrides = {}
 
     assert response.status_code == 200
     data = response.json()
@@ -59,14 +62,19 @@ def test_postgres_raw_pgns_endpoint_returns_summary() -> None:
 def test_postgres_analysis_endpoint_returns_rows() -> None:
     client = TestClient(app)
     token = get_settings().api_token
-    with patch(
-        "tactix.get_postgres_analysis__api.PostgresStore.fetch_analysis_tactics",
-        return_value=[{"tactic_id": 1, "motif": "fork"}],
-    ):
+    use_case = MagicMock()
+    use_case.get_analysis.return_value = {
+        "status": "ok",
+        "tactics": [{"tactic_id": 1, "motif": "fork"}],
+    }
+    app.dependency_overrides[get_postgres_use_case] = lambda: use_case
+    try:
         response = client.get(
             "/api/postgres/analysis",
             headers={"Authorization": f"Bearer {token}"},
         )
+    finally:
+        app.dependency_overrides = {}
 
     assert response.status_code == 200
     payload = response.json()
@@ -77,26 +85,24 @@ def test_postgres_analysis_endpoint_returns_rows() -> None:
 def test_postgres_status_endpoint_returns_payload() -> None:
     client = TestClient(app)
     token = get_settings().api_token
-    with (
-        patch("tactix.get_postgres_status__api.PostgresStore.get_status") as get_status,
-        patch("tactix.get_postgres_status__api.PostgresStore.fetch_ops_events", return_value=[]),
-    ):
-        get_status.return_value = type(
-            "MockStatus",
-            (),
-            {
-                "enabled": True,
-                "status": "ok",
-                "latency_ms": 1.0,
-                "error": None,
-                "schema": "tactix_ops",
-                "tables": ["tactix_ops.ops_events"],
-            },
-        )()
+    use_case = MagicMock()
+    use_case.get_status.return_value = {
+        "enabled": True,
+        "status": "ok",
+        "latency_ms": 1.0,
+        "error": None,
+        "schema": "tactix_ops",
+        "tables": ["tactix_ops.ops_events"],
+        "events": [],
+    }
+    app.dependency_overrides[get_postgres_use_case] = lambda: use_case
+    try:
         response = client.get(
             "/api/postgres/status",
             headers={"Authorization": f"Bearer {token}"},
         )
+    finally:
+        app.dependency_overrides = {}
 
     assert response.status_code == 200
     payload = response.json()

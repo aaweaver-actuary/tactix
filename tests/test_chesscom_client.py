@@ -11,8 +11,8 @@ from urllib.parse import parse_qs, urlparse
 import chess.pgn
 
 from tactix.config import Settings, get_settings
-from tactix.utils.logger import get_logger
-from tactix.chess_clients.chesscom_client import (
+from tactix.utils.logger import Logger
+from tactix.infra.clients.chesscom_client import (
     ARCHIVES_URL,
     ChesscomClient,
     ChesscomClientContext,
@@ -123,7 +123,7 @@ class ChesscomClientTests(unittest.TestCase):
         fake_get = make_fake_get(responses, captured_urls=captured_urls)
 
         with patch(
-            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            "tactix.infra.clients.chesscom_client.requests.get",
             side_effect=fake_get,
         ):
             result = fetch_incremental_games(settings, cursor=None)
@@ -173,7 +173,7 @@ class ChesscomClientTests(unittest.TestCase):
         fake_get = make_fake_get(responses)
 
         with patch(
-            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            "tactix.infra.clients.chesscom_client.requests.get",
             side_effect=fake_get,
         ):
             result = fetch_incremental_games(settings, cursor=None)
@@ -223,7 +223,7 @@ class ChesscomClientTests(unittest.TestCase):
         fake_get = make_fake_get(responses)
 
         with patch(
-            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            "tactix.infra.clients.chesscom_client.requests.get",
             side_effect=fake_get,
         ):
             result = fetch_incremental_games(settings, cursor=None)
@@ -273,7 +273,7 @@ class ChesscomClientTests(unittest.TestCase):
         fake_get = make_fake_get(responses)
 
         with patch(
-            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            "tactix.infra.clients.chesscom_client.requests.get",
             side_effect=fake_get,
         ):
             result = fetch_incremental_games(settings, cursor=None)
@@ -313,11 +313,11 @@ class ChesscomClientTests(unittest.TestCase):
 
         with (
             patch(
-                "tactix.define_chesscom_client__chesscom_client.requests.get",
+                "tactix.infra.clients.chesscom_client.requests.get",
                 side_effect=fake_get,
             ),
             patch(
-                "tactix.define_chesscom_client__chesscom_client.time.sleep",
+                "tactix.infra.clients.chesscom_client.time.sleep",
                 return_value=None,
             ),
         ):
@@ -342,7 +342,7 @@ class ChesscomClientTests(unittest.TestCase):
         fake_get = make_fake_get([FakeResponse(429, headers={"Retry-After": "0"})])
 
         with patch(
-            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            "tactix.infra.clients.chesscom_client.requests.get",
             side_effect=fake_get,
         ):
             with self.assertRaises(ChesscomRateLimitError):
@@ -495,7 +495,7 @@ class ChesscomClientTests(unittest.TestCase):
             return FakeResponse(json_data={"games": [], "next_page": "https://example.com/loop"})
 
         with patch(
-            "tactix.chesscom_client.ChesscomClient._get_with_backoff",
+            "tactix.infra.clients.chesscom_client.ChesscomClient._get_with_backoff",
             side_effect=fake_get,
         ) as backoff:
             games = _fetch_archive_pages(settings, "https://example.com/loop")
@@ -516,14 +516,14 @@ class ChesscomClientTests(unittest.TestCase):
         settings.apply_source_defaults()
 
         with patch(
-            "tactix.chesscom_client.ChesscomClient._get_with_backoff",
+            "tactix.infra.clients.chesscom_client.ChesscomClient._get_with_backoff",
             side_effect=RuntimeError("boom"),
         ):
             fallback_games = _fetch_remote_games(settings, since_ms=0)
         self.assertGreaterEqual(len(fallback_games), 1)
 
         with patch(
-            "tactix.chesscom_client.ChesscomClient._get_with_backoff",
+            "tactix.infra.clients.chesscom_client.ChesscomClient._get_with_backoff",
             return_value=FakeResponse(json_data={"archives": []}),
         ):
             empty = _fetch_remote_games(settings, since_ms=0)
@@ -601,7 +601,7 @@ class ChesscomClientTests(unittest.TestCase):
         fake_get = make_fake_get(responses)
 
         with patch(
-            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            "tactix.infra.clients.chesscom_client.requests.get",
             side_effect=fake_get,
         ):
             result = fetch_incremental_games(settings, cursor=None)
@@ -651,7 +651,7 @@ class ChesscomClientTests(unittest.TestCase):
         fake_get = make_fake_get(responses)
 
         with patch(
-            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            "tactix.infra.clients.chesscom_client.requests.get",
             side_effect=fake_get,
         ):
             result = fetch_incremental_games(settings, cursor=None)
@@ -703,7 +703,7 @@ class ChesscomClientTests(unittest.TestCase):
             raise AssertionError(f"Unexpected URL: {url}")
 
         with patch(
-            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            "tactix.infra.clients.chesscom_client.requests.get",
             side_effect=fake_get,
         ):
             result = fetch_incremental_games(settings, cursor=None, full_history=True)
@@ -774,10 +774,10 @@ class ChesscomClientTests(unittest.TestCase):
 
         with (
             patch(
-                "tactix.define_chesscom_client__chesscom_client.requests.get",
+                "tactix.infra.clients.chesscom_client.requests.get",
                 side_effect=fake_get,
             ),
-            patch("tactix.define_chesscom_client__chesscom_client.time.sleep") as sleep_mock,
+            patch("tactix.infra.clients.chesscom_client.time.sleep") as sleep_mock,
         ):
             result = fetch_incremental_games(settings, cursor=None)
 
@@ -833,7 +833,7 @@ class ChesscomClientTests(unittest.TestCase):
         fake_get = make_fake_get(responses)
 
         with patch(
-            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            "tactix.infra.clients.chesscom_client.requests.get",
             side_effect=fake_get,
         ):
             result = fetch_incremental_games(settings, cursor=None)
@@ -886,7 +886,7 @@ class ChesscomClientTests(unittest.TestCase):
             raise AssertionError(f"Unexpected URL: {url}")
 
         with patch(
-            "tactix.define_chesscom_client__chesscom_client.requests.get",
+            "tactix.infra.clients.chesscom_client.requests.get",
             side_effect=fake_get,
         ):
             result = fetch_incremental_games(settings, cursor=None)

@@ -8,8 +8,8 @@ import chess.pgn
 import berserk
 
 from tactix.config import Settings
-from tactix.utils.logger import get_logger
-from tactix.chess_clients.lichess_client import (
+from tactix.utils.logger import Logger
+from tactix.infra.clients.lichess_client import (
     LichessClient,
     LichessClientContext,
     LichessFetchRequest,
@@ -246,10 +246,12 @@ class LichessClientTests(unittest.TestCase):
             target_settings.lichess_token = "new-token"
             return "new-token"
 
-        with patch("tactix.lichess_client.LichessClient._fetch_remote_games_once") as fetch_once:
+        with patch(
+            "tactix.infra.clients.lichess_client.LichessClient._fetch_remote_games_once"
+        ) as fetch_once:
             fetch_once.side_effect = [FakeAuthError(401), []]
             with patch(
-                "tactix.lichess_client._refresh_lichess_token",
+                "tactix.infra.clients.lichess_client._refresh_lichess_token",
                 side_effect=_refresh_and_set_token,
             ) as refresh:
                 result = fetch_incremental_games(settings, since_ms=0)
@@ -286,8 +288,11 @@ class LichessClientTests(unittest.TestCase):
         fake_client = MagicMock()
         fake_client.games = games_api
 
-        with patch("tactix.lichess_client.build_client", return_value=fake_client):
-            from tactix.chess_clients import lichess_client
+        with patch(
+            "tactix.infra.clients.lichess_client.build_client",
+            return_value=fake_client,
+        ):
+            from tactix.infra.clients import lichess_client
 
             result = lichess_client._fetch_remote_games_once(settings, since_ms=0)
 
@@ -321,7 +326,10 @@ class LichessClientTests(unittest.TestCase):
         fake_client = MagicMock()
         fake_client.games = games_api
 
-        with patch("tactix.lichess_client.build_client", return_value=fake_client):
+        with patch(
+            "tactix.infra.clients.lichess_client.build_client",
+            return_value=fake_client,
+        ):
             result = _fetch_remote_games_once(settings, since_ms=0)
 
         self.assertEqual(len(result), 1)
@@ -339,7 +347,7 @@ class LichessClientTests(unittest.TestCase):
         )
 
         with patch(
-            "tactix.lichess_client.LichessClient._fetch_remote_games_once",
+            "tactix.infra.clients.lichess_client.LichessClient._fetch_remote_games_once",
             side_effect=RuntimeError("boom"),
         ):
             with self.assertRaises(RuntimeError):
@@ -365,7 +373,10 @@ class LichessClientTests(unittest.TestCase):
 
     def test_write_cached_token_handles_chmod_error(self) -> None:
         cache_path = self.tmp_dir / "token_perm.json"
-        with patch("tactix.lichess_client.os.chmod", side_effect=OSError("nope")):
+        with patch(
+            "tactix.infra.clients.lichess_client.os.chmod",
+            side_effect=OSError("nope"),
+        ):
             _write_cached_token(cache_path, "abc")
         self.assertTrue(cache_path.exists())
 
@@ -423,7 +434,7 @@ class LichessClientTests(unittest.TestCase):
         )
 
         with patch(
-            "tactix.lichess_client.requests.post",
+            "tactix.infra.clients.lichess_client.requests.post",
             return_value=FakeResponse(json_data={"access_token": "new-token"}),
         ):
             token = _refresh_lichess_token(settings)
@@ -457,7 +468,7 @@ class LichessClientTests(unittest.TestCase):
         )
 
         with patch(
-            "tactix.lichess_client.requests.post",
+            "tactix.infra.clients.lichess_client.requests.post",
             return_value=FakeResponse(json_data={}),
         ):
             with self.assertRaises(LichessTokenError):
@@ -493,8 +504,11 @@ class LichessClientTests(unittest.TestCase):
         fake_client = MagicMock()
         fake_client.games = games_api
 
-        with patch("tactix.lichess_client.build_client", return_value=fake_client):
-            from tactix.chess_clients import lichess_client
+        with patch(
+            "tactix.infra.clients.lichess_client.build_client",
+            return_value=fake_client,
+        ):
+            from tactix.infra.clients import lichess_client
 
             lichess_client._fetch_remote_games_once(settings, since_ms=0)
 
@@ -518,8 +532,11 @@ class LichessClientTests(unittest.TestCase):
         fake_client = MagicMock()
         fake_client.games = games_api
 
-        with patch("tactix.lichess_client.build_client", return_value=fake_client):
-            from tactix.chess_clients import lichess_client
+        with patch(
+            "tactix.infra.clients.lichess_client.build_client",
+            return_value=fake_client,
+        ):
+            from tactix.infra.clients import lichess_client
 
             lichess_client._fetch_remote_games_once(settings, since_ms=0)
 
@@ -543,8 +560,11 @@ class LichessClientTests(unittest.TestCase):
         fake_client = MagicMock()
         fake_client.games = games_api
 
-        with patch("tactix.lichess_client.build_client", return_value=fake_client):
-            from tactix.chess_clients import lichess_client
+        with patch(
+            "tactix.infra.clients.lichess_client.build_client",
+            return_value=fake_client,
+        ):
+            from tactix.infra.clients import lichess_client
 
             lichess_client._fetch_remote_games_once(settings, since_ms=0)
 
@@ -642,8 +662,11 @@ class LichessClientTests(unittest.TestCase):
         fake_client = MagicMock()
         fake_client.games = games_api
 
-        with patch("tactix.lichess_client.build_client", return_value=fake_client):
-            from tactix.chess_clients import lichess_client
+        with patch(
+            "tactix.infra.clients.lichess_client.build_client",
+            return_value=fake_client,
+        ):
+            from tactix.infra.clients import lichess_client
 
             lichess_client._fetch_remote_games_once(settings, since_ms=0, until_ms=1234)
 

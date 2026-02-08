@@ -1,9 +1,10 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 
 from tactix.api import app
+from tactix.app.use_cases.dashboard import get_dashboard_use_case
 from tactix.build_dashboard_cache_key__api_cache import _dashboard_cache_key
 from tactix.clear_dashboard_cache__api_cache import _clear_dashboard_cache
 from tactix.dashboard_cache_state__api_cache import _DASHBOARD_CACHE_TTL_S
@@ -73,18 +74,20 @@ class ApiDashboardCacheTests(unittest.TestCase):
 
         client = TestClient(app)
         token = get_settings().api_token
-        with (
-            patch("tactix.get_dashboard__api._get_cached_dashboard_payload", return_value=payload),
-            patch("tactix.get_dashboard__api.get_dashboard_payload") as get_payload,
-        ):
+        use_case = MagicMock()
+        use_case.get_dashboard.return_value = payload
+        app.dependency_overrides[get_dashboard_use_case] = lambda: use_case
+        try:
             response = client.get(
                 "/api/dashboard",
                 headers={"Authorization": f"Bearer {token}"},
             )
+        finally:
+            app.dependency_overrides = {}
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), payload)
-        get_payload.assert_not_called()
+        use_case.get_dashboard.assert_called_once()
 
 
 if __name__ == "__main__":

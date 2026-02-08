@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from tactix.config import Settings
-from tactix.pipeline_state__pipeline import ZERO_COUNT
+from tactix.define_pipeline_state__pipeline import ZERO_COUNT
 from tactix.sync_postgres_analysis_results__pipeline import _sync_postgres_analysis_results
 
 

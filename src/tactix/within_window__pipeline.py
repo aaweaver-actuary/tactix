@@ -1,6 +1,8 @@
+"""Check whether a game falls within a time window."""
+
 from __future__ import annotations
 
-from tactix.define_pipeline_state__pipeline import GameRow
+from tactix.GameRow import GameRow
 
 
 def _within_window(game: GameRow, start_ms: int | None, end_ms: int | None) -> bool:

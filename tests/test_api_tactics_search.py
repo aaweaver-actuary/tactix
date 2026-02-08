@@ -1,8 +1,9 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
 
 from tactix.api import app
+from tactix.app.use_cases.tactics_search import get_tactics_search_use_case
 from tactix.config import get_settings
 
 
@@ -34,15 +35,20 @@ def test_tactics_search_returns_schema() -> None:
         }
     ]
 
-    with (
-        patch("tactix.get_tactics_search__api.get_connection", return_value=MagicMock()),
-        patch("tactix.get_tactics_search__api.init_schema"),
-        patch("tactix.get_tactics_search__api.fetch_recent_tactics", return_value=sample),
-    ):
+    use_case = MagicMock()
+    use_case.search.return_value = {
+        "source": "all",
+        "limit": 5,
+        "tactics": sample,
+    }
+    app.dependency_overrides[get_tactics_search_use_case] = lambda: use_case
+    try:
         response = client.get(
             "/api/tactics/search?source=all&limit=5&motif=fork",
             headers={"Authorization": f"Bearer {token}"},
         )
+    finally:
+        app.dependency_overrides = {}
 
     assert response.status_code == 200
     payload = response.json()

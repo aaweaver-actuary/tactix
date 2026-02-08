@@ -1,0 +1,28 @@
+{
+  "db_path": "data/tactix.duckdb",
+  "source": "chesscom",
+  "start_date": "2026-02-01",
+  "end_date": "2026-02-01",
+  "games": 13,
+  "positions_user_to_move": 121,
+  "user_moves": 121,
+  "opportunities": 101,
+  "opportunity_type_counts": {
+    "escape": 5,
+    "hanging_piece": 14,
+    "initiative": 48,
+    "mate": 1,
+    "pin": 11,
+    "skewer": 22
+  },
+  "conversions": 61,
+  "conversion_result_counts": {
+    "failed_attempt": 13,
+    "found": 6,
+    "missed": 32,
+    "unclear": 10
+  },
+  "conversions_found": 6,
+  "conversions_missed": 32,
+  "practice_queue": 32
+}

@@ -1,3 +1,5 @@
+"""Define Lichess-specific configuration values."""
+
 from __future__ import annotations
 
 import os
@@ -8,7 +10,7 @@ from tactix.define_config_defaults__config import DEFAULT_DATA_DIR, DEFAULT_LICH
 
 
 @dataclass(slots=True)
-class LichessSettings:
+class LichessSettings:  # pylint: disable=too-many-instance-attributes
     """Lichess-specific configuration."""
 
     user: str = os.getenv("LICHESS_USERNAME", os.getenv("LICHESS_USER", "lichess"))
@@ -26,6 +28,7 @@ class LichessSettings:
     token_cache_path: Path = field(init=False)
 
     def __post_init__(self) -> None:
+        """Ensure data directory exists and compute token cache path."""
         if not self.data_dir.exists():
             self.data_dir.mkdir(parents=True, exist_ok=True)
         object.__setattr__(

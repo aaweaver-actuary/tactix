@@ -1,0 +1,1862 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
+import { ColumnDef } from '@tanstack/react-table';
+import { Chess, Square } from 'chess.js';
+import {
+  DashboardPayload,
+  DashboardFilters,
+  GameDetailResponse,
+  PostgresAnalysisRow,
+  PostgresRawPgnsSummary,
+  PostgresStatus,
+  PracticeAttemptResponse,
+  PracticeQueueItem,
+} from '../api';
+import {
+  fetchDashboard,
+  fetchGameDetail,
+  fetchPostgresAnalysis,
+  fetchPostgresRawPgns,
+  fetchPostgresStatus,
+  fetchPracticeQueue,
+  submitPracticeAttempt,
+  getJobStreamUrl,
+  getMetricsStreamUrl,
+  openEventStream,
+} from '../client';
+import formatPgnMoveList from '../utils/formatPgnMoveList';
+import buildLichessAnalysisUrl from '../utils/buildLichessAnalysisUrl';
+import {
+  ChessPlatform,
+  ChesscomProfile,
+  JobProgressItem,
+  LichessProfile,
+} from '../types';
+import type { MetricsTrendsRow } from '../_components/MetricsTrends';
+import {
+  Badge,
+  ErrorCard,
+  FiltersCard,
+  MetricsSummaryCard,
+  MetricsGrid,
+  MotifTrendsCard,
+  TimeTroubleCorrelationCard,
+  PracticeQueueCard,
+  RecentGamesCard,
+  RecentTacticsCard,
+  PostgresStatusCard,
+  PostgresRawPgnsCard,
+  PostgresAnalysisCard,
+  JobProgressCard,
+  PracticeAttemptCard,
+  PositionsList,
+  Hero,
+  GameDetailModal,
+} from '../components';
+import {
+  PracticeSessionStats,
+  resetPracticeSessionStats,
+  updatePracticeSessionStats,
+} from '../utils/practiceSession';
+import {
+  normalizeOrder,
+  readCardOrder,
+  reorderList,
+  writeCardOrder,
+} from '../utils/cardOrder';
+
+const DASHBOARD_CARD_STORAGE_KEY = 'tactix.dashboard.mainCardOrder';
+const MOTIF_CARD_STORAGE_KEY = 'tactix.dashboard.motifCardOrder';
+const DASHBOARD_CARD_DROPPABLE_ID = 'dashboard-main-cards';
+const MOTIF_CARD_DROPPABLE_ID = 'dashboard-motif-cards';
+const DASHBOARD_CARD_IDS = [
+  'filters',
+  'metrics-summary',
+  'postgres-status',
+  'postgres-raw-pgns',
+  'postgres-analysis',
+  'job-progress',
+  'metrics-grid',
+  'metrics-trends',
+  'time-trouble-correlation',
+  'practice-queue',
+  'recent-games',
+  'tactics-table',
+  'positions-list',
+  'practice-attempt',
+];
+
+const buildCollapsedMap = (ids: string[]) =>
+  ids.reduce<Record<string, boolean>>((acc, id) => {
+    acc[id] = true;
+    return acc;
+  }, {});
+
+const areArraysEqual = (left: string[], right: string[]) => {
+  if (left.length !== right.length) return false;
+  return left.every((value, index) => value === right[index]);
+};
+
+const formatPercent = (value: number | null) =>
+  value === null || Number.isNaN(value) ? '--' : `${(value * 100).toFixed(1)}%`;
+
+const formatCorrelation = (value: number | null) => {
+  if (value === null || Number.isNaN(value)) return '--';
+  const rounded = value.toFixed(2);
+  return value > 0 ? `+${rounded}` : rounded;
+};
+
+const formatRate = (value: number | null) =>
+  value === null || Number.isNaN(value) ? '--' : `${(value * 100).toFixed(1)}%`;
+
+const formatGameResult = (result: string | null, userColor: string | null) => {
+  if (!result) return '--';
+  if (result === '1/2-1/2') return 'Draw';
+  if (result === '1-0') {
+    if (userColor === 'white') return 'Win';
+    if (userColor === 'black') return 'Loss';
+  }
+  if (result === '0-1') {
+    if (userColor === 'black') return 'Win';
+    if (userColor === 'white') return 'Loss';
+  }
+  return result;
+};
+
+const formatGameDate = (value: string | null) => {
+  if (!value) return '--';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString();
+};
+
+const openLichessAnalysisWindow = (url: string) => {
+  window.open(url, '_blank', 'noopener,noreferrer');
+};
+
+type BaseCardDragHandleProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
+type BaseCardRenderProps = {
+  dragHandleProps?: BaseCardDragHandleProps;
+  dragHandleLabel?: string;
+  onCollapsedChange?: (collapsed: boolean) => void;
+};
+
+type BaseCardEntry = {
+  id: string;
+  label: string;
+  visible: boolean;
+  render: (props: BaseCardRenderProps) => JSX.Element | null;
+};
+
+export default function DashboardFlow() {
+  const [data, setData] = useState<DashboardPayload | null>(null);
+  const [source, setSource] = useState<ChessPlatform>('all');
+  const [lichessProfile, setLichessProfile] = useState<LichessProfile>('rapid');
+  const [chesscomProfile, setChesscomProfile] =
+    useState<ChesscomProfile>('blitz');
+  const [filters, setFilters] = useState({
+    motif: 'all',
+    timeControl: 'all',
+    ratingBucket: 'all',
+    startDate: '',
+    endDate: '',
+  });
+  const [backfillStartDate, setBackfillStartDate] = useState(() => {
+    const date = new Date(Date.now() - 900 * 24 * 60 * 60 * 1000);
+    return date.toISOString().slice(0, 10);
+  });
+  const [backfillEndDate, setBackfillEndDate] = useState(() => {
+    return new Date().toISOString().slice(0, 10);
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [practiceQueue, setPracticeQueue] = useState<PracticeQueueItem[]>([]);
+  const [practiceLoading, setPracticeLoading] = useState(false);
+  const [practiceError, setPracticeError] = useState<string | null>(null);
+  const [includeFailedAttempt, setIncludeFailedAttempt] = useState(false);
+  const [practiceMove, setPracticeMove] = useState('');
+  const practiceMoveRef = useRef<HTMLInputElement | null>(null);
+  const [practiceFen, setPracticeFen] = useState('');
+  const [practiceLastMove, setPracticeLastMove] = useState<{
+    from: string;
+    to: string;
+  } | null>(null);
+  const [practiceSubmitting, setPracticeSubmitting] = useState(false);
+  const [practiceFeedback, setPracticeFeedback] =
+    useState<PracticeAttemptResponse | null>(null);
+  const [practiceSubmitError, setPracticeSubmitError] = useState<string | null>(
+    null,
+  );
+  const [practiceServedAtMs, setPracticeServedAtMs] = useState<number | null>(
+    null,
+  );
+  const [practiceSession, setPracticeSession] = useState<PracticeSessionStats>(
+    () => resetPracticeSessionStats(0),
+  );
+  const practiceSessionScopeRef = useRef(`${source}:${includeFailedAttempt}`);
+  const [jobProgress, setJobProgress] = useState<JobProgressItem[]>([]);
+  const [jobStatus, setJobStatus] = useState<
+    'idle' | 'running' | 'error' | 'complete'
+  >('idle');
+  const [dashboardCardOrder, setDashboardCardOrder] = useState(() => {
+    const stored = readCardOrder(
+      DASHBOARD_CARD_STORAGE_KEY,
+      DASHBOARD_CARD_IDS,
+    );
+    return normalizeOrder(stored, DASHBOARD_CARD_IDS);
+  });
+  const [dashboardCardCollapsed, setDashboardCardCollapsed] = useState(() =>
+    buildCollapsedMap(DASHBOARD_CARD_IDS),
+  );
+  const [dropIndicatorIndex, setDropIndicatorIndex] = useState<number | null>(
+    null,
+  );
+  const [motifDropIndicatorIndex, setMotifDropIndicatorIndex] = useState<
+    number | null
+  >(null);
+  const [motifCardOrder, setMotifCardOrder] = useState<string[]>([]);
+  const streamAbortRef = useRef<AbortController | null>(null);
+  const [postgresStatus, setPostgresStatus] = useState<PostgresStatus | null>(
+    null,
+  );
+  const [postgresError, setPostgresError] = useState<string | null>(null);
+  const [postgresLoading, setPostgresLoading] = useState(false);
+  const [postgresAnalysis, setPostgresAnalysis] = useState<
+    PostgresAnalysisRow[]
+  >([]);
+  const [postgresAnalysisError, setPostgresAnalysisError] = useState<
+    string | null
+  >(null);
+  const [postgresAnalysisLoading, setPostgresAnalysisLoading] = useState(false);
+  const [postgresRawPgns, setPostgresRawPgns] =
+    useState<PostgresRawPgnsSummary | null>(null);
+  const [postgresRawPgnsError, setPostgresRawPgnsError] = useState<
+    string | null
+  >(null);
+  const [postgresRawPgnsLoading, setPostgresRawPgnsLoading] = useState(false);
+  const [gameDetailOpen, setGameDetailOpen] = useState(false);
+  const [gameDetail, setGameDetail] = useState<GameDetailResponse | null>(null);
+  const [gameDetailLoading, setGameDetailLoading] = useState(false);
+  const [gameDetailError, setGameDetailError] = useState<string | null>(null);
+
+  const normalizedFilters = useMemo<DashboardFilters>(
+    () => ({
+      motif: filters.motif !== 'all' ? filters.motif : undefined,
+      time_control:
+        filters.timeControl !== 'all' ? filters.timeControl : undefined,
+      rating_bucket:
+        filters.ratingBucket !== 'all' ? filters.ratingBucket : undefined,
+      start_date: filters.startDate || undefined,
+      end_date: filters.endDate || undefined,
+    }),
+    [filters],
+  );
+
+  const handleSourceChange = (next: ChessPlatform) => {
+    setSource(next);
+  };
+
+  const handleLichessProfileChange = (next: LichessProfile) => {
+    setLichessProfile(next);
+  };
+
+  const handleChesscomProfileChange = (next: ChesscomProfile) => {
+    setChesscomProfile(next);
+  };
+
+  const handleFiltersChange = (next: typeof filters) => {
+    setFilters(next);
+  };
+
+  const resolveGameSource = useCallback(
+    (rowSource?: string | null) =>
+      rowSource ?? (source === 'all' ? undefined : source),
+    [source],
+  );
+
+  const handleOpenLichess = useCallback(
+    async (row: { game_id?: string | null; source?: string | null }) => {
+      if (!row.game_id) return;
+      const popup = window.open('about:blank', '_blank');
+      try {
+        const detail = await fetchGameDetail(
+          row.game_id,
+          resolveGameSource(row.source),
+        );
+        const url = buildLichessAnalysisUrl(detail.pgn);
+        if (!url) {
+          console.warn('Unable to build Lichess analysis URL for game.', {
+            gameId: row.game_id,
+          });
+          if (popup) popup.close();
+          return;
+        }
+        if (popup) {
+          popup.location.href = url;
+          popup.opener = null;
+        } else {
+          openLichessAnalysisWindow(url);
+        }
+      } catch (err) {
+        if (popup) popup.close();
+        console.error(err);
+      }
+    },
+    [buildLichessAnalysisUrl, openLichessAnalysisWindow, resolveGameSource],
+  );
+
+  const handleResetFilters = () => {
+    setFilters({
+      motif: 'all',
+      timeControl: 'all',
+      ratingBucket: 'all',
+      startDate: '',
+      endDate: '',
+    });
+  };
+
+  const handleBackfillStartChange = (value: string) => {
+    setBackfillStartDate(value);
+  };
+
+  const handleBackfillEndChange = (value: string) => {
+    setBackfillEndDate(value);
+  };
+
+  const handleIncludeFailedAttemptChange = (next: boolean) => {
+    setIncludeFailedAttempt(next);
+  };
+
+  const handlePracticeMoveChange = (value: string) => {
+    setPracticeMove(value);
+  };
+
+  async function load(
+    nextSource: ChessPlatform = source,
+    nextFilters: DashboardFilters = normalizedFilters,
+  ) {
+    setLoading(true);
+    setError(null);
+    try {
+      const payload = await fetchDashboard(nextSource, nextFilters);
+      setData(payload);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load dashboard');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadPracticeQueue(
+    nextSource: ChessPlatform = source,
+    includeFailed = includeFailedAttempt,
+    resetSession = false,
+  ): Promise<void> {
+    setPracticeLoading(true);
+    setPracticeError(null);
+    try {
+      const payload = await fetchPracticeQueue(nextSource, includeFailed);
+      setPracticeQueue(payload.items);
+      if (resetSession) {
+        const nextScope = `${nextSource}:${includeFailed}`;
+        const shouldReset = practiceSessionScopeRef.current !== nextScope;
+        practiceSessionScopeRef.current = nextScope;
+        if (shouldReset) {
+          setPracticeSession(resetPracticeSessionStats(payload.items.length));
+        } else {
+          setPracticeSession((prev) => {
+            if (prev.total <= 0 && prev.completed === 0) {
+              return { ...prev, total: payload.items.length };
+            }
+            return prev;
+          });
+        }
+      } else {
+        setPracticeSession((prev) => {
+          if (prev.total <= 0 && prev.completed === 0) {
+            return { ...prev, total: payload.items.length };
+          }
+          return prev;
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setPracticeError('Failed to load practice queue');
+    } finally {
+      setPracticeLoading(false);
+    }
+  }
+
+  async function loadPostgres(): Promise<void> {
+    setPostgresLoading(true);
+    setPostgresError(null);
+    try {
+      const payload = await fetchPostgresStatus();
+      setPostgresStatus(payload);
+    } catch (err) {
+      console.error(err);
+      setPostgresError('Failed to load Postgres status');
+    } finally {
+      setPostgresLoading(false);
+    }
+  }
+
+  async function loadPostgresAnalysis(): Promise<void> {
+    setPostgresAnalysisLoading(true);
+    setPostgresAnalysisError(null);
+    try {
+      const payload = await fetchPostgresAnalysis();
+      setPostgresAnalysis(payload.tactics || []);
+    } catch (err) {
+      console.error(err);
+      setPostgresAnalysisError('Failed to load Postgres analysis results');
+    } finally {
+      setPostgresAnalysisLoading(false);
+    }
+  }
+
+  async function loadPostgresRawPgns(): Promise<void> {
+    setPostgresRawPgnsLoading(true);
+    setPostgresRawPgnsError(null);
+    try {
+      const payload = await fetchPostgresRawPgns();
+      setPostgresRawPgns(payload);
+    } catch (err) {
+      console.error(err);
+      setPostgresRawPgnsError('Failed to load Postgres raw PGN summary');
+    } finally {
+      setPostgresRawPgnsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load(source, normalizedFilters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source, normalizedFilters]);
+
+  useEffect(() => {
+    loadPostgres();
+    loadPostgresAnalysis();
+    loadPostgresRawPgns();
+  }, []);
+
+  useEffect(() => {
+    loadPracticeQueue(source, includeFailedAttempt, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source, includeFailedAttempt]);
+
+  const currentPractice = useMemo(
+    () => (practiceQueue.length ? practiceQueue[0] : null),
+    [practiceQueue],
+  );
+
+  useEffect(() => {
+    function resetPracticeData(): void {
+      setPracticeMove('');
+      setPracticeFeedback(null);
+      setPracticeSubmitError(null);
+      setPracticeLastMove(null);
+      setPracticeFen(currentPractice?.fen ?? '');
+      setPracticeServedAtMs(currentPractice ? Date.now() : null);
+    }
+    resetPracticeData();
+  }, [currentPractice]);
+
+  useEffect(() => {
+    return () => {
+      streamAbortRef.current?.abort();
+      streamAbortRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    resetJobState();
+  }, [source, lichessProfile, chesscomProfile]);
+
+  const consumeEventStream = async (
+    streamUrl: string,
+    controller: AbortController,
+    handleEvent: (
+      eventName: string,
+      data: string,
+    ) => Promise<boolean | void> | boolean | void,
+  ) => {
+    const reader = await openEventStream(streamUrl, controller.signal);
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let streamFinished = false;
+
+    async function parseChunk(chunk: string): Promise<void> {
+      buffer += chunk;
+      const parts = buffer.split('\n\n');
+      buffer = parts.pop() ?? '';
+
+      for (const part of parts) {
+        let eventName = 'message';
+        let data = '';
+        for (const line of part.split('\n')) {
+          if (!line || line.startsWith(':')) continue;
+          if (line.startsWith('event:')) {
+            eventName = line.replace('event:', '').trim();
+          } else if (line.startsWith('data:')) {
+            data += line.replace('data:', '').trim();
+          }
+        }
+        if (!data) continue;
+        const shouldFinish = await handleEvent(eventName, data);
+        if (shouldFinish) {
+          streamFinished = true;
+          return;
+        }
+      }
+    }
+
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        await parseChunk(decoder.decode(value, { stream: true }));
+        if (streamFinished) {
+          break;
+        }
+      }
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      throw err;
+    }
+  };
+
+  const streamJobEvents = async (
+    job: string,
+    nextSource: ChessPlatform,
+    disconnectMessage: string,
+    nextFilters: DashboardFilters = normalizedFilters,
+    profile?: LichessProfile | ChesscomProfile,
+    backfillStartMs?: number,
+    backfillEndMs?: number,
+    refreshDashboardOnComplete = true,
+  ) => {
+    streamAbortRef.current?.abort();
+    const controller = new AbortController();
+    streamAbortRef.current = controller;
+
+    const streamUrl = getJobStreamUrl(
+      job,
+      nextSource,
+      profile,
+      backfillStartMs,
+      backfillEndMs,
+    );
+    try {
+      await consumeEventStream(
+        streamUrl,
+        controller,
+        async (eventName, data) => {
+          let payload: Record<string, unknown> | null = null;
+          try {
+            payload = JSON.parse(data) as Record<string, unknown>;
+          } catch (parseError) {
+            console.error(parseError);
+            return false;
+          }
+
+          if (
+            eventName === 'progress' ||
+            eventName === 'error' ||
+            eventName === 'complete'
+          ) {
+            setJobProgress((prev) => [...prev, payload as JobProgressItem]);
+          }
+
+          if (eventName === 'metrics_update') {
+            setData((prev) => {
+              if (!prev) {
+                return payload as DashboardPayload;
+              }
+              return {
+                ...prev,
+                metrics:
+                  (payload?.metrics as DashboardPayload['metrics']) ??
+                  prev.metrics,
+                metrics_version:
+                  (payload?.metrics_version as number | undefined) ??
+                  prev.metrics_version,
+                source:
+                  (payload?.source as DashboardPayload['source']) ??
+                  prev.source,
+              };
+            });
+          }
+
+          if (eventName === 'complete') {
+            setJobStatus('complete');
+            if (refreshDashboardOnComplete) {
+              const dashboard = await fetchDashboard(nextSource, nextFilters);
+              setData(dashboard);
+              await loadPracticeQueue(nextSource, includeFailedAttempt, true);
+              await loadPostgres();
+              await loadPostgresAnalysis();
+            }
+            setLoading(false);
+            return true;
+          }
+
+          if (eventName === 'error') {
+            setJobStatus('error');
+            setLoading(false);
+            setError(disconnectMessage);
+            if (refreshDashboardOnComplete) {
+              await loadPostgres();
+              await loadPostgresAnalysis();
+            }
+            return true;
+          }
+
+          return false;
+        },
+      );
+    } finally {
+      if (streamAbortRef.current === controller) {
+        streamAbortRef.current = null;
+      }
+    }
+  };
+
+  const streamMetricsEvents = async (
+    nextSource: ChessPlatform,
+    nextFilters: DashboardFilters = normalizedFilters,
+  ): Promise<boolean> => {
+    streamAbortRef.current?.abort();
+    const controller = new AbortController();
+    streamAbortRef.current = controller;
+    let succeeded = true;
+
+    const streamUrl = getMetricsStreamUrl(nextSource, nextFilters);
+    try {
+      await consumeEventStream(
+        streamUrl,
+        controller,
+        async (eventName, data) => {
+          let payload: Record<string, unknown> | null = null;
+          try {
+            payload = JSON.parse(data) as Record<string, unknown>;
+          } catch (parseError) {
+            console.error(parseError);
+            return false;
+          }
+
+          if (
+            eventName === 'progress' ||
+            eventName === 'error' ||
+            eventName === 'complete'
+          ) {
+            setJobProgress((prev) => [...prev, payload as JobProgressItem]);
+          }
+
+          if (eventName === 'metrics_update') {
+            setData((prev) => {
+              if (!prev) {
+                return payload as DashboardPayload;
+              }
+              return {
+                ...prev,
+                metrics:
+                  (payload?.metrics as DashboardPayload['metrics']) ??
+                  prev.metrics,
+                metrics_version:
+                  (payload?.metrics_version as number | undefined) ??
+                  prev.metrics_version,
+                source:
+                  (payload?.source as DashboardPayload['source']) ??
+                  prev.source,
+              };
+            });
+          }
+
+          if (eventName === 'complete') {
+            setJobStatus('complete');
+            setLoading(false);
+            return true;
+          }
+
+          if (eventName === 'error') {
+            succeeded = false;
+            setJobStatus('error');
+            setLoading(false);
+            setError('Metrics stream disconnected');
+            return true;
+          }
+
+          return false;
+        },
+      );
+    } finally {
+      if (streamAbortRef.current === controller) {
+        streamAbortRef.current = null;
+      }
+    }
+    return succeeded;
+  };
+
+  const handleRun = async () => {
+    if (source === 'all') {
+      setError('Select a specific site to run the pipeline.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      setJobProgress([]);
+      setJobStatus('running');
+      const profile = source === 'lichess' ? lichessProfile : chesscomProfile;
+      await streamJobEvents(
+        'daily_game_sync',
+        source,
+        'Pipeline stream disconnected',
+        normalizedFilters,
+        profile,
+      );
+    } catch (err) {
+      console.error(err);
+      setError('Pipeline run failed');
+      setJobStatus('error');
+      setLoading(false);
+    }
+  };
+
+  const handleBackfill = async () => {
+    if (source === 'all') {
+      setError('Select a specific site to run a backfill.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      setJobProgress([]);
+      setJobStatus('running');
+      const nowMs = Date.now();
+      const startDate = backfillStartDate
+        ? new Date(`${backfillStartDate}T00:00:00`)
+        : new Date(nowMs - 900 * 24 * 60 * 60 * 1000);
+      const endDate = backfillEndDate
+        ? new Date(`${backfillEndDate}T00:00:00`)
+        : new Date(nowMs);
+      const windowStart = startDate.getTime();
+      let windowEnd = endDate.getTime() + 24 * 60 * 60 * 1000;
+      if (Number.isNaN(windowStart) || Number.isNaN(windowEnd)) {
+        throw new Error('Invalid backfill date range');
+      }
+      if (windowEnd > nowMs) {
+        windowEnd = nowMs;
+      }
+      if (windowStart >= windowEnd) {
+        throw new Error('Backfill range must end after the start date');
+      }
+      const profile = source === 'lichess' ? lichessProfile : chesscomProfile;
+      await streamJobEvents(
+        'daily_game_sync',
+        source,
+        'Backfill stream disconnected',
+        normalizedFilters,
+        profile,
+        windowStart,
+        windowEnd,
+      );
+    } catch (err) {
+      console.error(err);
+      setError('Backfill run failed');
+      setJobStatus('error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMigrations = async () => {
+    if (source === 'all') {
+      setError('Select a specific site to run migrations.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      setJobProgress([]);
+      setJobStatus('running');
+      await streamJobEvents(
+        'migrations',
+        source,
+        'Migration stream disconnected',
+        normalizedFilters,
+      );
+    } catch (err) {
+      console.error(err);
+      setError('Migration run failed');
+      setJobStatus('error');
+      setLoading(false);
+    }
+  };
+
+  const handleRefreshMetrics = async () => {
+    if (source === 'all') {
+      setError('Select a specific site to refresh metrics.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      setJobProgress([]);
+      setJobStatus('running');
+      const ok = await streamMetricsEvents(source, normalizedFilters);
+      if (ok) {
+        await loadPracticeQueue(source, includeFailedAttempt);
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Metrics refresh failed');
+      setJobStatus('error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  function resetJobState(): void {
+    streamAbortRef.current?.abort();
+    streamAbortRef.current = null;
+    setJobProgress([]);
+    setJobStatus('idle');
+  }
+
+  function buildPracticeMove(
+    fen: string,
+    rawMove: string,
+  ): { uci: string; nextFen: string; from: string; to: string } | null {
+    const trimmed = rawMove.trim().toLowerCase();
+    if (trimmed.length < 4) return null;
+    const from = trimmed.slice(0, 2) as Square;
+    const to = trimmed.slice(2, 4) as Square;
+    const board = new Chess(fen);
+    const piece = board.get(from);
+    const needsPromotion =
+      piece?.type === 'p' && (to.endsWith('8') || to.endsWith('1'));
+    const promotion =
+      trimmed.length > 4 ? trimmed[4] : needsPromotion ? 'q' : undefined;
+    let move = null;
+    try {
+      move = board.move({ from, to, promotion });
+    } catch (err) {
+      console.warn('Invalid move attempt', err);
+      return null;
+    }
+    if (!move) return null;
+    return {
+      uci: `${from}${to}${promotion ?? ''}`,
+      nextFen: board.fen(),
+      from,
+      to,
+    };
+  }
+
+  const getPracticeBaseFen = () => practiceFen || currentPractice?.fen || '';
+
+  const submitPracticeMove = async (payload: {
+    uci: string;
+    nextFen?: string;
+    from?: string;
+    to?: string;
+  }) => {
+    if (!currentPractice) return;
+    setPracticeSubmitting(true);
+    setPracticeSubmitError(null);
+    setPracticeFeedback(null);
+    setPracticeMove(payload.uci);
+    if (payload.nextFen) {
+      setPracticeFen(payload.nextFen);
+    }
+    if (payload.from && payload.to) {
+      setPracticeLastMove({ from: payload.from, to: payload.to });
+    }
+    try {
+      const response = await submitPracticeAttempt({
+        tactic_id: currentPractice.tactic_id,
+        position_id: currentPractice.position_id,
+        attempted_uci: payload.uci,
+        source,
+        served_at_ms: practiceServedAtMs ?? undefined,
+      });
+      setPracticeFeedback(response);
+      setPracticeSession((prev) =>
+        updatePracticeSessionStats(prev, response.correct),
+      );
+      await loadPracticeQueue(source, includeFailedAttempt);
+    } catch (err) {
+      console.error(err);
+      setPracticeSubmitError('Failed to submit practice attempt');
+    } finally {
+      setPracticeSubmitting(false);
+    }
+  };
+
+  const handlePracticeAttempt = async (overrideMove?: string) => {
+    if (!currentPractice) return;
+    const candidate = overrideMove ?? practiceMove;
+    if (!candidate.trim()) {
+      setPracticeSubmitError('Enter a move in UCI notation (e.g., e2e4).');
+      return;
+    }
+    const baseFen = getPracticeBaseFen();
+    const moveResult = buildPracticeMove(baseFen, candidate);
+    if (!moveResult) {
+      setPracticeSubmitError(
+        'Illegal move for this position. Try a legal UCI move.',
+      );
+      return;
+    }
+    await submitPracticeMove(moveResult);
+  };
+
+  const handlePracticeDrop = (from: string, to: string, piece: string) => {
+    if (!currentPractice || practiceSubmitting) return false;
+    const baseFen = getPracticeBaseFen();
+    const isPawn = typeof piece === 'string' && piece.endsWith('P');
+    const promotion =
+      isPawn && (to.endsWith('8') || to.endsWith('1')) ? 'q' : '';
+    const moveResult = buildPracticeMove(baseFen, `${from}${to}${promotion}`);
+    if (!moveResult) {
+      setPracticeSubmitError('Illegal move for this position.');
+      return false;
+    }
+    void submitPracticeMove(moveResult);
+    return true;
+  };
+
+  const totals = useMemo(() => {
+    if (!data) return { positions: 0, tactics: 0 };
+    return {
+      positions: data.positions.length,
+      tactics: data.tactics.length,
+    };
+  }, [data]);
+
+  const selectedRatingBucket =
+    filters.ratingBucket === 'all' ? 'all' : filters.ratingBucket;
+  const selectedTimeControl =
+    filters.timeControl === 'all' ? 'all' : filters.timeControl;
+
+  const motifBreakdown = useMemo(() => {
+    if (!data) return [];
+    return data.metrics.filter(
+      (row) =>
+        row.metric_type === 'motif_breakdown' &&
+        row.rating_bucket === selectedRatingBucket &&
+        row.time_control === selectedTimeControl,
+    );
+  }, [data, selectedRatingBucket, selectedTimeControl]);
+
+  const motifCardIds = useMemo(() => {
+    if (!data) return [];
+    const motifs = new Set<string>();
+    data.metrics.forEach((row) => {
+      if (row.metric_type === 'motif_breakdown' && row.motif) {
+        motifs.add(row.motif);
+      }
+    });
+    return Array.from(motifs);
+  }, [data]);
+
+  useEffect(() => {
+    if (!motifCardIds.length) return;
+    setMotifCardOrder((prev) => {
+      const base = prev.length
+        ? prev
+        : readCardOrder(MOTIF_CARD_STORAGE_KEY, motifCardIds);
+      const normalized = normalizeOrder(base, motifCardIds);
+      return areArraysEqual(normalized, prev) ? prev : normalized;
+    });
+  }, [motifCardIds]);
+
+  const trendRows = useMemo(() => {
+    if (!data) return [];
+    return data.metrics.filter(
+      (row) =>
+        row.metric_type === 'trend' &&
+        row.rating_bucket === selectedRatingBucket &&
+        row.time_control === selectedTimeControl,
+    );
+  }, [data, selectedRatingBucket, selectedTimeControl]);
+
+  const trendLatestRows = useMemo<MetricsTrendsRow[]>(() => {
+    if (!trendRows.length) return [];
+    const map = new Map<string, MetricsTrendsRow>();
+    trendRows.forEach((row) => {
+      if (!row.trend_date) return;
+      const current = map.get(row.motif) || { motif: row.motif };
+      const slot =
+        row.window_days === 7
+          ? 'seven'
+          : row.window_days === 30
+            ? 'thirty'
+            : null;
+      if (!slot) return;
+      const existing = current[slot];
+      if (
+        !existing ||
+        new Date(row.trend_date) > new Date(existing.trend_date || 0)
+      ) {
+        current[slot] = row;
+      }
+      map.set(row.motif, current);
+    });
+    return Array.from(map.values());
+  }, [trendRows]);
+
+  const timeTroubleRows = useMemo(() => {
+    if (!data) return [];
+    return data.metrics.filter(
+      (row) =>
+        row.metric_type === 'time_trouble_correlation' &&
+        row.rating_bucket === 'all' &&
+        (selectedTimeControl === 'all'
+          ? row.time_control !== 'all'
+          : row.time_control === selectedTimeControl),
+    );
+  }, [data, selectedTimeControl]);
+
+  const timeTroubleSortedRows = useMemo(() => {
+    if (!timeTroubleRows.length) return [];
+    return [...timeTroubleRows].sort((a, b) => {
+      const left = a.time_control ?? 'unknown';
+      const right = b.time_control ?? 'unknown';
+      return left.localeCompare(right);
+    });
+  }, [timeTroubleRows]);
+
+  const gameDetailMoves = useMemo(() => {
+    if (!gameDetail?.pgn) return [];
+    return formatPgnMoveList(gameDetail.pgn);
+  }, [gameDetail]);
+
+  const tacticsColumns = useMemo<
+    ColumnDef<DashboardPayload['tactics'][number]>[]
+  >(
+    () => [
+      {
+        header: 'Motif',
+        accessorKey: 'motif',
+        cell: (info) => (
+          <span className="font-display text-sm uppercase tracking-wide">
+            {String(info.getValue())}
+          </span>
+        ),
+      },
+      {
+        header: 'Result',
+        accessorKey: 'result',
+        cell: (info) => <Badge label={String(info.getValue() || '--')} />,
+      },
+      {
+        header: 'Move',
+        accessorKey: 'user_uci',
+        cell: (info) => (
+          <span className="font-mono text-xs">
+            {String(info.getValue() || '--')}
+          </span>
+        ),
+      },
+      {
+        header: 'Delta (cp)',
+        accessorKey: 'eval_delta',
+        cell: (info) => (
+          <span className="font-mono text-xs text-rust">
+            {String(info.getValue() ?? '--')}
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const practiceQueueColumns = useMemo<ColumnDef<PracticeQueueItem>[]>(
+    () => [
+      {
+        header: 'Motif',
+        accessorKey: 'motif',
+        cell: (info) => (
+          <span className="font-display text-sm uppercase tracking-wide">
+            {String(info.getValue())}
+          </span>
+        ),
+      },
+      {
+        header: 'Result',
+        accessorKey: 'result',
+        cell: (info) => <Badge label={String(info.getValue())} />,
+      },
+      {
+        header: 'Best',
+        accessorKey: 'best_uci',
+        cell: (info) => (
+          <span className="font-mono text-xs text-teal">
+            {String(info.getValue() || '--')}
+          </span>
+        ),
+      },
+      {
+        header: 'Your move',
+        accessorKey: 'user_uci',
+        cell: (info) => (
+          <span className="font-mono text-xs">{String(info.getValue())}</span>
+        ),
+      },
+      {
+        header: 'Move',
+        accessorFn: (row) => `${row.move_number}.${row.ply}`,
+        cell: (info) => (
+          <span className="font-mono text-xs">{String(info.getValue())}</span>
+        ),
+      },
+      {
+        header: 'Delta',
+        accessorKey: 'eval_delta',
+        cell: (info) => (
+          <span className="font-mono text-xs text-rust">
+            {String(info.getValue())}
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const metricsTrendsColumns = useMemo<ColumnDef<MetricsTrendsRow>[]>(
+    () => [
+      {
+        header: 'Motif',
+        accessorKey: 'motif',
+        cell: (info) => (
+          <span className="font-display text-sm uppercase tracking-wide">
+            {String(info.getValue())}
+          </span>
+        ),
+      },
+      {
+        header: '7g found',
+        accessorFn: (row) => row.seven?.found_rate ?? null,
+        cell: (info) => (
+          <span className="font-mono text-xs text-teal">
+            {formatPercent(info.getValue() as number | null)}
+          </span>
+        ),
+      },
+      {
+        header: '30g found',
+        accessorFn: (row) => row.thirty?.found_rate ?? null,
+        cell: (info) => (
+          <span className="font-mono text-xs text-teal">
+            {formatPercent(info.getValue() as number | null)}
+          </span>
+        ),
+      },
+      {
+        header: 'Last update',
+        accessorFn: (row) =>
+          row.seven?.trend_date || row.thirty?.trend_date || '--',
+        cell: (info) => (
+          <span className="font-mono text-xs text-sand/70">
+            {String(info.getValue())}
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const timeTroubleColumns = useMemo<
+    ColumnDef<DashboardPayload['metrics'][number]>[]
+  >(
+    () => [
+      {
+        header: 'Time control',
+        accessorKey: 'time_control',
+        cell: (info) => (
+          <span className="text-sand">
+            {String(info.getValue() ?? 'unknown')}
+          </span>
+        ),
+      },
+      {
+        header: 'Correlation',
+        accessorFn: (row) => row.found_rate ?? null,
+        cell: (info) => (
+          <span className="text-sand">
+            {formatCorrelation(info.getValue() as number | null)}
+          </span>
+        ),
+      },
+      {
+        header: 'Time trouble rate',
+        accessorFn: (row) => row.miss_rate ?? null,
+        cell: (info) => (
+          <span className="text-sand">
+            {formatRate(info.getValue() as number | null)}
+          </span>
+        ),
+      },
+      {
+        header: 'Samples',
+        accessorKey: 'total',
+        cell: (info) => (
+          <span className="text-sand/80">{String(info.getValue())}</span>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const recentGamesColumns = useMemo<
+    ColumnDef<DashboardPayload['recent_games'][number]>[]
+  >(
+    () => [
+      {
+        header: 'Source',
+        accessorKey: 'source',
+        cell: (info) => (
+          <span className="text-sand/80">
+            {String(info.getValue() ?? 'unknown')}
+          </span>
+        ),
+      },
+      {
+        header: 'Opponent',
+        accessorKey: 'opponent',
+        cell: (info) => (
+          <span className="text-sand">{String(info.getValue() ?? '--')}</span>
+        ),
+      },
+      {
+        header: 'Result',
+        accessorFn: (row) =>
+          formatGameResult(row.result ?? null, row.user_color ?? null),
+        cell: (info) => <Badge label={String(info.getValue() ?? '--')} />,
+      },
+      {
+        header: 'Date',
+        accessorFn: (row) => formatGameDate(row.played_at ?? null),
+        cell: (info) => (
+          <span className="text-sand/70">
+            {String(info.getValue() ?? '--')}
+          </span>
+        ),
+      },
+      {
+        header: 'Time control',
+        accessorKey: 'time_control',
+        cell: (info) => (
+          <span className="text-sand/70">
+            {String(info.getValue() ?? '--')}
+          </span>
+        ),
+      },
+      {
+        header: 'Actions',
+        id: 'lichess-actions',
+        cell: ({ row }) => {
+          if (!row.original.game_id) {
+            return <span className="text-sand/40">--</span>;
+          }
+          return (
+            <button
+              type="button"
+              className="rounded border border-white/10 px-2 py-1 text-xs text-sand/80 hover:border-white/30"
+              data-testid={`open-lichess-${row.original.game_id}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                void handleOpenLichess(row.original);
+              }}
+            >
+              Open in Lichess
+            </button>
+          );
+        },
+      },
+    ],
+    [handleOpenLichess],
+  );
+
+  const practiceOrientation =
+    currentPractice?.side_to_move === 'b' ? 'black' : 'white';
+
+  const practiceHighlightStyles = useMemo(() => {
+    if (!practiceLastMove) return {};
+    return {
+      [practiceLastMove.from]: {
+        backgroundColor: 'rgba(14, 116, 144, 0.4)',
+      },
+      [practiceLastMove.to]: {
+        backgroundColor: 'rgba(14, 116, 144, 0.4)',
+      },
+    };
+  }, [practiceLastMove]);
+
+  const motifOptions = useMemo(() => {
+    const values = new Set<string>();
+    data?.metrics.forEach((row) => {
+      if (row.motif && row.motif !== 'all') values.add(row.motif);
+    });
+    return ['all', ...Array.from(values).sort()];
+  }, [data]);
+
+  const timeControlOptions = useMemo(() => {
+    const values = new Set<string>();
+    data?.metrics.forEach((row) => {
+      const value = row.time_control || 'unknown';
+      if (value !== 'all') values.add(value);
+    });
+    return ['all', ...Array.from(values).sort()];
+  }, [data]);
+
+  const ratingOptions = useMemo(() => {
+    const values = new Set<string>();
+    data?.metrics.forEach((row) => {
+      const value = row.rating_bucket || 'unknown';
+      if (value !== 'all') values.add(value);
+    });
+    const ordered = [
+      '<1200',
+      '1200-1399',
+      '1400-1599',
+      '1600-1799',
+      '1800+',
+      'unknown',
+    ];
+    const custom = Array.from(values).filter(
+      (value) => value !== 'all' && !ordered.includes(value),
+    );
+    return [
+      'all',
+      ...ordered.filter((value) => values.has(value)),
+      ...custom.sort(),
+    ];
+  }, [data]);
+
+  useEffect(() => {
+    writeCardOrder(DASHBOARD_CARD_STORAGE_KEY, dashboardCardOrder);
+  }, [dashboardCardOrder]);
+
+  useEffect(() => {
+    if (!motifCardOrder.length) return;
+    writeCardOrder(MOTIF_CARD_STORAGE_KEY, motifCardOrder);
+  }, [motifCardOrder]);
+
+  const orderedMotifBreakdown = useMemo(() => {
+    if (!motifBreakdown.length) return [];
+    if (!motifCardOrder.length) return motifBreakdown;
+    const motifMap = new Map(
+      motifBreakdown.map((row) => [row.motif, row] as const),
+    );
+    return motifCardOrder
+      .map((id) => motifMap.get(id))
+      .filter((row): row is (typeof motifBreakdown)[number] => Boolean(row));
+  }, [motifBreakdown, motifCardOrder]);
+
+  const dashboardCardEntries: BaseCardEntry[] = useMemo(() => {
+    const handleGameDetail = async (row: {
+      game_id?: string | null;
+      source?: string | null;
+    }): Promise<void> => {
+      if (!row.game_id) {
+        setGameDetailError('Selected game is missing a game id.');
+        setGameDetailOpen(true);
+        return;
+      }
+      setGameDetailOpen(true);
+      setGameDetailLoading(true);
+      setGameDetailError(null);
+      setGameDetail(null);
+      try {
+        const detail = await fetchGameDetail(
+          row.game_id,
+          resolveGameSource(row.source),
+        );
+        setGameDetail(detail);
+      } catch (err) {
+        console.error(err);
+        setGameDetailError('Failed to load game details.');
+      } finally {
+        setGameDetailLoading(false);
+      }
+    };
+
+    return [
+      {
+        id: 'filters',
+        label: 'Filters',
+        visible: true,
+        render: (props) => (
+          <FiltersCard
+            source={source}
+            loading={loading}
+            lichessProfile={lichessProfile}
+            chesscomProfile={chesscomProfile}
+            filters={filters}
+            motifOptions={motifOptions}
+            timeControlOptions={timeControlOptions}
+            ratingOptions={ratingOptions}
+            onSourceChange={handleSourceChange}
+            onLichessProfileChange={handleLichessProfileChange}
+            onChesscomProfileChange={handleChesscomProfileChange}
+            onFiltersChange={handleFiltersChange}
+            onResetFilters={handleResetFilters}
+            {...props}
+          />
+        ),
+      },
+      {
+        id: 'metrics-summary',
+        label: 'Metrics summary',
+        visible: true,
+        render: (props) => (
+          <MetricsSummaryCard
+            positions={totals.positions}
+            tactics={totals.tactics}
+            metricsVersion={data?.metrics_version ?? 0}
+            {...props}
+          />
+        ),
+      },
+      {
+        id: 'postgres-status',
+        label: 'Postgres status',
+        visible: Boolean(postgresStatus) || postgresLoading,
+        render: (props) => (
+          <PostgresStatusCard
+            status={postgresStatus}
+            loading={postgresLoading}
+            {...props}
+          />
+        ),
+      },
+      {
+        id: 'postgres-raw-pgns',
+        label: 'Postgres raw PGNs',
+        visible:
+          Boolean(postgresRawPgns) ||
+          postgresRawPgnsLoading ||
+          Boolean(postgresRawPgnsError),
+        render: (props) => (
+          <PostgresRawPgnsCard
+            data={postgresRawPgns}
+            loading={postgresRawPgnsLoading}
+            error={postgresRawPgnsError}
+            {...props}
+          />
+        ),
+      },
+      {
+        id: 'postgres-analysis',
+        label: 'Postgres analysis',
+        visible: postgresAnalysis.length > 0 || postgresAnalysisLoading,
+        render: (props) => (
+          <PostgresAnalysisCard
+            rows={postgresAnalysis}
+            loading={postgresAnalysisLoading}
+            {...props}
+          />
+        ),
+      },
+      {
+        id: 'job-progress',
+        label: 'Job progress',
+        visible: jobProgress.length > 0,
+        render: (props) => (
+          <JobProgressCard
+            entries={jobProgress}
+            status={jobStatus}
+            {...props}
+          />
+        ),
+      },
+      {
+        id: 'metrics-grid',
+        label: 'Motif breakdown',
+        visible: Boolean(data),
+        render: (props) => (
+          <MetricsGrid
+            metricsData={orderedMotifBreakdown}
+            droppableId={MOTIF_CARD_DROPPABLE_ID}
+            dropIndicatorIndex={motifDropIndicatorIndex}
+            {...props}
+          />
+        ),
+      },
+      {
+        id: 'metrics-trends',
+        label: 'Motif trends',
+        visible: Boolean(data) && trendLatestRows.length > 0,
+        render: (props) => (
+          <MotifTrendsCard
+            data={trendLatestRows}
+            columns={metricsTrendsColumns}
+            {...props}
+          />
+        ),
+      },
+      {
+        id: 'time-trouble-correlation',
+        label: 'Time-trouble correlation',
+        visible: Boolean(data) && timeTroubleSortedRows.length > 0,
+        render: (props) => (
+          <TimeTroubleCorrelationCard
+            data={timeTroubleSortedRows}
+            columns={timeTroubleColumns}
+            {...props}
+          />
+        ),
+      },
+      {
+        id: 'practice-queue',
+        label: 'Practice queue',
+        visible: true,
+        render: (props) => (
+          <PracticeQueueCard
+            data={practiceLoading ? null : practiceQueue}
+            columns={practiceQueueColumns}
+            includeFailedAttempt={includeFailedAttempt}
+            loading={practiceLoading}
+            onIncludeFailedAttemptChange={handleIncludeFailedAttemptChange}
+            onRowClick={handleGameDetail}
+            rowTestId={(row, index) =>
+              `practice-queue-row-${row.source ?? 'unknown'}-${index}`
+            }
+            {...props}
+          />
+        ),
+      },
+      {
+        id: 'recent-games',
+        label: 'Recent games',
+        visible: Boolean(data),
+        render: (props) =>
+          data ? (
+            <RecentGamesCard
+              data={data.recent_games}
+              columns={recentGamesColumns}
+              onRowClick={handleGameDetail}
+              rowTestId={(row, index) =>
+                `recent-games-row-${row.source ?? 'unknown'}-${index}`
+              }
+              {...props}
+            />
+          ) : null,
+      },
+      {
+        id: 'tactics-table',
+        label: 'Recent tactics',
+        visible: Boolean(data),
+        render: (props) =>
+          data ? (
+            <RecentTacticsCard
+              data={data.tactics}
+              columns={tacticsColumns}
+              onRowClick={handleGameDetail}
+              rowTestId={(row) =>
+                row.game_id
+                  ? `dashboard-game-row-${row.game_id}`
+                  : 'dashboard-game-row-unknown'
+              }
+              {...props}
+            />
+          ) : null,
+      },
+      {
+        id: 'positions-list',
+        label: 'Latest positions',
+        visible: Boolean(data),
+        render: (props) =>
+          data ? (
+            <PositionsList positionsData={data.positions} {...props} />
+          ) : null,
+      },
+      {
+        id: 'practice-attempt',
+        label: 'Practice attempt',
+        visible: true,
+        render: (props) => (
+          <PracticeAttemptCard
+            currentPractice={currentPractice ?? null}
+            practiceSession={practiceSession}
+            practiceFen={practiceFen}
+            practiceMove={practiceMove}
+            practiceMoveRef={practiceMoveRef}
+            practiceSubmitting={practiceSubmitting}
+            practiceFeedback={practiceFeedback}
+            practiceSubmitError={practiceSubmitError}
+            practiceHighlightStyles={practiceHighlightStyles}
+            practiceOrientation={practiceOrientation}
+            onPracticeMoveChange={handlePracticeMoveChange}
+            handlePracticeAttempt={handlePracticeAttempt}
+            handlePracticeDrop={handlePracticeDrop}
+            {...props}
+          />
+        ),
+      },
+    ];
+  }, [
+    chesscomProfile,
+    currentPractice,
+    data,
+    filters,
+    handlePracticeAttempt,
+    handlePracticeDrop,
+    handlePracticeMoveChange,
+    handleResetFilters,
+    includeFailedAttempt,
+    jobProgress,
+    jobStatus,
+    lichessProfile,
+    loading,
+    metricsTrendsColumns,
+    motifDropIndicatorIndex,
+    motifOptions,
+    orderedMotifBreakdown,
+    postgresAnalysis,
+    postgresAnalysisLoading,
+    postgresLoading,
+    postgresRawPgns,
+    postgresRawPgnsError,
+    postgresRawPgnsLoading,
+    postgresStatus,
+    practiceFeedback,
+    practiceFen,
+    practiceHighlightStyles,
+    practiceLoading,
+    practiceMove,
+    practiceMoveRef,
+    practiceOrientation,
+    practiceQueue,
+    practiceQueueColumns,
+    practiceSession,
+    practiceSubmitError,
+    practiceSubmitting,
+    ratingOptions,
+    recentGamesColumns,
+    resolveGameSource,
+    source,
+    tacticsColumns,
+    timeControlOptions,
+    timeTroubleColumns,
+    timeTroubleSortedRows,
+    totals.positions,
+    totals.tactics,
+    trendLatestRows,
+  ]);
+
+  const dashboardCardIds = useMemo(
+    () => dashboardCardEntries.map((entry) => entry.id),
+    [dashboardCardEntries],
+  );
+
+  useEffect(() => {
+    const normalized = normalizeOrder(dashboardCardOrder, dashboardCardIds);
+    if (!areArraysEqual(normalized, dashboardCardOrder)) {
+      setDashboardCardOrder(normalized);
+    }
+  }, [dashboardCardIds, dashboardCardOrder]);
+
+  const orderedDashboardCards = useMemo(() => {
+    const cardMap = new Map(
+      dashboardCardEntries.map((entry) => [entry.id, entry]),
+    );
+    const visibleIds = dashboardCardEntries
+      .filter((entry) => entry.visible)
+      .map((entry) => entry.id);
+    const orderedVisible = dashboardCardOrder.filter((id) =>
+      visibleIds.includes(id),
+    );
+    return orderedVisible
+      .map((id) => cardMap.get(id))
+      .filter((entry): entry is BaseCardEntry => Boolean(entry));
+  }, [dashboardCardEntries, dashboardCardOrder]);
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <Hero
+        onRun={handleRun}
+        onBackfill={handleBackfill}
+        onMigrate={handleMigrations}
+        onRefresh={handleRefreshMetrics}
+        loading={loading}
+        version={data?.metrics_version ?? 0}
+        source={source}
+        profile={source === 'lichess' ? lichessProfile : undefined}
+        chesscomProfile={source === 'chesscom' ? chesscomProfile : undefined}
+        user={data?.user ?? 'unknown'}
+        onSourceChange={handleSourceChange}
+        backfillStartDate={backfillStartDate}
+        backfillEndDate={backfillEndDate}
+        onBackfillStartChange={handleBackfillStartChange}
+        onBackfillEndChange={handleBackfillEndChange}
+      />
+
+      {error ? <ErrorCard message={error} /> : null}
+
+      {postgresError ? <ErrorCard message={postgresError} /> : null}
+
+      {postgresAnalysisError ? (
+        <ErrorCard message={postgresAnalysisError} />
+      ) : null}
+
+      {postgresRawPgnsError ? (
+        <ErrorCard message={postgresRawPgnsError} />
+      ) : null}
+
+      <DragDropContext
+        onDragUpdate={(result) => {
+          if (result.destination?.droppableId === DASHBOARD_CARD_DROPPABLE_ID) {
+            setDropIndicatorIndex(result.destination?.index ?? null);
+          } else {
+            setDropIndicatorIndex(null);
+          }
+          if (result.destination?.droppableId === MOTIF_CARD_DROPPABLE_ID) {
+            setMotifDropIndicatorIndex(result.destination?.index ?? null);
+          } else {
+            setMotifDropIndicatorIndex(null);
+          }
+        }}
+        onDragEnd={(result) => {
+          setDropIndicatorIndex(null);
+          setMotifDropIndicatorIndex(null);
+          if (!result.destination) return;
+          if (
+            result.destination.index === result.source.index &&
+            result.destination.droppableId === result.source.droppableId
+          ) {
+            return;
+          }
+
+          if (result.destination.droppableId === DASHBOARD_CARD_DROPPABLE_ID) {
+            const visibleIds = orderedDashboardCards.map((card) => card.id);
+            if (!visibleIds.length) return;
+            const visibleSet = new Set(visibleIds);
+            const currentVisibleOrder = dashboardCardOrder.filter((id) =>
+              visibleSet.has(id),
+            );
+            const reorderedVisible = reorderList(
+              currentVisibleOrder,
+              result.source.index,
+              result.destination.index,
+            );
+            let nextVisibleIndex = 0;
+            const nextOrder = dashboardCardOrder.map((id) =>
+              visibleSet.has(id)
+                ? (reorderedVisible[nextVisibleIndex++] ?? id)
+                : id,
+            );
+            setDashboardCardOrder(nextOrder);
+            return;
+          }
+
+          if (result.destination.droppableId === MOTIF_CARD_DROPPABLE_ID) {
+            const visibleIds = orderedMotifBreakdown
+              .map((row) => row.motif)
+              .filter((motif): motif is string => Boolean(motif));
+            if (!visibleIds.length || !motifCardOrder.length) return;
+            const visibleSet = new Set(visibleIds);
+            const currentVisibleOrder = motifCardOrder.filter((id) =>
+              visibleSet.has(id),
+            );
+            const reorderedVisible = reorderList(
+              currentVisibleOrder,
+              result.source.index,
+              result.destination.index,
+            );
+            let nextVisibleIndex = 0;
+            const nextOrder = motifCardOrder.map((id) =>
+              visibleSet.has(id)
+                ? (reorderedVisible[nextVisibleIndex++] ?? id)
+                : id,
+            );
+            setMotifCardOrder(nextOrder);
+          }
+        }}
+      >
+        <Droppable droppableId={DASHBOARD_CARD_DROPPABLE_ID}>
+          {(dropProvided) => (
+            <div
+              ref={dropProvided.innerRef}
+              {...dropProvided.droppableProps}
+              className="space-y-3"
+            >
+              {orderedDashboardCards.map((card, index) => {
+                const isCollapsed = dashboardCardCollapsed[card.id] ?? true;
+                const dragLabel = `Reorder ${card.label}`;
+                return (
+                  <div key={card.id}>
+                    {dropIndicatorIndex === index ? (
+                      <div
+                        className="h-0.5 rounded-full bg-teal/60"
+                        data-testid="card-drop-indicator"
+                      />
+                    ) : null}
+                    <Draggable
+                      draggableId={card.id}
+                      index={index}
+                      isDragDisabled={!isCollapsed}
+                      disableInteractiveElementBlocking
+                    >
+                      {(dragProvided, dragSnapshot) => (
+                        <div
+                          ref={dragProvided.innerRef}
+                          {...dragProvided.draggableProps}
+                          style={dragProvided.draggableProps.style}
+                          data-card-id={card.id}
+                          data-testid={`dashboard-card-${card.id}`}
+                          className={
+                            dragSnapshot.isDragging
+                              ? 'rounded-xl ring-2 ring-teal/40 shadow-lg'
+                              : undefined
+                          }
+                        >
+                          {(() => {
+                            const renderProps: BaseCardRenderProps = {
+                              dragHandleLabel: dragLabel,
+                              onCollapsedChange: (collapsed) =>
+                                setDashboardCardCollapsed((prev) => ({
+                                  ...prev,
+                                  [card.id]: collapsed,
+                                })),
+                            };
+                            if (dragProvided.dragHandleProps) {
+                              renderProps.dragHandleProps =
+                                dragProvided.dragHandleProps as BaseCardDragHandleProps;
+                            }
+                            return card.render(renderProps);
+                          })()}
+                        </div>
+                      )}
+                    </Draggable>
+                  </div>
+                );
+              })}
+              {dropIndicatorIndex === orderedDashboardCards.length ? (
+                <div
+                  className="h-0.5 rounded-full bg-teal/60"
+                  data-testid="card-drop-indicator"
+                />
+              ) : null}
+              {dropProvided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+      {practiceError ? <ErrorCard message={practiceError} /> : null}
+      <GameDetailModal
+        open={gameDetailOpen}
+        onClose={() => setGameDetailOpen(false)}
+        game={gameDetail}
+        moves={gameDetailMoves}
+        loading={gameDetailLoading}
+        error={gameDetailError}
+      />
+    </div>
+  );
+}

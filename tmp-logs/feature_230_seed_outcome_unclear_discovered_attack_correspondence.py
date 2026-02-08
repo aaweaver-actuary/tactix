@@ -14,7 +14,7 @@ from tactix.db.duckdb_store import (
 )
 from tactix.pgn_utils import split_pgn_chunks
 from tactix.stockfish_runner import EngineResult
-from tactix.tactics_analyzer import analyze_position
+from tactix.analyze_position import analyze_position
 from _seed_helpers import _ensure_position
 
 
@@ -75,7 +75,9 @@ def _discovered_attack_fixture_position() -> dict[str, object]:
     discovered_chunk = next(
         chunk for chunk in chunks if "Discovered Attack" in chunk and "High" not in chunk
     )
-    position = _first_move_position(discovered_chunk, game_id="correspondence-discovered-attack-unclear")
+    position = _first_move_position(
+        discovered_chunk, game_id="correspondence-discovered-attack-unclear"
+    )
     if not position:
         raise SystemExit("No discovered attack fixture game found")
     return position

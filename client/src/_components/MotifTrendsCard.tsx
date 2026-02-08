@@ -1,23 +1,18 @@
 import { ColumnDef } from '@tanstack/react-table';
 import type { MetricsTrendsRow } from './MetricsTrends';
 import Badge from './Badge';
-import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
+import BaseCard, { BaseCardDragProps } from './BaseCard';
 import MetricsTrends from './MetricsTrends';
 
-interface MotifTrendsCardProps {
+interface MotifTrendsCardProps extends BaseCardDragProps {
   data: MetricsTrendsRow[];
   columns: ColumnDef<MetricsTrendsRow>[];
-  dragHandleProps?: BaseCardDragHandleProps;
-  dragHandleLabel?: string;
-  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 export default function MotifTrendsCard({
   data,
   columns,
-  dragHandleProps,
-  dragHandleLabel,
-  onCollapsedChange,
+  ...dragProps
 }: MotifTrendsCardProps) {
   return (
     <BaseCard
@@ -29,9 +24,7 @@ export default function MotifTrendsCard({
         </div>
       }
       contentClassName="pt-3"
-      dragHandleProps={dragHandleProps}
-      dragHandleLabel={dragHandleLabel}
-      onCollapsedChange={onCollapsedChange}
+      {...dragProps}
     >
       <MetricsTrends data={data} columns={columns} />
     </BaseCard>

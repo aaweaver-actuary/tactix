@@ -1,19 +1,17 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { PracticeQueueItem } from '../api';
-import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
+import BaseCard, { BaseCardDragProps } from './BaseCard';
 import PracticeQueue from './PracticeQueue';
 import Text from './Text';
 
-interface PracticeQueueCardProps {
+interface PracticeQueueCardProps extends BaseCardDragProps {
   data: PracticeQueueItem[] | null;
   columns: ColumnDef<PracticeQueueItem>[];
   includeFailedAttempt: boolean;
   loading: boolean;
   onIncludeFailedAttemptChange: (next: boolean) => void;
   onRowClick?: (row: PracticeQueueItem) => void;
-  dragHandleProps?: BaseCardDragHandleProps;
-  dragHandleLabel?: string;
-  onCollapsedChange?: (collapsed: boolean) => void;
+  rowTestId?: (row: PracticeQueueItem, index: number) => string;
 }
 
 export default function PracticeQueueCard({
@@ -23,13 +21,13 @@ export default function PracticeQueueCard({
   loading,
   onIncludeFailedAttemptChange,
   onRowClick,
-  dragHandleProps,
-  dragHandleLabel,
-  onCollapsedChange,
+  rowTestId,
+  ...dragProps
 }: PracticeQueueCardProps) {
   return (
     <BaseCard
       className="p-4"
+      data-testid="practice-queue-card"
       header={
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -51,11 +49,14 @@ export default function PracticeQueueCard({
         </div>
       }
       contentClassName="pt-3"
-      dragHandleProps={dragHandleProps}
-      dragHandleLabel={dragHandleLabel}
-      onCollapsedChange={onCollapsedChange}
+      {...dragProps}
     >
-      <PracticeQueue data={data} columns={columns} onRowClick={onRowClick} />
+      <PracticeQueue
+        data={data}
+        columns={columns}
+        onRowClick={onRowClick}
+        rowTestId={rowTestId}
+      />
     </BaseCard>
   );
 }

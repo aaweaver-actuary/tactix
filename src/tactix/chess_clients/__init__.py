@@ -1,13 +1,14 @@
-from datetime import datetime
+"""Public exports for chess client abstractions."""
 
-from pydantic import BaseModel, Field
+from __future__ import annotations
+
+from importlib import import_module
+from typing import TYPE_CHECKING
 
 from tactix.chess_clients.base_chess_client import BaseChessClient, BaseChessClientContext
 from tactix.chess_clients.chess_fetch_request import ChessFetchRequest
 from tactix.chess_clients.chess_fetch_result import ChessFetchResult
 from tactix.chess_clients.chess_game_row import ChessGameRow
-from tactix.chess_clients.chesscom_client import ChesscomClient
-from tactix.chess_clients.lichess_client import LichessClient
 
 __all__ = [
     "BaseChessClient",
@@ -18,3 +19,24 @@ __all__ = [
     "ChesscomClient",
     "LichessClient",
 ]
+
+
+def __getattr__(name: str):
+    if name == "ChesscomClient":
+        return import_module("tactix.infra.clients.chesscom_client").ChesscomClient
+    if name == "LichessClient":
+        return import_module("tactix.infra.clients.lichess_client").LichessClient
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
+
+def __dir__() -> list[str]:
+    return sorted(__all__)
+
+
+if TYPE_CHECKING:
+    from tactix.infra.clients.chesscom_client import ChesscomClient
+    from tactix.infra.clients.lichess_client import LichessClient
+
+    __getattr__("ChesscomClient")
+    __getattr__("LichessClient")
+    __dir__()

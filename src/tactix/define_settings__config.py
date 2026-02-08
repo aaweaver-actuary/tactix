@@ -1,7 +1,9 @@
+"""Define top-level application settings."""
+
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from pathlib import Path
 
 from tactix.airflow_settings import AirflowSettings
@@ -47,6 +49,7 @@ def _chesscom_time_class_from_profile(profile: str) -> str:
 
 
 @dataclass(slots=True, init=False)
+# pylint: disable=too-many-public-methods,missing-function-docstring,too-many-instance-attributes
 class Settings:
     """Central configuration for ingestion, analysis, and UI refresh."""
 
@@ -71,6 +74,7 @@ class Settings:
     )
     rapid_perf: str = os.getenv("TACTIX_PERF", "rapid")
     run_context: str = os.getenv("TACTIX_RUN_CONTEXT", "app")
+    run_id: str | None = None
     checkpoint_path: Path = DEFAULT_LICHESS_CHECKPOINT
     analysis_checkpoint_path: Path = DEFAULT_LICHESS_ANALYSIS_CHECKPOINT
     fixture_pgn_path: Path = DEFAULT_LICHESS_FIXTURE
@@ -80,7 +84,8 @@ class Settings:
     _stockfish_path_overridden: bool = False
 
     def __init__(self, **kwargs: object) -> None:
-        for name, field_info in self.__dataclass_fields__.items():
+        for field_info in fields(self):
+            name = field_info.name
             setattr(self, name, _field_value(name, field_info, kwargs))
         _apply_settings_aliases(self, kwargs)
         self._apply_compat_kwargs(kwargs)

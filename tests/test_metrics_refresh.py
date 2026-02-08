@@ -3,16 +3,12 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from tactix.db.duckdb_store import (
-    fetch_metrics,
-    fetch_motif_stats,
-    get_connection,
-    init_schema,
-    insert_positions,
-    update_metrics_summary,
-    upsert_raw_pgns,
-    upsert_tactic_with_outcome,
-)
+from tactix.db.dashboard_repository_provider import fetch_metrics, fetch_motif_stats
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.position_repository_provider import insert_positions
+from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
+from tactix.db.metrics_repository_provider import update_metrics_summary
+from tactix.db.raw_pgn_repository_provider import upsert_raw_pgns
 from tactix.pgn_utils import (
     extract_game_id,
     extract_last_timestamp_ms,
@@ -27,9 +23,7 @@ class MetricsRefreshTests(unittest.TestCase):
         conn = get_connection(db_path)
         init_schema(conn)
 
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "lichess_rapid_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "lichess_rapid_sample.pgn"
         chunks = split_pgn_chunks(fixture_path.read_text())
         rows = []
         for chunk in chunks:
@@ -148,9 +142,7 @@ class MetricsRefreshTests(unittest.TestCase):
             )
         position_ids = insert_positions(conn, positions)
 
-        for pos, position_id, result in zip(
-            positions, position_ids, results, strict=False
-        ):
+        for pos, position_id, result in zip(positions, position_ids, results, strict=False):
             upsert_tactic_with_outcome(
                 conn,
                 {
@@ -219,9 +211,7 @@ class MetricsRefreshTests(unittest.TestCase):
 
         rows = []
         positions = []
-        for idx, (time_control, clock_seconds, result) in enumerate(
-            scenarios, start=1
-        ):
+        for idx, (time_control, clock_seconds, result) in enumerate(scenarios, start=1):
             game_id = f"game-{idx}"
             timestamp = int((base_time + timedelta(minutes=idx)).timestamp() * 1000)
             rows.append(
@@ -282,9 +272,7 @@ class MetricsRefreshTests(unittest.TestCase):
         update_metrics_summary(conn)
         metrics = fetch_metrics(conn, source="lichess")
         time_trouble = [
-            row
-            for row in metrics
-            if row.get("metric_type") == "time_trouble_correlation"
+            row for row in metrics if row.get("metric_type") == "time_trouble_correlation"
         ]
 
         self.assertEqual(len(time_trouble), 2)
@@ -305,9 +293,7 @@ class MetricsRefreshTests(unittest.TestCase):
         conn = get_connection(db_path)
         init_schema(conn)
 
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "lichess_rapid_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "lichess_rapid_sample.pgn"
         chunks = split_pgn_chunks(fixture_path.read_text())
         rows = []
         for chunk in chunks:

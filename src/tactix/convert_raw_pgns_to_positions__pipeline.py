@@ -3,7 +3,7 @@ from __future__ import annotations
 from tactix.attach_position_ids__pipeline import _attach_position_ids
 from tactix.config import Settings
 from tactix.conversion_payload__pipeline import _conversion_payload
-from tactix.db.duckdb_store import insert_positions
+from tactix.db.position_repository_provider import insert_positions
 from tactix.empty_conversion_payload__pipeline import _empty_conversion_payload
 from tactix.extract_positions_for_rows__pipeline import _extract_positions_for_rows
 from tactix.filter_positions_to_process__pipeline import _filter_positions_to_process

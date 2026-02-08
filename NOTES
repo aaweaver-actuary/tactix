@@ -1,2 +1,0 @@
-1. There are several variations on the same theme of detecting forks/pins/etc. There are many ways these need to be verified, but keep in mind that they should be using the same underlying logic where possible to avoid discrepancies.
-2. It could be useful to have a abstract BaseTacticDetector class that implements common functionality, and then have specific detectors inherit from this base class. This way we can start to consolidate common logic, and make sure that we are consistent across different tactic detectors.

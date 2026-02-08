@@ -1,3 +1,5 @@
+"""API endpoint to trigger a background job."""
+
 from __future__ import annotations
 
 import time as time_module
@@ -6,15 +8,12 @@ from typing import Annotated
 
 from fastapi import Query
 
+from tactix._ignore_progress import _ignore_progress
 from tactix.config import get_settings
+from tactix.job_stream import BackfillWindow, StreamJobRunContext, _run_stream_job
 from tactix.list_sources_for_cache_refresh__api_cache import _sources_for_cache_refresh
 from tactix.refresh_dashboard_cache_async__api_cache import _refresh_dashboard_cache_async
 from tactix.resolve_backfill_end_ms__airflow_jobs import _resolve_backfill_end_ms
-from tactix.run_stream_job__job_stream import _run_stream_job
-
-
-def _ignore_progress(_payload: dict[str, object]) -> None:
-    return None
 
 
 def trigger_job(
@@ -24,6 +23,7 @@ def trigger_job(
     backfill_start_ms: Annotated[int | None, Query(ge=0)] = None,
     backfill_end_ms: Annotated[int | None, Query(ge=0)] = None,
 ) -> dict[str, object]:
+    """Trigger a background job and return status."""
     settings = get_settings(source=source, profile=profile)
     queue: Queue[object] = Queue()
     triggered_at_ms = int(time_module.time() * 1000)
@@ -33,15 +33,19 @@ def trigger_job(
         triggered_at_ms,
     )
     result = _run_stream_job(
-        settings,
-        queue,
-        job,
-        source,
-        profile,
-        backfill_start_ms,
-        effective_end_ms,
-        triggered_at_ms,
-        _ignore_progress,
+        StreamJobRunContext(
+            settings=settings,
+            queue=queue,
+            job=job,
+            window=BackfillWindow(
+                source=source,
+                profile=profile,
+                backfill_start_ms=backfill_start_ms,
+                backfill_end_ms=effective_end_ms,
+                triggered_at_ms=triggered_at_ms,
+            ),
+            progress=_ignore_progress,
+        )
     )
     if job in {"daily_game_sync", "refresh_metrics"}:
         _refresh_dashboard_cache_async(_sources_for_cache_refresh(source))

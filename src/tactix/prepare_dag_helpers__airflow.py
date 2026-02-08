@@ -6,10 +6,11 @@ from typing import SupportsInt, cast
 from airflow.decorators import task
 from airflow.utils import timezone
 
+from tactix.dashboard_query import DashboardQuery
 from tactix.pipeline import get_dashboard_payload
-from tactix.utils.logger import get_logger
+from tactix.utils.logger import Logger
 
-logger = get_logger(__name__)
+logger = Logger(__name__)
 
 
 def default_args(*, retries: int = 2) -> dict[str, object]:
@@ -143,7 +144,10 @@ def make_notify_dashboard_task(
 ):
     @task(task_id=task_id)
     def notify_dashboard(_: dict[str, object]) -> dict[str, object]:
-        payload = get_dashboard_payload(settings, source=source)
+        payload = get_dashboard_payload(
+            DashboardQuery(source=source),
+            settings,
+        )
         logger.info(
             "Dashboard payload refreshed; metrics_version=%s",
             payload.get("metrics_version"),

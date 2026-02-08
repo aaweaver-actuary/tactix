@@ -6,8 +6,26 @@ from unittest.mock import PropertyMock, patch
 
 import chess
 
-import tactix.position_extractor as position_extractor
-from tactix.position_extractor import extract_positions
+import tactix.extract_positions
+from tactix._build_pgn_context import _build_pgn_context
+from tactix._clock_from_comment import _clock_from_comment
+from tactix._iter_position_contexts import _iter_position_contexts
+from tactix._normalize_side_filter import _normalize_side_filter
+from tactix._resolve_game_context import _resolve_game_context
+from tactix.PgnContext import PgnContext
+from tactix.extract_positions import extract_positions
+from tactix.extract_positions__pgn import _extract_positions_python
+
+position_extractor = types.SimpleNamespace(
+    PgnContext=PgnContext,
+    _build_pgn_context=_build_pgn_context,
+    _clock_from_comment=_clock_from_comment,
+    _iter_position_contexts=_iter_position_contexts,
+    _normalize_side_filter=_normalize_side_filter,
+    _resolve_game_context=_resolve_game_context,
+    _extract_positions_python=_extract_positions_python,
+    chess=chess,
+)
 
 
 def _read_fixture_games() -> list[str]:
@@ -226,7 +244,7 @@ class PositionExtractorTests(unittest.TestCase):
             ]
         )
 
-        with patch("tactix.position_extractor.os.getenv", return_value=None):
+        with patch("tactix._fallback_kwargs.os.getenv", return_value=None):
             with patch.dict(sys.modules, {"tactix._core": dummy_module}):
                 positions = extract_positions(pgn, user="lichess", source="lichess")
 
@@ -236,7 +254,7 @@ class PositionExtractorTests(unittest.TestCase):
         pgn = self.games[0]
         dummy_module = types.SimpleNamespace()
 
-        with patch("tactix.position_extractor.os.getenv", return_value=None):
+        with patch("tactix._fallback_kwargs.os.getenv", return_value=None):
             with patch.dict(sys.modules, {"tactix._core": dummy_module}):
                 positions = extract_positions(pgn, user="lichess", source="lichess")
 
@@ -285,7 +303,7 @@ class PositionExtractorTests(unittest.TestCase):
 
         dummy_module = types.SimpleNamespace(extract_positions=_boom)
 
-        with patch("tactix.position_extractor.os.getenv", return_value=None):
+        with patch("tactix._fallback_kwargs.os.getenv", return_value=None):
             with patch.dict(sys.modules, {"tactix._core": dummy_module}):
                 positions = extract_positions(pgn, user="lichess", source="lichess")
 
@@ -333,7 +351,7 @@ class PositionExtractorTests(unittest.TestCase):
             def mainline(self):
                 return [DummyNode()]
 
-        with patch("tactix.position_extractor.chess.pgn.read_game", return_value=DummyGame()):
+        with patch("tactix.PgnContext.chess.pgn.read_game", return_value=DummyGame()):
             positions = position_extractor._extract_positions_python(
                 "pgn", user="alice", source="lichess"
             )
@@ -842,12 +860,11 @@ class PositionExtractorTests(unittest.TestCase):
 
     def test_extract_positions_uses_python_path_in_pytest(self) -> None:
         with patch.dict("os.environ", {"PYTEST_CURRENT_TEST": "1"}):
-            with patch.object(
-                position_extractor,
-                "_extract_positions_python",
+            with patch(
+                "tactix.extract_positions__pgn._extract_positions_python",
                 return_value=[{"uci": "e2e4"}],
             ) as extractor:
-                result = position_extractor.extract_positions(
+                result = tactix.extract_positions.extract_positions(
                     '[Event "Test"]\n\n1. e4 e5 *',
                     user="white",
                     source="lichess",

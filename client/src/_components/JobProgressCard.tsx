@@ -1,8 +1,8 @@
 import { JobProgressItem } from '../types';
 import Badge from './Badge';
-import BaseCard from './BaseCard';
+import BaseCard, { BaseCardDragProps } from './BaseCard';
 
-interface JobProgressCardProps {
+interface JobProgressCardProps extends BaseCardDragProps {
   entries: JobProgressItem[];
   status: 'idle' | 'running' | 'error' | 'complete';
 }
@@ -10,13 +10,13 @@ interface JobProgressCardProps {
 export default function JobProgressCard({
   entries,
   status,
+  ...dragProps
 }: JobProgressCardProps) {
   if (!entries.length) return null;
 
   return (
     <BaseCard
       className="p-4"
-      collapsible={false}
       header={
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-display text-sand">Job progress</h3>
@@ -34,6 +34,7 @@ export default function JobProgressCard({
         </div>
       }
       contentClassName="pt-3"
+      {...dragProps}
     >
       <ol className="space-y-2 text-sm">
         {entries.map((entry, index) => {

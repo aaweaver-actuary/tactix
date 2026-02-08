@@ -1,0 +1,5 @@
+row: ('r1bqkr2/ppp1bp1Q/8/3Pn3/P3pN2/2P5/1P1P1PPP/RNB1R1K1 b q - 3 14', 'e7f6')
+move: e7f6 piece: b
+attacked_by_white: False attacked_by_black: True
+unprotected (from mover): True
+legal capture responses:

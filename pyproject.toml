@@ -1,7 +1,6 @@
-
 [project]
 dependencies=[
-    "apache-airflow==2.10.0",
+    "apache-airflow==2.10.3",
     "berserk>=0.13.0",
     "duckdb>=1.4.3",
     "fastapi>=0.115.0",
@@ -46,15 +45,98 @@ requires     =["maturin>=1.0,<2.0"]
 
 [dependency-groups]
 dev=[
+    "bandit>=1.9.3",
+    "dodgy>=0.2.1",
+    "flake8-annotations-complexity>=0.1.0",
+    "flake8-assertive>=2.2.0",
+    "flake8-bandit>=4.1.1",
+    "flake8-bugbear>=25.11.29",
+    "flake8-class-attributes-order>=0.3.0",
+    "flake8-cognitive-complexity>=0.1.0",
+    "flake8-comprehensions>=3.17.0",
+    "flake8-docstrings>=1.7.0",
+    "flake8-expression-complexity>=0.0.11",
+    "flake8-fastapi>=0.7.0",
+    "flake8-functions>=0.0.8",
+    "flake8-json>=24.4.0",
+    "flake8-length>=0.3.1",
+    "flake8-markdown>=0.6.0",
+    "flake8-picky-parentheses>=0.6.2",
+    "flake8-pyi>=25.5.0",
+    "flake8-quotes>=3.4.0",
+    "flake8-return>=1.2.0",
+    "flake8-rst-docstrings>=0.4.0",
+    "flake8-simplify>=0.30.0",
+    "flake8>=7.3.0",
+    "mypy>=1.19.1",
     "pre-commit>=4.5.0",
+    "prospector>=1.18.0",
+    "pycycle>=0.0.8",
+    "pydocstyle>=6.3.0",
     "pylint>=4.0.4",
     "pytest-cov>=7.0.0",
     "pytest>=9.0.2",
     "ruff>=0.14.14",
+    "safety>=3.7.0",
     "ty>=0.0.13",
+    "types-requests>=2.32.4.20260107",
     "vulture>=2.14",
     "xenon>=0.9.3",
 ]
+
+[tool.pylint.main]
+ignore-patterns=[
+    "ANALYSIS_SCHEMA.py",
+    "CLOCK_PARTS_SHORT.py",
+    "PGN_SCHEMA.py",
+    "SITE_PATTERNS.py",
+]
+max-line-length=100
+
+[tool.pylint."messages control"]
+disable="C0103,C0114,C0115,C0116,C0302,R0801,R0914,W0718"
+
+[tool.pydocstyle]
+ignore=[
+    "D100", # Missing docstring in public module
+    "D101", # Missing docstring in public class
+    "D102", # Missing docstring in public method
+    "D103", # Missing docstring in public function
+    "D104", # Missing docstring in public package
+    "D105", # Missing docstring in magic method
+    "D106", # Missing docstring in public nested class
+    "D107", # Missing docstring in __init__
+    "D202", # No blank lines allowed after function docstring
+    "D203", # 1 blank line required before class docstring
+    "D205", # 1 blank line required between summary line and description
+    "D212", # Multi-line docstring summary should start at the first line
+    "D213", # Multi-line docstring summary should start at the second line
+    "D300", # Use triple double quotes
+    "D400", # First line should end with a period
+    "D401", # First line should be in imperative mood
+    "D403", # First word should be properly capitalized
+    "D406", # Section name should end with a newline
+    "D407", # Missing dashed underline after section
+    "D413", # Missing blank line after last section
+    "D415", # First line should end with a period, question mark, or exclamation
+    "D417", # Missing argument descriptions
+]
+
+
+[tool.mypy]
+disable_error_code=[
+    "arg-type",
+    "attr-defined",
+    "call-overload",
+    "import-untyped",
+    "operator",
+    "override",
+    "typeddict-item",
+    "valid-type",
+]
+ignore_missing_imports=true
+python_version="3.12"
+
 
 [tool.ruff]
 extend-exclude=[".venv", "build", "client", "dist"]
@@ -90,10 +172,10 @@ target-version="py312"
     ]
 
     ignore=[
-        "PLR0913", # "too many args" (enable later if you want)
-        "S101",    # allow assert (pytest uses it)
-        "S608",    # pickle is ok in our use cases
-        "TRY003",  # long exception messages (can be noisy)
+        "RUF100", # allow noqa comments for external linters
+        "S101",   # allow assert (pytest uses it)
+        "S608",   # pickle is ok in our use cases
+        "TRY003", # long exception messages (can be noisy)
     ]
 
     fixable  =["ALL"]

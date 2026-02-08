@@ -1,3 +1,5 @@
+"""Fetch the current Airflow DAG run state."""
+
 from __future__ import annotations
 
 from tactix.fetch_dag_run__airflow_api import fetch_dag_run__airflow_api

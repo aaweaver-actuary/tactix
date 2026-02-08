@@ -3,16 +3,12 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 
-from tactix.db.duckdb_store import (
-    fetch_metrics,
-    fetch_recent_tactics,
-    get_connection,
-    init_schema,
-    insert_positions,
-    update_metrics_summary,
-    upsert_raw_pgns,
-    upsert_tactic_with_outcome,
-)
+from tactix.db.dashboard_repository_provider import fetch_metrics, fetch_recent_tactics
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.position_repository_provider import insert_positions
+from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
+from tactix.db.metrics_repository_provider import update_metrics_summary
+from tactix.db.raw_pgn_repository_provider import upsert_raw_pgns
 from tactix.pgn_utils import extract_game_id, extract_last_timestamp_ms
 
 

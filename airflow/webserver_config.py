@@ -56,7 +56,7 @@ AUTH_TYPE = AUTH_DB
 # Uncomment and set to desired role to enable access without authentication
 public_role = os.getenv("TACTIX_AIRFLOW_PUBLIC_ROLE")
 if public_role:
-	AUTH_ROLE_PUBLIC = public_role
+    AUTH_ROLE_PUBLIC = public_role
 
 # Will allow user self registration
 # AUTH_USER_REGISTRATION = True
@@ -69,7 +69,6 @@ if public_role:
 # MAIL_SERVER = 'smtp.gmail.com'
 # MAIL_USE_TLS = True
 # MAIL_USERNAME = 'yourappemail@gmail.com'
-# MAIL_PASSWORD = 'passwordformail'
 # MAIL_DEFAULT_SENDER = 'sender@gmail.com'
 
 # The default user self registration role

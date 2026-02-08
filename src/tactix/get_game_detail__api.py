@@ -1,28 +1,25 @@
+"""API handler for game detail retrieval."""
+
 from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import HTTPException, Query
+from fastapi import Depends, HTTPException, Query
 
-from tactix.config import get_settings
-from tactix.db.duckdb_store import fetch_game_detail, get_connection, init_schema
-from tactix.normalize_source__source import _normalize_source
+from tactix.app.use_cases.practice import (
+    GameNotFoundError,
+    PracticeUseCase,
+    get_practice_use_case,
+)
 
 
 def game_detail(
     game_id: str,
+    use_case: Annotated[PracticeUseCase, Depends(get_practice_use_case)],
     source: Annotated[str | None, Query()] = None,
 ) -> dict[str, object]:
-    normalized_source = _normalize_source(source)
-    settings = get_settings(source=normalized_source)
-    conn = get_connection(settings.duckdb_path)
-    init_schema(conn)
-    payload = fetch_game_detail(
-        conn,
-        game_id=game_id,
-        user=settings.user,
-        source=normalized_source,
-    )
-    if not payload.get("pgn"):
-        raise HTTPException(status_code=404, detail="Game not found")
-    return payload
+    """Return game detail payload for a game id."""
+    try:
+        return use_case.get_game_detail(game_id, source)
+    except GameNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc

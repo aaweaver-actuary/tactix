@@ -3,7 +3,7 @@ import { LICHESS_PROFILE_OPTIONS } from '../utils/LICHESS_PROFILE_OPTIONS';
 import { SOURCE_OPTIONS } from '../utils/SOURCE_OPTIONS';
 import { ChessPlatform, ChesscomProfile, LichessProfile } from '../types';
 import Badge from './Badge';
-import BaseCard from './BaseCard';
+import BaseCard, { BaseCardDragProps } from './BaseCard';
 
 interface FiltersState {
   motif: string;
@@ -13,7 +13,7 @@ interface FiltersState {
   endDate: string;
 }
 
-interface FiltersCardProps {
+interface FiltersCardProps extends BaseCardDragProps {
   source: ChessPlatform;
   loading: boolean;
   lichessProfile: LichessProfile;
@@ -43,11 +43,11 @@ export default function FiltersCard({
   onChesscomProfileChange,
   onFiltersChange,
   onResetFilters,
+  ...dragProps
 }: FiltersCardProps) {
   return (
     <BaseCard
       className="p-4"
-      collapsible={false}
       header={
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-display text-sand">Filters</h3>
@@ -55,6 +55,7 @@ export default function FiltersCard({
         </div>
       }
       contentClassName="pt-3"
+      {...dragProps}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
         <label className="text-xs text-sand/60 flex flex-col gap-2">

@@ -1,0 +1,37 @@
+{
+  "status": "ok",
+  "run_id": "f8d84bf19a18476ea91905c7cca39ae3",
+  "result": {
+    "source": "chesscom",
+    "user": "groborger",
+    "fetched_games": 2,
+    "raw_pgns_inserted": 0,
+    "raw_pgns_hashed": 1,
+    "raw_pgns_matched": 1,
+    "postgres_raw_pgns_inserted": 0,
+    "positions": 0,
+    "tactics": 0,
+    "metrics_version": 2,
+    "checkpoint_ms": null,
+    "cursor": "1720740300000:2234567898",
+    "last_timestamp_ms": 1769953679000,
+    "since_ms": 0
+  },
+  "counts": {
+    "games": 2,
+    "positions": 20,
+    "user_moves": 20,
+    "opportunities": 20,
+    "conversions": 20,
+    "practice_queue": 2
+  },
+  "motif_counts": {
+    "escape": 1,
+    "hanging_piece": 5,
+    "initiative": 7,
+    "pin": 1,
+    "skewer": 6
+  },
+  "window_start_ms": 1769904000000,
+  "window_end_ms": 1769990400000
+}

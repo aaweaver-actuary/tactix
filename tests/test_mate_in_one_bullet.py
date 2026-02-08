@@ -4,17 +4,14 @@ import unittest
 from pathlib import Path
 
 from tactix.config import DEFAULT_BULLET_STOCKFISH_DEPTH, Settings
-from tactix.db.duckdb_store import (
-    get_connection,
-    grade_practice_attempt,
-    init_schema,
-    insert_positions,
-    upsert_tactic_with_outcome,
-)
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.position_repository_provider import insert_positions
+from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
+from tactix.db.tactic_repository_provider import tactic_repository
+from tactix.extract_positions import extract_positions
 from tactix.pgn_utils import split_pgn_chunks
-from tactix.position_extractor import extract_positions
-from tactix.stockfish_runner import StockfishEngine
-from tactix.tactics_analyzer import analyze_position
+from tactix.StockfishEngine import StockfishEngine
+from tactix.analyze_position import analyze_position
 
 # NOTE: Bullet fork coverage added below.
 
@@ -22,9 +19,7 @@ from tactix.tactics_analyzer import analyze_position
 class MateInOneBulletTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_bullet_mate_in_one_is_high_severity(self) -> None:
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "chesscom_bullet_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_bullet_sample.pgn"
         chunks = split_pgn_chunks(fixture_path.read_text())
         mate_pgn = next(chunk for chunk in chunks if "Bullet Fixture 3" in chunk)
 
@@ -71,7 +66,11 @@ class MateInOneBulletTests(unittest.TestCase):
         ).fetchone()[0]
         self.assertEqual(stored_position_id, position_ids[0])
 
-        attempt = grade_practice_attempt(conn, tactic_id, position_ids[0], "d8h4")
+        attempt = tactic_repository(conn).grade_practice_attempt(
+            tactic_id,
+            position_ids[0],
+            "d8h4",
+        )
         self.assertIn("Best line", attempt["explanation"] or "")
         self.assertIn("h4", attempt["explanation"] or "")
 
@@ -79,9 +78,7 @@ class MateInOneBulletTests(unittest.TestCase):
 class TestForkBullet(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_bullet_fork_is_high_severity(self) -> None:
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "chesscom_bullet_sample.pgn"
-        )
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "chesscom_bullet_sample.pgn"
         chunks = split_pgn_chunks(fixture_path.read_text())
         fork_pgn = next(chunk for chunk in chunks if "Bullet Fixture 5" in chunk)
 
@@ -130,7 +127,11 @@ class TestForkBullet(unittest.TestCase):
         self.assertIsNotNone(stored[1])
         self.assertIn("Best line", stored[2] or "")
 
-        attempt = grade_practice_attempt(conn, tactic_id, position_ids[0], "f4e2")
+        attempt = tactic_repository(conn).grade_practice_attempt(
+            tactic_id,
+            position_ids[0],
+            "f4e2",
+        )
         self.assertIn("Best line", attempt["explanation"] or "")
         self.assertIn("e2", attempt["explanation"] or "")
 

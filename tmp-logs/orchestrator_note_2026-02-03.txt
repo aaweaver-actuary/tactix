@@ -1,0 +1,2 @@
+Make check output captured; see current branch feature/issue-1-chesscom-bullet-pipeline
+Orchestrator note: apologizing for terminal no-ops; proceeding with subagent dispatch.

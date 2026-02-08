@@ -1,9 +1,12 @@
+"""Expand a PGN row into chunk rows when needed."""
+
 from __future__ import annotations
 
 from tactix.build_chunk_row__pipeline import _build_chunk_row
 from tactix.config import Settings
-from tactix.define_pipeline_state__pipeline import SINGLE_PGN_CHUNK, GameRow
-from tactix.prepare_pgn__chess import split_pgn_chunks
+from tactix.define_pipeline_state__pipeline import SINGLE_PGN_CHUNK
+from tactix.GameRow import GameRow
+from tactix.split_pgn_chunks import split_pgn_chunks
 
 
 def _expand_single_pgn_row(row: GameRow, settings: Settings) -> list[GameRow]:

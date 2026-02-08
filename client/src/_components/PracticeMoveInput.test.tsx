@@ -8,7 +8,10 @@ describe('PracticeMoveInput', () => {
     render(
       <PracticeMoveInput
         practiceMove="e2e4"
-        setPracticeMove={() => {}}
+        onPracticeMoveChange={() => {}}
+        onPracticeSubmit={(move) => {
+          void move;
+        }}
         practiceSubmitting={false}
       />,
     );
@@ -24,7 +27,10 @@ describe('PracticeMoveInput', () => {
     render(
       <PracticeMoveInput
         practiceMove=""
-        setPracticeMove={() => {}}
+        onPracticeMoveChange={() => {}}
+        onPracticeSubmit={(move) => {
+          void move;
+        }}
         practiceSubmitting={true}
       />,
     );
@@ -35,12 +41,15 @@ describe('PracticeMoveInput', () => {
     expect(input).toBeDisabled();
   });
 
-  it('calls setPracticeMove on change', () => {
-    const setPracticeMove = vi.fn();
+  it('calls onPracticeMoveChange on change', () => {
+    const onPracticeMoveChange = vi.fn();
     render(
       <PracticeMoveInput
         practiceMove=""
-        setPracticeMove={setPracticeMove}
+        onPracticeMoveChange={onPracticeMoveChange}
+        onPracticeSubmit={(move) => {
+          void move;
+        }}
         practiceSubmitting={false}
       />,
     );
@@ -50,6 +59,44 @@ describe('PracticeMoveInput', () => {
     );
     fireEvent.change(input, { target: { value: 'g1f3' } });
 
-    expect(setPracticeMove).toHaveBeenCalledWith('g1f3');
+    expect(onPracticeMoveChange).toHaveBeenCalledWith('g1f3');
+  });
+
+  it('submits on Enter when there is input', () => {
+    const onPracticeSubmit = vi.fn();
+    render(
+      <PracticeMoveInput
+        practiceMove="e2e4"
+        onPracticeMoveChange={() => {}}
+        onPracticeSubmit={onPracticeSubmit}
+        practiceSubmitting={false}
+      />,
+    );
+
+    const input = screen.getByPlaceholderText(
+      'Enter your move (UCI e.g., e2e4)',
+    );
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(onPracticeSubmit).toHaveBeenCalledWith('e2e4');
+  });
+
+  it('does not submit on Enter when input is empty', () => {
+    const onPracticeSubmit = vi.fn();
+    render(
+      <PracticeMoveInput
+        practiceMove=""
+        onPracticeMoveChange={() => {}}
+        onPracticeSubmit={onPracticeSubmit}
+        practiceSubmitting={false}
+      />,
+    );
+
+    const input = screen.getByPlaceholderText(
+      'Enter your move (UCI e.g., e2e4)',
+    );
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(onPracticeSubmit).not.toHaveBeenCalled();
   });
 });

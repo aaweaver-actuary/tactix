@@ -1,51 +1,148 @@
-# Pre-commit hooks that reproduce the Makefile checks
-# 
-# Usage:
-#   - Hooks run automatically on 'git commit' (fast linting/formatting by default)
-#   - For full checks including tests: pre-commit run --all-files --hook-stage manual
-#   - To skip hooks temporarily: git commit --no-verify
+# Pre-commit hooks aligned with `make check`.
 #
-# Note: Test and build hooks are set to 'manual' stage to keep commits fast.
-# They should be run before pushing or in CI.
+# Stages:
+# - commit (default): fast autofix + lightweight checks
+# - push: full gate equivalent to `make check` (harder to "accidentally" bypass)
+# - manual: ad-hoc full runs
+#
+# Install hooks:
+#   uv run pre-commit install
+#   uv run pre-commit install --hook-type pre-push
+#
+# Run everything:
+#   uv run pre-commit run --all-files --hook-stage push
+#   uv run pre-commit run --all-files --hook-stage manual
+
+minimum_pre_commit_version: "3.6.0"
+fail_fast: true
+default_stages: [commit]
 
 repos:
-  # Python linting and formatting
+  # ----------------------------
+  # python -- fast lint/format (commit)
+  # ----------------------------
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.14
     hooks:
       - id: ruff
-        name: ruff check
+        name: python -- ruff check (fix)
         args: [--fix]
         files: ^src/
+        stages: [commit]
       - id: ruff-format
-        name: ruff format
+        name: python -- ruff format
         files: ^src/
+        stages: [commit]
 
-  # Python type checking (ty)
+  # ----------------------------
+  # JS/TS: fast lint/format (commit)
+  # ----------------------------
+  - repo: local
+    hooks:
+      - id: eslint
+        name: js- eslint (fix)
+        entry: bash -c 'cd client && npx eslint --fix . --ext .js,.jsx,.ts,.tsx'
+        language: system
+        files: ^client/.*\.(js|jsx|ts|tsx)$
+        pass_filenames: false
+        stages: [commit]
+
+      - id: prettier
+        name: js- prettier (write)
+        entry: bash -c 'cd client && npx prettier --write --cache .'
+        language: system
+        files: ^client/.*\.(js|jsx|ts|tsx|json|css)$
+        pass_filenames: false
+        stages: [commit]
+
+  # ============================================================
+  # FULL QUALITY GATE (push) — matches `make check`
+  # ============================================================
+
+  # ----------------------------
+  # Python lint suite (push)
+  # Mirrors Makefile: pylint, flake8, ty, mypy, pydocstyle, prospector
+  # ----------------------------
   - repo: local
     hooks:
       - id: ty-check
-        name: ty check
+        name: python- ty check
         entry: uv run ty check --error deprecated src/
         language: system
         files: ^src/.*\.py$
         pass_filenames: false
+        stages: [push]
 
-  # Python complexity checking
+      - id: mypy
+        name: python- mypy
+        entry: uv run mypy src/
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+        stages: [push]
+
+      - id: pylint
+        name: python- pylint
+        entry: uv run pylint --rcfile=pyproject.toml src/
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+        stages: [push]
+
+      - id: flake8
+        name: python- flake8
+        entry: uv run flake8 src/
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+        stages: [push]
+
+      - id: pydocstyle
+        name: python- pydocstyle
+        entry: uv run pydocstyle src/
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+        stages: [push]
+
+      - id: prospector
+        name: python -- prospector
+        entry: uv run prospector -A src/
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+        stages: [push]
+
+  # ----------------------------
+  # Complexity + architecture (push)
+  # Mirrors Makefile: xenon, pycycle
+  # ----------------------------
   - repo: local
     hooks:
       - id: xenon
-        name: xenon complexity check
+        name: python -- xenon complexity
         entry: uv run xenon --max-absolute A --max-modules A --max-average A src/
         language: system
         files: ^src/.*\.py$
         pass_filenames: false
+        stages: [push]
 
-  # Python dead code detection
+      - id: pycycle
+        name: python -- pycycle (circular deps)
+        entry: uv run pycycle --here
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+        stages: [push]
+
+  # ----------------------------
+  # Dead code (push)
+  # Mirrors Makefile: vulture + knip
+  # ----------------------------
   - repo: local
     hooks:
       - id: vulture
-        name: vulture dead code check
+        name: python -- vulture dead code
         entry: >
           uv run vulture src/
           --min-confidence 60
@@ -54,42 +151,24 @@ repos:
         language: system
         files: ^src/.*\.py$
         pass_filenames: false
+        stages: [push]
 
-  # JavaScript/TypeScript linting
-  - repo: local
-    hooks:
-      - id: eslint
-        name: eslint
-        entry: bash -c 'cd client && npx eslint --fix . --ext .js,.jsx,.ts,.tsx'
-        language: system
-        files: ^client/.*\.(js|jsx|ts|tsx)$
-        pass_filenames: false
-
-  # JavaScript/TypeScript formatting
-  - repo: local
-    hooks:
-      - id: prettier
-        name: prettier
-        entry: bash -c 'cd client && npx prettier --write --cache .'
-        language: system
-        files: ^client/.*\.(js|jsx|ts|tsx|json|css)$
-        pass_filenames: false
-
-  # JavaScript dead code detection
-  - repo: local
-    hooks:
       - id: knip
-        name: knip dead code check
+        name: js -- knip dead code
         entry: bash -c 'cd client && npx knip'
         language: system
         files: ^client/
         pass_filenames: false
+        stages: [push]
 
-  # Duplicate code detection
+  # ----------------------------
+  # Duplicate code (push)
+  # Mirrors Makefile: jscpd
+  # ----------------------------
   - repo: local
     hooks:
       - id: jscpd
-        name: jscpd duplicate detection
+        name: "dup: jscpd"
         entry: >
           bash -c 'cd client && npx jscpd
           --format python,typescript,tsx,javascript,jsx
@@ -104,31 +183,46 @@ repos:
         language: system
         files: \.(py|js|jsx|ts|tsx)$
         pass_filenames: false
+        stages: [push]
 
-  # Rust tests (cargo test) - Manual stage only (use 'pre-commit run --hook-stage manual cargo-test')
+  # ----------------------------
+  # Security / guardrails (push)
+  # Mirrors Makefile: safety, bandit, dodgy
+  # ----------------------------
   - repo: local
     hooks:
-      - id: cargo-test
-        name: cargo test
-        entry: uv run cargo test
+      - id: safety
+        name: "sec: safety"
+        entry: uv run safety check --full-report
         language: system
-        files: \.(rs|toml)$
+        files: ^(pyproject\.toml|uv\.lock|requirements.*\.txt)$
         pass_filenames: false
-        stages: [manual]
+        stages: [push]
 
-      - id: cargo-test-release
-        name: cargo test --release
-        entry: uv run cargo test --release
+      - id: bandit
+        name: "sec: bandit"
+        entry: uv run bandit -r src/ -lll
         language: system
-        files: \.(rs|toml)$
+        files: ^src/.*\.py$
         pass_filenames: false
-        stages: [manual]
+        stages: [push]
 
-  # Python tests with coverage - Manual stage only
+      - id: dodgy
+        name: "sec: dodgy"
+        entry: uv run dodgy --max-line-complexity 10 src/
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+        stages: [push]
+
+  # ----------------------------
+  # Tests + coverage (push)
+  # Mirrors Makefile: pytest/vitest/cargo test
+  # ----------------------------
   - repo: local
     hooks:
       - id: pytest
-        name: pytest with coverage
+        name: test -- pytest (coverage)
         entry: >
           uv run pytest tests/
           --cov=src/
@@ -138,34 +232,50 @@ repos:
         language: system
         files: ^(src/.*\.py|tests/.*\.py)$
         pass_filenames: false
-        stages: [manual]
+        stages: [push]
 
-  # JavaScript tests with coverage - Manual stage only
-  - repo: local
-    hooks:
       - id: vitest
-        name: vitest with coverage
+        name: test -- vitest (coverage)
         entry: bash -c 'cd client && npx vitest run --coverage'
         language: system
         files: ^client/
         pass_filenames: false
-        stages: [manual]
+        stages: [push]
 
-  # Rust build (cargo build --release) - Manual stage only
+      - id: cargo-test
+        name: test -- cargo test
+        entry: uv run cargo test
+        language: system
+        files: \.(rs|toml)$
+        pass_filenames: false
+        stages: [push]
+
+      - id: cargo-test-release
+        name: test -- cargo test --release
+        entry: uv run cargo test --release
+        language: system
+        files: \.(rs|toml)$
+        pass_filenames: false
+        stages: [push]
+
+  # ----------------------------
+  # Builds (push)
+  # Mirrors Makefile: cargo build --release + client build
+  # ----------------------------
   - repo: local
     hooks:
       - id: cargo-build
-        name: cargo build release
+        name: "build: cargo build --release"
         entry: uv run cargo build --release
         language: system
         files: \.(rs|toml)$
         pass_filenames: false
-        stages: [manual]
+        stages: [push]
 
       - id: client-build
-        name: client build
+        name: "build: client"
         entry: bash -c 'cd client && npm run build'
         language: system
         files: ^client/
         pass_filenames: false
-        stages: [manual]
+        stages: [push]

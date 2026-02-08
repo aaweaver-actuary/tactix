@@ -1,0 +1,14 @@
+hangingpiece motif fork inferred hanging_piece capture True hanging True mate False
+hangingpiece analyze_position hanging_piece best_uci f6h8 result found
+skewer motif skewer inferred skewer capture False hanging False mate False
+skewer analyze_position skewer best_uci c5d5 result found
+discoveredattack motif discovered_attack inferred discovered_attack capture False hanging False mate False
+discoveredattack analyze_position discovered_attack best_uci g3f5 result found
+skewer-blitz-high motif skewer inferred skewer capture False hanging False mate False
+skewer-blitz-high analyze_position skewer best_uci e1e8 result failed_attempt
+mate-in-two-blitz motif fork inferred fork capture False hanging False mate False
+mate-in-two-blitz analyze_position mate best_uci c5f2 result found
+fork-rapid motif fork inferred fork capture False hanging False mate False
+fork-rapid analyze_position fork best_uci f4e2 result found
+discovered-attack-classical motif discovered_attack inferred discovered_attack capture False hanging False mate False
+discovered-attack-classical analyze_position discovered_attack best_uci g3f5 result found

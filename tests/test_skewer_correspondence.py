@@ -8,15 +8,12 @@ import chess
 import chess.pgn
 
 from tactix.config import DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH, Settings
-from tactix.db.duckdb_store import (
-    get_connection,
-    init_schema,
-    insert_positions,
-    upsert_tactic_with_outcome,
-)
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.position_repository_provider import insert_positions
+from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
 from tactix.pgn_utils import split_pgn_chunks
-from tactix.stockfish_runner import StockfishEngine
-from tactix.tactics_analyzer import analyze_position
+from tactix.StockfishEngine import StockfishEngine
+from tactix.analyze_position import analyze_position
 from tests.fixture_helpers import (
     find_failed_attempt_position,
     find_missed_position,

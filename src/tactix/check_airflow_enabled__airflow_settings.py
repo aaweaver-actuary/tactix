@@ -1,3 +1,5 @@
+"""Check whether Airflow is enabled."""
+
 from __future__ import annotations
 
 

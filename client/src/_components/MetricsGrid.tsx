@@ -1,14 +1,14 @@
 import { Droppable, Draggable } from '@hello-pangea/dnd';
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
-import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
+import BaseCard, {
+  BaseCardDragHandleProps,
+  BaseCardDragProps,
+} from './BaseCard';
 import MotifCard from './MotifCard';
 
-interface MetricsGridProps {
+interface MetricsGridProps extends BaseCardDragProps {
   metricsData: DashboardPayload['metrics'];
-  dragHandleProps?: BaseCardDragHandleProps;
-  dragHandleLabel?: string;
-  onCollapsedChange?: (collapsed: boolean) => void;
   droppableId: string;
   dropIndicatorIndex?: number | null;
 }
@@ -31,11 +31,9 @@ interface MetricsGridProps {
  */
 export default function MetricsGrid({
   metricsData,
-  dragHandleProps,
-  dragHandleLabel,
-  onCollapsedChange,
   droppableId,
   dropIndicatorIndex,
+  ...dragProps
 }: MetricsGridProps) {
   const header = (
     <div className="flex items-center justify-between">
@@ -58,9 +56,7 @@ export default function MetricsGrid({
       data-testid="motif-breakdown"
       header={header}
       contentClassName="pt-3"
-      dragHandleProps={dragHandleProps}
-      dragHandleLabel={dragHandleLabel}
-      onCollapsedChange={onCollapsedChange}
+      {...dragProps}
     >
       <Droppable droppableId={droppableId}>
         {(dropProvided) => (

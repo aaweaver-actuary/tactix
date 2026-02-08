@@ -1,3 +1,5 @@
+"""Response model for chess fetch results."""
+
 from pydantic import BaseModel, Field
 
 

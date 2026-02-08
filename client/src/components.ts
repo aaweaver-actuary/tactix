@@ -10,7 +10,7 @@ import RecentGamesCard from './_components/RecentGamesCard';
 import RecentTacticsCard from './_components/RecentTacticsCard';
 import ErrorCard from './_components/ErrorCard';
 import FiltersCard from './_components/FiltersCard';
-import MetricsSummaryGrid from './_components/MetricsSummaryGrid';
+import MetricsSummaryCard from './_components/MetricsSummaryCard';
 import PostgresStatusCard from './_components/PostgresStatusCard';
 import PostgresRawPgnsCard from './_components/PostgresRawPgnsCard';
 import PostgresAnalysisCard from './_components/PostgresAnalysisCard';
@@ -30,7 +30,7 @@ export {
   RecentTacticsCard,
   ErrorCard,
   FiltersCard,
-  MetricsSummaryGrid,
+  MetricsSummaryCard,
   PostgresStatusCard,
   PostgresRawPgnsCard,
   PostgresAnalysisCard,

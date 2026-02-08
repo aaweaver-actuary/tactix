@@ -1,9 +1,11 @@
+"""Run DuckDB schema migrations."""
+
 from __future__ import annotations
 
+from tactix.app.use_cases.pipeline_support import _emit_progress
 from tactix.config import Settings, get_settings
 from tactix.db.duckdb_store import get_connection, get_schema_version, migrate_schema
-from tactix.emit_progress__pipeline import _emit_progress
-from tactix.pipeline_state__pipeline import ProgressCallback
+from tactix.define_pipeline_state__pipeline import ProgressCallback
 
 
 def run_migrations(
@@ -11,6 +13,7 @@ def run_migrations(
     source: str | None = None,
     progress: ProgressCallback | None = None,
 ) -> dict[str, object]:
+    """Run migrations and return the resulting schema version."""
     settings = settings or get_settings(source=source)
     if source:
         settings.source = source

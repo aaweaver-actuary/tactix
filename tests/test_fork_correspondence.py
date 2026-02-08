@@ -4,31 +4,24 @@ import unittest
 from pathlib import Path
 
 from tactix.config import DEFAULT_CORRESPONDENCE_STOCKFISH_DEPTH, Settings
-from tactix.db.duckdb_store import (
-    get_connection,
-    grade_practice_attempt,
-    init_schema,
-    insert_positions,
-    upsert_tactic_with_outcome,
-)
+from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.position_repository_provider import insert_positions
+from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
+from tactix.db.tactic_repository_provider import tactic_repository
 from tactix.pgn_utils import split_pgn_chunks
-from tactix.position_extractor import extract_positions
-from tactix.stockfish_runner import StockfishEngine
-from tactix.tactics_analyzer import analyze_position
+from tactix.extract_positions import extract_positions
+from tactix.StockfishEngine import StockfishEngine
+from tactix.analyze_position import analyze_position
 
 
 class TestForkCorrespondence(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_correspondence_fork_is_high_severity(self) -> None:
         fixture_path = (
-            Path(__file__).resolve().parent
-            / "fixtures"
-            / "chesscom_correspondence_sample.pgn"
+            Path(__file__).resolve().parent / "fixtures" / "chesscom_correspondence_sample.pgn"
         )
         chunks = split_pgn_chunks(fixture_path.read_text())
-        fork_pgn = next(
-            chunk for chunk in chunks if "Correspondence Fixture 5" in chunk
-        )
+        fork_pgn = next(chunk for chunk in chunks if "Correspondence Fixture 5" in chunk)
 
         settings = Settings(
             source="chesscom",
@@ -80,7 +73,11 @@ class TestForkCorrespondence(unittest.TestCase):
         self.assertIsNotNone(stored[1])
         self.assertIn("Best line", stored[2] or "")
 
-        attempt = grade_practice_attempt(conn, tactic_id, position_ids[0], "f4e2")
+        attempt = tactic_repository(conn).grade_practice_attempt(
+            tactic_id,
+            position_ids[0],
+            "f4e2",
+        )
         self.assertIn("Best line", attempt["explanation"] or "")
         self.assertIn("e2", attempt["explanation"] or "")
 

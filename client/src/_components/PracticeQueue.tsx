@@ -6,6 +6,7 @@ interface PracticeQueueProps {
   data: PracticeQueueItem[] | null;
   columns: ColumnDef<PracticeQueueItem>[];
   onRowClick?: (row: PracticeQueueItem) => void;
+  rowTestId?: (row: PracticeQueueItem, index: number) => string;
 }
 
 /**
@@ -18,6 +19,14 @@ export default function PracticeQueue({
   data,
   columns,
   onRowClick,
+  rowTestId,
 }: PracticeQueueProps) {
-  return <BaseTable data={data} columns={columns} onRowClick={onRowClick} />;
+  return (
+    <BaseTable
+      data={data}
+      columns={columns}
+      onRowClick={onRowClick}
+      rowTestId={rowTestId}
+    />
+  );
 }

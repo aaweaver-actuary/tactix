@@ -21,12 +21,12 @@ describe('PracticeAttemptButton', () => {
   });
 
   it('renders default label and is enabled when not submitting', () => {
-    const handlePracticeAttempt = vi.fn().mockResolvedValue(undefined);
+    const onPracticeAttempt = vi.fn();
 
     act(() => {
       root.render(
         <PracticeAttemptButton
-          handlePracticeAttempt={handlePracticeAttempt}
+          onPracticeAttempt={onPracticeAttempt}
           practiceSubmitting={false}
         />,
       );
@@ -39,12 +39,12 @@ describe('PracticeAttemptButton', () => {
   });
 
   it('renders submitting label and is disabled when submitting', () => {
-    const handlePracticeAttempt = vi.fn().mockResolvedValue(undefined);
+    const onPracticeAttempt = vi.fn();
 
     act(() => {
       root.render(
         <PracticeAttemptButton
-          handlePracticeAttempt={handlePracticeAttempt}
+          onPracticeAttempt={onPracticeAttempt}
           practiceSubmitting={true}
         />,
       );
@@ -56,12 +56,12 @@ describe('PracticeAttemptButton', () => {
   });
 
   it('calls handlePracticeAttempt on click', async () => {
-    const handlePracticeAttempt = vi.fn().mockResolvedValue(undefined);
+    const onPracticeAttempt = vi.fn();
 
     act(() => {
       root.render(
         <PracticeAttemptButton
-          handlePracticeAttempt={handlePracticeAttempt}
+          onPracticeAttempt={onPracticeAttempt}
           practiceSubmitting={false}
         />,
       );
@@ -73,6 +73,27 @@ describe('PracticeAttemptButton', () => {
       button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
 
-    expect(handlePracticeAttempt).toHaveBeenCalledTimes(1);
+    expect(onPracticeAttempt).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes through the provided click handler', async () => {
+    const onPracticeAttempt = vi.fn();
+
+    act(() => {
+      root.render(
+        <PracticeAttemptButton
+          onPracticeAttempt={onPracticeAttempt}
+          practiceSubmitting={false}
+        />,
+      );
+    });
+
+    const button = container.querySelector('button') as HTMLButtonElement;
+
+    await act(async () => {
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(onPracticeAttempt).toHaveBeenCalledTimes(1);
   });
 });

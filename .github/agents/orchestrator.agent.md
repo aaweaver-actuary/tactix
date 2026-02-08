@@ -117,6 +117,7 @@ Notes:
 ### 1.1 Check for dirty working tree
 
 If `git status --porcelain` shows uncommitted changes:
+
 - Stop immediately
 - Run `make check` to identify issues
 - If issues are found, your first priority is to dispatch a developer agent to fix them
@@ -125,14 +126,13 @@ If `git status --porcelain` shows uncommitted changes:
 
 ### 1.2 Check for issues on GitHub
 
-End users will occasionally open issues or PRs on GitHub. Check for any new activity since your last session.
+End users will occasionally open issues or PRs on GitHub. Check for any new activity since your last review.
 
 - If new issues or PRs are found, add them to the top of the feature list as high-priority items.
 
 **IMPORTANT** This is the only time you may edit `feature_list.json` beyond flipping `passes` flags, and only to _add_ new issues or PRs.
 
-**IMPORTANT** If you add new issues or PRs, update progress notes with the changes made
----
+## **IMPORTANT** If you add new issues or PRs, update progress notes with the changes made
 
 ## Step 2 — Regression Check (MANDATORY if any features are passing)
 
@@ -290,6 +290,7 @@ Only then may `passes` be flipped to `true`.
 The codebase must be kept clean and maintainable. Currently, there is significant technical debt that must be addressed to ensure long-term success. In order to maintain code quality, you must dispatch a refactorer agent after every feature completed.
 
 The refactorer agent's responsibilities include:
+
 - Reviewing recent changes for opportunities to improve code structure, modularity, and maintainability
 - Comparing recent changes against existing code to identify similar functions or components that can be abstracted or generalized
 - Simplifying complex functions or breaking down large components into smaller, more manageable pieces
@@ -369,7 +370,6 @@ Prevent agents from:
 - Failing to create automated tests for new features and bug fixes
 - Failing to document work clearly in progress notes
 
-
 ---
 
 ## Design Hierarchy (Never Violated)
@@ -425,4 +425,3 @@ If any conflict exists:
 - Make refactoring a priority. There is currently too much code duplication and complexity in the codebase. Whenever they see an opportunity to improve code structure, modularity, or maintainability, they should take it. This includes creating utility functions or shared components to encapsulate repeated logic, simplifying complex functions, and breaking down large components into smaller, more manageable pieces.
 
 Remember, you are dispatching a researcher agent to look for OSS solutions or a developer/refactorer agent to do the coding. You are not doing the research or coding yourself, and you are not getting my opinion. Your job is to manage the overall process and ensure high-quality results from your sub-process agents.
-

@@ -1,3 +1,5 @@
+"""API endpoint to trigger a daily sync job."""
+
 from __future__ import annotations
 
 from typing import Annotated
@@ -16,8 +18,10 @@ def trigger_daily_sync(
     backfill_end_ms: Annotated[int | None, Query(ge=0)] = None,
     profile: Annotated[str | None, Query()] = None,
 ) -> dict[str, object]:
+    """Trigger the daily sync pipeline and return status."""
+    settings = get_settings(source=source, profile=profile)
     result = run_daily_game_sync(
-        get_settings(source=source, profile=profile),
+        settings,
         source=source,
         window_start_ms=backfill_start_ms,
         window_end_ms=backfill_end_ms,

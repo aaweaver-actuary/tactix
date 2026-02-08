@@ -1,3 +1,5 @@
+"""Build Airflow DAG run configuration payloads."""
+
 from __future__ import annotations
 
 from tactix.apply_airflow_optional_conf__airflow_jobs import _apply_airflow_optional_conf

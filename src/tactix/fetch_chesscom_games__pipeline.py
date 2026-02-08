@@ -1,19 +1,22 @@
+"""Fetch Chess.com games and build a fetch context."""
+
 from __future__ import annotations
 
-from tactix.chess_clients.base_chess_client import BaseChessClient
-from tactix.chess_clients.chesscom_client import read_cursor as read_chesscom_cursor
+from tactix.app.use_cases.pipeline_support import _cursor_last_timestamp
 from tactix.chesscom_raw_games__pipeline import _chesscom_raw_games
 from tactix.config import Settings
-from tactix.cursor_last_timestamp__pipeline import _cursor_last_timestamp
-from tactix.define_pipeline_state__pipeline import FetchContext
+from tactix.FetchContext import FetchContext
+from tactix.infra.clients.chesscom_client import read_cursor as read_chesscom_cursor
+from tactix.ports.game_source_client import GameSourceClient
 from tactix.request_chesscom_games__pipeline import _request_chesscom_games
 
 
 def _fetch_chesscom_games(
     settings: Settings,
-    client: BaseChessClient,
+    client: GameSourceClient,
     backfill_mode: bool,
 ) -> FetchContext:
+    """Fetch Chess.com games and return a populated fetch context."""
     cursor_before = read_chesscom_cursor(settings.checkpoint_path)
     cursor_value = None if backfill_mode else cursor_before
     last_timestamp_value = _cursor_last_timestamp(cursor_value)

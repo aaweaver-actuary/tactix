@@ -1,8 +1,23 @@
+"""Hashing helpers for strings, bytes, and files."""
+
+# pylint: disable=redefined-builtin
+
 import hashlib
 
 
 class Hasher:
-    """Utility class for hashing data."""
+    """
+    Hasher provides static methods for generating SHA256 hashes from strings, bytes, and files.
+
+    Methods
+    -------
+    hash_string(input_string: str) -> str
+        Returns a SHA256 hash of the input string.
+    hash_bytes(input_bytes: bytes) -> str
+        Returns a SHA256 hash of the input bytes.
+    hash_file(file_path: str) -> str
+        Returns a SHA256 hash of the contents of the specified file.
+    """
 
     @staticmethod
     def hash_string(input_string: str) -> str:
@@ -28,18 +43,58 @@ class Hasher:
 
 
 def hash(data: str | bytes, is_bytes: bool = False) -> str:
-    """Hash data using SHA-256.
+    """
+    Hashes the given data using the Hasher utility.
 
-    Args:
-        data: The input data to hash, either as a string or bytes.
-        is_bytes: Whether the input data is in bytes. Defaults to False.
+    Depending on the type of input and the `is_bytes` flag, this function delegates
+    to either `Hasher.hash_bytes` or `Hasher.hash_string` to compute a hash of the
+    input data.
 
-    Returns:
-        The SHA-256 hash of the input data as a hexadecimal string.
+    Parameters
+    ----------
+    data : str or bytes
+        The data to be hashed. If `is_bytes` is True, this should be a bytes object;
+        otherwise, it should be a string.
+    is_bytes : bool, optional
+        If True, treats `data` as bytes and uses `Hasher.hash_bytes`. If False,
+        treats `data` as a string and uses `Hasher.hash_string`. Default is False.
+
+    Returns
+    -------
+    str
+        The hexadecimal string representation of the hash of the input data.
+
+    Raises
+    ------
+    TypeError
+        If `is_bytes` is True and `data` is not of type bytes, or if `is_bytes` is
+        False and `data` is not of type str.
+
+    Examples
+    --------
+    >>> hash("hello world")
+    '5eb63bbbe01eeed093cb22bb8f5acdc3'
+
+    >>> hash(b"hello world", is_bytes=True)
+    '5eb63bbbe01eeed093cb22bb8f5acdc3'
+
+    Commentary
+    ----------
+    As a standalone function, `hash` serves as a thin wrapper around the `Hasher`
+    class, providing a unified interface for hashing both strings and bytes. While
+    this can be convenient, in a large project it may be preferable to integrate
+    this functionality directly into a broader utility module or class that handles
+    all hashing and encoding concerns, rather than maintaining a single-purpose
+    module for such a simple wrapper. This would help group related functionality
+    and reduce fragmentation of utility code.
     """
     if is_bytes:
-        return Hasher.hash_bytes(data)  # type: ignore
-    return Hasher.hash_string(data)  # type: ignore
+        if not isinstance(data, (bytes, bytearray)):
+            raise TypeError("Expected bytes for hashing")
+        return Hasher.hash_bytes(data)
+    if not isinstance(data, str):
+        raise TypeError("Expected str for hashing")
+    return Hasher.hash_string(data)
 
 
 def hash_file(file_path: str) -> str:

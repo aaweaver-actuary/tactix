@@ -69,6 +69,7 @@ const DASHBOARD_CARD_STORAGE_KEY = 'tactix.dashboard.mainCardOrder';
 const MOTIF_CARD_STORAGE_KEY = 'tactix.dashboard.motifCardOrder';
 const DASHBOARD_CARD_DROPPABLE_ID = 'dashboard-main-cards';
 const MOTIF_CARD_DROPPABLE_ID = 'dashboard-motif-cards';
+const PRACTICE_FEEDBACK_DELAY_MS = 600;
 const DASHBOARD_CARD_IDS = [
   'filters',
   'metrics-summary',
@@ -133,6 +134,9 @@ const formatGameDate = (value: string | null) => {
 const openLichessAnalysisWindow = (url: string) => {
   window.open(url, '_blank', 'noopener,noreferrer');
 };
+
+const waitForPracticeFeedback = () =>
+  new Promise((resolve) => setTimeout(resolve, PRACTICE_FEEDBACK_DELAY_MS));
 
 type BaseCardDragHandleProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 type BaseCardRenderProps = {
@@ -904,7 +908,7 @@ export default function DashboardFlow() {
           updatePracticeSessionStats(prev, response.correct),
         );
         // Allow feedback to render before queue refresh resets practice state.
-        await new Promise((resolve) => setTimeout(resolve, 600));
+        await waitForPracticeFeedback();
         await loadPracticeQueue(source, includeFailedAttempt);
       } catch (err) {
         console.error(err);

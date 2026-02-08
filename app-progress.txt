@@ -1,9 +1,8 @@
 Session summary (2026-02-08):
-- Refactored time control normalization parsing into small, single-responsibility helpers and centralized bucketing logic.
+- Extracted the practice feedback delay into a named helper to keep DashboardFlow practice submission intent-focused.
 - Tests run: make check (before; task), make check (after; task).
 - Before→After map:
-	- src/tactix/chess_time_control.py `_parse_time_control_value` → extracted `_parse_time_control_plus`, `_parse_time_control_seconds`, `_parse_time_control_slash`, `_parse_time_control_fallback`.
-	- src/tactix/chess_time_control.py inline bucketing logic → `_bucket_time_control_seconds`.
+	- client/src/flows/DashboardFlow.tsx inline delay → `PRACTICE_FEEDBACK_DELAY_MS` + `waitForPracticeFeedback` helper.
 
 Session summary (2026-02-08):
 - Normalized games table time_control to bullet/blitz/rapid/classical/unknown; updated canonical games table expectations and integration snapshot query.

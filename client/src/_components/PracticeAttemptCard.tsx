@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, RefObject } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { PracticeAttemptResponse, PracticeQueueItem } from '../api';
 import isPiecePlayable from '../utils/isPiecePlayable';
@@ -74,6 +74,7 @@ interface PracticeAttemptCardProps {
   practiceSession: PracticeSessionStats;
   practiceFen: string;
   practiceMove: string;
+  practiceMoveRef: RefObject<HTMLInputElement>;
   practiceSubmitting: boolean;
   practiceFeedback: PracticeAttemptResponse | null;
   practiceSubmitError: string | null;
@@ -89,6 +90,7 @@ export default function PracticeAttemptCard({
   practiceSession,
   practiceFen,
   practiceMove,
+  practiceMoveRef,
   practiceSubmitting,
   practiceFeedback,
   practiceSubmitError,
@@ -154,12 +156,14 @@ export default function PracticeAttemptCard({
                 <PracticeMoveInput
                   practiceMove={practiceMove}
                   onPracticeMoveChange={onPracticeMoveChange}
-                  onPracticeSubmit={() => void handlePracticeAttempt()}
+                  onPracticeSubmit={(move) => void handlePracticeAttempt(move)}
                   practiceSubmitting={practiceSubmitting}
+                  inputRef={practiceMoveRef}
                 />
                 <PracticeAttemptButton
                   handlePracticeAttempt={handlePracticeAttempt}
                   practiceSubmitting={practiceSubmitting}
+                  practiceMoveRef={practiceMoveRef}
                 />
               </div>
               {practiceSubmitError ? (

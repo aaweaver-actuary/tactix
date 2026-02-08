@@ -50,7 +50,8 @@ vi.mock('../client/postgres', () => ({
 }));
 
 const { fetchDashboard, fetchGameDetail } = await import('../client/dashboard');
-const { fetchPracticeQueue } = await import('../client/practice');
+const { fetchPracticeQueue, submitPracticeAttempt } =
+  await import('../client/practice');
 const { fetchPostgresStatus, fetchPostgresAnalysis, fetchPostgresRawPgns } =
   await import('../client/postgres');
 
@@ -275,6 +276,33 @@ const basePostgresRawPgns = {
   sources: [],
 };
 
+const startingFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
+const buildPracticeQueue = (count: number): PracticeQueueResponse => ({
+  source: 'chesscom',
+  include_failed_attempt: false,
+  items: Array.from({ length: count }, (_, index) => ({
+    tactic_id: index + 1,
+    game_id: `g${index + 1}`,
+    position_id: index + 1,
+    source: 'chesscom',
+    motif: index % 2 === 0 ? 'fork' : 'pin',
+    result: 'missed',
+    best_uci: 'e2e4',
+    user_uci: 'e2e3',
+    eval_delta: -0.5,
+    severity: 2,
+    created_at: '2026-01-02T00:00:00Z',
+    fen: startingFen,
+    position_uci: 'e2e4',
+    san: 'e4',
+    ply: 1,
+    move_number: 1,
+    side_to_move: 'w',
+    clock_seconds: 60,
+  })),
+});
+
 const setupBaseMocks = () => {
   (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
     baseDashboard,
@@ -358,5 +386,44 @@ describe('DashboardFlow', () => {
     expect(modal).toHaveAttribute('aria-modal', 'true');
     expect(modal.className).toContain('fixed');
     expect(screen.getByTestId('game-detail-close')).toBeInTheDocument();
+  });
+
+  it('keeps practice session total fixed after a successful attempt', async () => {
+    const queue = buildPracticeQueue(5);
+    (fetchPracticeQueue as unknown as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce(queue)
+      .mockResolvedValueOnce(queue);
+    (
+      submitPracticeAttempt as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValue({
+      attempt_id: 9,
+      tactic_id: 1,
+      position_id: 1,
+      source: 'chesscom',
+      attempted_uci: 'e2e4',
+      best_uci: 'e2e4',
+      correct: true,
+      motif: 'fork',
+      severity: 2,
+      eval_delta: -0.5,
+      message: 'Correct move!',
+    });
+
+    render(<DashboardFlow />);
+
+    await waitFor(() => {
+      expect(screen.getByText('0 of 5 attempts')).toBeInTheDocument();
+    });
+
+    fireEvent.change(
+      screen.getByPlaceholderText('Enter your move (UCI e.g., e2e4)'),
+      { target: { value: 'e2e4' } },
+    );
+    fireEvent.click(screen.getByRole('button', { name: /submit attempt/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('1 of 5 attempts')).toBeInTheDocument();
+      expect(screen.getByText('1 / 5 complete')).toBeInTheDocument();
+    });
   });
 });

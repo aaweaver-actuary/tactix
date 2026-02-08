@@ -163,6 +163,7 @@ export default function DashboardFlow() {
   const [practiceError, setPracticeError] = useState<string | null>(null);
   const [includeFailedAttempt, setIncludeFailedAttempt] = useState(false);
   const [practiceMove, setPracticeMove] = useState('');
+  const practiceMoveRef = useRef<HTMLInputElement | null>(null);
   const [practiceFen, setPracticeFen] = useState('');
   const [practiceLastMove, setPracticeLastMove] = useState<{
     from: string;
@@ -308,12 +309,10 @@ export default function DashboardFlow() {
         setPracticeSession(resetPracticeSessionStats(payload.items.length));
       } else {
         setPracticeSession((prev) => {
-          const nextTotal = Math.max(
-            prev.total,
-            prev.completed + payload.items.length,
-          );
-          if (nextTotal === prev.total) return prev;
-          return { ...prev, total: nextTotal };
+          if (prev.total <= 0 && prev.completed === 0) {
+            return { ...prev, total: payload.items.length };
+          }
+          return prev;
         });
       }
     } catch (err) {
@@ -1652,6 +1651,7 @@ export default function DashboardFlow() {
         practiceSession={practiceSession}
         practiceFen={practiceFen}
         practiceMove={practiceMove}
+        practiceMoveRef={practiceMoveRef}
         practiceSubmitting={practiceSubmitting}
         practiceFeedback={practiceFeedback}
         practiceSubmitError={practiceSubmitError}

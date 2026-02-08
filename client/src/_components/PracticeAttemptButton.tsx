@@ -1,6 +1,9 @@
+import type { RefObject } from 'react';
+
 interface PracticeAttemptButtonProps {
   handlePracticeAttempt: (overrideMove?: string) => Promise<void>;
   practiceSubmitting: boolean;
+  practiceMoveRef?: RefObject<HTMLInputElement>;
 }
 
 /**
@@ -14,11 +17,12 @@ interface PracticeAttemptButtonProps {
 export default function PracticeAttemptButton({
   handlePracticeAttempt,
   practiceSubmitting,
+  practiceMoveRef,
 }: PracticeAttemptButtonProps) {
   return (
     <button
       className="button bg-teal text-night px-4 py-2 rounded-md font-display"
-      onClick={() => handlePracticeAttempt()}
+      onClick={() => handlePracticeAttempt(practiceMoveRef?.current?.value)}
       disabled={practiceSubmitting}
     >
       {practiceSubmitting ? 'Submitting…' : 'Submit attempt'}

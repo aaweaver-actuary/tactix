@@ -9,7 +9,9 @@ describe('PracticeMoveInput', () => {
       <PracticeMoveInput
         practiceMove="e2e4"
         onPracticeMoveChange={() => {}}
-        onPracticeSubmit={() => {}}
+        onPracticeSubmit={(move) => {
+          void move;
+        }}
         practiceSubmitting={false}
       />,
     );
@@ -26,7 +28,9 @@ describe('PracticeMoveInput', () => {
       <PracticeMoveInput
         practiceMove=""
         onPracticeMoveChange={() => {}}
-        onPracticeSubmit={() => {}}
+        onPracticeSubmit={(move) => {
+          void move;
+        }}
         practiceSubmitting={true}
       />,
     );
@@ -43,7 +47,9 @@ describe('PracticeMoveInput', () => {
       <PracticeMoveInput
         practiceMove=""
         onPracticeMoveChange={onPracticeMoveChange}
-        onPracticeSubmit={() => {}}
+        onPracticeSubmit={(move) => {
+          void move;
+        }}
         practiceSubmitting={false}
       />,
     );
@@ -72,7 +78,7 @@ describe('PracticeMoveInput', () => {
     );
     fireEvent.keyDown(input, { key: 'Enter' });
 
-    expect(onPracticeSubmit).toHaveBeenCalledTimes(1);
+    expect(onPracticeSubmit).toHaveBeenCalledWith('e2e4');
   });
 
   it('does not submit on Enter when input is empty', () => {

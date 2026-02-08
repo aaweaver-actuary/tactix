@@ -75,4 +75,28 @@ describe('PracticeAttemptButton', () => {
 
     expect(handlePracticeAttempt).toHaveBeenCalledTimes(1);
   });
+
+  it('passes the input ref value as an override move', async () => {
+    const handlePracticeAttempt = vi.fn().mockResolvedValue(undefined);
+    const input = document.createElement('input');
+    input.value = 'e2e4';
+
+    act(() => {
+      root.render(
+        <PracticeAttemptButton
+          handlePracticeAttempt={handlePracticeAttempt}
+          practiceSubmitting={false}
+          practiceMoveRef={{ current: input }}
+        />,
+      );
+    });
+
+    const button = container.querySelector('button') as HTMLButtonElement;
+
+    await act(async () => {
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(handlePracticeAttempt).toHaveBeenCalledWith('e2e4');
+  });
 });

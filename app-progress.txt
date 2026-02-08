@@ -1,4 +1,13 @@
 Session summary (2026-02-08):
+- Refactored dashboard card drag/collapse props into BaseCardDragProps and forwarded props directly from DashboardFlow.
+- Tests run: make check (before; task), make check (after; task).
+- Commit: 4d6dc40
+- Before→After map:
+	- client/src/_components/BaseCard.tsx → add BaseCardDragProps.
+	- client/src/flows/DashboardFlow.tsx → forward drag props directly to cards.
+	- card components → extend BaseCardDragProps and spread props.
+
+Session summary (2026-02-08):
 - Implemented a unified reorderable/collapsible dashboard card list covering: Filters, Metrics summary, Postgres status, Postgres raw PGNs, Postgres analysis, Job progress, Motif breakdown, Motif trends, Time-trouble correlation, Practice queue, Recent games, Recent tactics, Latest positions, and Practice attempt.
 - Added MetricsSummaryCard and expanded card components to accept drag/collapse props; updated card order storage key to `tactix.dashboard.mainCardOrder`.
 - Regression fixes: improved Lichess analysis URL PGN parsing and stabilized practice session totals across queue reloads; updated Puppeteer scripts to reuse client-local puppeteer and wait for dashboard reload.

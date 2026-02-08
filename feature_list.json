@@ -9,7 +9,7 @@
       "Step 4: Verify the derived game_id is stable and deterministic for the same PGN",
       "Step 5: Confirm a unit test covers the fixture parse and assertions"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

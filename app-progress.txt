@@ -557,3 +557,10 @@ Session summary (2026-02-07):
 - Completed pipeline validation for the canonical chess.com bullet scenario (2026-02-01).
 - Added API-level canonical pipeline tests and CI integration checks; captured UI verification screenshot and logs.
 - Tests run: `runTests` (reported 111 passing); `node verification/integration_feature_chesscom_bullet_canonical_2026_02_01.js`.
+
+Session summary (2026-02-08):
+- Fixed hanging-piece/mate regression and refactored tactic helpers to satisfy xenon complexity gates.
+- Reused moved-piece hanging helper and restored vulture clean run; make check green.
+- Added PGN fixture parsing unit test with header, move list, final FEN, and deterministic game_id assertions.
+- Tests run: `make check` (green).
+- Current pass count: 13/128.

@@ -1,4 +1,5 @@
 Session summary (2026-02-08):
+- NOTE: Do not start uvicorn locally for UI verification. Docker Compose services are the source of truth. Always use `docker ps` and health curls to confirm API/UI are running (ports 8000/5173/8080) before Puppeteer.
 - Refactored PracticeUseCase to consolidate source/settings resolution and queue request construction.
 - Tests run: make check (before; task), make check (after; task).
 - Commit: 971e581

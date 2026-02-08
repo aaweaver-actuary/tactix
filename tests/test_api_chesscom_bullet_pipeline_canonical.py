@@ -164,9 +164,7 @@ def _expected_game_metadata(
     color = _get_user_color_from_pgn_headers(headers, user)
     user_color = "white" if color == ChessPlayerColor.WHITE else "black"
     played_at_ms = metadata.get("start_timestamp_ms") or extract_last_timestamp_ms(pgn_text)
-    played_at = datetime.fromtimestamp(int(played_at_ms) / 1000, tz=UTC).replace(
-        tzinfo=None
-    )
+    played_at = datetime.fromtimestamp(int(played_at_ms) / 1000, tz=UTC).replace(tzinfo=None)
     if user_color == "white":
         opp_rating = metadata.get("black_elo")
     else:

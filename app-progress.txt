@@ -5,6 +5,9 @@ Session summary (2026-02-08):
 	- client/src/flows/DashboardFlow.tsx inline delay → `PRACTICE_FEEDBACK_DELAY_MS` + `waitForPracticeFeedback` helper.
 
 Session summary (2026-02-08):
+- Reduced time control parsing complexity for xenon by splitting slash parsing and normalization helpers; make check warnings remain unchanged.
+
+Session summary (2026-02-08):
 - Aligned canonical games table expectation to normalized time_control values.
 - Tests run: `pytest tests/test_api_chesscom_bullet_pipeline_canonical.py -k test_games_table_stores_canonical_metadata`.
 

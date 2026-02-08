@@ -48,12 +48,24 @@ def _parse_time_control_seconds(value: str) -> ChessTimeControl | None:
 
 
 def _parse_time_control_slash(value: str) -> ChessTimeControl | None:
+    parts = _split_time_control_slash(value)
+    return _parse_time_control_slash_parts(parts)
+
+
+def _split_time_control_slash(value: str) -> list[str] | None:
     if "/" not in value:
         return None
     parts = [part for part in value.split("/") if part]
-    if parts and parts[-1].isdigit():
-        return ChessTimeControl(initial=int(parts[-1]), increment=None)
-    return None
+    return parts or None
+
+
+def _parse_time_control_slash_parts(parts: list[str] | None) -> ChessTimeControl | None:
+    if not parts:
+        return None
+    last = parts[-1]
+    if not last.isdigit():
+        return None
+    return ChessTimeControl(initial=int(last), increment=None)
 
 
 def _parse_time_control_fallback(value: str) -> ChessTimeControl | None:
@@ -65,18 +77,29 @@ def _parse_time_control_fallback(value: str) -> ChessTimeControl | None:
 
 def normalize_time_control_label(value: str | None) -> str:
     """Normalize a PGN time control string into a standard bucket."""
-    label = "unknown"
+    normalized = _normalize_time_control_input(value)
+    if not normalized:
+        return "unknown"
+    direct = _direct_time_control_label(normalized)
+    if direct is not None:
+        return direct
+    parsed = _parse_time_control_value(normalized)
+    if parsed is None:
+        return "unknown"
+    return _bucket_time_control_seconds(parsed.estimated_total_seconds())
+
+
+def _normalize_time_control_input(value: str | None) -> str:
     normalized = (value or "").strip().lower()
-    if normalized and normalized != "-":
-        if normalized in _TIME_CONTROL_LABELS:
-            label = normalized
-        elif normalized in _TIME_CONTROL_ALIASES:
-            label = _TIME_CONTROL_ALIASES[normalized]
-        else:
-            parsed = _parse_time_control_value(normalized)
-            if parsed is not None:
-                label = _bucket_time_control_seconds(parsed.estimated_total_seconds())
-    return label
+    if not normalized or normalized == "-":
+        return ""
+    return normalized
+
+
+def _direct_time_control_label(value: str) -> str | None:
+    if value in _TIME_CONTROL_LABELS:
+        return value
+    return _TIME_CONTROL_ALIASES.get(value)
 
 
 def _bucket_time_control_seconds(total_seconds: int) -> str:

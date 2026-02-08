@@ -20,22 +20,47 @@ def _parse_time_control_value(value: str) -> ChessTimeControl | None:
     normalized = value.strip()
     if not normalized or normalized == "-":
         return None
-    parsed = None
-    if "+" in normalized:
-        initial_str, increment_str = normalized.split("+", 1)
-        if initial_str.isdigit() and increment_str.isdigit():
-            parsed = ChessTimeControl(initial=int(initial_str), increment=int(increment_str))
-    if parsed is None and normalized.isdigit():
-        parsed = ChessTimeControl(initial=int(normalized), increment=None)
-    if parsed is None and "/" in normalized:
-        parts = [part for part in normalized.split("/") if part]
-        if parts and parts[-1].isdigit():
-            parsed = ChessTimeControl(initial=int(parts[-1]), increment=None)
-    if parsed is None:
-        match = re.search(r"(\d+)", normalized)
-        if match:
-            parsed = ChessTimeControl(initial=int(match.group(1)), increment=None)
-    return parsed
+    for parser in (
+        _parse_time_control_plus,
+        _parse_time_control_seconds,
+        _parse_time_control_slash,
+        _parse_time_control_fallback,
+    ):
+        parsed = parser(normalized)
+        if parsed is not None:
+            return parsed
+    return None
+
+
+def _parse_time_control_plus(value: str) -> ChessTimeControl | None:
+    if "+" not in value:
+        return None
+    initial_str, increment_str = value.split("+", 1)
+    if initial_str.isdigit() and increment_str.isdigit():
+        return ChessTimeControl(initial=int(initial_str), increment=int(increment_str))
+    return None
+
+
+def _parse_time_control_seconds(value: str) -> ChessTimeControl | None:
+    if value.isdigit():
+        return ChessTimeControl(initial=int(value), increment=None)
+    return None
+
+
+def _parse_time_control_slash(value: str) -> ChessTimeControl | None:
+    if "/" not in value:
+        return None
+    parts = [part for part in value.split("/") if part]
+    if parts and parts[-1].isdigit():
+        return ChessTimeControl(initial=int(parts[-1]), increment=None)
+    return None
+
+
+def _parse_time_control_fallback(value: str) -> ChessTimeControl | None:
+    match = re.search(r"(\d+)", value)
+    if match:
+        return ChessTimeControl(initial=int(match.group(1)), increment=None)
+    return None
 
 
 def normalize_time_control_label(value: str | None) -> str:
@@ -50,16 +75,18 @@ def normalize_time_control_label(value: str | None) -> str:
         else:
             parsed = _parse_time_control_value(normalized)
             if parsed is not None:
-                total_seconds = parsed.estimated_total_seconds()
-                if total_seconds <= _BULLET_MAX_SECONDS:
-                    label = "bullet"
-                elif total_seconds < _BLITZ_MAX_SECONDS:
-                    label = "blitz"
-                elif total_seconds < _RAPID_MAX_SECONDS:
-                    label = "rapid"
-                else:
-                    label = "classical"
+                label = _bucket_time_control_seconds(parsed.estimated_total_seconds())
     return label
+
+
+def _bucket_time_control_seconds(total_seconds: int) -> str:
+    if total_seconds <= _BULLET_MAX_SECONDS:
+        return "bullet"
+    if total_seconds < _BLITZ_MAX_SECONDS:
+        return "blitz"
+    if total_seconds < _RAPID_MAX_SECONDS:
+        return "rapid"
+    return "classical"
 
 
 @dataclass

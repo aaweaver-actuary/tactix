@@ -1,4 +1,11 @@
 Session summary (2026-02-08):
+- Refactored time control normalization parsing into small, single-responsibility helpers and centralized bucketing logic.
+- Tests run: make check (before; task), make check (after; task).
+- Before→After map:
+	- src/tactix/chess_time_control.py `_parse_time_control_value` → extracted `_parse_time_control_plus`, `_parse_time_control_seconds`, `_parse_time_control_slash`, `_parse_time_control_fallback`.
+	- src/tactix/chess_time_control.py inline bucketing logic → `_bucket_time_control_seconds`.
+
+Session summary (2026-02-08):
 - Normalized games table time_control to bullet/blitz/rapid/classical/unknown; updated canonical games table expectations and integration snapshot query.
 - Added time control normalization unit coverage and fixture-based games row checks; verification log: tmp-logs/feature-time-control-normalization-2026-02-08.log.
 - Added a short practice feedback delay to keep Enter-submit UI feedback visible; re-verified enter submit.

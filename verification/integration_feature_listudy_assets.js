@@ -1,5 +1,10 @@
 const puppeteer = require('../client/node_modules/puppeteer');
 const { selectSource } = require('./enter_submit_helpers');
+const {
+  checkForListudyAssets,
+  LISTUDY_CARD_TEXTURE_NAME,
+  LISTUDY_PIECE_PATH_SEGMENT,
+} = require('./listudy_assets_helpers');
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const source = process.env.TACTIX_SOURCE || 'chesscom';
@@ -36,26 +41,19 @@ const source = process.env.TACTIX_SOURCE || 'chesscom';
       'Refresh metrics',
     );
 
-    const hasPieceAssets = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('img')).some((img) =>
-        img.getAttribute('src')?.includes('/pieces/cburnett/'),
-      ),
-    );
+    const { hasPieceAssets, hasListudyCardTexture } =
+      await checkForListudyAssets(page);
 
     if (!hasPieceAssets) {
-      throw new Error('Listudy piece assets were not rendered.');
+      throw new Error(
+        `Listudy piece assets were not rendered (${LISTUDY_PIECE_PATH_SEGMENT}).`,
+      );
     }
 
-    const hasListudyCardTexture = await page.evaluate(() => {
-      const card = document.querySelector('.card');
-      if (!card) return false;
-      return window.getComputedStyle(card).backgroundImage.includes(
-        'listudy-brown',
-      );
-    });
-
     if (!hasListudyCardTexture) {
-      throw new Error('Listudy board texture missing from card surfaces.');
+      throw new Error(
+        `Listudy board texture missing from card surfaces (${LISTUDY_CARD_TEXTURE_NAME}).`,
+      );
     }
 
     if (consoleErrors.length) {

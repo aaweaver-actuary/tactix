@@ -8,6 +8,7 @@ import {
   listudyDarkSquareStyle,
   listudyLightSquareStyle,
   listudyNotationStyle,
+  listudyPreviewPieceIds,
   listudyPieces,
 } from '../utils/listudyAssets';
 import Badge from './Badge';
@@ -50,7 +51,6 @@ export default function PracticeAttemptCard({
   handlePracticeDrop,
   ...dragProps
 }: PracticeAttemptCardProps) {
-  const previewPieces = ['wK', 'wQ', 'wB', 'wN', 'wR', 'wP'] as const;
   const handleInputSubmit = (move: string) => {
     void handlePracticeAttempt(move);
   };
@@ -73,7 +73,7 @@ export default function PracticeAttemptCard({
               className="hidden sm:flex items-center gap-1 opacity-80"
               aria-hidden="true"
             >
-              {previewPieces.map((pieceId) => {
+              {listudyPreviewPieceIds.map((pieceId) => {
                 const Piece = listudyPieces[pieceId];
                 return <Piece key={pieceId} squareWidth={18} />;
               })}

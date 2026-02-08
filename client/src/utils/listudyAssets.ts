@@ -1,7 +1,34 @@
 import { createElement, type CSSProperties } from 'react';
 
+const listudyPiecePathPrefix = '/pieces/cburnett/';
+const listudyBoardTextureVar = 'var(--listudy-board-texture)';
+
+export const listudyPieceIds = [
+  'bB',
+  'bK',
+  'bN',
+  'bP',
+  'bQ',
+  'bR',
+  'wB',
+  'wK',
+  'wN',
+  'wP',
+  'wQ',
+  'wR',
+] as const;
+
+export const listudyPreviewPieceIds = [
+  'wK',
+  'wQ',
+  'wB',
+  'wN',
+  'wR',
+  'wP',
+] as const;
+
 export const listudyBoardStyle: CSSProperties = {
-  backgroundImage: 'url(/boards/listudy-brown.svg)',
+  backgroundImage: listudyBoardTextureVar,
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   borderRadius: '14px',
@@ -24,25 +51,18 @@ export const listudyNotationStyle: CSSProperties = {
   fontFamily: '"Space Grotesk", "Helvetica Neue", sans-serif',
 };
 
-export const listudyPieces = {
-  bB: buildPiece('bB'),
-  bK: buildPiece('bK'),
-  bN: buildPiece('bN'),
-  bP: buildPiece('bP'),
-  bQ: buildPiece('bQ'),
-  bR: buildPiece('bR'),
-  wB: buildPiece('wB'),
-  wK: buildPiece('wK'),
-  wN: buildPiece('wN'),
-  wP: buildPiece('wP'),
-  wQ: buildPiece('wQ'),
-  wR: buildPiece('wR'),
-};
+export const listudyPieces = listudyPieceIds.reduce(
+  (acc, pieceId) => {
+    acc[pieceId] = buildPiece(pieceId);
+    return acc;
+  },
+  {} as Record<(typeof listudyPieceIds)[number], ReturnType<typeof buildPiece>>,
+);
 
 function buildPiece(pieceId: string) {
   const Piece = ({ squareWidth }: { squareWidth: number }) =>
     createElement('img', {
-      src: `/pieces/cburnett/${pieceId}.svg`,
+      src: `${listudyPiecePathPrefix}${pieceId}.svg`,
       alt: pieceId,
       draggable: false,
       style: {

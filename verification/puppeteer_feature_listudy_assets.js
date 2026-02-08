@@ -1,5 +1,6 @@
 const puppeteer = require('../client/node_modules/puppeteer');
 const { selectSource } = require('./enter_submit_helpers');
+const { waitForListudyAssets } = require('./listudy_assets_helpers');
 const {
   attachConsoleCapture,
   captureScreenshot,
@@ -35,23 +36,7 @@ const source = process.env.TACTIX_SOURCE || 'chesscom';
       'Refresh metrics',
     );
 
-    await page.waitForFunction(
-      () =>
-        Array.from(document.querySelectorAll('img')).some((img) =>
-          img.getAttribute('src')?.includes('/pieces/cburnett/'),
-        ),
-      { timeout: 60000 },
-    );
-
-    await page.waitForFunction(
-      () => {
-        const card = document.querySelector('.card');
-        if (!card) return false;
-        const style = window.getComputedStyle(card);
-        return style.backgroundImage.includes('listudy-brown');
-      },
-      { timeout: 60000 },
-    );
+    await waitForListudyAssets(page, 60000);
 
     const outPath = await captureScreenshot(
       page,

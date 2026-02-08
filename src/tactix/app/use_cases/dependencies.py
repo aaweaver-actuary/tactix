@@ -270,11 +270,22 @@ class DashboardStatsService(Protocol):
 class DefaultDashboardStatsService:
     """Default dashboard stats service."""
 
+    motif_stats_fetcher: Callable[..., list[dict[str, object]]] = fetch_motif_stats
+    trend_stats_fetcher: Callable[..., list[dict[str, object]]] = fetch_trend_stats
+
+    def _fetch_stats(
+        self,
+        fetcher: Callable[..., list[dict[str, object]]],
+        conn: Any,
+        **kwargs: object,
+    ) -> list[dict[str, object]]:
+        return fetcher(conn, **kwargs)
+
     def fetch_motif_stats(self, conn: Any, **kwargs: object) -> list[dict[str, object]]:
-        return fetch_motif_stats(conn, **kwargs)
+        return self._fetch_stats(self.motif_stats_fetcher, conn, **kwargs)
 
     def fetch_trend_stats(self, conn: Any, **kwargs: object) -> list[dict[str, object]]:
-        return fetch_trend_stats(conn, **kwargs)
+        return self._fetch_stats(self.trend_stats_fetcher, conn, **kwargs)
 
 
 class DashboardVersionProvider(Protocol):

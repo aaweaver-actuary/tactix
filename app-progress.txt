@@ -1,4 +1,16 @@
 Session summary (2026-02-08):
+- Refactored the default dashboard stats service to share fetch logic between motif/trend stats.
+- Tests run: make check (before; failed: unused imports in use_cases/postgres.py and use_cases/tactics_search.py); make check (after; same failures).
+- Before→After map:
+	- tactix/app/use_cases/dependencies.py (DefaultDashboardStatsService) → extract shared `_fetch_stats` helper and route stat fetchers through it.
+
+Session summary (2026-02-08):
+- Injected dashboard stats fetcher callables to make the default stats service easier to substitute in tests while keeping existing behavior.
+- Tests run: make check (before); make check (after).
+- Before→After map:
+	- tactix/app/use_cases/dependencies.py (DefaultDashboardStatsService) → inject `motif_stats_fetcher` and `trend_stats_fetcher` callables, methods now delegate to instance fields.
+
+Session summary (2026-02-08):
 - Implemented dependency objects for use-case wiring to replace callable injection across pipeline, dashboard, practice, tactics search, and postgres use cases.
 - Updated use-case tests to use fakes implementing the new interfaces and added a shared dummy unit-of-work runner for assertions.
 - Tests run: make check (task); pytest tests/test_api_chesscom_bullet_pipeline_canonical.py tests/test_chesscom_bullet_pipeline_2026_02_01.py tests/test_api_lichess_blitz_pipeline_regression.py; pytest tests/test_api_chesscom_bullet_pipeline_regression.py -k idempotency; pytest tests/test_use_cases_api_layer.py.

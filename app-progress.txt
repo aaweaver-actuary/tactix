@@ -1,4 +1,13 @@
 Session summary (2026-02-08):
+- Refactored game detail modal to reuse shared analysis cell renderers and shared Puppeteer helpers.
+- Tests run: make check (before; task), make check (after; task).
+- Commit: cb45eae
+- Before→After map:
+	- client/src/_components/GameDetailModal.tsx → reuse shared analysis cell rendering helper.
+	- verification/puppeteer_feature_game_detail_modal.js → reuse verification/helpers/game_detail_modal_helpers.js
+	- verification/integration_feature_game_detail_modal.js → reuse verification/helpers/game_detail_modal_helpers.js
+
+Session summary (2026-02-08):
 - Implemented a fixed overlay modal for game detail view (portal + backdrop) and added dashboard test coverage for opening the modal.
 - UI verification (Puppeteer): verification/feature-game-detail-modal-2026-02-08.png.
 - CI integration script: verification/integration_feature_game_detail_modal.js (run with TACTIX_SOURCE=chesscom).

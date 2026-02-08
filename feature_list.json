@@ -131,7 +131,7 @@
       "Step 4: Verify the button is shown for both Lichess and non-Lichess games",
       "Step 5: Add or update a UI test for the Lichess link action"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

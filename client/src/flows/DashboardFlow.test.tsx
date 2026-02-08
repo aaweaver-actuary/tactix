@@ -124,7 +124,7 @@ const baseDashboard: DashboardPayload = {
     },
     {
       game_id: 'g2',
-      source: 'chesscom',
+      source: 'lichess',
       opponent: 'opponent-2',
       result: '0-1',
       played_at: '2026-01-02T00:00:00Z',
@@ -212,7 +212,7 @@ const basePracticeQueue: PracticeQueueResponse = {
 const baseGameDetail: GameDetailResponse = {
   game_id: 'g1',
   source: 'chesscom',
-  pgn: '1. e4 e5 2. Nf3 Nc6 1-0',
+  pgn: '1. e3 e6 2. f3 f6 1/2-1/2',
   metadata: {
     user_rating: 1400,
     time_control: '300',
@@ -386,6 +386,37 @@ describe('DashboardFlow', () => {
     expect(modal).toHaveAttribute('aria-modal', 'true');
     expect(modal.className).toContain('fixed');
     expect(screen.getByTestId('game-detail-close')).toBeInTheDocument();
+  });
+
+  it('opens the Lichess analysis URL from the recent games table', async () => {
+    const popup = {
+      location: { href: '' },
+      opener: 'active',
+      close: vi.fn(),
+    };
+    const openSpy = vi
+      .spyOn(window, 'open')
+      .mockImplementation(() => popup as unknown as Window);
+
+    render(<DashboardFlow />);
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId(/open-lichess-/)).toHaveLength(2);
+    });
+
+    fireEvent.click(screen.getByTestId('open-lichess-g1'));
+
+    await waitFor(() => {
+      expect(fetchGameDetail).toHaveBeenCalledWith('g1', 'chesscom');
+    });
+
+    expect(openSpy).toHaveBeenCalledWith('about:blank', '_blank');
+    expect(popup.location.href).toBe(
+      'https://lichess.org/analysis/pgn/e3_e6_f3_f6?color=white#4',
+    );
+    expect(popup.opener).toBeNull();
+
+    openSpy.mockRestore();
   });
 
   it('keeps practice session total fixed after a successful attempt', async () => {

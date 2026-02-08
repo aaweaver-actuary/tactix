@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ButtonHTMLAttributes } from 'react';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { ColumnDef } from '@tanstack/react-table';
@@ -26,6 +26,7 @@ import {
   openEventStream,
 } from '../client';
 import formatPgnMoveList from '../utils/formatPgnMoveList';
+import buildLichessAnalysisUrl from '../utils/buildLichessAnalysisUrl';
 import {
   ChessPlatform,
   ChesscomProfile,
@@ -121,6 +122,10 @@ const formatGameDate = (value: string | null) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString();
+};
+
+const openLichessAnalysisWindow = (url: string) => {
+  window.open(url, '_blank', 'noopener,noreferrer');
 };
 
 type BaseCardRenderProps = {
@@ -251,6 +256,37 @@ export default function DashboardFlow() {
   const handleFiltersChange = (next: typeof filters) => {
     setFilters(next);
   };
+
+  const handleOpenLichess = useCallback(
+    async (row: { game_id?: string | null; source?: string | null }) => {
+      if (!row.game_id) return;
+      const popup = window.open('about:blank', '_blank');
+      try {
+        const detail = await fetchGameDetail(
+          row.game_id,
+          row.source ?? (source === 'all' ? undefined : source),
+        );
+        const url = buildLichessAnalysisUrl(detail.pgn);
+        if (!url) {
+          console.warn('Unable to build Lichess analysis URL for game.', {
+            gameId: row.game_id,
+          });
+          if (popup) popup.close();
+          return;
+        }
+        if (popup) {
+          popup.location.href = url;
+          popup.opener = null;
+        } else {
+          openLichessAnalysisWindow(url);
+        }
+      } catch (err) {
+        if (popup) popup.close();
+        console.error(err);
+      }
+    },
+    [source, buildLichessAnalysisUrl, openLichessAnalysisWindow],
+  );
 
   const handleResetFilters = () => {
     setFilters({
@@ -1191,8 +1227,30 @@ export default function DashboardFlow() {
           </span>
         ),
       },
+      {
+        header: 'Actions',
+        id: 'lichess-actions',
+        cell: ({ row }) => {
+          if (!row.original.game_id) {
+            return <span className="text-sand/40">--</span>;
+          }
+          return (
+            <button
+              type="button"
+              className="rounded border border-white/10 px-2 py-1 text-xs text-sand/80 hover:border-white/30"
+              data-testid={`open-lichess-${row.original.game_id}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                void handleOpenLichess(row.original);
+              }}
+            >
+              Open in Lichess
+            </button>
+          );
+        },
+      },
     ],
-    [],
+    [handleOpenLichess],
   );
 
   const practiceOrientation =

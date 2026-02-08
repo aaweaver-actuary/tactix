@@ -1,4 +1,10 @@
 Session summary (2026-02-08):
+- Merged feature branch into main and removed the local feature branch to satisfy housekeeping policy.
+- Merge commit: [dev] merge feature branch
+- Branch deleted: feature/issue-1-chesscom-bullet-pipeline
+- Tests run: make check (main branch).
+
+Session summary (2026-02-08):
 - Fixed frontend layering guardrail regression by removing the `_components/BaseCard` import from DashboardFlow and inlining the drag prop type.
 - Tests run: vitest src/test/component_structure.test.ts.
 - Commit: 49b6944

@@ -81,7 +81,7 @@ py-complexity:
 		src/
 
 # pycycle for detecting circular dependencies
-	$(PYCYCLE) --here
+	$(PYCYCLE) --here --ignore .venv,client,node_modules
 
 complexity: py-complexity
 

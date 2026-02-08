@@ -1,7 +1,7 @@
 {
   "pipeline": {
     "status": "ok",
-    "run_id": "df98dc7034084621a11eaaec3645acfc",
+    "run_id": "e5f5ae58ae0a444f8d02fc84b7fcc08d",
     "result": {
       "source": "chesscom",
       "user": "groborger",
@@ -24,21 +24,21 @@
       "user_moves": 20,
       "opportunities": 20,
       "conversions": 20,
-      "practice_queue": 2
+      "practice_queue": 6
     },
     "motif_counts": {
       "escape": 1,
-      "hanging_piece": 5,
+      "hanging_piece": 8,
       "initiative": 7,
       "pin": 1,
-      "skewer": 6
+      "skewer": 3
     },
     "window_start_ms": 1769904000000,
     "window_end_ms": 1769990400000
   },
   "recent_games": [
     {
-      "game_id": "4857464682112090072",
+      "game_id": "2266280674675837250",
       "source": "chesscom",
       "opponent": "skchess12ka4",
       "result": "win",
@@ -47,7 +47,7 @@
       "user_color": "white"
     },
     {
-      "game_id": "3703973804664264256",
+      "game_id": "179536626461474979",
       "source": "chesscom",
       "opponent": "naveenaar",
       "result": "loss",
@@ -60,14 +60,77 @@
   "loss_delta": 80,
   "practice_queue": [
     {
+      "tactic_id": 19,
+      "game_id": "179536626461474979",
+      "position_id": 19,
+      "motif": "hanging_piece",
+      "severity": 1.5,
+      "best_uci": "e5h2",
+      "eval_cp": -381,
+      "created_at": "2026-02-08T10:47:45.209222",
+      "result": "missed",
+      "user_uci": "f8h8",
+      "eval_delta": -293,
+      "source": "chesscom",
+      "fen": "2kr1r2/ppp1qp1Q/4b1N1/3Pb3/P3R3/2P5/1P1N1PPP/R1B3K1 b - - 3 19",
+      "position_uci": "f8h8",
+      "san": "Rh8",
+      "ply": 37,
+      "move_number": 19,
+      "side_to_move": "black",
+      "clock_seconds": 44.7
+    },
+    {
+      "tactic_id": 17,
+      "game_id": "179536626461474979",
+      "position_id": 17,
+      "motif": "hanging_piece",
+      "severity": 1.5,
+      "best_uci": "e8c8",
+      "eval_cp": -462,
+      "created_at": "2026-02-08T10:47:45.168653",
+      "result": "missed",
+      "user_uci": "f6e5",
+      "eval_delta": -161,
+      "source": "chesscom",
+      "fen": "r3kr2/ppp1qp1Q/4bb2/3PP3/P3RN2/2P5/1P3PPP/RNB3K1 b q - 0 17",
+      "position_uci": "f6e5",
+      "san": "Bxe5",
+      "ply": 33,
+      "move_number": 17,
+      "side_to_move": "black",
+      "clock_seconds": 55.2
+    },
+    {
+      "tactic_id": 16,
+      "game_id": "179536626461474979",
+      "position_id": 16,
+      "motif": "hanging_piece",
+      "severity": 1.5,
+      "best_uci": "f8h8",
+      "eval_cp": -278,
+      "created_at": "2026-02-08T10:47:45.148758",
+      "result": "missed",
+      "user_uci": "c8e6",
+      "eval_delta": -274,
+      "source": "chesscom",
+      "fen": "r1b1kr2/ppp1qp1Q/5b2/3Pn3/P2PRN2/2P5/1P3PPP/RNB3K1 b q - 0 16",
+      "position_uci": "c8e6",
+      "san": "Be6",
+      "ply": 31,
+      "move_number": 16,
+      "side_to_move": "black",
+      "clock_seconds": 55.7
+    },
+    {
       "tactic_id": 11,
-      "game_id": "3703973804664264256",
+      "game_id": "179536626461474979",
       "position_id": 11,
       "motif": "hanging_piece",
       "severity": 1.5,
       "best_uci": "d7f6",
       "eval_cp": -455,
-      "created_at": "2026-02-07T08:15:52.279588",
+      "created_at": "2026-02-08T10:47:45.045078",
       "result": "missed",
       "user_uci": "d7e5",
       "eval_delta": -129,
@@ -82,13 +145,13 @@
     },
     {
       "tactic_id": 10,
-      "game_id": "3703973804664264256",
+      "game_id": "179536626461474979",
       "position_id": 10,
       "motif": "hanging_piece",
       "severity": 1.5,
       "best_uci": "e7f6",
       "eval_cp": -423,
-      "created_at": "2026-02-07T08:15:52.260005",
+      "created_at": "2026-02-08T10:47:45.024113",
       "result": "missed",
       "user_uci": "h8f8",
       "eval_delta": -110,
@@ -100,6 +163,27 @@
       "move_number": 10,
       "side_to_move": "black",
       "clock_seconds": 107.2
+    },
+    {
+      "tactic_id": 7,
+      "game_id": "179536626461474979",
+      "position_id": 7,
+      "motif": "hanging_piece",
+      "severity": 1.5,
+      "best_uci": "f6h5",
+      "eval_cp": 385,
+      "created_at": "2026-02-08T10:47:44.960154",
+      "result": "missed",
+      "user_uci": "c6e5",
+      "eval_delta": -607,
+      "source": "chesscom",
+      "fen": "r1bqk2r/ppp2ppp/2n2n2/2bP4/P1B1p3/2P3Q1/1P1P1PPP/RNB1K1NR b KQkq - 1 7",
+      "position_uci": "c6e5",
+      "san": "Ne5",
+      "ply": 13,
+      "move_number": 7,
+      "side_to_move": "black",
+      "clock_seconds": 117.8
     }
   ]
 }

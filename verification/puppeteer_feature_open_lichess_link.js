@@ -48,14 +48,6 @@ async function verifyOpenLichessForSource(page, sourceLabel) {
   console.log(`Verifying Open in Lichess for ${sourceLabel}...`);
   await installLichessSpy(page);
   await selectSource(page, sourceLabel);
-  await waitWithTimeout(
-    page.waitForResponse(
-      (response) =>
-        response.url().includes('/api/dashboard') && response.status() === 200,
-    ),
-    20000,
-    `dashboard response for ${sourceLabel}`,
-  );
   const sourceValue = await page.evaluate(() => {
     const select = document.querySelector('[data-testid="filter-source"]');
     return select ? select.value : null;
@@ -68,16 +60,20 @@ async function verifyOpenLichessForSource(page, sourceLabel) {
   await openRecentGamesTable(page);
   await ensureRecentGamesHasRows(page);
   await waitForRecentGamesRowReady(page);
+  await page.waitForFunction(
+    (label) =>
+      Array.from(
+        document.querySelectorAll('[data-testid^="recent-games-row-"]'),
+      ).some((row) =>
+        (row.getAttribute('data-testid') || '').includes(label),
+      ),
+    { timeout: 20000 },
+    sourceLabel,
+  );
   const rowTestIds = await page.$$eval(
     '[data-testid^="recent-games-row-"]',
     (rows) => rows.map((row) => row.getAttribute('data-testid') || ''),
   );
-  const hasSourceRow = rowTestIds.some((id) => id.includes(sourceLabel));
-  if (!hasSourceRow) {
-    throw new Error(
-      `Recent games rows did not include source ${sourceLabel}. Found: ${rowTestIds.join(', ')}`,
-    );
-  }
   await page.waitForSelector('[data-testid^="open-lichess-"]', {
     timeout: 60000,
   });

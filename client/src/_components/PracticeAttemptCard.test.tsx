@@ -67,7 +67,7 @@ describe('PracticeAttemptCard', () => {
 
     expect(screen.getByTestId('mock-chessboard')).toBeInTheDocument();
     expect(lastProps.customBoardStyle?.backgroundImage).toContain(
-      '/boards/listudy-brown.svg',
+      'var(--listudy-board-texture)',
     );
     expect(lastProps.customPieces?.wK).toBeDefined();
     expect(lastProps.customLightSquareStyle?.backgroundColor).toBe(

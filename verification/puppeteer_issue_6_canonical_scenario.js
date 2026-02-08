@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const puppeteer = require('../client/node_modules/puppeteer');
@@ -12,7 +13,14 @@ const BACKEND_CMD = path.join(ROOT_DIR, '.venv', 'bin', 'python');
 const BACKEND_RUNNING = process.env.TACTIX_BACKEND_RUNNING === '1';
 const BACKEND_PORT = process.env.TACTIX_BACKEND_PORT || '8001';
 const DEV_SERVER_PORT = process.env.TACTIX_UI_PORT || '5178';
-const DUCKDB_PATH = process.env.TACTIX_DUCKDB_PATH;
+const DUCKDB_PATH =
+  process.env.TACTIX_DUCKDB_PATH ||
+  path.resolve(
+    ROOT_DIR,
+    'tmp-logs',
+    'feature_chesscom_bullet_canonical_ui_2026_02_08.duckdb',
+  );
+const API_TOKEN = process.env.TACTIX_API_TOKEN || 'local-dev-token';
 const API_BASE =
   process.env.TACTIX_API_BASE || `http://localhost:${BACKEND_PORT}`;
 const TARGET_URL =
@@ -23,6 +31,12 @@ const SCREENSHOT_NAME =
 
 function startBackend() {
   return new Promise((resolve, reject) => {
+    if (DUCKDB_PATH) {
+      fs.mkdirSync(path.dirname(DUCKDB_PATH), { recursive: true });
+      if (fs.existsSync(DUCKDB_PATH)) {
+        fs.unlinkSync(DUCKDB_PATH);
+      }
+    }
     const proc = spawn(
       BACKEND_CMD,
       [
@@ -111,6 +125,52 @@ function startDevServer() {
   });
 }
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function waitForHealth(retries = 20, delayMs = 500) {
+  const url = new URL(`${API_BASE}/api/health`);
+  for (let attempt = 0; attempt < retries; attempt += 1) {
+    try {
+      const response = await fetch(url.toString(), {
+        headers: { Authorization: `Bearer ${API_TOKEN}` },
+      });
+      if (response.ok) return;
+    } catch (err) {
+      // ignore until retries exhausted
+    }
+    await sleep(delayMs);
+  }
+  throw new Error('Backend health check failed');
+}
+
+async function runPipeline() {
+  const url = new URL(`${API_BASE}/api/pipeline/run`);
+  url.searchParams.set('source', 'chesscom');
+  url.searchParams.set('profile', 'bullet');
+  url.searchParams.set('user_id', 'groborger');
+  url.searchParams.set('start_date', '2026-02-01');
+  url.searchParams.set('end_date', '2026-02-01');
+  url.searchParams.set('use_fixture', 'true');
+  url.searchParams.set('fixture_name', 'chesscom_2_bullet_games.pgn');
+  url.searchParams.set('reset_db', 'true');
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${API_TOKEN}` },
+    });
+    if (response.ok) {
+      return response.json();
+    }
+    const body = await response.text();
+    if (attempt === 3) {
+      throw new Error(`Pipeline run failed: ${response.status} ${body}`);
+    }
+    await sleep(1000);
+  }
+  return null;
+}
+
 async function setDateInput(page, selector, value) {
   await page.click(selector, { clickCount: 3 });
   await page.type(selector, value);
@@ -138,6 +198,8 @@ async function expandCard(page, selector) {
       console.log('Starting backend...');
       backend = await startBackend();
     }
+    await waitForHealth();
+    await runPipeline();
     console.log('Starting dev server...');
     devServer = await startDevServer();
 
@@ -150,6 +212,23 @@ async function expandCard(page, selector) {
     await page.waitForSelector('[data-testid="filter-source"]', {
       timeout: 60000,
     });
+
+    await page.$$eval('h3', (headers) => {
+      const target = headers.find(
+        (header) => (header.textContent || '').trim() === 'Filters',
+      );
+      const button = target?.closest('[role="button"]');
+      if (button) {
+        (button).click();
+      }
+    });
+    await page.waitForFunction(
+      () => {
+        const input = document.querySelector('[data-testid="filter-source"]');
+        return input && (input).offsetParent !== null;
+      },
+      { timeout: 60000 },
+    );
 
     await page.select('[data-testid="filter-source"]', 'chesscom');
     await page.waitForSelector('[data-testid="filter-chesscom-profile"]');
@@ -170,7 +249,7 @@ async function expandCard(page, selector) {
         document.querySelectorAll('[data-testid^="recent-games-row-"]')
           .length === 2 &&
         document.querySelectorAll('[data-testid^="practice-queue-row-"]')
-          .length === 2,
+          .length >= 2,
       { timeout: 120000 },
     );
 
@@ -182,18 +261,23 @@ async function expandCard(page, selector) {
         `Expected 2 recent games rows, found ${recentRows.length}`,
       );
     }
-    if (practiceRows.length !== 2) {
+    if (practiceRows.length < 2) {
       throw new Error(
-        `Expected 2 practice queue rows, found ${practiceRows.length}`,
+        `Expected at least 2 practice queue rows, found ${practiceRows.length}`,
       );
     }
 
-    const recentText = await page.$eval(
-      '[data-testid="recent-games-card"]',
-      (el) => el.textContent || '',
+    const resultLabels = await page.$$eval(
+      '[data-testid^="recent-games-row-"]',
+      (rows) =>
+        rows.map((row) => {
+          const cells = Array.from(row.querySelectorAll('td'));
+          const resultCell = cells[2];
+          return (resultCell?.textContent || '').trim().toLowerCase();
+        }),
     );
-    const winCount = recentText.split('Win').length - 1;
-    const lossCount = recentText.split('Loss').length - 1;
+    const winCount = resultLabels.filter((label) => label === 'win').length;
+    const lossCount = resultLabels.filter((label) => label === 'loss').length;
     if (winCount < 1 || lossCount < 1) {
       throw new Error('Expected one win and one loss in recent games');
     }

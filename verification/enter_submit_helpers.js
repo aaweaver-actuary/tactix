@@ -7,6 +7,38 @@ async function selectSource(page, source) {
     lichess: 'Lichess',
     all: 'All',
   };
+  const waitForDashboardSource = async () => {
+    await page.waitForResponse((response) => {
+      if (!response.url().includes('/api/dashboard')) return false;
+      if (response.status() !== 200) return false;
+      try {
+        const url = new URL(response.url());
+        const value = url.searchParams.get('source');
+        if (targetSource === 'all') {
+          return value === null;
+        }
+        return value === targetSource;
+      } catch (err) {
+        return false;
+      }
+    }, { timeout: 60000 });
+  };
+  const waitForPracticeQueueSource = async () => {
+    await page.waitForResponse((response) => {
+      if (!response.url().includes('/api/practice/queue')) return false;
+      if (response.status() !== 200) return false;
+      try {
+        const url = new URL(response.url());
+        const value = url.searchParams.get('source');
+        if (targetSource === 'all') {
+          return value === null;
+        }
+        return value === targetSource;
+      } catch (err) {
+        return false;
+      }
+    }, { timeout: 60000 });
+  };
   try {
     await page.waitForFunction(
       () => {
@@ -18,6 +50,18 @@ async function selectSource(page, source) {
       { timeout: 60000 },
     );
     await page.select('select[data-testid="filter-source"]', targetSource);
+    await page.waitForFunction(
+      (value) => {
+        const el = document.querySelector(
+          'select[data-testid="filter-source"]',
+        );
+        return el && (el).value === value;
+      },
+      { timeout: 60000 },
+      targetSource,
+    );
+    await waitForDashboardSource();
+    await waitForPracticeQueueSource();
   } catch (err) {
     const label = labelMap[targetSource] || targetSource;
     await page.$$eval(
@@ -30,6 +74,8 @@ async function selectSource(page, source) {
       },
       label,
     );
+    await waitForDashboardSource();
+    await waitForPracticeQueueSource();
   }
 }
 

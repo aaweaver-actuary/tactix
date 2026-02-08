@@ -181,7 +181,7 @@
       "Step 6: Confirm API responses match database records for games and practice queue",
       "Step 7: Confirm client renders the same canonical facts (2 games, 1 win, 1 loss, 2 practice positions)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

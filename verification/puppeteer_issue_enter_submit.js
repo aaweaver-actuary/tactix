@@ -52,6 +52,16 @@ function ensureDir(filePath) {
     await page.waitForSelector('h1');
     await selectSource(page, source);
 
+    await page.$$eval('h3', (headers) => {
+      const target = headers.find((header) =>
+        (header.textContent || '').includes('Practice attempt'),
+      );
+      const button = target?.closest('[role="button"]');
+      if (button) {
+        (button).click();
+      }
+    });
+
     console.log('Refreshing metrics to load practice queue...');
     await page.$$eval(
       'button',
@@ -67,6 +77,16 @@ function ensureDir(filePath) {
     await page.waitForSelector('h3', { timeout: 60000 });
     await new Promise((resolve) => setTimeout(resolve, 2000));
     const inputSelector = 'input[placeholder*="UCI"]';
+    await page.waitForFunction(
+      (selector) => {
+        const input = document.querySelector(selector);
+        if (!(input instanceof HTMLInputElement)) return false;
+        const visible = input.offsetParent !== null;
+        return visible && !input.disabled;
+      },
+      { timeout: 60000 },
+      inputSelector,
+    );
     const input = await page.waitForSelector(inputSelector, { timeout: 60000 });
     if (!input) {
       throw new Error('Practice attempt input not found (queue may be empty).');

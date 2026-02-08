@@ -3,7 +3,7 @@ import { createElement, type CSSProperties } from 'react';
 const listudyPiecePathPrefix = '/pieces/cburnett/';
 const listudyBoardTextureVar = 'var(--listudy-board-texture)';
 
-export const listudyPieceIds = [
+const listudyPieceIds = [
   'bB',
   'bK',
   'bN',

@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const BACKEND_CMD = path.join(ROOT_DIR, '.venv', 'bin', 'python');
@@ -27,6 +27,9 @@ const DB_PATH =
     'tmp-logs',
     'feature_chesscom_bullet_canonical_integration_2026_02_07.duckdb',
   );
+
+const PYTHON_CMD = process.env.TACTIX_PYTHON || path.join(ROOT_DIR, '.venv', 'bin', 'python');
+const FALLBACK_PYTHON = 'python';
 
 function startBackend() {
   return new Promise((resolve, reject) => {
@@ -112,6 +115,18 @@ function ratingDelta(metadata) {
     return whiteElo - blackElo;
   }
   throw new Error('User not found in game metadata');
+}
+
+function loadDbSnapshot(dbPath) {
+  const python = fs.existsSync(PYTHON_CMD) ? PYTHON_CMD : FALLBACK_PYTHON;
+  const script = `import json, sys\nimport duckdb\n\npath = sys.argv[1]\nconn = duckdb.connect(path)\ntry:\n    games = conn.execute(\n        """\n        SELECT game_id, user_rating, time_control, played_at\n        FROM games\n        WHERE source = 'chesscom'\n        AND time_control = '120+1'\n        AND CAST(played_at AS DATE) = '2026-02-01'\n        ORDER BY game_id\n        """\n    ).fetchall()\n    queue = conn.execute(\n        """\n        SELECT opportunity_id, game_id, position_id, fen, result, motif\n        FROM practice_queue\n        WHERE source = 'chesscom'\n        ORDER BY opportunity_id\n        """\n    ).fetchall()\nfinally:\n    conn.close()\n\nprint(json.dumps({\n    'games': [\n        {\n            'game_id': row[0],\n            'user_rating': row[1],\n            'time_control': row[2],\n            'played_at': str(row[3]) if row[3] is not None else None,\n        }\n        for row in games\n    ],\n    'practice_queue': [\n        {\n            'opportunity_id': row[0],\n            'game_id': row[1],\n            'position_id': row[2],\n            'fen': row[3],\n            'result': row[4],\n            'motif': row[5],\n        }\n        for row in queue\n    ],\n}))\n`;
+  const result = spawnSync(python, ['-c', script, dbPath], {
+    encoding: 'utf-8',
+  });
+  if (result.status !== 0) {
+    throw new Error(`DuckDB snapshot failed: ${result.stderr || result.stdout}`);
+  }
+  return JSON.parse(result.stdout || '{}');
 }
 
 
@@ -284,6 +299,26 @@ async function fetchGameDetail(gameId) {
       requireValue(queueByTacticId.get(item.tactic_id)?.fen, 'practice FEN');
     }
 
+    const dbSnapshot = loadDbSnapshot(DB_PATH);
+    const dbGames = dbSnapshot.games || [];
+    requireCount(dbGames.length, 2, 'db games count');
+    const dbGameIds = new Set(dbGames.map((row) => row.game_id));
+    if (!dbGameIds.has(winGameId) || !dbGameIds.has(lossGameId)) {
+      throw new Error('Expected DB games to match API win/loss game ids');
+    }
+
+    const dbQueue = dbSnapshot.practice_queue || [];
+    const dbLossQueue = dbQueue.filter((row) => row.game_id === lossGameId);
+    if (dbLossQueue.length < 2) {
+      throw new Error('Expected DB practice queue items for loss game');
+    }
+    const dbPositionIds = new Set(dbLossQueue.map((row) => row.position_id));
+    for (const item of lossItems) {
+      if (!dbPositionIds.has(item.position_id)) {
+        throw new Error('Expected API practice items to exist in DB');
+      }
+    }
+
     fs.mkdirSync(path.dirname(LOG_PATH), { recursive: true });
     fs.writeFileSync(
       LOG_PATH,
@@ -294,6 +329,7 @@ async function fetchGameDetail(gameId) {
           win_delta: winDelta,
           loss_delta: lossDelta,
           practice_queue: lossItems,
+          db_snapshot: dbSnapshot,
         },
         null,
         2,

@@ -1,37 +1,13 @@
 const puppeteer = require('../client/node_modules/puppeteer');
 const fs = require('fs');
 const path = require('path');
+const { selectSource } = require('./enter_submit_helpers');
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const screenshotName =
   process.env.TACTIX_SCREENSHOT_NAME ||
   'dashboard-practice-attempt-grading.png';
 const source = process.env.TACTIX_SOURCE || 'chesscom';
-
-async function selectSource(page) {
-  if (source !== 'chesscom') return;
-  try {
-    await page.waitForFunction(
-      () => {
-        const el = document.querySelector('select[data-testid="filter-source"]');
-        return el && !el.disabled;
-      },
-      { timeout: 60000 },
-    );
-    await page.select('select[data-testid="filter-source"]', 'chesscom');
-  } catch (err) {
-    await page.$$eval(
-      'button',
-      (buttons, label) => {
-        const target = buttons.find(
-          (btn) => btn.textContent && btn.textContent.includes(label),
-        );
-        if (target) target.click();
-      },
-      'Chess.com',
-    );
-  }
-}
 
 (async () => {
   const browser = await puppeteer.launch({ headless: 'new' });
@@ -51,7 +27,17 @@ async function selectSource(page) {
     console.log('Navigating to UI...');
     await page.goto(targetUrl, { waitUntil: 'networkidle0' });
     await page.waitForSelector('h1');
-    await selectSource(page);
+    await selectSource(page, source);
+
+    await page.$$eval('h3', (headers) => {
+      const target = headers.find((header) =>
+        (header.textContent || '').includes('Practice attempt'),
+      );
+      const button = target?.closest('[role="button"]');
+      if (button) {
+        (button).click();
+      }
+    });
 
     console.log('Refreshing metrics to load practice queue...');
     await page.$$eval(
@@ -67,6 +53,15 @@ async function selectSource(page) {
 
     await page.waitForSelector('h3', { timeout: 60000 });
     await new Promise((resolve) => setTimeout(resolve, 2000));
+    await page.waitForFunction(
+      () => {
+        const input = document.querySelector('input[placeholder*="UCI"]');
+        if (!(input instanceof HTMLInputElement)) return false;
+        const visible = input.offsetParent !== null;
+        return visible && !input.disabled;
+      },
+      { timeout: 60000 },
+    );
     let input;
     try {
       input = await page.waitForSelector('input[placeholder*="UCI"]', {

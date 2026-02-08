@@ -92,9 +92,28 @@ async function getPracticeFenFromCard(page) {
     await page.waitForSelector('h1', { timeout: 60000 });
     await selectSource(page, source);
 
+    await page.$$eval('h3', (headers) => {
+      const target = headers.find((header) =>
+        (header.textContent || '').includes('Practice attempt'),
+      );
+      const button = target?.closest('[role="button"]');
+      if (button) {
+        (button).click();
+      }
+    });
+
     await page.waitForSelector('[data-testid="practice-session-summary"]', {
       timeout: 60000,
     });
+    await page.waitForFunction(
+      () => {
+        const input = document.querySelector('input[placeholder*="UCI"]');
+        if (!(input instanceof HTMLInputElement)) return false;
+        const visible = input.offsetParent !== null;
+        return visible && !input.disabled;
+      },
+      { timeout: 60000 },
+    );
     await page.waitForSelector('input[placeholder*="UCI"]', {
       timeout: 60000,
     });

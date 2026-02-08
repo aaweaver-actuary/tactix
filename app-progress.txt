@@ -1,4 +1,8 @@
 Session summary (2026-02-07):
+- Added PGN fixture parsing unit test covering headers, move count, final FEN, and deterministic game_id for chess.com bullet fixture 1.
+- Tests run: runTests (all; summary passed=115), make check.
+
+Session summary (2026-02-07):
 - Routed moved-piece hanging override through the shared after-move helper with pre/post board context and a post-move piece fallback.
 - Reduced hanging override parameter count via a dedicated context dataclass in analyze_position.
 - Tests run: make check.

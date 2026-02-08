@@ -1,4 +1,10 @@
 Session summary (2026-02-08):
+- Added API verification tests for the chess.com bullet canonical scenario using TestClient and fixture pipeline runs.
+- Evidence log: tmp-logs/feature-api-verification-2026-02-08.log.
+- Tests run: pytest tests/test_api_chesscom_bullet_dashboard_practice_2026_02_01.py -q; make check.
+- Updated feature_list.json: marked "Backend API verification (FastAPI): chess.com bullet games + practice queue on 2026-02-01" as passing.
+
+Session summary (2026-02-08):
 - Refactored Postgres canonical DB test queries to reuse shared fixture filter helper functions.
 - Tests run: make check (before; task), make check (after; task).
 - Commit: 371e0be

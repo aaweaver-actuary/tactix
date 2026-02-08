@@ -222,7 +222,7 @@
       "Step 5: Confirm API returns at least 2 practice positions from the loss game",
       "Step 6: Confirm one position represents a hung knight and one represents a hung bishop"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

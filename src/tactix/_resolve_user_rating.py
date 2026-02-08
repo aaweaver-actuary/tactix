@@ -1,5 +1,7 @@
 """Resolve which rating belongs to the user."""
 
+from tactix._normalize_player_name import _normalize_player_name
+
 
 def _resolve_user_rating(
     user: str,
@@ -9,9 +11,9 @@ def _resolve_user_rating(
     black_elo: int | None,
 ) -> int | None:
     """Return the user's rating when present in the headers."""
-    user_lower = user.lower()
-    white_lower = (white or "").lower()
-    black_lower = (black or "").lower()
+    user_lower = _normalize_player_name(user)
+    white_lower = _normalize_player_name(white)
+    black_lower = _normalize_player_name(black)
     if white_lower == user_lower:
         return white_elo
     if black_lower == user_lower:

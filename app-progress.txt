@@ -1,4 +1,10 @@
 Session summary (2026-02-08):
+- Normalized PGN player names for user color and rating inference to handle annotated headers.
+- Added user color inference unit coverage using fixture PGNs and annotated player headers.
+- Tests run: runTests (tests/test_user_color_inference.py) -> tool reported "No tests found in the files"; runTests (10 core test files) -> same error.
+- Current pass count: 35/128.
+
+Session summary (2026-02-08):
 - Extracted the practice feedback delay into a named helper to keep DashboardFlow practice submission intent-focused.
 - Tests run: make check (before; task), make check (after; task).
 - Before→After map:

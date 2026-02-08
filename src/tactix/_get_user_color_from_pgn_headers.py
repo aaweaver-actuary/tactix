@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import chess
 import chess.pgn
 
+from tactix._normalize_player_name import _normalize_player_name
 from tactix.chess_player_color import ChessPlayerColor
 from tactix.utils.logger import funclogger
 
@@ -27,24 +28,24 @@ def _get_user_color_from_pgn_headers(
 @singledispatch
 def _resolve_player_names(headers: object) -> tuple[str, str]:
     """Resolve player names from a headers object."""
-    white = getattr(headers, "white_player", None) or ""
-    black = getattr(headers, "black_player", None) or ""
-    return white.lower(), black.lower()
+    white = getattr(headers, "white_player", None)
+    black = getattr(headers, "black_player", None)
+    return _normalize_player_name(white), _normalize_player_name(black)
 
 
 @_resolve_player_names.register
 def _resolve_player_names_from_headers(headers: chess.pgn.Headers) -> tuple[str, str]:
     """Resolve player names from standard PGN headers."""
-    white = headers.get("White") or ""
-    black = headers.get("Black") or ""
-    return white.lower(), black.lower()
+    white = headers.get("White")
+    black = headers.get("Black")
+    return _normalize_player_name(white), _normalize_player_name(black)
 
 
 def _resolve_user_color(white: str, black: str, user: str) -> ChessPlayerColor:
     """Return the player's color based on header names."""
-    user_lower = user.lower()
-    is_white = white == user_lower
-    is_black = black == user_lower
+    user_lower = _normalize_player_name(user)
+    is_white = bool(white) and white == user_lower
+    is_black = bool(black) and black == user_lower
     if not is_white and not is_black:
         raise ValueError(f"User '{user}' not found in PGN headers.")
     return ChessPlayerColor.WHITE if is_white else ChessPlayerColor.BLACK

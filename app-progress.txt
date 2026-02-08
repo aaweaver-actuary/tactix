@@ -1,4 +1,9 @@
 Session summary (2026-02-08):
+- Refactored Lichess cursor handling helpers and aligned pipeline/test usage.
+- Tests run: make check (output truncated; later verified by targeted pytest).
+- Commit: 4009de8
+
+Session summary (2026-02-08):
 - Fixed Lichess cursor checkpoint updates during windowed syncs and ensured next_cursor advances from fetched games.
 - Tests run: pytest tests/test_api_lichess_cursor_incremental.py -q.
 - Commit: 076a17b

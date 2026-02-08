@@ -67,7 +67,7 @@ class SchemaMigrationTests(unittest.TestCase):
 
         migrate_schema(conn)
 
-        self.assertEqual(get_schema_version(conn), 7)
+        self.assertEqual(get_schema_version(conn), 8)
 
         raw_rows = conn.execute(
             "SELECT raw_pgn_id, game_id, pgn, pgn_version, last_timestamp_ms, cursor FROM raw_pgns"
@@ -103,7 +103,7 @@ class SchemaMigrationTests(unittest.TestCase):
 
         migrate_schema(conn)
 
-        self.assertEqual(get_schema_version(conn), 7)
+        self.assertEqual(get_schema_version(conn), 8)
         columns = {row[1] for row in conn.execute("PRAGMA table_info('raw_pgns')").fetchall()}
         self.assertIn("raw_pgn_id", columns)
         self.assertIn("pgn_hash", columns)

@@ -15,6 +15,7 @@ from tactix.dashboard_query import (
 from tactix.db._build_legacy_raw_pgn_inserts import _build_legacy_raw_pgn_inserts
 from tactix.db._drop_table_if_exists import _drop_table_if_exists
 from tactix.db._migration_add_columns import _migration_add_columns
+from tactix.db._migration_add_games_table import _migration_add_games_table
 from tactix.db._migration_add_pipeline_views import _migration_add_pipeline_views
 from tactix.db._migration_add_position_legality import _migration_add_position_legality
 from tactix.db._migration_add_tactic_explanations import _migration_add_tactic_explanations
@@ -150,7 +151,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 );
 """
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 
 def _should_attempt_wal_recovery(exc: BaseException) -> bool:
@@ -318,6 +319,7 @@ _SCHEMA_MIGRATIONS = [
     (5, _migration_add_position_legality),
     (6, _migration_add_tactic_explanations),
     (7, _migration_add_pipeline_views),
+    (8, _migration_add_games_table),
 ]
 
 

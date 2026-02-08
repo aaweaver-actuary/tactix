@@ -482,7 +482,9 @@ class PipelineCheckpointUpdates:  # pylint: disable=too-many-arguments,too-many-
                 fetch_context.raw_games,
                 key=lambda g: (int(g.get("last_timestamp_ms", 0)), str(g.get("game_id", ""))),
             )
-            raw_cursor = f"{int(latest_raw.get('last_timestamp_ms', 0))}:{latest_raw.get('game_id', '')}"
+            raw_cursor = (
+                f"{int(latest_raw.get('last_timestamp_ms', 0))}:{latest_raw.get('game_id', '')}"
+            )
             if not cursor_value or cursor_value == fetch_context.cursor_value:
                 cursor_value = raw_cursor
         if not cursor_value and games:

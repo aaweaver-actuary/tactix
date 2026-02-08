@@ -1,4 +1,10 @@
 Session summary (2026-02-08):
+- Added games table persistence with canonical metadata extracted from PGN headers.
+- Added canonical metadata assertions to the chess.com bullet pipeline canonical test.
+- Evidence log: tmp-logs/feature-games-canonical-metadata-2026-02-08.log.
+- Tests run: make check (fails at py-complexity/xenon on existing B-ranked blocks); runTests (failed to discover tests).
+
+Session summary (2026-02-08):
 - Refactored Lichess cursor handling helpers and aligned pipeline/test usage.
 - Tests run: make check (output truncated; later verified by targeted pytest).
 - Commit: 4009de8

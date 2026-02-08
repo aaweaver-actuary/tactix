@@ -4,7 +4,7 @@ import importlib
 import os
 import shutil
 import tempfile
-from datetime import date
+from datetime import UTC, date, datetime
 from io import StringIO
 from pathlib import Path
 
@@ -13,6 +13,7 @@ import chess.pgn
 import pytest
 from fastapi.testclient import TestClient
 
+from tactix._extract_metadata_from_headers import _extract_metadata_from_headers
 from tactix._get_game_result_for_user_from_pgn_headers import (
     _get_game_result_for_user_from_pgn_headers,
 )
@@ -21,6 +22,7 @@ from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.chess_game_result import ChessGameResult
 from tactix.chess_player_color import ChessPlayerColor
 from tactix.db.duckdb_store import get_connection
+from tactix.extract_last_timestamp_ms import extract_last_timestamp_ms
 
 USER = "groborger"
 SOURCE = "chesscom"
@@ -111,6 +113,71 @@ def _rating_diff(headers: chess.pgn.Headers, user: str) -> int:
     if color == ChessPlayerColor.WHITE:
         return black_elo - white_elo
     return white_elo - black_elo
+
+
+def _fetch_canonical_game_rows(conn) -> list[dict[str, object]]:
+    rows = conn.execute(
+        """
+        SELECT
+            game_id,
+            source,
+            time_control,
+            played_at,
+            user_id,
+            user_color,
+            user_rating,
+            opp_rating,
+            result,
+            pgn
+        FROM games
+        WHERE source = ?
+        AND time_control = ?
+        AND CAST(played_at AS DATE) BETWEEN ? AND ?
+        ORDER BY game_id
+        """,
+        (SOURCE, TIME_CONTROL, FIXTURE_DATE, FIXTURE_DATE),
+    ).fetchall()
+    return [
+        {
+            "game_id": row[0],
+            "source": row[1],
+            "time_control": row[2],
+            "played_at": row[3],
+            "user_id": row[4],
+            "user_color": row[5],
+            "user_rating": row[6],
+            "opp_rating": row[7],
+            "result": row[8],
+            "pgn": row[9],
+        }
+        for row in rows
+    ]
+
+
+def _expected_game_metadata(
+    headers: chess.pgn.Headers,
+    user: str,
+    pgn_text: str,
+) -> dict[str, object]:
+    metadata = _extract_metadata_from_headers(headers, user)
+    color = _get_user_color_from_pgn_headers(headers, user)
+    user_color = "white" if color == ChessPlayerColor.WHITE else "black"
+    played_at_ms = metadata.get("start_timestamp_ms") or extract_last_timestamp_ms(pgn_text)
+    played_at = datetime.fromtimestamp(int(played_at_ms) / 1000, tz=UTC).replace(
+        tzinfo=None
+    )
+    if user_color == "white":
+        opp_rating = metadata.get("black_elo")
+    else:
+        opp_rating = metadata.get("white_elo")
+    return {
+        "user_color": user_color,
+        "user_rating": metadata.get("user_rating"),
+        "opp_rating": opp_rating,
+        "result": _get_game_result_for_user_from_pgn_headers(headers, user).value,
+        "time_control": metadata.get("time_control"),
+        "played_at": played_at,
+    }
 
 
 def _capture_square(board: chess.Board, move: chess.Move) -> chess.Square:
@@ -237,6 +304,33 @@ def test_canonical_pipeline_missed_hanging_pieces(
     for _, _, _best_uci, fen, user_move_uci in tactic_rows:
         labels.update(_hanging_user_piece_labels_after_move(fen, user_move_uci))
     assert {"knight", "bishop"}.issubset(labels)
+
+
+def test_games_table_stores_canonical_metadata(canonical_db_path: Path) -> None:
+    conn = get_connection(canonical_db_path)
+    try:
+        rows = _fetch_canonical_game_rows(conn)
+    finally:
+        conn.close()
+
+    if len(rows) != 2:
+        raise AssertionError(f"Expected 2 games rows, found {len(rows)}")
+
+    for row in rows:
+        pgn_text = row.get("pgn") or ""
+        game = chess.pgn.read_game(StringIO(str(pgn_text)))
+        if game is None:
+            raise AssertionError(f"Unable to parse PGN for game {row.get('game_id')}")
+        expected = _expected_game_metadata(game.headers, USER, str(pgn_text))
+
+        assert row.get("source") == SOURCE
+        assert row.get("user_id") == USER
+        assert row.get("time_control") == expected["time_control"]
+        assert row.get("user_color") == expected["user_color"]
+        assert row.get("user_rating") == expected["user_rating"]
+        assert row.get("opp_rating") == expected["opp_rating"]
+        assert row.get("result") == expected["result"]
+        assert row.get("played_at") == expected["played_at"]
 
 
 def test_canonical_pipeline_pre_blunder_positions_recorded(

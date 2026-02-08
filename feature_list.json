@@ -493,7 +493,7 @@
       "Step 4: Verify source, played_at, time_control, user_id, user_color fields are present",
       "Step 5: Verify result and pgn fields are present"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

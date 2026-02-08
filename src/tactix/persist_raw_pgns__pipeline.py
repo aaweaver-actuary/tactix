@@ -7,8 +7,10 @@ from dataclasses import dataclass
 import duckdb
 
 from tactix.app.use_cases.pipeline_support import _emit_progress
+from tactix.build_games_table_row__pipeline import _build_games_table_row
 from tactix.config import Settings
 from tactix.db.delete_game_rows import delete_game_rows
+from tactix.db.game_repository_provider import upsert_games
 from tactix.db.raw_pgn_repository_provider import raw_pgn_repository
 from tactix.define_pipeline_state__pipeline import ProgressCallback
 from tactix.GameRow import GameRow
@@ -46,6 +48,10 @@ def _persist_raw_pgns(context: PersistRawPgnsContext) -> tuple[int, int, int]:
             [game["game_id"] for game in context.games_to_process],
         )
     raw_pgns_inserted = repository.upsert_raw_pgns(context.games_to_process)
+    upsert_games(
+        context.conn,
+        [_build_games_table_row(game) for game in context.games_to_process],
+    )
     hash_metrics = _validate_raw_pgn_hashes(
         context.games_to_process,
         context.settings.source,

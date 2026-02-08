@@ -1,4 +1,11 @@
 Session summary (2026-02-08):
+- Refactored Postgres canonical DB test queries to reuse shared fixture filter helper functions.
+- Tests run: make check (before; task), make check (after; task).
+- Commit: 371e0be
+- Before→After map:
+	- tests/test_postgres_chesscom_bullet_2026_02_01.py → reuse _fixture_game_filter_sql() and _fixture_query_args().
+
+Session summary (2026-02-08):
 - Verified Postgres-backed canonical DB checks for chess.com bullet games and missed tactics on 2026-02-01.
 - Evidence log: tmp-logs/feature-postgres-db-verification-2026-02-08.log.
 - Tests run: pytest tests/test_postgres_chesscom_bullet_2026_02_01.py (with Postgres env); make check.

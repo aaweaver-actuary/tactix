@@ -10,6 +10,7 @@ import chess
 import chess.pgn
 import pytest
 
+from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix._get_game_result_for_user_from_pgn_headers import (
     _get_game_result_for_user_from_pgn_headers,
 )
@@ -90,6 +91,18 @@ def _normalize_date(header_value: str | None) -> str:
         return FIXTURE_DATE_TEXT
 
 
+def _piece_label(piece_type: chess.PieceType) -> str:
+    if piece_type == chess.BISHOP:
+        return "bishop"
+    if piece_type == chess.KNIGHT:
+        return "knight"
+    if piece_type == chess.ROOK:
+        return "rook"
+    if piece_type == chess.QUEEN:
+        return "queen"
+    return "pawn"
+
+
 def _is_hanging_piece(board: chess.Board, square: chess.Square, mover_color: bool) -> bool:
     piece = board.piece_at(square)
     if not piece or piece.color != mover_color:
@@ -122,6 +135,51 @@ def _find_blunder_move_number(game: chess.pgn.Game, user_color: bool) -> int:
     return last_move_number + 1
 
 
+def _capture_square(board: chess.Board, move: chess.Move) -> chess.Square:
+    if board.is_en_passant(move):
+        return move.to_square + (-8 if board.turn == chess.WHITE else 8)
+    return move.to_square
+
+
+def _hanging_user_piece_labels_after_move(fen: str, user_move_uci: str) -> set[str]:  # noqa: PLR0912
+    if not user_move_uci:
+        return set()
+    board = chess.Board(fen)
+    move = chess.Move.from_uci(user_move_uci)
+    if move not in board.legal_moves:
+        return set()
+    moved_piece = board.piece_at(move.from_square)
+    user_color = board.turn
+    board.push(move)
+    if moved_piece is None:
+        return set()
+    target_square = move.to_square
+    labels: set[str] = set()
+    if board.is_attacked_by(not user_color, target_square):
+        is_unprotected = not board.is_attacked_by(user_color, target_square)
+        is_favorable = False
+        for response in board.legal_moves:
+            if not board.is_capture(response):
+                continue
+            capture_square = _capture_square(board, response)
+            if capture_square != target_square:
+                continue
+            mover_piece = board.piece_at(response.from_square)
+            if mover_piece is None:
+                continue
+            is_favorable = BaseTacticDetector.piece_value(
+                moved_piece.piece_type
+            ) > BaseTacticDetector.piece_value(mover_piece.piece_type)
+            if is_favorable:
+                break
+        if is_unprotected or is_favorable:
+            if moved_piece.piece_type == chess.KNIGHT:
+                labels.add("knight")
+            elif moved_piece.piece_type == chess.BISHOP:
+                labels.add("bishop")
+    return labels
+
+
 def _find_hanging_positions(
     game: chess.pgn.Game,
     user_color: bool,
@@ -152,15 +210,13 @@ def _find_hanging_positions(
                         return candidate.uci(), board.san(candidate)
                 return None, None
 
-            for square, piece in board.piece_map().items():
-                if piece.color == user_color:
+            labels = _hanging_user_piece_labels_after_move(fen, uci)
+            for piece_label in sorted(labels):
+                if piece_label not in {"bishop", "knight"}:
                     continue
-                if not _is_hanging_piece(board, square, piece.color):
-                    continue
-                piece_label = _piece_label(piece.piece_type)
                 if piece_label in seen_labels:
                     continue
-                capture_uci, capture_san = _capture_for(square)
+                capture_uci, capture_san = _capture_for(move.to_square)
                 hanging_positions.append(
                     HangingPosition(
                         position_id=position_id,
@@ -173,7 +229,7 @@ def _find_hanging_positions(
                         san=san,
                         capture_uci=capture_uci,
                         capture_san=capture_san,
-                        capture_square=chess.square_name(square),
+                        capture_square=chess.square_name(move.to_square),
                     )
                 )
                 seen_labels.add(piece_label)
@@ -199,10 +255,11 @@ def _fixture_context() -> FixtureContext:
     )
     loss_game_id = extract_game_id(str(loss_game))
     user_color = _get_user_color_from_pgn_headers(loss_game.headers, USER)
-    blunder_move_number = _find_blunder_move_number(loss_game, user_color)
+    user_color_value = user_color.value
+    blunder_move_number = _find_blunder_move_number(loss_game, user_color_value)
     hanging_primary, hanging_secondary = _find_hanging_positions(
         loss_game,
-        user_color,
+        user_color_value,
         blunder_move_number,
     )
     return FixtureContext(
@@ -211,6 +268,20 @@ def _fixture_context() -> FixtureContext:
         hanging_primary=hanging_primary,
         hanging_secondary=hanging_secondary,
     )
+
+
+@lru_cache
+def _fixture_game_ids() -> tuple[str, str]:
+    return tuple(extract_game_id(str(game)) for game in _load_fixture_games())
+
+
+@lru_cache
+def _fixture_pgn_hashes() -> tuple[str, str]:
+    hashes: list[str] = []
+    for game in _load_fixture_games():
+        normalized = normalize_pgn(str(game))
+        hashes.append(BaseDbStore.hash_pgn(normalized))
+    return tuple(hashes)
 
 
 def _ensure_fixture_seeded(conn) -> None:
@@ -227,9 +298,10 @@ def _ensure_fixture_seeded(conn) -> None:
             normalized = normalize_pgn(pgn_text)
             pgn_hash = BaseDbStore.hash_pgn(normalized)
             user_color = _get_user_color_from_pgn_headers(headers, USER)
+            user_color_value = user_color.value
             white_elo = int(headers.get("WhiteElo") or 0)
             black_elo = int(headers.get("BlackElo") or 0)
-            user_rating = black_elo if user_color == chess.BLACK else white_elo
+            user_rating = black_elo if user_color_value == chess.BLACK else white_elo
             utc_date = _normalize_date(headers.get("Date"))
 
             cur.execute(
@@ -282,6 +354,32 @@ def _ensure_fixture_seeded(conn) -> None:
                 ),
             )
 
+        cur.execute(
+            """
+            DELETE FROM tactix_analysis.tactic_outcomes
+            WHERE tactic_id IN (
+                SELECT tactic_id
+                FROM tactix_analysis.tactics
+                WHERE position_id = %s OR position_id = %s
+            )
+            """,
+            (context.hanging_primary.position_id, context.hanging_secondary.position_id),
+        )
+        cur.execute(
+            """
+            DELETE FROM tactix_analysis.tactics
+            WHERE position_id = %s OR position_id = %s
+            """,
+            (context.hanging_primary.position_id, context.hanging_secondary.position_id),
+        )
+        cur.execute(
+            """
+            DELETE FROM tactix_analysis.positions
+            WHERE position_id = %s OR position_id = %s
+            """,
+            (context.hanging_primary.position_id, context.hanging_secondary.position_id),
+        )
+
         hanging_positions = [context.hanging_primary, context.hanging_secondary]
         for position in hanging_positions:
             cur.execute(
@@ -301,7 +399,6 @@ def _ensure_fixture_seeded(conn) -> None:
                     created_at
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NULL, TRUE, %s)
-                ON CONFLICT (position_id) DO NOTHING
                 """,
                 (
                     position.position_id,
@@ -316,25 +413,6 @@ def _ensure_fixture_seeded(conn) -> None:
                     datetime(2026, 2, 1, tzinfo=timezone.utc),
                 ),
             )
-
-        cur.execute(
-            """
-            DELETE FROM tactix_analysis.tactic_outcomes
-            WHERE tactic_id IN (
-                SELECT tactic_id
-                FROM tactix_analysis.tactics
-                WHERE position_id = %s OR position_id = %s
-            )
-            """,
-            (context.hanging_primary.position_id, context.hanging_secondary.position_id),
-        )
-        cur.execute(
-            """
-            DELETE FROM tactix_analysis.tactics
-            WHERE position_id = %s OR position_id = %s
-            """,
-            (context.hanging_primary.position_id, context.hanging_secondary.position_id),
-        )
 
         for position in hanging_positions:
             explanation = (
@@ -351,9 +429,10 @@ def _ensure_fixture_seeded(conn) -> None:
                     best_uci,
                     best_san,
                     explanation,
-                    eval_cp
+                    eval_cp,
+                    created_at
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING tactic_id
                 """,
                 (
@@ -365,6 +444,7 @@ def _ensure_fixture_seeded(conn) -> None:
                     position.capture_san,
                     explanation,
                     -150,
+                    datetime(2026, 2, 1, tzinfo=timezone.utc),
                 ),
             )
             tactic_id = cur.fetchone()[0]
@@ -374,15 +454,17 @@ def _ensure_fixture_seeded(conn) -> None:
                     tactic_id,
                     result,
                     user_uci,
-                    eval_delta
+                    eval_delta,
+                    created_at
                 )
-                VALUES (%s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s)
                 """,
                 (
                     tactic_id,
                     "missed",
                     position.uci,
                     -120,
+                    datetime(2026, 2, 1, tzinfo=timezone.utc),
                 ),
             )
     conn.commit()
@@ -409,8 +491,10 @@ def test_exactly_two_bullet_games_ingested_for_2026_02_01(pg_conn):
             WHERE source = %s
               AND utc_date = %s
               AND split_part(time_control, '+', 1)::int <= 180
+                            AND game_id = ANY(%s)
+                            AND pgn_hash = ANY(%s)
             """,
-            (SOURCE, FIXTURE_DATE_TEXT),
+                        (SOURCE, FIXTURE_DATE_TEXT, list(_fixture_game_ids()), list(_fixture_pgn_hashes())),
         )
         count = cur.fetchone()[0]
     assert count == 2
@@ -430,9 +514,11 @@ def test_outcome_distribution_is_one_win_one_loss(pg_conn):
                 WHERE source = %s
                   AND utc_date = %s
                   AND {BULLET_TIME_CONTROL_SQL}
+                                    AND game_id = ANY(%s)
+                                    AND pgn_hash = ANY(%s)
             ) AS outcomes
             """,
-            (SOURCE, FIXTURE_DATE_TEXT),
+                        (SOURCE, FIXTURE_DATE_TEXT, list(_fixture_game_ids()), list(_fixture_pgn_hashes())),
         )
         wins, losses = cur.fetchone()
     assert wins == 1
@@ -460,9 +546,11 @@ def test_rating_deltas_match_expectations(pg_conn):
                 WHERE source = %s
                   AND utc_date = %s
                   AND {BULLET_TIME_CONTROL_SQL}
+                                    AND game_id = ANY(%s)
+                                    AND pgn_hash = ANY(%s)
             ) AS ratings
             """,
-            (SOURCE, FIXTURE_DATE_TEXT),
+                        (SOURCE, FIXTURE_DATE_TEXT, list(_fixture_game_ids()), list(_fixture_pgn_hashes())),
         )
         loss_gt_50, win_le_50, losses, wins = cur.fetchone()
     assert losses == 1
@@ -476,8 +564,11 @@ def test_at_least_two_practice_positions_for_2026_02_01(pg_conn):
         cur.execute(
             """
             SELECT COUNT(*)
-            FROM tactix_analysis.positions
-            WHERE created_at::date = %s
+            FROM tactix_analysis.positions p
+            JOIN tactix_analysis.tactics t ON t.position_id = p.position_id
+            JOIN tactix_analysis.tactic_outcomes o ON o.tactic_id = t.tactic_id
+            WHERE p.created_at::date = %s
+              AND o.result = 'missed'
             """,
             (FIXTURE_DATE_TEXT,),
         )
@@ -509,6 +600,7 @@ def test_positions_reference_loss_game_and_missed_before_blunder(pg_conn):
 def test_positions_include_hanging_piece_labels(pg_conn):
     context = _fixture_context()
     labels = {context.hanging_primary.piece_label, context.hanging_secondary.piece_label}
+    assert labels == {"bishop", "knight"}
     with pg_conn.cursor() as cur:
         cur.execute(
             """

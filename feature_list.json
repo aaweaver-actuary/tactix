@@ -209,7 +209,7 @@
       "Step 6: Confirm one position corresponds to a hung knight and one to a hung bishop",
       "Step 7: Confirm each position includes game id, move number, and FEN"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

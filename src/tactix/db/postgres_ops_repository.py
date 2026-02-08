@@ -111,17 +111,24 @@ def fetch_ops_events(settings: Settings, limit: int = 10) -> list[dict[str, Any]
     with postgres_connection(settings) as conn:
         if conn is None:
             return []
-        init_postgres_schema(conn)
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(
-                """
-                SELECT id, component, event_type, source, profile,
-                       metadata, run_id, op_id, created_at
-                FROM tactix_ops.ops_events
-                ORDER BY created_at DESC
-                LIMIT %s
-                """,
-                (limit,),
-            )
-            rows = cur.fetchall()
-        return [dict(row) for row in rows]
+        return fetch_ops_events_with_conn(conn, limit=limit)
+
+
+def fetch_ops_events_with_conn(conn, limit: int = 10) -> list[dict[str, Any]]:
+    """Return recent ops events for the provided connection."""
+    if conn is None:
+        return []
+    init_postgres_schema(conn)
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(
+            """
+            SELECT id, component, event_type, source, profile,
+                   metadata, run_id, op_id, created_at
+            FROM tactix_ops.ops_events
+            ORDER BY created_at DESC
+            LIMIT %s
+            """,
+            (limit,),
+        )
+        rows = cur.fetchall()
+    return [dict(row) for row in rows]

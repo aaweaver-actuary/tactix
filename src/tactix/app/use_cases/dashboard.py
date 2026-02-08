@@ -17,11 +17,13 @@ from tactix.db.dashboard_repository_provider import (
     fetch_pipeline_table_counts,
     fetch_trend_stats,
 )
-from tactix.db.duckdb_store import fetch_version, get_connection, init_schema
+from tactix.db.duckdb_store import fetch_version, init_schema
+from tactix.db.duckdb_unit_of_work import DuckDbUnitOfWork
 from tactix.db.raw_pgn_repository_provider import fetch_raw_pgns_summary
 from tactix.get_cached_dashboard_payload__api_cache import _get_cached_dashboard_payload
 from tactix.normalize_source__source import _normalize_source
 from tactix.pipeline import get_dashboard_payload
+from tactix.ports.unit_of_work import UnitOfWork
 from tactix.set_dashboard_cache__api_cache import _set_dashboard_cache
 
 
@@ -52,7 +54,7 @@ class DashboardUseCase:  # pylint: disable=too-many-instance-attributes
     fetch_trend_stats: Callable[..., object] = fetch_trend_stats
     fetch_raw_pgns_summary: Callable[..., object] = fetch_raw_pgns_summary
     fetch_version: Callable[[Any], int] = fetch_version
-    get_connection: Callable[[Path], Any] = get_connection
+    unit_of_work_factory: Callable[[Path], UnitOfWork] = DuckDbUnitOfWork
     init_schema: Callable[[Any], None] = init_schema
     get_settings: Callable[..., Settings] = get_settings
     normalize_source: Callable[[str | None], str | None] = _normalize_source
@@ -93,7 +95,8 @@ class DashboardUseCase:  # pylint: disable=too-many-instance-attributes
             safe_name = Path(db_name).name
             filename = safe_name if safe_name.endswith(".duckdb") else f"{safe_name}.duckdb"
             settings.duckdb_path = settings.data_dir / filename
-        conn = self.get_connection(settings.duckdb_path)
+        uow = self.unit_of_work_factory(settings.duckdb_path)
+        conn = uow.begin()
         try:
             self.init_schema(conn)
             summary = self.fetch_pipeline_table_counts(
@@ -106,8 +109,13 @@ class DashboardUseCase:  # pylint: disable=too-many-instance-attributes
                     end_date=end_datetime,
                 ),
             )
+        except Exception:
+            uow.rollback()
+            raise
+        else:
+            uow.commit()
         finally:
-            conn.close()
+            uow.close()
         response_source = "all" if normalized_source is None else normalized_source
         return {"source": response_source, "summary": summary}
 
@@ -120,13 +128,23 @@ class DashboardUseCase:  # pylint: disable=too-many-instance-attributes
     def get_raw_pgns_summary(self, source: str | None) -> dict[str, object]:
         normalized_source = self.normalize_source(source)
         settings = self.get_settings(source=normalized_source)
-        conn = self.get_connection(settings.duckdb_path)
-        self.init_schema(conn)
-        active_source = normalized_source or settings.source
-        return {
-            "source": active_source,
-            "summary": self.fetch_raw_pgns_summary(conn, source=active_source),
-        }
+        uow = self.unit_of_work_factory(settings.duckdb_path)
+        conn = uow.begin()
+        try:
+            self.init_schema(conn)
+            active_source = normalized_source or settings.source
+            payload = {
+                "source": active_source,
+                "summary": self.fetch_raw_pgns_summary(conn, source=active_source),
+            }
+        except Exception:
+            uow.rollback()
+            raise
+        else:
+            uow.commit()
+        finally:
+            uow.close()
+        return payload
 
     def _build_stats_payload(
         self,
@@ -137,21 +155,31 @@ class DashboardUseCase:  # pylint: disable=too-many-instance-attributes
         start_datetime, end_datetime, normalized_source, settings = self.resolve_dashboard_filters(
             filters
         )
-        conn = self.get_connection(settings.duckdb_path)
-        self.init_schema(conn)
-        response_source = "all" if normalized_source is None else normalized_source
-        return {
-            "source": response_source,
-            "metrics_version": self.fetch_version(conn),
-            stats_key: stats_fetcher(
-                conn,
-                source=normalized_source,
-                rating_bucket=filters.rating_bucket,
-                time_control=filters.time_control,
-                start_date=start_datetime,
-                end_date=end_datetime,
-            ),
-        }
+        uow = self.unit_of_work_factory(settings.duckdb_path)
+        conn = uow.begin()
+        try:
+            self.init_schema(conn)
+            response_source = "all" if normalized_source is None else normalized_source
+            payload = {
+                "source": response_source,
+                "metrics_version": self.fetch_version(conn),
+                stats_key: stats_fetcher(
+                    conn,
+                    source=normalized_source,
+                    rating_bucket=filters.rating_bucket,
+                    time_control=filters.time_control,
+                    start_date=start_datetime,
+                    end_date=end_datetime,
+                ),
+            }
+        except Exception:
+            uow.rollback()
+            raise
+        else:
+            uow.commit()
+        finally:
+            uow.close()
+        return payload
 
 
 def get_dashboard_use_case() -> DashboardUseCase:

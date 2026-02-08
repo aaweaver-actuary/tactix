@@ -21,7 +21,7 @@
       "Step 4: Verify DB operations that must be atomic are wrapped in a single unit of work",
       "Step 5: Add unit tests for the UnitOfWork behavior using a fake or test database"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

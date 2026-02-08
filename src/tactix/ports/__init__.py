@@ -10,3 +10,4 @@ from tactix.ports.repositories import (  # noqa: F401
     RawPgnRepository,
     TacticRepository,
 )
+from tactix.ports.unit_of_work import UnitOfWork  # noqa: F401

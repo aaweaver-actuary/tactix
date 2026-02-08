@@ -1,3 +1,13 @@
+Session summary (2026-02-08):
+- Verified UnitOfWork changes with make check and marked the UnitOfWork feature as passing.
+- Tests run: make check (pass); runTests still reports no tests found for targeted files.
+
+Session summary (2026-02-08):
+- Added UnitOfWork port plus DuckDB/Postgres implementations; migrated duckdb-backed use cases to explicit begin/commit/rollback boundaries.
+- Introduced Postgres unit-of-work repository wiring and connection-based helpers for ops events, analysis tactics, and raw PGN summaries.
+- Added unit tests for UnitOfWork behavior and updated use-case tests to inject UoW fakes.
+- Tests run: runTests (failed: no tests found by runner), make check (task invoked; output streamed through pytest progress).
+
 Session summary (2026-02-07):
 - Added PGN fixture parsing unit test covering headers, move count, final FEN, and deterministic game_id for chess.com bullet fixture 1.
 - Tests run: runTests (all; summary passed=115), make check.

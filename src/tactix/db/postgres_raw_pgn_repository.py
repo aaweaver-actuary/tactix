@@ -358,8 +358,16 @@ class PostgresRawPgnRepository:
 def fetch_postgres_raw_pgns_summary(settings: Settings) -> dict[str, Any]:
     """Return Postgres raw PGN summary payload."""
     with postgres_connection(settings) as conn:
-        if conn is None or not postgres_pgns_enabled(settings):
-            return _disabled_raw_pgn_summary()
-        init_pgn_schema(conn)
-        repo = PostgresRawPgnRepository(conn)
-        return repo.fetch_raw_pgns_summary()
+        return fetch_raw_pgns_summary_with_conn(conn, settings)
+
+
+def fetch_raw_pgns_summary_with_conn(
+    conn: PgConnection | None,
+    settings: Settings,
+) -> dict[str, Any]:
+    """Return raw PGN summary payload using a provided connection."""
+    if conn is None or not postgres_pgns_enabled(settings):
+        return _disabled_raw_pgn_summary()
+    init_pgn_schema(conn)
+    repo = PostgresRawPgnRepository(conn)
+    return repo.fetch_raw_pgns_summary()

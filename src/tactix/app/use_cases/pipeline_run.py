@@ -17,11 +17,13 @@ from tactix.db.dashboard_repository_provider import (
     fetch_opportunity_motif_counts,
     fetch_pipeline_table_counts,
 )
-from tactix.db.duckdb_store import get_connection, init_schema
+from tactix.db.duckdb_store import init_schema
+from tactix.db.duckdb_unit_of_work import DuckDbUnitOfWork
 from tactix.list_sources_for_cache_refresh__api_cache import _sources_for_cache_refresh
 from tactix.normalize_source__source import _normalize_source
 from tactix.pipeline import run_daily_game_sync
 from tactix.pipeline_run_filters import PipelineRunFilters
+from tactix.ports.unit_of_work import UnitOfWork
 from tactix.refresh_dashboard_cache_async__api_cache import _refresh_dashboard_cache_async
 from tactix.trace_context import trace_context
 
@@ -46,7 +48,7 @@ class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
     fetch_opportunity_motif_counts: Callable[[Any, DashboardQuery], dict[str, int]] = (
         fetch_opportunity_motif_counts
     )
-    get_connection: Callable[[Path], Any] = get_connection
+    unit_of_work_factory: Callable[[Path], UnitOfWork] = DuckDbUnitOfWork
     init_schema: Callable[[Any], None] = init_schema
 
     def run(self, filters: PipelineRunFilters) -> dict[str, object]:
@@ -89,15 +91,20 @@ class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
         db_path: Path,
         query: DashboardQuery,
     ) -> tuple[dict[str, int], dict[str, int]]:
-        conn = self.get_connection(db_path)
+        uow = self.unit_of_work_factory(db_path)
+        conn = uow.begin()
         try:
             self.init_schema(conn)
-            return (
-                self.fetch_pipeline_table_counts(conn, query),
-                self.fetch_opportunity_motif_counts(conn, query),
-            )
+            counts = self.fetch_pipeline_table_counts(conn, query)
+            motif_counts = self.fetch_opportunity_motif_counts(conn, query)
+        except Exception:
+            uow.rollback()
+            raise
+        else:
+            uow.commit()
         finally:
-            conn.close()
+            uow.close()
+        return counts, motif_counts
 
     def _resolve_pipeline_settings(
         self,

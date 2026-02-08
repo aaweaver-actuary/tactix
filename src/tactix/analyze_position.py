@@ -94,28 +94,76 @@ def _is_moved_piece_hanging(
     move: chess.Move,
     mover_color: bool,
 ) -> bool:
-    target_square = move.to_square
-    moved_piece = board_after.piece_at(target_square)
-    if moved_piece is None or moved_piece.color != mover_color:
+    moved_piece = _moved_piece_on_target(board_after, move, mover_color)
+    if moved_piece is None:
         return False
+    return _is_hanging_target_square(board_after, move.to_square, moved_piece, mover_color)
+
+
+def _moved_piece_on_target(
+    board_after: chess.Board,
+    move: chess.Move,
+    mover_color: bool,
+) -> chess.Piece | None:
+    moved_piece = board_after.piece_at(move.to_square)
+    if moved_piece is None or moved_piece.color != mover_color:
+        return None
+    return moved_piece
+
+
+def _is_hanging_target_square(
+    board_after: chess.Board,
+    target_square: chess.Square,
+    moved_piece: chess.Piece,
+    mover_color: bool,
+) -> bool:
     if not board_after.is_attacked_by(not mover_color, target_square):
         return False
+    return _resolve_defended_hanging(board_after, target_square, moved_piece, mover_color)
+
+
+def _resolve_defended_hanging(
+    board_after: chess.Board,
+    target_square: chess.Square,
+    moved_piece: chess.Piece,
+    mover_color: bool,
+) -> bool:
     if not board_after.is_attacked_by(mover_color, target_square):
         return True
-    for response in board_after.legal_moves:
-        if not board_after.is_capture(response):
-            continue
-        capture_square = _capture_square_for_move(board_after, response)
-        if capture_square != target_square:
-            continue
-        attacker = board_after.piece_at(response.from_square)
-        if attacker is None:
-            continue
-        if BaseTacticDetector.piece_value(moved_piece.piece_type) > BaseTacticDetector.piece_value(
-            attacker.piece_type
-        ):
-            return True
-    return False
+    return BaseTacticDetector.is_favorable_trade_on_square(
+        board_after,
+        target_square,
+        moved_piece,
+        not mover_color,
+    )
+
+
+def _should_override_hanging_motif(motif: str, board: chess.Board) -> bool:
+    non_overrideable = {
+        "fork",
+        "discovered_attack",
+        "discovered_check",
+        "mate",
+    }
+    if motif in non_overrideable:
+        return False
+    return not (motif == "skewer" and board.is_check())
+
+
+def _apply_moved_piece_hanging_override(
+    result: str,
+    motif: str,
+    board: chess.Board,
+    user_move: chess.Move,
+    mover_color: bool,
+) -> tuple[str, str]:
+    if result == "found":
+        return result, motif
+    if not _is_moved_piece_hanging(board, user_move, mover_color):
+        return result, motif
+    if not _should_override_hanging_motif(motif, board):
+        return result, motif
+    return "missed", "hanging_piece"
 
 
 def _should_mark_missed_for_initiative(
@@ -285,19 +333,26 @@ def analyze_position(
     engine: StockfishEngine,
     settings: Settings | None = None,
 ) -> tuple[dict[str, object], dict[str, object]] | None:
-    fen, user_move_uci, board, motif_board, mover_color = _prepare_position_inputs(position)
+    tactic_input = _prepare_tactic_row_input(position, engine, settings)
+    if tactic_input is None:
+        return None
+    return _build_tactic_rows(tactic_input)
 
+
+def _prepare_tactic_row_input(
+    position: dict[str, object],
+    engine: StockfishEngine,
+    settings: Settings | None,
+) -> TacticRowInput | None:
+    fen, user_move_uci, board, motif_board, mover_color = _prepare_position_inputs(position)
     best_move_obj, best_move, base_cp, mate_in_one, mate_in_two = _evaluate_engine_position(
         board, engine, mover_color, motif_board
     )
-
     user_move = _parse_user_move(board, user_move_uci, fen)
     if user_move is None:
         return None
-
     board.push(user_move)
     after_cp = _score_after_move(board, engine, mover_color)
-
     result, delta = _resolve_initial_result(
         InitialResultContext(
             best_move=best_move,
@@ -346,21 +401,13 @@ def analyze_position(
         )
     )
     result = _finalize_hanging_piece_result(result, motif, delta, base_cp, settings)
-    non_overrideable_hanging = {
-        "fork",
-        "discovered_attack",
-        "discovered_check",
-        "mate",
-    }
-    should_override_hanging = motif not in non_overrideable_hanging
-    if (
-        result != "found"
-        and _is_moved_piece_hanging(board, user_move, mover_color)
-        and should_override_hanging
-        and not (motif == "skewer" and board.is_check())
-    ):
-        result = "missed"
-        motif = "hanging_piece"
+    result, motif = _apply_moved_piece_hanging_override(
+        result,
+        motif,
+        board,
+        user_move,
+        mover_color,
+    )
     severity = _compute_severity_for_position(
         build_severity_context(
             SeverityInputs(
@@ -373,25 +420,27 @@ def analyze_position(
             )
         )
     )
-    best_san, explanation = format_tactic_explanation(fen, best_move or "", motif)
-    return _build_tactic_rows(
-        TacticRowInput(
-            position=position,
-            details=TacticDetails(
-                motif=motif,
-                severity=severity,
-                best_move=best_move,
-                base_cp=base_cp,
-                mate_in=mate_in,
-                best_san=best_san,
-                explanation=explanation,
-            ),
-            outcome=OutcomeDetails(
-                result=result,
-                user_move_uci=user_move_uci,
-                delta=delta,
-            ),
-        )
+    best_san, explanation = format_tactic_explanation(
+        fen,
+        best_move or "",
+        motif,
+    )
+    return TacticRowInput(
+        position=position,
+        details=TacticDetails(
+            motif=motif,
+            severity=severity,
+            best_move=best_move,
+            base_cp=base_cp,
+            mate_in=mate_in,
+            best_san=best_san,
+            explanation=explanation,
+        ),
+        outcome=OutcomeDetails(
+            result=result,
+            user_move_uci=user_move_uci,
+            delta=delta,
+        ),
     )
 
 

@@ -15,27 +15,46 @@ def _is_moved_piece_hanging_after_move(
     move: chess.Move,
     mover_color: bool,
 ) -> bool:
-    moved_piece = board_before.piece_at(move.from_square)
+    moved_piece = _moved_piece_before_move(board_before, move)
     if moved_piece is None:
         return False
-    target_square = move.to_square
+    return _is_hanging_after_move(board_after, move.to_square, moved_piece, mover_color)
+
+
+def _moved_piece_before_move(
+    board_before: chess.Board,
+    move: chess.Move,
+) -> chess.Piece | None:
+    return board_before.piece_at(move.from_square)
+
+
+def _is_hanging_after_move(
+    board_after: chess.Board,
+    target_square: chess.Square,
+    moved_piece: chess.Piece,
+    mover_color: bool,
+) -> bool:
     if not board_after.is_attacked_by(not mover_color, target_square):
         return False
+    return _resolve_defended_hanging_after_move(
+        board_after,
+        target_square,
+        moved_piece,
+        mover_color,
+    )
+
+
+def _resolve_defended_hanging_after_move(
+    board_after: chess.Board,
+    target_square: chess.Square,
+    moved_piece: chess.Piece,
+    mover_color: bool,
+) -> bool:
     if not board_after.is_attacked_by(mover_color, target_square):
         return True
-    for response in board_after.legal_moves:
-        if not board_after.is_capture(response):
-            continue
-        capture_square = response.to_square
-        if board_after.is_en_passant(response):
-            capture_square = response.to_square + (-8 if board_after.turn == chess.WHITE else 8)
-        if capture_square != target_square:
-            continue
-        responder_piece = board_after.piece_at(response.from_square)
-        if responder_piece is None:
-            continue
-        if BaseTacticDetector.piece_value(moved_piece.piece_type) > BaseTacticDetector.piece_value(
-            responder_piece.piece_type
-        ):
-            return True
-    return False
+    return BaseTacticDetector.is_favorable_trade_on_square(
+        board_after,
+        target_square,
+        moved_piece,
+        not mover_color,
+    )

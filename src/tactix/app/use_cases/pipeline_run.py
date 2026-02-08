@@ -123,8 +123,16 @@ class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
         use_fixture: bool,
         fixture_name: str | None,
     ) -> None:
-        if not use_fixture and not fixture_name:
+        if not self._should_apply_fixture(use_fixture, fixture_name):
             return
+        self._apply_fixture_flags(settings)
+        self._resolve_stockfish_path(settings)
+        self._apply_fixture_paths_if_needed(settings, fixture_name)
+
+    def _should_apply_fixture(self, use_fixture: bool, fixture_name: str | None) -> bool:
+        return bool(use_fixture or fixture_name)
+
+    def _apply_fixture_flags(self, settings: Settings) -> None:
         settings.chesscom.token = None
         settings.lichess.token = None
         settings.use_fixture_when_no_token = True
@@ -132,11 +140,13 @@ class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
         settings.stockfish_movetime_ms = 60
         settings.stockfish_depth = 8
         settings.stockfish_multipv = 2
+
+    def _resolve_stockfish_path(self, settings: Settings) -> None:
         resolved_stockfish = shutil.which(str(settings.stockfish_path)) or shutil.which("stockfish")
         if resolved_stockfish:
             settings.stockfish_path = Path(resolved_stockfish)
-        if not fixture_name:
-            return
+
+    def _apply_fixture_paths(self, settings: Settings, fixture_name: str) -> None:
         safe_name = Path(fixture_name).name
         repo_root = Path(__file__).resolve().parents[4]
         settings.fixture_pgn_path = repo_root / "tests" / "fixtures" / safe_name
@@ -144,6 +154,14 @@ class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
         settings.lichess_token_cache_path = settings.lichess_token_cache_path.with_name(
             "lichess_token_fixture.json"
         )
+
+    def _apply_fixture_paths_if_needed(
+        self,
+        settings: Settings,
+        fixture_name: str | None,
+    ) -> None:
+        if fixture_name:
+            self._apply_fixture_paths(settings, fixture_name)
 
     def _apply_db_settings(self, settings: Settings, db_name: str | None, reset_db: bool) -> None:
         if not db_name:

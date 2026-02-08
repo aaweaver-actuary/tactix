@@ -103,6 +103,20 @@ def _is_slider_candidate(
     return square != exclude_square
 
 
+def _is_hanging_piece_on_square(
+    board: chess.Board,
+    square: chess.Square,
+    piece: chess.Piece,
+    mover_color: bool,
+) -> bool:
+    opponent = not mover_color
+    if not board.is_attacked_by(opponent, square):
+        return False
+    if not board.is_attacked_by(mover_color, square):
+        return True
+    return BaseTacticDetector.is_favorable_trade_on_square(board, square, piece, opponent)
+
+
 def _iter_unchanged_sliders(
     board_before: chess.Board,
     board_after: chess.Board,
@@ -114,6 +128,44 @@ def _iter_unchanged_sliders(
             continue
         if _is_unchanged_slider(board_before, square, piece):
             yield square, piece
+
+
+def _iter_mover_pieces(
+    board: chess.Board,
+    mover_color: bool,
+) -> Iterable[tuple[chess.Square, chess.Piece]]:
+    for square, piece in board.piece_map().items():
+        if piece.color == mover_color:
+            yield square, piece
+
+
+def _iter_capture_attackers(
+    board: chess.Board,
+    target_square: chess.Square,
+    opponent: bool,
+) -> Iterable[chess.Piece]:
+    for response in board.legal_moves:
+        if not board.is_capture(response):
+            continue
+        capture_square = _capture_square_for_move(board, response, opponent)
+        if capture_square != target_square:
+            continue
+        attacker = board.piece_at(response.from_square)
+        if attacker is not None:
+            yield attacker
+
+
+def _is_favorable_trade_on_square(
+    board: chess.Board,
+    target_square: chess.Square,
+    target_piece: chess.Piece,
+    opponent: bool,
+) -> bool:
+    return any(
+        BaseTacticDetector.piece_value(target_piece.piece_type)
+        > BaseTacticDetector.piece_value(attacker.piece_type)
+        for attacker in _iter_capture_attackers(board, target_square, opponent)
+    )
 
 
 def _can_compare_capture(
@@ -178,38 +230,20 @@ class BaseTacticDetector:
     @classmethod
     def has_hanging_piece(cls, board: chess.Board, mover_color: bool) -> bool:
         """Return True when the mover has a hanging piece."""
-        opponent = not mover_color
-        for square, piece in board.piece_map().items():
-            if piece.color != mover_color:
-                continue
-            if not board.is_attacked_by(opponent, square):
-                continue
-            if not board.is_attacked_by(mover_color, square):
-                return True
-            if cls._is_favorable_trade(board, square, piece, opponent):
-                return True
-        return False
+        return any(
+            _is_hanging_piece_on_square(board, square, piece, mover_color)
+            for square, piece in _iter_mover_pieces(board, mover_color)
+        )
 
     @classmethod
-    def _is_favorable_trade(
+    def is_favorable_trade_on_square(
         cls,
         board: chess.Board,
         target_square: chess.Square,
         target_piece: chess.Piece,
         opponent: bool,
     ) -> bool:
-        for response in board.legal_moves:
-            if not board.is_capture(response):
-                continue
-            capture_square = _capture_square_for_move(board, response, opponent)
-            if capture_square != target_square:
-                continue
-            attacker = board.piece_at(response.from_square)
-            if attacker is None:
-                continue
-            if cls.piece_value(target_piece.piece_type) > cls.piece_value(attacker.piece_type):
-                return True
-        return False
+        return _is_favorable_trade_on_square(board, target_square, target_piece, opponent)
 
     @classmethod
     def is_hanging_capture(

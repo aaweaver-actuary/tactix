@@ -65,6 +65,69 @@ def _resolve_initiative_hanging_piece(
     return "hanging_piece" if has_hanging_attack else None
 
 
+def _resolve_checkmate_motif(
+    user_board: chess.Board,
+    capture_motif: str | None,
+) -> str | None:
+    if not user_board.is_checkmate():
+        return None
+    return "hanging_piece" if capture_motif == "hanging_piece" else "mate"
+
+
+def _resolve_hanging_capture_motif(
+    motif: str,
+    capture_motif: str | None,
+) -> str | None:
+    if capture_motif != "hanging_piece":
+        return None
+    if motif in {"skewer", "discovered_attack", "discovered_check"}:
+        return motif
+    return "hanging_piece"
+
+
+def _is_explicit_motif(motif: str) -> bool:
+    return motif in {
+        "skewer",
+        "pin",
+        "fork",
+        "discovered_attack",
+        "discovered_check",
+        "mate",
+    }
+
+
+def _resolve_forced_motif(
+    motif: str,
+    user_board: chess.Board,
+    capture_motif: str | None,
+) -> str | None:
+    checkmate_motif = _resolve_checkmate_motif(user_board, capture_motif)
+    if checkmate_motif is not None:
+        return checkmate_motif
+    return _resolve_hanging_capture_motif(motif, capture_motif)
+
+
+def _resolve_non_forced_motif(
+    motif: str,
+    motif_board: chess.Board,
+    user_board: chess.Board,
+    move: chess.Move,
+    mover_color: bool,
+) -> str:
+    if _is_explicit_motif(motif):
+        return motif
+    return (
+        _resolve_initiative_hanging_piece(
+            motif,
+            motif_board,
+            user_board,
+            move,
+            mover_color,
+        )
+        or motif
+    )
+
+
 def _is_hanging_attack(
     user_board: chess.Board,
     mover_color: bool,
@@ -97,36 +160,13 @@ def _infer_hanging_or_detected_motif(
     user_board.push(move)
     motif = MOTIF_DETECTORS.infer_motif(motif_board, move)
     capture_motif = _resolve_capture_motif(motif_board, user_board, move, mover_color)
-    result = motif
-    if user_board.is_checkmate():
-        result = "hanging_piece" if capture_motif == "hanging_piece" else "mate"
-    elif capture_motif == "hanging_piece":
-        if motif in {
-            "skewer",
-            "discovered_attack",
-            "discovered_check",
-        }:
-            result = motif
-        else:
-            result = "hanging_piece"
-    elif motif in {
-        "skewer",
-        "pin",
-        "fork",
-        "discovered_attack",
-        "discovered_check",
-        "mate",
-    }:
-        result = motif
-    else:
-        result = (
-            _resolve_initiative_hanging_piece(
-                motif,
-                motif_board,
-                user_board,
-                move,
-                mover_color,
-            )
-            or motif
-        )
-    return result
+    forced_motif = _resolve_forced_motif(motif, user_board, capture_motif)
+    if forced_motif is not None:
+        return forced_motif
+    return _resolve_non_forced_motif(
+        motif,
+        motif_board,
+        user_board,
+        move,
+        mover_color,
+    )

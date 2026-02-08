@@ -1,4 +1,10 @@
 Session summary (2026-02-07):
+- Refactored high-complexity tactic helpers and pipeline fixture settings to reduce xenon rank while preserving behavior.
+- Split motif inference and hanging-piece checks into smaller helpers; introduced public favorable-trade helper to avoid protected access warnings.
+- Adjusted analyze_position flow to build tactic rows via helper pipeline without extra context objects.
+- Tests run: make check.
+
+Session summary (2026-02-07):
 - Added newly opened GitHub issues (#9-#22) to the top of feature_list.json as high-priority work items.
 - Issues added: UI enter-to-submit, game details modal, practice progress increment bug, Open in Lichess button, collapsible/movable cards, listudy assets, housekeeping merge policy, and architecture boundary items (use-case infra work, ports bypassed, empty domain, callable injection, function-module explosion, UnitOfWork abstraction, PGN fixture parsing test).
 - Fixed ruff PLR0911 lint in _infer_hanging_or_detected_motif by consolidating returns.

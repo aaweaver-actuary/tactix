@@ -1,25 +1,30 @@
 import { PostgresRawPgnsSummary } from '../api';
 import Badge from './Badge';
-import BaseCard from './BaseCard';
+import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
 import Text from './Text';
 
 interface PostgresRawPgnsCardProps {
   data: PostgresRawPgnsSummary | null;
   loading: boolean;
   error?: string | null;
+  dragHandleProps?: BaseCardDragHandleProps;
+  dragHandleLabel?: string;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 export default function PostgresRawPgnsCard({
   data,
   loading,
   error,
+  dragHandleProps,
+  dragHandleLabel,
+  onCollapsedChange,
 }: PostgresRawPgnsCardProps) {
   if (!data && !loading && !error) return null;
 
   return (
     <BaseCard
       className="p-4"
-      collapsible={false}
       header={
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-display text-sand">Postgres raw PGNs</h3>
@@ -28,6 +33,9 @@ export default function PostgresRawPgnsCard({
       }
       contentClassName="pt-3"
       data-testid="postgres-raw-pgns"
+      dragHandleProps={dragHandleProps}
+      dragHandleLabel={dragHandleLabel}
+      onCollapsedChange={onCollapsedChange}
     >
       {error ? <Text mode="error" value={error} mt="2" /> : null}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

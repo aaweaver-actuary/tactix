@@ -20,7 +20,8 @@ const normalizeAnchorPly = (
 
 const tryLoadPgn = (chess: Chess, pgn: string) => {
   try {
-    return chess.loadPgn(pgn, { sloppy: true });
+    chess.loadPgn(pgn, { strict: false });
+    return chess.history().length > 0;
   } catch {
     return false;
   }

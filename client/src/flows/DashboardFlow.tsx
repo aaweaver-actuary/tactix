@@ -38,7 +38,7 @@ import {
   Badge,
   ErrorCard,
   FiltersCard,
-  MetricsSummaryGrid,
+  MetricsSummaryCard,
   MetricsGrid,
   MotifTrendsCard,
   TimeTroubleCorrelationCard,
@@ -66,11 +66,17 @@ import {
   writeCardOrder,
 } from '../utils/cardOrder';
 
-const BASE_CARD_STORAGE_KEY = 'tactix.dashboard.baseCardOrder';
+const DASHBOARD_CARD_STORAGE_KEY = 'tactix.dashboard.mainCardOrder';
 const MOTIF_CARD_STORAGE_KEY = 'tactix.dashboard.motifCardOrder';
-const BASE_CARD_DROPPABLE_ID = 'dashboard-base-cards';
+const DASHBOARD_CARD_DROPPABLE_ID = 'dashboard-main-cards';
 const MOTIF_CARD_DROPPABLE_ID = 'dashboard-motif-cards';
-const BASE_CARD_IDS = [
+const DASHBOARD_CARD_IDS = [
+  'filters',
+  'metrics-summary',
+  'postgres-status',
+  'postgres-raw-pgns',
+  'postgres-analysis',
+  'job-progress',
   'metrics-grid',
   'metrics-trends',
   'time-trouble-correlation',
@@ -78,6 +84,7 @@ const BASE_CARD_IDS = [
   'recent-games',
   'tactics-table',
   'positions-list',
+  'practice-attempt',
 ];
 
 const buildCollapsedMap = (ids: string[]) =>
@@ -141,6 +148,20 @@ type BaseCardEntry = {
   render: (props: BaseCardRenderProps) => JSX.Element | null;
 };
 
+const buildDragProps = (props: BaseCardRenderProps) => {
+  const dragProps: BaseCardRenderProps = {};
+  if (props.dragHandleProps) {
+    dragProps.dragHandleProps = props.dragHandleProps;
+  }
+  if (props.dragHandleLabel) {
+    dragProps.dragHandleLabel = props.dragHandleLabel;
+  }
+  if (props.onCollapsedChange) {
+    dragProps.onCollapsedChange = props.onCollapsedChange;
+  }
+  return dragProps;
+};
+
 export default function DashboardFlow() {
   const [data, setData] = useState<DashboardPayload | null>(null);
   const [source, setSource] = useState<ChessPlatform>('all');
@@ -186,16 +207,20 @@ export default function DashboardFlow() {
   const [practiceSession, setPracticeSession] = useState<PracticeSessionStats>(
     () => resetPracticeSessionStats(0),
   );
+  const practiceSessionScopeRef = useRef(`${source}:${includeFailedAttempt}`);
   const [jobProgress, setJobProgress] = useState<JobProgressItem[]>([]);
   const [jobStatus, setJobStatus] = useState<
     'idle' | 'running' | 'error' | 'complete'
   >('idle');
-  const [baseCardOrder, setBaseCardOrder] = useState(() => {
-    const stored = readCardOrder(BASE_CARD_STORAGE_KEY, BASE_CARD_IDS);
-    return normalizeOrder(stored, BASE_CARD_IDS);
+  const [dashboardCardOrder, setDashboardCardOrder] = useState(() => {
+    const stored = readCardOrder(
+      DASHBOARD_CARD_STORAGE_KEY,
+      DASHBOARD_CARD_IDS,
+    );
+    return normalizeOrder(stored, DASHBOARD_CARD_IDS);
   });
-  const [baseCardCollapsed, setBaseCardCollapsed] = useState(() =>
-    buildCollapsedMap(BASE_CARD_IDS),
+  const [dashboardCardCollapsed, setDashboardCardCollapsed] = useState(() =>
+    buildCollapsedMap(DASHBOARD_CARD_IDS),
   );
   const [dropIndicatorIndex, setDropIndicatorIndex] = useState<number | null>(
     null,
@@ -348,7 +373,19 @@ export default function DashboardFlow() {
       const payload = await fetchPracticeQueue(nextSource, includeFailed);
       setPracticeQueue(payload.items);
       if (resetSession) {
-        setPracticeSession(resetPracticeSessionStats(payload.items.length));
+        const nextScope = `${nextSource}:${includeFailed}`;
+        const shouldReset = practiceSessionScopeRef.current !== nextScope;
+        practiceSessionScopeRef.current = nextScope;
+        if (shouldReset) {
+          setPracticeSession(resetPracticeSessionStats(payload.items.length));
+        } else {
+          setPracticeSession((prev) => {
+            if (prev.total <= 0 && prev.completed === 0) {
+              return { ...prev, total: payload.items.length };
+            }
+            return prev;
+          });
+        }
       } else {
         setPracticeSession((prev) => {
           if (prev.total <= 0 && prev.completed === 0) {
@@ -1316,8 +1353,8 @@ export default function DashboardFlow() {
   }, [data]);
 
   useEffect(() => {
-    writeCardOrder(BASE_CARD_STORAGE_KEY, baseCardOrder);
-  }, [baseCardOrder]);
+    writeCardOrder(DASHBOARD_CARD_STORAGE_KEY, dashboardCardOrder);
+  }, [dashboardCardOrder]);
 
   useEffect(() => {
     if (!motifCardOrder.length) return;
@@ -1335,7 +1372,7 @@ export default function DashboardFlow() {
       .filter((row): row is (typeof motifBreakdown)[number] => Boolean(row));
   }, [motifBreakdown, motifCardOrder]);
 
-  const baseCardEntries: BaseCardEntry[] = useMemo(() => {
+  const dashboardCardEntries: BaseCardEntry[] = useMemo(() => {
     const handleGameDetail = async (row: {
       game_id?: string | null;
       source?: string | null;
@@ -1365,6 +1402,94 @@ export default function DashboardFlow() {
 
     return [
       {
+        id: 'filters',
+        label: 'Filters',
+        visible: true,
+        render: (props) => (
+          <FiltersCard
+            source={source}
+            loading={loading}
+            lichessProfile={lichessProfile}
+            chesscomProfile={chesscomProfile}
+            filters={filters}
+            motifOptions={motifOptions}
+            timeControlOptions={timeControlOptions}
+            ratingOptions={ratingOptions}
+            onSourceChange={handleSourceChange}
+            onLichessProfileChange={handleLichessProfileChange}
+            onChesscomProfileChange={handleChesscomProfileChange}
+            onFiltersChange={handleFiltersChange}
+            onResetFilters={handleResetFilters}
+            {...buildDragProps(props)}
+          />
+        ),
+      },
+      {
+        id: 'metrics-summary',
+        label: 'Metrics summary',
+        visible: true,
+        render: (props) => (
+          <MetricsSummaryCard
+            positions={totals.positions}
+            tactics={totals.tactics}
+            metricsVersion={data?.metrics_version ?? 0}
+            {...buildDragProps(props)}
+          />
+        ),
+      },
+      {
+        id: 'postgres-status',
+        label: 'Postgres status',
+        visible: Boolean(postgresStatus) || postgresLoading,
+        render: (props) => (
+          <PostgresStatusCard
+            status={postgresStatus}
+            loading={postgresLoading}
+            {...buildDragProps(props)}
+          />
+        ),
+      },
+      {
+        id: 'postgres-raw-pgns',
+        label: 'Postgres raw PGNs',
+        visible:
+          Boolean(postgresRawPgns) ||
+          postgresRawPgnsLoading ||
+          Boolean(postgresRawPgnsError),
+        render: (props) => (
+          <PostgresRawPgnsCard
+            data={postgresRawPgns}
+            loading={postgresRawPgnsLoading}
+            error={postgresRawPgnsError}
+            {...buildDragProps(props)}
+          />
+        ),
+      },
+      {
+        id: 'postgres-analysis',
+        label: 'Postgres analysis',
+        visible: postgresAnalysis.length > 0 || postgresAnalysisLoading,
+        render: (props) => (
+          <PostgresAnalysisCard
+            rows={postgresAnalysis}
+            loading={postgresAnalysisLoading}
+            {...buildDragProps(props)}
+          />
+        ),
+      },
+      {
+        id: 'job-progress',
+        label: 'Job progress',
+        visible: jobProgress.length > 0,
+        render: (props) => (
+          <JobProgressCard
+            entries={jobProgress}
+            status={jobStatus}
+            {...buildDragProps(props)}
+          />
+        ),
+      },
+      {
         id: 'metrics-grid',
         label: 'Motif breakdown',
         visible: Boolean(data),
@@ -1373,7 +1498,7 @@ export default function DashboardFlow() {
             metricsData={orderedMotifBreakdown}
             droppableId={MOTIF_CARD_DROPPABLE_ID}
             dropIndicatorIndex={motifDropIndicatorIndex}
-            {...props}
+            {...buildDragProps(props)}
           />
         ),
       },
@@ -1385,7 +1510,7 @@ export default function DashboardFlow() {
           <MotifTrendsCard
             data={trendLatestRows}
             columns={metricsTrendsColumns}
-            {...props}
+            {...buildDragProps(props)}
           />
         ),
       },
@@ -1397,7 +1522,7 @@ export default function DashboardFlow() {
           <TimeTroubleCorrelationCard
             data={timeTroubleSortedRows}
             columns={timeTroubleColumns}
-            {...props}
+            {...buildDragProps(props)}
           />
         ),
       },
@@ -1416,7 +1541,7 @@ export default function DashboardFlow() {
             rowTestId={(row, index) =>
               `practice-queue-row-${row.source ?? 'unknown'}-${index}`
             }
-            {...props}
+            {...buildDragProps(props)}
           />
         ),
       },
@@ -1433,7 +1558,7 @@ export default function DashboardFlow() {
               rowTestId={(row, index) =>
                 `recent-games-row-${row.source ?? 'unknown'}-${index}`
               }
-              {...props}
+              {...buildDragProps(props)}
             />
           ) : null,
       },
@@ -1452,7 +1577,7 @@ export default function DashboardFlow() {
                   ? `dashboard-game-row-${row.game_id}`
                   : 'dashboard-game-row-unknown'
               }
-              {...props}
+              {...buildDragProps(props)}
             />
           ) : null,
       },
@@ -1462,53 +1587,112 @@ export default function DashboardFlow() {
         visible: Boolean(data),
         render: (props) =>
           data ? (
-            <PositionsList positionsData={data.positions} {...props} />
+            <PositionsList
+              positionsData={data.positions}
+              {...buildDragProps(props)}
+            />
           ) : null,
+      },
+      {
+        id: 'practice-attempt',
+        label: 'Practice attempt',
+        visible: true,
+        render: (props) => (
+          <PracticeAttemptCard
+            currentPractice={currentPractice ?? null}
+            practiceSession={practiceSession}
+            practiceFen={practiceFen}
+            practiceMove={practiceMove}
+            practiceMoveRef={practiceMoveRef}
+            practiceSubmitting={practiceSubmitting}
+            practiceFeedback={practiceFeedback}
+            practiceSubmitError={practiceSubmitError}
+            practiceHighlightStyles={practiceHighlightStyles}
+            practiceOrientation={practiceOrientation}
+            onPracticeMoveChange={handlePracticeMoveChange}
+            handlePracticeAttempt={handlePracticeAttempt}
+            handlePracticeDrop={handlePracticeDrop}
+            {...buildDragProps(props)}
+          />
+        ),
       },
     ];
   }, [
+    chesscomProfile,
+    currentPractice,
     data,
+    filters,
+    handlePracticeAttempt,
+    handlePracticeDrop,
+    handlePracticeMoveChange,
+    handleResetFilters,
     includeFailedAttempt,
+    jobProgress,
+    jobStatus,
+    lichessProfile,
+    loading,
     metricsTrendsColumns,
     motifDropIndicatorIndex,
+    motifOptions,
     orderedMotifBreakdown,
+    postgresAnalysis,
+    postgresAnalysisLoading,
+    postgresLoading,
+    postgresRawPgns,
+    postgresRawPgnsError,
+    postgresRawPgnsLoading,
+    postgresStatus,
+    practiceFeedback,
+    practiceFen,
+    practiceHighlightStyles,
     practiceLoading,
-    practiceQueueColumns,
+    practiceMove,
+    practiceMoveRef,
+    practiceOrientation,
     practiceQueue,
+    practiceQueueColumns,
+    practiceSession,
+    practiceSubmitError,
+    practiceSubmitting,
+    ratingOptions,
     recentGamesColumns,
+    resolveGameSource,
+    source,
     tacticsColumns,
+    timeControlOptions,
     timeTroubleColumns,
     timeTroubleSortedRows,
+    totals.positions,
+    totals.tactics,
     trendLatestRows,
-    resolveGameSource,
   ]);
 
-  const baseCardIds = useMemo(
-    () => baseCardEntries.map((entry) => entry.id),
-    [baseCardEntries],
+  const dashboardCardIds = useMemo(
+    () => dashboardCardEntries.map((entry) => entry.id),
+    [dashboardCardEntries],
   );
 
   useEffect(() => {
-    const normalized = normalizeOrder(baseCardOrder, baseCardIds);
-    if (!areArraysEqual(normalized, baseCardOrder)) {
-      setBaseCardOrder(normalized);
+    const normalized = normalizeOrder(dashboardCardOrder, dashboardCardIds);
+    if (!areArraysEqual(normalized, dashboardCardOrder)) {
+      setDashboardCardOrder(normalized);
     }
-  }, [baseCardIds, baseCardOrder]);
+  }, [dashboardCardIds, dashboardCardOrder]);
 
-  const orderedBaseCards = useMemo(() => {
-    const baseCardMap = new Map(
-      baseCardEntries.map((entry) => [entry.id, entry]),
+  const orderedDashboardCards = useMemo(() => {
+    const cardMap = new Map(
+      dashboardCardEntries.map((entry) => [entry.id, entry]),
     );
-    const visibleIds = baseCardEntries
+    const visibleIds = dashboardCardEntries
       .filter((entry) => entry.visible)
       .map((entry) => entry.id);
-    const orderedVisible = baseCardOrder.filter((id) =>
+    const orderedVisible = dashboardCardOrder.filter((id) =>
       visibleIds.includes(id),
     );
     return orderedVisible
-      .map((id) => baseCardMap.get(id))
+      .map((id) => cardMap.get(id))
       .filter((entry): entry is BaseCardEntry => Boolean(entry));
-  }, [baseCardEntries, baseCardOrder]);
+  }, [dashboardCardEntries, dashboardCardOrder]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
@@ -1542,46 +1726,9 @@ export default function DashboardFlow() {
         <ErrorCard message={postgresRawPgnsError} />
       ) : null}
 
-      <PostgresStatusCard status={postgresStatus} loading={postgresLoading} />
-
-      <PostgresRawPgnsCard
-        data={postgresRawPgns}
-        loading={postgresRawPgnsLoading}
-        error={postgresRawPgnsError}
-      />
-
-      <PostgresAnalysisCard
-        rows={postgresAnalysis}
-        loading={postgresAnalysisLoading}
-      />
-
-      <JobProgressCard entries={jobProgress} status={jobStatus} />
-
-      <FiltersCard
-        source={source}
-        loading={loading}
-        lichessProfile={lichessProfile}
-        chesscomProfile={chesscomProfile}
-        filters={filters}
-        motifOptions={motifOptions}
-        timeControlOptions={timeControlOptions}
-        ratingOptions={ratingOptions}
-        onSourceChange={handleSourceChange}
-        onLichessProfileChange={handleLichessProfileChange}
-        onChesscomProfileChange={handleChesscomProfileChange}
-        onFiltersChange={handleFiltersChange}
-        onResetFilters={handleResetFilters}
-      />
-
-      <MetricsSummaryGrid
-        positions={totals.positions}
-        tactics={totals.tactics}
-        metricsVersion={data?.metrics_version ?? 0}
-      />
-
       <DragDropContext
         onDragUpdate={(result) => {
-          if (result.destination?.droppableId === BASE_CARD_DROPPABLE_ID) {
+          if (result.destination?.droppableId === DASHBOARD_CARD_DROPPABLE_ID) {
             setDropIndicatorIndex(result.destination?.index ?? null);
           } else {
             setDropIndicatorIndex(null);
@@ -1603,11 +1750,11 @@ export default function DashboardFlow() {
             return;
           }
 
-          if (result.destination.droppableId === BASE_CARD_DROPPABLE_ID) {
-            const visibleIds = orderedBaseCards.map((card) => card.id);
+          if (result.destination.droppableId === DASHBOARD_CARD_DROPPABLE_ID) {
+            const visibleIds = orderedDashboardCards.map((card) => card.id);
             if (!visibleIds.length) return;
             const visibleSet = new Set(visibleIds);
-            const currentVisibleOrder = baseCardOrder.filter((id) =>
+            const currentVisibleOrder = dashboardCardOrder.filter((id) =>
               visibleSet.has(id),
             );
             const reorderedVisible = reorderList(
@@ -1616,10 +1763,12 @@ export default function DashboardFlow() {
               result.destination.index,
             );
             let nextVisibleIndex = 0;
-            const nextOrder = baseCardOrder.map((id) =>
-              visibleSet.has(id) ? reorderedVisible[nextVisibleIndex++] : id,
+            const nextOrder = dashboardCardOrder.map((id) =>
+              visibleSet.has(id)
+                ? (reorderedVisible[nextVisibleIndex++] ?? id)
+                : id,
             );
-            setBaseCardOrder(nextOrder);
+            setDashboardCardOrder(nextOrder);
             return;
           }
 
@@ -1639,21 +1788,23 @@ export default function DashboardFlow() {
             );
             let nextVisibleIndex = 0;
             const nextOrder = motifCardOrder.map((id) =>
-              visibleSet.has(id) ? reorderedVisible[nextVisibleIndex++] : id,
+              visibleSet.has(id)
+                ? (reorderedVisible[nextVisibleIndex++] ?? id)
+                : id,
             );
             setMotifCardOrder(nextOrder);
           }
         }}
       >
-        <Droppable droppableId={BASE_CARD_DROPPABLE_ID}>
+        <Droppable droppableId={DASHBOARD_CARD_DROPPABLE_ID}>
           {(dropProvided) => (
             <div
               ref={dropProvided.innerRef}
               {...dropProvided.droppableProps}
               className="space-y-3"
             >
-              {orderedBaseCards.map((card, index) => {
-                const isCollapsed = baseCardCollapsed[card.id] ?? true;
+              {orderedDashboardCards.map((card, index) => {
+                const isCollapsed = dashboardCardCollapsed[card.id] ?? true;
                 const dragLabel = `Reorder ${card.label}`;
                 return (
                   <div key={card.id}>
@@ -1682,25 +1833,28 @@ export default function DashboardFlow() {
                               : undefined
                           }
                         >
-                          {card.render({
-                            dragHandleProps: (dragProvided.dragHandleProps ??
-                              undefined) as
-                              | ButtonHTMLAttributes<HTMLButtonElement>
-                              | undefined,
-                            dragHandleLabel: dragLabel,
-                            onCollapsedChange: (collapsed) =>
-                              setBaseCardCollapsed((prev) => ({
-                                ...prev,
-                                [card.id]: collapsed,
-                              })),
-                          })}
+                          {(() => {
+                            const renderProps: BaseCardRenderProps = {
+                              dragHandleLabel: dragLabel,
+                              onCollapsedChange: (collapsed) =>
+                                setDashboardCardCollapsed((prev) => ({
+                                  ...prev,
+                                  [card.id]: collapsed,
+                                })),
+                            };
+                            if (dragProvided.dragHandleProps) {
+                              renderProps.dragHandleProps =
+                                dragProvided.dragHandleProps as ButtonHTMLAttributes<HTMLButtonElement>;
+                            }
+                            return card.render(renderProps);
+                          })()}
                         </div>
                       )}
                     </Draggable>
                   </div>
                 );
               })}
-              {dropIndicatorIndex === orderedBaseCards.length ? (
+              {dropIndicatorIndex === orderedDashboardCards.length ? (
                 <div
                   className="h-0.5 rounded-full bg-teal/60"
                   data-testid="card-drop-indicator"
@@ -1712,21 +1866,6 @@ export default function DashboardFlow() {
         </Droppable>
       </DragDropContext>
       {practiceError ? <ErrorCard message={practiceError} /> : null}
-      <PracticeAttemptCard
-        currentPractice={currentPractice}
-        practiceSession={practiceSession}
-        practiceFen={practiceFen}
-        practiceMove={practiceMove}
-        practiceMoveRef={practiceMoveRef}
-        practiceSubmitting={practiceSubmitting}
-        practiceFeedback={practiceFeedback}
-        practiceSubmitError={practiceSubmitError}
-        practiceHighlightStyles={practiceHighlightStyles}
-        practiceOrientation={practiceOrientation}
-        onPracticeMoveChange={handlePracticeMoveChange}
-        handlePracticeAttempt={handlePracticeAttempt}
-        handlePracticeDrop={handlePracticeDrop}
-      />
       <GameDetailModal
         open={gameDetailOpen}
         onClose={() => setGameDetailOpen(false)}

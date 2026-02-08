@@ -1,4 +1,13 @@
 Session summary (2026-02-08):
+- Implemented a unified reorderable/collapsible dashboard card list covering: Filters, Metrics summary, Postgres status, Postgres raw PGNs, Postgres analysis, Job progress, Motif breakdown, Motif trends, Time-trouble correlation, Practice queue, Recent games, Recent tactics, Latest positions, and Practice attempt.
+- Added MetricsSummaryCard and expanded card components to accept drag/collapse props; updated card order storage key to `tactix.dashboard.mainCardOrder`.
+- Regression fixes: improved Lichess analysis URL PGN parsing and stabilized practice session totals across queue reloads; updated Puppeteer scripts to reuse client-local puppeteer and wait for dashboard reload.
+- UI verification (Puppeteer): verification/feature-dashboard-cards-collapsible-move-2026-02-08.png.
+- Evidence logs: tmp-logs/feature-dashboard-cards-collapsible-move-2026-02-08.log, tmp-logs/integration-feature-dashboard-cards-collapsible-move-2026-02-08.log.
+- Tests run: node verification/puppeteer_feature_dashboard_cards_collapsible_move.js; node verification/integration_feature_dashboard_cards_collapsible_move.js; node verification/puppeteer_feature_open_lichess_link.js; node verification/puppeteer_issue_practice_progress.js; node verification/puppeteer_practice_attempt.js; node verification/puppeteer_motif_filters.js; make check.
+- Updated feature_list.json: marked "[UI] All cards on the main page should be able to be collapsed and moved" as passing.
+
+Session summary (2026-02-08):
 - Refactored Lichess link builder flow, centralized dashboard source resolution for Lichess actions, and deduplicated Puppeteer spy helpers.
 - Tests run: make check (before; task), make check (after; task).
 - Commit: 86b3c27

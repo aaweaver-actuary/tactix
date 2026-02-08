@@ -3,7 +3,7 @@ import { LICHESS_PROFILE_OPTIONS } from '../utils/LICHESS_PROFILE_OPTIONS';
 import { SOURCE_OPTIONS } from '../utils/SOURCE_OPTIONS';
 import { ChessPlatform, ChesscomProfile, LichessProfile } from '../types';
 import Badge from './Badge';
-import BaseCard from './BaseCard';
+import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
 
 interface FiltersState {
   motif: string;
@@ -27,6 +27,9 @@ interface FiltersCardProps {
   onChesscomProfileChange: (next: ChesscomProfile) => void;
   onFiltersChange: (next: FiltersState) => void;
   onResetFilters: () => void;
+  dragHandleProps?: BaseCardDragHandleProps;
+  dragHandleLabel?: string;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 export default function FiltersCard({
@@ -43,11 +46,13 @@ export default function FiltersCard({
   onChesscomProfileChange,
   onFiltersChange,
   onResetFilters,
+  dragHandleProps,
+  dragHandleLabel,
+  onCollapsedChange,
 }: FiltersCardProps) {
   return (
     <BaseCard
       className="p-4"
-      collapsible={false}
       header={
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-display text-sand">Filters</h3>
@@ -55,6 +60,9 @@ export default function FiltersCard({
         </div>
       }
       contentClassName="pt-3"
+      dragHandleProps={dragHandleProps}
+      dragHandleLabel={dragHandleLabel}
+      onCollapsedChange={onCollapsedChange}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
         <label className="text-xs text-sand/60 flex flex-col gap-2">

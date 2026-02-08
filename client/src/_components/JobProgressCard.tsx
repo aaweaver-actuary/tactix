@@ -1,22 +1,27 @@
 import { JobProgressItem } from '../types';
 import Badge from './Badge';
-import BaseCard from './BaseCard';
+import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
 
 interface JobProgressCardProps {
   entries: JobProgressItem[];
   status: 'idle' | 'running' | 'error' | 'complete';
+  dragHandleProps?: BaseCardDragHandleProps;
+  dragHandleLabel?: string;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 export default function JobProgressCard({
   entries,
   status,
+  dragHandleProps,
+  dragHandleLabel,
+  onCollapsedChange,
 }: JobProgressCardProps) {
   if (!entries.length) return null;
 
   return (
     <BaseCard
       className="p-4"
-      collapsible={false}
       header={
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-display text-sand">Job progress</h3>
@@ -34,6 +39,9 @@ export default function JobProgressCard({
         </div>
       }
       contentClassName="pt-3"
+      dragHandleProps={dragHandleProps}
+      dragHandleLabel={dragHandleLabel}
+      onCollapsedChange={onCollapsedChange}
     >
       <ol className="space-y-2 text-sm">
         {entries.map((entry, index) => {

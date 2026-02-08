@@ -450,6 +450,16 @@ describe('DashboardFlow', () => {
       expect(screen.getByText('0 of 5 attempts')).toBeInTheDocument();
     });
 
+    const practiceHeader = screen
+      .getAllByRole('button', { name: /practice attempt/i })
+      .find((el) => el.getAttribute('aria-expanded') !== null);
+    if (!practiceHeader) {
+      throw new Error('Practice attempt header button not found.');
+    }
+    if (practiceHeader.getAttribute('aria-expanded') === 'false') {
+      fireEvent.click(practiceHeader);
+    }
+
     fireEvent.change(
       screen.getByPlaceholderText('Enter your move (UCI e.g., e2e4)'),
       { target: { value: 'e2e4' } },

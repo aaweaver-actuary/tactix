@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('../client/node_modules/puppeteer');
 const fs = require('fs');
 const path = require('path');
 

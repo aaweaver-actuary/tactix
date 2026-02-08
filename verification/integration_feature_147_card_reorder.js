@@ -12,7 +12,7 @@ const DASHBOARD_URL = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const DASHBOARD_PARSED = new URL(DASHBOARD_URL);
 const UI_HOST = DASHBOARD_PARSED.hostname || '127.0.0.1';
 const UI_PORT = Number(DASHBOARD_PARSED.port || '5173');
-const STORAGE_KEY = 'tactix.dashboard.baseCardOrder';
+const STORAGE_KEY = 'tactix.dashboard.mainCardOrder';
 
 function isPortOpen(host, port, timeoutMs = 1000) {
   return new Promise((resolve) => {

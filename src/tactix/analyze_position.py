@@ -28,7 +28,6 @@ from tactix._reclassify_failed_attempt import _reclassify_failed_attempt
 from tactix._score_after_move import _score_after_move
 from tactix.analyze_tactics__positions import (
     _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS,
-    MATE_IN_ONE,
 )
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.config import Settings
@@ -81,13 +80,42 @@ class OutcomeOverridePositionContext:
     settings: Settings | None
 
 
-def _has_new_hanging_piece_for_mover(
-    board_before: chess.Board,
+def _capture_square_for_move(
+    board: chess.Board,
+    move: chess.Move,
+) -> chess.Square:
+    if board.is_en_passant(move):
+        return move.to_square + (-8 if board.turn == chess.WHITE else 8)
+    return move.to_square
+
+
+def _is_moved_piece_hanging(
     board_after: chess.Board,
+    move: chess.Move,
     mover_color: bool,
 ) -> bool:
-    del board_before
-    return BaseTacticDetector.has_hanging_piece(board_after, mover_color)
+    target_square = move.to_square
+    moved_piece = board_after.piece_at(target_square)
+    if moved_piece is None or moved_piece.color != mover_color:
+        return False
+    if not board_after.is_attacked_by(not mover_color, target_square):
+        return False
+    if not board_after.is_attacked_by(mover_color, target_square):
+        return True
+    for response in board_after.legal_moves:
+        if not board_after.is_capture(response):
+            continue
+        capture_square = _capture_square_for_move(board_after, response)
+        if capture_square != target_square:
+            continue
+        attacker = board_after.piece_at(response.from_square)
+        if attacker is None:
+            continue
+        if BaseTacticDetector.piece_value(moved_piece.piece_type) > BaseTacticDetector.piece_value(
+            attacker.piece_type
+        ):
+            return True
+    return False
 
 
 def _should_mark_missed_for_initiative(
@@ -319,7 +347,7 @@ def analyze_position(
     )
     result = _finalize_hanging_piece_result(result, motif, delta, base_cp, settings)
     non_overrideable_hanging = {
-        "skewer",
+        "fork",
         "discovered_attack",
         "discovered_check",
         "mate",
@@ -327,22 +355,11 @@ def analyze_position(
     should_override_hanging = motif not in non_overrideable_hanging
     if (
         result != "found"
-        and _has_new_hanging_piece_for_mover(motif_board, board, mover_color)
+        and _is_moved_piece_hanging(board, user_move, mover_color)
         and should_override_hanging
+        and not (motif == "skewer" and board.is_check())
     ):
         result = "missed"
-        motif = "hanging_piece"
-    if (
-        result == "found"
-        and motif == "mate"
-        and mate_in == MATE_IN_ONE
-        and BaseTacticDetector.is_hanging_capture(
-            motif_board,
-            board,
-            user_move,
-            mover_color,
-        )
-    ):
         motif = "hanging_piece"
     severity = _compute_severity_for_position(
         build_severity_context(

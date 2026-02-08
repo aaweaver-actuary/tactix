@@ -34,6 +34,19 @@ Session summary (2026-02-07):
 - Tests run: pytest tests/test_api_chesscom_bullet_pipeline_regression.py -k test_api_pipeline_chesscom_bullet_idempotency
 
 Session summary (2026-02-06):
+- Fixed hanging piece detection to include favorable trades and only override when the moved piece is hanging (with a skewer+check exception).
+- Restored checkmate motif handling so hanging-piece fixtures stay hanging_piece while mate-in-one fixtures remain mate.
+- Added workspace-local pylint cache path in Makefile to avoid macOS cache permission errors.
+- Tests run (direct venv):
+	- pytest tests/test_fixture_motifs.py::FixtureMotifTests::test_fixture_hanging_piece
+	- pytest tests/test_fixture_motifs.py::FixtureMotifTests::test_fixture_mate_in_one
+	- pytest tests/test_skewer_blitz.py::SkewerBlitzTests::test_blitz_skewer_is_high_severity
+	- pytest tests/test_skewer_classical.py::SkewerClassicalTests::test_classical_skewer_is_high_severity
+	- pytest tests/test_skewer_correspondence.py::SkewerCorrespondenceTests::test_correspondence_skewer_is_high_severity
+	- pytest tests/test_skewer_rapid.py::SkewerRapidTests::test_rapid_skewer_is_high_severity
+	- pytest tests/test_api_chesscom_bullet_pipeline_canonical.py::{test_canonical_pipeline_missed_hanging_pieces,test_canonical_pipeline_pre_blunder_positions_recorded}
+	- pytest tests/test_chesscom_bullet_pipeline_2026_02_01.py::{test_canonical_practice_queue_contains_two_missed_hanging_pieces,test_missed_hanging_piece_positions_are_pre_blunder_positions}
+- Make check (terminal) failed due to uv panic in ruff (system-configuration NULL object); run_task output also inconsistent. Needs follow-up to stabilize uv in this environment.
 - Feature 010 (lichess blitz MVP E2E) re-verification with converted outcome fixture.
 - API (FastAPI TestClient) POST /api/pipeline/run?source=lichess&profile=blitz&user_id=lichess&start_date=2024-06-05&end_date=2024-06-06&use_fixture=true&fixture_name=lichess_blitz_converted_sample.pgn&db_name=tactix_feature_010_lichess_blitz_mvp&reset_db=true
 	-> status=ok run_id=d72cf5a5604941d28ec7efbcc8865c4b fetched_games=3

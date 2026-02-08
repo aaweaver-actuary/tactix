@@ -182,9 +182,32 @@ class BaseTacticDetector:
         for square, piece in board.piece_map().items():
             if piece.color != mover_color:
                 continue
-            if board.is_attacked_by(opponent, square) and not board.is_attacked_by(
-                mover_color, square
-            ):
+            if not board.is_attacked_by(opponent, square):
+                continue
+            if not board.is_attacked_by(mover_color, square):
+                return True
+            if cls._is_favorable_trade(board, square, piece, opponent):
+                return True
+        return False
+
+    @classmethod
+    def _is_favorable_trade(
+        cls,
+        board: chess.Board,
+        target_square: chess.Square,
+        target_piece: chess.Piece,
+        opponent: bool,
+    ) -> bool:
+        for response in board.legal_moves:
+            if not board.is_capture(response):
+                continue
+            capture_square = _capture_square_for_move(board, response, opponent)
+            if capture_square != target_square:
+                continue
+            attacker = board.piece_at(response.from_square)
+            if attacker is None:
+                continue
+            if cls.piece_value(target_piece.piece_type) > cls.piece_value(attacker.piece_type):
                 return True
         return False
 

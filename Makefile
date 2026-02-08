@@ -4,7 +4,7 @@ pylint:
 	uv run ruff format src/
 
 # Pylint for additional linting
-	uv run pylint --rcfile=pyproject.toml src/
+	PYLINTHOME=tmp-logs/pylint-cache uv run pylint --rcfile=pyproject.toml src/
 
 # Flake8 for style guide enforcement
 	uv run flake8 src/

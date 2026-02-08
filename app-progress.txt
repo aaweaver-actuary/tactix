@@ -1,4 +1,12 @@
 Session summary (2026-02-08):
+- Refactored enter-submit verification scripts to reuse a shared Puppeteer helper module.
+- Tests run: make check (before; task), make check (after; task).
+- Commit: 7ebf144
+- Before→After map:
+	- verification/{puppeteer_issue_enter_submit,integration_feature_enter_submit}.js → reuse verification/enter_submit_helpers.js
+	- verification/enter_submit_helpers.js → new shared helper module.
+
+Session summary (2026-02-08):
 - Implemented enter-to-submit handling for the practice move input and added UI coverage for Enter submission.
 - UI verification: Puppeteer enter-submit run with keyboard input; screenshot verification/ui-enter-submit-2026-02-08.png; logs tmp-logs/ui-enter-submit-2026-02-08.json and tmp-logs/enter-submit-run.log.
 - Added CI integration script: verification/integration_feature_enter_submit.js.

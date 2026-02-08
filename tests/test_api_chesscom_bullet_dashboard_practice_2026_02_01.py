@@ -187,6 +187,19 @@ def _fetch_game_detail(client: TestClient, game_id: str) -> dict[str, object]:
     return payload
 
 
+def _fetch_game_headers_by_id(
+    client: TestClient, games: list[dict[str, object]]
+) -> dict[str, chess.pgn.Headers]:
+    headers_by_id: dict[str, chess.pgn.Headers] = {}
+    for game in games:
+        game_id = game.get("game_id")
+        if not isinstance(game_id, str):
+            raise AssertionError("Expected game_id string in dashboard payload")
+        detail_payload = _fetch_game_detail(client, game_id)
+        headers_by_id[game_id] = _game_headers_from_detail(detail_payload)
+    return headers_by_id
+
+
 def test_api_dashboard_returns_two_games(canonical_client: TestClient) -> None:
     games = _fetch_recent_games(canonical_client)
     assert len(games) == 2
@@ -200,13 +213,7 @@ def test_api_game_detail_rating_deltas(canonical_client: TestClient) -> None:
     if len(games) != 2:
         raise AssertionError("Expected exactly two games from dashboard")
 
-    headers_by_id: dict[str, chess.pgn.Headers] = {}
-    for game in games:
-        game_id = game.get("game_id")
-        if not isinstance(game_id, str):
-            raise AssertionError("Expected game_id string in dashboard payload")
-        detail_payload = _fetch_game_detail(canonical_client, game_id)
-        headers_by_id[game_id] = _game_headers_from_detail(detail_payload)
+    headers_by_id = _fetch_game_headers_by_id(canonical_client, games)
 
     loss_headers = next(
         headers

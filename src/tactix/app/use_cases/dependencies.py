@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Protocol, TypeVar
 
@@ -38,7 +39,7 @@ class SourceNormalizer(Protocol):
 class DateTimeCoercer(Protocol):
     """Coerce date values into datetimes."""
 
-    def coerce(self, value: object, *, end_of_day: bool = False) -> Any:
+    def coerce(self, value: date | None, *, end_of_day: bool = False) -> datetime | None:
         """Return a coerced datetime value."""
 
 

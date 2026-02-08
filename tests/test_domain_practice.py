@@ -14,7 +14,11 @@ def test_normalize_attempted_uci_requires_value() -> None:
 
 
 def test_evaluate_practice_attempt_prefers_stored_explanation() -> None:
-    def fake_format(fen: str | None, best_uci: str, motif: str | None) -> tuple[str | None, str | None]:
+    def fake_format(
+        fen: str | None,  # noqa: ARG001
+        best_uci: str,  # noqa: ARG001
+        motif: str | None,  # noqa: ARG001
+    ) -> tuple[str | None, str | None]:
         return "e4", "generated"
 
     tactic = {
@@ -41,7 +45,9 @@ def test_evaluate_practice_attempt_prefers_stored_explanation() -> None:
 
 
 def test_evaluate_practice_attempt_falls_back_to_generated_explanation() -> None:
-    def fake_format(fen: str | None, best_uci: str, motif: str | None) -> tuple[str | None, str | None]:
+    def fake_format(
+        fen: str | None, best_uci: str, motif: str | None
+    ) -> tuple[str | None, str | None]:
         return "Qh5#", "mate tactic"
 
     tactic = {

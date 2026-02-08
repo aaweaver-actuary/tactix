@@ -17,14 +17,14 @@ from tactix.define_pipeline_state__pipeline import (
 )
 from tactix.FetchContext import FetchContext
 from tactix.GameRow import GameRow
-from tactix.app.wiring import DefaultCheckpointWriter
-from tactix.ports.checkpoint_writer import CheckpointWriter
+from tactix.infra.checkpoint_writer import DefaultCheckpointWriter
 from tactix.latest_timestamp import latest_timestamp
 from tactix.no_games_payload_contexts import (
     build_no_games_after_dedupe_payload_context,
     build_no_games_payload_context,
 )
 from tactix.ops_event import OpsEvent
+from tactix.ports.checkpoint_writer import CheckpointWriter
 from tactix.record_ops_event import record_ops_event
 from tactix.sync_contexts import (
     DailySyncStartContext,

@@ -5,6 +5,7 @@ from __future__ import annotations
 import time as time_module
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any, cast
 
@@ -29,12 +30,9 @@ from tactix.db.postgres_unit_of_work import PostgresUnitOfWork
 from tactix.db.raw_pgn_repository_provider import raw_pgn_repository
 from tactix.db.tactic_repository_provider import tactic_repository
 from tactix.get_cached_dashboard_payload__api_cache import _get_cached_dashboard_payload
-from tactix.infra.clients.chesscom_client import write_cursor
-from tactix.infra.clients.lichess_client import write_checkpoint
 from tactix.list_sources_for_cache_refresh__api_cache import _sources_for_cache_refresh
 from tactix.normalize_source__source import _normalize_source
 from tactix.pipeline import get_dashboard_payload
-from tactix.ports.checkpoint_writer import CheckpointWriter
 from tactix.ports.repositories import (
     DashboardRepository,
     PostgresRepository,
@@ -68,7 +66,7 @@ class DefaultSourceNormalizer:
 class DefaultDateTimeCoercer:
     """Default datetime coercer."""
 
-    def coerce(self, value: object, *, end_of_day: bool = False) -> Any:
+    def coerce(self, value: date | None, *, end_of_day: bool = False) -> datetime | None:
         return _coerce_date_to_datetime(value, end_of_day=end_of_day)
 
 
@@ -246,14 +244,3 @@ class DefaultClock:
 
     def now(self) -> float:
         return time_module.time()
-
-
-@dataclass(frozen=True)
-class DefaultCheckpointWriter(CheckpointWriter):
-    """Default checkpoint writer using infra client helpers."""
-
-    def write_chesscom_cursor(self, path: Path, cursor: str | None) -> None:
-        write_cursor(path, cursor)
-
-    def write_lichess_checkpoint(self, path: Path, since_ms: int) -> None:
-        write_checkpoint(path, since_ms)

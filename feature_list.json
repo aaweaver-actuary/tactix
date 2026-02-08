@@ -123,10 +123,12 @@
     "category": "functional",
     "description": "[UI] Add \"Open in Lichess\" button on table rows containing a game.",
     "steps": [
-      "Step 1: Identify games sourced from lichess in the games table",
-      "Step 2: Render an \"Open in Lichess\" action for those rows only",
+      "Step 1: Identify games regardless of source in the games table",
+      "Step 2: Render an \"Open in Lichess\" action for those rows",
       "Step 3: Confirm the link opens the correct Lichess game URL",
-      "Step 4: Verify the button is not shown for non-Lichess games",
+      "Step 3a: Use the pattern 'https://lichess.org/analysis/pgn/e3_e6_f3_f6?color=white#4'",
+      "Step 3b: Ensure the link includes the correct SAN moves, color to move, and anchors to the move number",
+      "Step 4: Verify the button is shown for both Lichess and non-Lichess games",
       "Step 5: Add or update a UI test for the Lichess link action"
     ],
     "passes": false

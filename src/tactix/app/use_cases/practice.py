@@ -63,16 +63,9 @@ class PracticeUseCase:
         include_failed_attempt: bool,
         limit: int,
     ) -> dict[str, object]:
-        normalized_source = self.source_normalizer.normalize(source)
-        settings = self.settings_provider.get_settings(source=normalized_source)
-        request = PracticeQueueRequest(
-            normalized_source=normalized_source,
-            include_failed_attempt=include_failed_attempt,
-            settings=settings,
-            limit=limit,
-        )
+        request = self._build_queue_request(source, include_failed_attempt, limit)
         return self._run_with_uow(
-            settings,
+            request.settings,
             lambda conn: self._queue_payload(request, self._fetch_queue_items(conn, request)),
         )
 
@@ -81,17 +74,14 @@ class PracticeUseCase:
         source: str | None,
         include_failed_attempt: bool,
     ) -> dict[str, object]:
-        normalized_source = self.source_normalizer.normalize(source)
-        settings = self.settings_provider.get_settings(source=normalized_source)
-        request = PracticeQueueRequest(
-            normalized_source=normalized_source,
-            include_failed_attempt=include_failed_attempt,
-            settings=settings,
+        request = self._build_queue_request(
+            source,
+            include_failed_attempt,
             limit=1,
             exclude_seen=True,
         )
         return self._run_with_uow(
-            settings,
+            request.settings,
             lambda conn: self._next_payload(request, self._fetch_queue_items(conn, request)),
         )
 
@@ -107,8 +97,7 @@ class PracticeUseCase:
             raise PracticeAttemptError(str(exc)) from exc
 
     def get_game_detail(self, game_id: str, source: str | None) -> dict[str, object]:
-        normalized_source = self.source_normalizer.normalize(source)
-        settings = self.settings_provider.get_settings(source=normalized_source)
+        normalized_source, settings = self._resolve_settings_for_source(source)
         payload = self._run_with_uow(
             settings,
             lambda conn: self.repository_factory.create(conn).fetch_game_detail(
@@ -181,6 +170,27 @@ class PracticeUseCase:
             return None
         now_ms = int(self.clock.now() * 1000)
         return max(0, now_ms - served_at_ms)
+
+    def _resolve_settings_for_source(self, source: str | None) -> tuple[str | None, Settings]:
+        normalized_source = self.source_normalizer.normalize(source)
+        settings = self.settings_provider.get_settings(source=normalized_source)
+        return normalized_source, settings
+
+    def _build_queue_request(
+        self,
+        source: str | None,
+        include_failed_attempt: bool,
+        limit: int,
+        exclude_seen: bool = False,
+    ) -> PracticeQueueRequest:
+        normalized_source, settings = self._resolve_settings_for_source(source)
+        return PracticeQueueRequest(
+            normalized_source=normalized_source,
+            include_failed_attempt=include_failed_attempt,
+            settings=settings,
+            limit=limit,
+            exclude_seen=exclude_seen,
+        )
 
 
 def get_practice_use_case() -> PracticeUseCase:

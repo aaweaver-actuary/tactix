@@ -1,4 +1,9 @@
 Session summary (2026-02-08):
+- Fixed frontend layering guardrail regression by removing the `_components/BaseCard` import from DashboardFlow and inlining the drag prop type.
+- Tests run: vitest src/test/component_structure.test.ts.
+- Commit: 49b6944
+
+Session summary (2026-02-08):
 - Implemented listudy asset theming with a shared listudy assets utility, card texture, and practice header piece preview.
 - Added client NOTICE attribution for listudy board art and cburnett piece set.
 - Added PracticeAttemptCard test to verify listudy assets and created Listudy asset verification scripts.

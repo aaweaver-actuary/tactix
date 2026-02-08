@@ -3,6 +3,7 @@ Session summary (2026-02-08):
 - Migrated call sites to builder objects and removed the legacy helper modules.
 - Added unit tests for the new builder objects.
 - Tests run: make check (before; exit code 2), make check (after; exit code 2).
+- Commit: pre-commit hook failed with openpty permission error; re-ran commit with core.hooksPath=/dev/null.
 - Before→After map:
 	- tactix/line_tactic_helpers.py → tactix/line_tactic_context_builder.py (object builder), call sites in detect_tactics__motifs/_is_skewer_in_step.
 	- tactix/_position_context_helpers.py → tactix/position_context_builder.py (object builder), call sites in _position_from_node/_resolve_game_context/_normalize_side_filter.

@@ -15,11 +15,7 @@ from tactix.coerce_date_to_datetime__datetime import _coerce_date_to_datetime
 from tactix.config import Settings, get_settings
 from tactix.dashboard_query import DashboardQuery
 from tactix.dashboard_query_filters import DashboardQueryFilters
-from tactix.db.dashboard_repository_provider import (
-    dashboard_repository,
-    fetch_motif_stats,
-    fetch_trend_stats,
-)
+from tactix.db import dashboard_repository_provider
 from tactix.db.duckdb_store import fetch_version, init_schema
 from tactix.db.duckdb_unit_of_work import DuckDbUnitOfWork
 from tactix.db.postgres_repository import (
@@ -74,7 +70,7 @@ class DefaultDateTimeCoercer:
 class DefaultPipelineRunner:
     """Default pipeline runner."""
 
-    def run(
+    def run(  # pylint: disable=too-many-arguments
         self,
         settings: Settings,
         *,
@@ -143,7 +139,7 @@ class DefaultDashboardRepositoryFactory:
     """Default dashboard repository factory."""
 
     def create(self, conn: Any) -> DashboardRepository:
-        return cast(DashboardRepository, dashboard_repository(conn))
+        return cast(DashboardRepository, dashboard_repository_provider.dashboard_repository(conn))
 
 
 @dataclass(frozen=True)
@@ -166,8 +162,12 @@ class DefaultTacticRepositoryFactory:
 class DefaultDashboardStatsService:
     """Default dashboard stats service."""
 
-    motif_stats_fetcher: Callable[..., list[dict[str, object]]] = fetch_motif_stats
-    trend_stats_fetcher: Callable[..., list[dict[str, object]]] = fetch_trend_stats
+    motif_stats_fetcher: Callable[..., list[dict[str, object]]] = (
+        dashboard_repository_provider.fetch_motif_stats
+    )
+    trend_stats_fetcher: Callable[..., list[dict[str, object]]] = (
+        dashboard_repository_provider.fetch_trend_stats
+    )
 
     def _fetch_stats(
         self,

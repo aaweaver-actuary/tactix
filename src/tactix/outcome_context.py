@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
-from tactix.config import Settings
+if TYPE_CHECKING:
+    from tactix.config import Settings
 
 
 class OutcomeResultEnum(StrEnum):

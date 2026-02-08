@@ -245,7 +245,7 @@
       "Step 4: Verify exactly 2 practice positions render, both from the loss game",
       "Step 5: Capture a screenshot showing active filters, two games, and two practice positions"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

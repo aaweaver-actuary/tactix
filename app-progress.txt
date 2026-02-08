@@ -258,6 +258,13 @@ Session summary (2026-02-08):
 Session summary (2026-02-08):
 - Stabilized make check for offline runs by switching Python tooling to venv binaries and using local node binaries (prettier skipped if missing).
 - Refactored dashboard/practice use cases to satisfy complexity checks; added queue request helper structure.
+
+Session summary (2026-02-08):
+- Added a VITE_PRACTICE_QUEUE_LIMIT override in the client practice queue fetch and set it to 2 in the new E2E scripts for the canonical fixture.
+- Added a manual Puppeteer verification script and CI integration script for the chess.com bullet 2026-02-01 client scenario (fixture-backed local backend + dev server).
+- UI verification (Puppeteer): verification/feature-client-e2e-chesscom-bullet-2026-02-01.png.
+- Tests run: node verification/puppeteer_feature_client_e2e_chesscom_bullet_2026_02_01.js; node verification/integration_feature_client_e2e_chesscom_bullet_2026_02_01.js; make check (task).
+- Updated feature_list.json: marked "Client E2E verification (Puppeteer): chess.com bullet games + practice queue on 2026-02-01" as passing.
 - Fixed unit-of-work test to inject connection factory, added normalize side filter test for coverage, and added vulture markers for repository/unit-of-work exports.
 - Updated Puppeteer Text component test to use a unique user data dir and safe cleanup.
 - Tests run: make check (pass) via terminal.

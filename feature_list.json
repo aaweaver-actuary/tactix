@@ -481,7 +481,7 @@
       "Step 9: Confirm conversions are only created for new opportunities",
       "Step 10: Confirm practice_queue only grows for new missed items"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

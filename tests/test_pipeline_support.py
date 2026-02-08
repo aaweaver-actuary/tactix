@@ -39,9 +39,9 @@ class FakeCheckpointWriter:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("" if cursor is None else cursor)
 
-    def write_lichess_checkpoint(self, path, since_ms: int) -> None:
+    def write_lichess_checkpoint(self, path, cursor: str | int | None) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(str(since_ms))
+        path.write_text("" if cursor is None else str(cursor))
 
 
 def _sample_game(last_timestamp_ms: int) -> GameRow:
@@ -206,7 +206,7 @@ def test_pipeline_no_games(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
     )
     assert checkpoint_value == 15
     assert last_timestamp == 15
-    assert settings.checkpoint_path.read_text() == "15"
+    assert settings.checkpoint_path.read_text() == "next"
 
     chesscom_checkpoint, chesscom_last = no_games.apply_no_games_dedupe_checkpoint(
         chesscom_settings,
@@ -322,7 +322,7 @@ def test_pipeline_checkpoint_updates(tmp_path) -> None:
         [_sample_game(20)],
     )
     assert lichess_result == (20, 20)
-    assert settings.checkpoint_path.read_text() == "20"
+    assert settings.checkpoint_path.read_text() == "20:game-1"
 
     chesscom_settings = Settings(source="chesscom")
     chesscom_settings.checkpoint_path = tmp_path / "chesscom.txt"

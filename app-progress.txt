@@ -1,4 +1,9 @@
 Session summary (2026-02-08):
+- Implemented Lichess cursor-based incremental sync (cursor filtering, checkpoint persistence, and API regression coverage).
+- Evidence log: tmp-logs/feature-lichess-cursor-incremental-2026-02-08.log.
+- Tests run: make check (task); runTests (failed to discover tests: "No tests found in the files").
+
+Session summary (2026-02-08):
 - Refactored chess.com cursor handling to reuse a cursor state helper and centralized regression test expectations.
 - Tests run: make check (before; task), make check (after; task).
 - Commit: 2d443b7

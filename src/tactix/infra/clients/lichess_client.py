@@ -267,35 +267,116 @@ def _refresh_lichess_token(settings: Settings) -> str:
     return access_token
 
 
-def read_checkpoint(path: Path) -> int:
-    """Read a Lichess checkpoint value from disk.
+def _build_cursor(last_ts: int, game_id: str) -> str:
+    """Build a cursor token for incremental fetches."""
+
+    return f"{last_ts}:{game_id}"
+
+
+def _parse_cursor(cursor: str | None) -> tuple[int, str]:
+    """Parse a cursor token into timestamp and id."""
+
+    if not cursor:
+        return 0, ""
+    if ":" in cursor:
+        prefix, suffix = cursor.split(":", 1)
+        if prefix.isdigit():
+            return int(prefix), suffix
+        return 0, cursor
+    if cursor.isdigit():
+        return int(cursor), ""
+    return 0, cursor
+
+
+def _cursor_allows_game(game: dict, since_ts: int, since_game: str) -> bool:
+    """Return True if the game is beyond the given cursor position."""
+
+    last_ts = int(game.get("last_timestamp_ms", 0))
+    game_id = str(game.get("game_id", ""))
+    return (not since_ts) or (last_ts > since_ts) or (last_ts == since_ts and game_id > since_game)
+
+
+def _filter_by_cursor(rows: list[dict], cursor: str | None) -> list[dict]:
+    """Filter rows using a cursor token."""
+
+    since_ts, since_game = _parse_cursor(cursor)
+    ordered = sorted(
+        rows,
+        key=lambda g: (int(g.get("last_timestamp_ms", 0)), str(g.get("game_id", ""))),
+    )
+    return [game for game in ordered if _cursor_allows_game(game, since_ts, since_game)]
+
+
+def _attach_cursors(games: list[dict]) -> list[dict]:
+    """Attach cursor values to each game row."""
+
+    for game in games:
+        game["cursor"] = _build_cursor(
+            int(game.get("last_timestamp_ms", 0)),
+            str(game.get("game_id", "")),
+        )
+    return games
+
+
+def _resolve_last_timestamp(games: list[dict], cursor: str | None) -> int:
+    if games:
+        return latest_timestamp(games)
+    return _parse_cursor(cursor)[0]
+
+
+def _resolve_next_cursor(games: list[dict], cursor: str | None) -> str | None:
+    if not games:
+        return cursor if cursor else None
+    last = max(
+        games,
+        key=lambda g: (int(g.get("last_timestamp_ms", 0)), str(g.get("game_id", ""))),
+    )
+    return _build_cursor(int(last.get("last_timestamp_ms", 0)), str(last.get("game_id", "")))
+
+
+def read_checkpoint(path: Path) -> str | None:
+    """Read a Lichess cursor value from disk.
 
     Args:
         path: Checkpoint path.
 
     Returns:
-        Checkpoint timestamp in milliseconds.
+        Cursor token string, or None when missing/invalid.
     """
 
-    try:
-        return int(path.read_text().strip())
-    except FileNotFoundError:
-        return 0
-    except ValueError:
+    raw = _read_optional_text(path)
+    if raw is None:
+        return None
+    value = raw.strip()
+    if not value:
+        return None
+
+    cursor_value = None
+    if ":" in value:
+        prefix, _ = value.split(":", 1)
+        if prefix.isdigit():
+            cursor_value = value
+    elif value.isdigit():
+        cursor_value = value
+
+    if cursor_value is None:
         logger.warning("Invalid checkpoint file, resetting to 0: %s", path)
-        return 0
+    return cursor_value
 
 
-def write_checkpoint(path: Path, since_ms: int) -> None:
-    """Write a Lichess checkpoint value to disk.
+def write_checkpoint(path: Path, cursor: str | int | None) -> None:
+    """Write a Lichess checkpoint cursor to disk.
 
     Args:
         path: Checkpoint path.
-        since_ms: Timestamp value to persist.
+        cursor: Cursor value to persist.
     """
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(str(since_ms))
+    if cursor is None:
+        path.write_text("")
+        return
+    path.write_text(str(cursor))
 
 
 def _pgn_to_game_row(pgn: object, settings: Settings) -> dict | None:
@@ -387,10 +468,14 @@ class LichessClient(BaseChessClient):
         """
 
         games = self._fetch_games(request)
-        last_ts = latest_timestamp(games)
+        if request.cursor:
+            games = _filter_by_cursor(games, request.cursor)
+        games = _attach_cursors(games)
+        last_ts = _resolve_last_timestamp(games, request.cursor)
+        next_cursor = _resolve_next_cursor(games, request.cursor)
         return LichessFetchResult(
             games=games,
-            next_cursor=None,
+            next_cursor=next_cursor,
             last_timestamp_ms=last_ts,
         )
 

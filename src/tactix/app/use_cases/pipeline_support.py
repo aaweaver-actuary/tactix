@@ -256,7 +256,8 @@ class PipelineNoGames:
         """Return the checkpoint value for no-games scenarios."""
         if backfill_mode or settings.source == "chesscom":
             return None
-        return fetch_context.since_ms
+        cursor_value = fetch_context.next_cursor or fetch_context.cursor_value
+        return CHECKPOINT_UPDATES.cursor_last_timestamp(cursor_value) or fetch_context.since_ms
 
     def no_games_cursor(self, backfill_mode: bool, fetch_context: FetchContext) -> str | None:
         """Resolve cursors when no games are returned."""
@@ -280,12 +281,16 @@ class PipelineNoGames:
                 fetch_context.next_cursor,
             )
             return None, last_timestamp_value
-        checkpoint_value = max(fetch_context.since_ms, last_timestamp_value)
+        cursor_value = fetch_context.next_cursor or fetch_context.cursor_value
+        checkpoint_ms = max(fetch_context.since_ms, last_timestamp_value)
+        if not cursor_value:
+            cursor_value = str(checkpoint_ms)
         self.checkpoint_writer.write_lichess_checkpoint(
             settings.checkpoint_path,
-            checkpoint_value,
+            cursor_value,
         )
-        return checkpoint_value, checkpoint_value
+        checkpoint_ms = CHECKPOINT_UPDATES.cursor_last_timestamp(cursor_value) or checkpoint_ms
+        return checkpoint_ms, checkpoint_ms
 
     def build_no_games_payload(self, ctx: NoGamesPayloadContext) -> dict[str, object]:
         """Build payload when no games are fetched."""
@@ -471,12 +476,23 @@ class PipelineCheckpointUpdates:  # pylint: disable=too-many-arguments,too-many-
         games: list[GameRow],
     ) -> tuple[int | None, int]:
         """Persist and return the updated checkpoint value."""
-        checkpoint_value = max(fetch_context.since_ms, latest_timestamp(games))
+        cursor_value = fetch_context.next_cursor or fetch_context.cursor_value
+        if not cursor_value and games:
+            latest_game = max(
+                games,
+                key=lambda g: (int(g.get("last_timestamp_ms", 0)), str(g.get("game_id", ""))),
+            )
+            cursor_value = (
+                f"{int(latest_game.get('last_timestamp_ms', 0))}:{latest_game.get('game_id', '')}"
+            )
+        if not cursor_value:
+            cursor_value = str(fetch_context.since_ms)
+        checkpoint_ms = CHECKPOINT_UPDATES.cursor_last_timestamp(cursor_value)
         self.checkpoint_writer.write_lichess_checkpoint(
             settings.checkpoint_path,
-            checkpoint_value,
+            cursor_value,
         )
-        return checkpoint_value, checkpoint_value
+        return checkpoint_ms, checkpoint_ms
 
     def update_daily_checkpoint(
         self,

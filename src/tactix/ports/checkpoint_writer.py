@@ -12,5 +12,5 @@ class CheckpointWriter(Protocol):
     def write_chesscom_cursor(self, path: Path, cursor: str | None) -> None:
         """Write a chess.com cursor token to disk."""
 
-    def write_lichess_checkpoint(self, path: Path, since_ms: int) -> None:
+    def write_lichess_checkpoint(self, path: Path, cursor: str | int | None) -> None:
         """Write a Lichess checkpoint value to disk."""

@@ -17,5 +17,5 @@ class DefaultCheckpointWriter(CheckpointWriter):
     def write_chesscom_cursor(self, path: Path, cursor: str | None) -> None:
         write_cursor(path, cursor)
 
-    def write_lichess_checkpoint(self, path: Path, since_ms: int) -> None:
-        write_checkpoint(path, since_ms)
+    def write_lichess_checkpoint(self, path: Path, cursor: str | int | None) -> None:
+        write_checkpoint(path, cursor)

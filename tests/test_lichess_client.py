@@ -47,14 +47,14 @@ class LichessClientTests(unittest.TestCase):
 
     def test_checkpoint_roundtrip(self) -> None:
         ckpt_path = self.tmp_dir / "since.txt"
-        self.assertEqual(read_checkpoint(ckpt_path), 0)
-        write_checkpoint(ckpt_path, 1234)
-        self.assertEqual(read_checkpoint(ckpt_path), 1234)
+        self.assertIsNone(read_checkpoint(ckpt_path))
+        write_checkpoint(ckpt_path, "1234:game")
+        self.assertEqual(read_checkpoint(ckpt_path), "1234:game")
 
     def test_checkpoint_invalid_value_resets(self) -> None:
         ckpt_path = self.tmp_dir / "since_invalid.txt"
         ckpt_path.write_text("bad")
-        self.assertEqual(read_checkpoint(ckpt_path), 0)
+        self.assertIsNone(read_checkpoint(ckpt_path))
 
     def test_fixture_fetch_respects_since(self) -> None:
         settings = Settings(

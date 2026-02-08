@@ -8,9 +8,13 @@ import chess.engine
 from tactix.config import Settings
 from tactix.db.duckdb_store import fetch_version, get_connection
 from tactix.pgn_utils import extract_last_timestamp_ms, split_pgn_chunks
-from tactix.infra.clients.lichess_client import read_checkpoint
+from tactix.infra.clients.lichess_client import _parse_cursor, read_checkpoint
 from tactix.infra.clients.chesscom_client import read_cursor
 from tactix.pipeline import run_daily_game_sync
+
+
+def _checkpoint_timestamp(cursor: str | None) -> int:
+    return _parse_cursor(cursor)[0]
 
 
 class PipelineStateTests(unittest.TestCase):
@@ -46,7 +50,6 @@ class PipelineStateTests(unittest.TestCase):
         self.chesscom_correspondence_fixture_path = (
             Path(__file__).resolve().parent / "fixtures" / "chesscom_correspondence_sample.pgn"
         )
-
     def test_checkpoint_and_metrics_files_written(self) -> None:
         settings = Settings(
             duckdb_path=self.tmp_dir / "tactix.duckdb",
@@ -67,8 +70,8 @@ class PipelineStateTests(unittest.TestCase):
         )
 
         ckpt_value = read_checkpoint(settings.checkpoint_path)
-        self.assertGreater(ckpt_value, 0)
-        self.assertEqual(ckpt_value, int(settings.checkpoint_path.read_text().strip()))
+        self.assertGreater(_checkpoint_timestamp(ckpt_value), 0)
+        self.assertEqual(ckpt_value, settings.checkpoint_path.read_text().strip() or None)
 
     def test_chesscom_checkpoint_and_metrics_files_written(self) -> None:
         settings = Settings(
@@ -530,7 +533,7 @@ class PipelineStateTests(unittest.TestCase):
         checkpoint_first = read_checkpoint(settings.checkpoint_path)
 
         self.assertGreater(first["fetched_games"], 0)
-        self.assertGreater(checkpoint_first, 0)
+        self.assertGreater(_checkpoint_timestamp(checkpoint_first), 0)
         self.assertEqual(tactics_first, outcomes_first)
 
         second = run_daily_game_sync(settings)
@@ -573,7 +576,7 @@ class PipelineStateTests(unittest.TestCase):
         self.assertGreater(first["fetched_games"], 0)
         self.assertTrue(settings.checkpoint_path.name.endswith("lichess_since_rapid.txt"))
         checkpoint_first = read_checkpoint(settings.checkpoint_path)
-        self.assertGreater(checkpoint_first, 0)
+        self.assertGreater(_checkpoint_timestamp(checkpoint_first), 0)
 
         second = run_daily_game_sync(settings, profile="rapid")
         checkpoint_second = read_checkpoint(settings.checkpoint_path)
@@ -604,7 +607,7 @@ class PipelineStateTests(unittest.TestCase):
         self.assertGreater(first["fetched_games"], 0)
         self.assertTrue(settings.checkpoint_path.name.endswith("lichess_since_classical.txt"))
         checkpoint_first = read_checkpoint(settings.checkpoint_path)
-        self.assertGreater(checkpoint_first, 0)
+        self.assertGreater(_checkpoint_timestamp(checkpoint_first), 0)
 
         second = run_daily_game_sync(settings, profile="classical")
         checkpoint_second = read_checkpoint(settings.checkpoint_path)
@@ -637,7 +640,7 @@ class PipelineStateTests(unittest.TestCase):
         self.assertGreater(first["fetched_games"], 0)
         self.assertTrue(settings.checkpoint_path.name.endswith("lichess_since_correspondence.txt"))
         checkpoint_first = read_checkpoint(settings.checkpoint_path)
-        self.assertGreater(checkpoint_first, 0)
+        self.assertGreater(_checkpoint_timestamp(checkpoint_first), 0)
 
         second = run_daily_game_sync(settings, profile="correspondence")
         checkpoint_second = read_checkpoint(settings.checkpoint_path)
@@ -681,7 +684,7 @@ class PipelineStateTests(unittest.TestCase):
             settings.fixture_pgn_path.name.endswith("lichess_correspondence_sample.pgn")
         )
         checkpoint_after_first = read_checkpoint(settings.checkpoint_path)
-        self.assertEqual(checkpoint_after_first, 0)
+        self.assertIsNone(checkpoint_after_first)
 
         conn = get_connection(settings.duckdb_path)
         raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
@@ -741,7 +744,7 @@ class PipelineStateTests(unittest.TestCase):
         self.assertTrue(settings.checkpoint_path.name.endswith("lichess_since_classical.txt"))
         self.assertTrue(settings.fixture_pgn_path.name.endswith("lichess_classical_sample.pgn"))
         checkpoint_after_first = read_checkpoint(settings.checkpoint_path)
-        self.assertEqual(checkpoint_after_first, 0)
+        self.assertIsNone(checkpoint_after_first)
 
         conn = get_connection(settings.duckdb_path)
         raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
@@ -801,7 +804,7 @@ class PipelineStateTests(unittest.TestCase):
         self.assertTrue(settings.checkpoint_path.name.endswith("lichess_since_rapid.txt"))
         self.assertTrue(settings.fixture_pgn_path.name.endswith("lichess_rapid_sample.pgn"))
         checkpoint_after_first = read_checkpoint(settings.checkpoint_path)
-        self.assertEqual(checkpoint_after_first, 0)
+        self.assertIsNone(checkpoint_after_first)
 
         conn = get_connection(settings.duckdb_path)
         raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
@@ -850,7 +853,7 @@ class PipelineStateTests(unittest.TestCase):
         self.assertGreater(first["fetched_games"], 0)
         self.assertTrue(settings.checkpoint_path.name.endswith("lichess_since_bullet.txt"))
         checkpoint_first = read_checkpoint(settings.checkpoint_path)
-        self.assertGreater(checkpoint_first, 0)
+        self.assertGreater(_checkpoint_timestamp(checkpoint_first), 0)
 
         second = run_daily_game_sync(settings, profile="bullet")
         checkpoint_second = read_checkpoint(settings.checkpoint_path)
@@ -890,7 +893,7 @@ class PipelineStateTests(unittest.TestCase):
         )
         self.assertGreater(first["fetched_games"], 0)
         checkpoint_after_first = read_checkpoint(settings.checkpoint_path)
-        self.assertEqual(checkpoint_after_first, 0)
+        self.assertIsNone(checkpoint_after_first)
 
         conn = get_connection(settings.duckdb_path)
         raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
@@ -939,7 +942,7 @@ class PipelineStateTests(unittest.TestCase):
         self.assertGreater(first["fetched_games"], 0)
         self.assertTrue(settings.checkpoint_path.name.endswith("lichess_since_blitz.txt"))
         checkpoint_first = read_checkpoint(settings.checkpoint_path)
-        self.assertGreater(checkpoint_first, 0)
+        self.assertGreater(_checkpoint_timestamp(checkpoint_first), 0)
 
         second = run_daily_game_sync(settings, profile="blitz")
         checkpoint_second = read_checkpoint(settings.checkpoint_path)
@@ -979,7 +982,7 @@ class PipelineStateTests(unittest.TestCase):
         )
         self.assertGreater(first["fetched_games"], 0)
         checkpoint_after_first = read_checkpoint(settings.checkpoint_path)
-        self.assertEqual(checkpoint_after_first, 0)
+        self.assertIsNone(checkpoint_after_first)
 
         conn = get_connection(settings.duckdb_path)
         raw_before = conn.execute("SELECT COUNT(*) FROM raw_pgns").fetchone()[0]
@@ -1129,7 +1132,7 @@ class PipelineStateTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 run_daily_game_sync(settings)
 
-        self.assertEqual(read_checkpoint(settings.checkpoint_path), 0)
+        self.assertIsNone(read_checkpoint(settings.checkpoint_path))
         self.assertFalse(settings.metrics_version_file.exists())
         self.assertTrue(settings.analysis_checkpoint_path.exists())
 
@@ -1157,7 +1160,10 @@ class PipelineStateTests(unittest.TestCase):
         self.assertEqual(positions_after_recovery, positions_after_failure)
         self.assertEqual(tactics_after_recovery, outcomes_after_recovery)
         self.assertGreater(result["checkpoint_ms"], 0)
-        self.assertEqual(read_checkpoint(settings.checkpoint_path), result["checkpoint_ms"])
+        self.assertEqual(
+            _checkpoint_timestamp(read_checkpoint(settings.checkpoint_path)),
+            result["checkpoint_ms"],
+        )
         self.assertTrue(settings.metrics_version_file.exists())
         self.assertGreater(metrics_version_after, 0)
         self.assertFalse(settings.analysis_checkpoint_path.exists())
@@ -1235,7 +1241,7 @@ class PipelineStateTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 run_daily_game_sync(settings)
 
-        self.assertEqual(read_checkpoint(settings.checkpoint_path), 0)
+        self.assertIsNone(read_checkpoint(settings.checkpoint_path))
         self.assertFalse(settings.metrics_version_file.exists())
 
         result = run_daily_game_sync(settings)

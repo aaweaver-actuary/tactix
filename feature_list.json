@@ -105,7 +105,7 @@
       "Step 4: Verify the modal includes game details and a close control",
       "Step 5: Add or update a UI test that asserts the modal overlay behavior"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

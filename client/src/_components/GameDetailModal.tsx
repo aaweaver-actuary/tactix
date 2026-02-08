@@ -1,5 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { GameDetailResponse } from '../api';
 import BaseTable from './BaseTable';
 import Badge from './Badge';
@@ -185,19 +186,26 @@ export default function GameDetailModal({
     return null;
   }
 
-  return (
-    <div data-testid="game-detail-modal">
-      <div>
-        <div>
-          <BaseTable
-            data={analysisRows}
-            columns={analysisColumns}
-            emptyMessage="No analysis rows found."
-            enablePagination={false}
-            tableClassName="text-xs"
-            headerCellClassName="py-1"
-            cellClassName="py-1"
-          />
+  const modalBody = (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 px-4 py-6 backdrop-blur-sm sm:items-center"
+      role="dialog"
+      aria-modal="true"
+      data-testid="game-detail-modal"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/95 p-5 shadow-2xl">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <Text mode="uppercase" value="Game details" />
+            <div className="text-xs text-sand/60">
+              Review moves, metadata, and analysis
+            </div>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -207,6 +215,18 @@ export default function GameDetailModal({
           >
             Close
           </button>
+        </div>
+
+        <div className="mt-4">
+          <BaseTable
+            data={analysisRows}
+            columns={analysisColumns}
+            emptyMessage="No analysis rows found."
+            enablePagination={false}
+            tableClassName="text-xs"
+            headerCellClassName="py-1"
+            cellClassName="py-1"
+          />
         </div>
 
         {loading ? (
@@ -457,4 +477,6 @@ export default function GameDetailModal({
       </div>
     </div>
   );
+
+  return createPortal(modalBody, document.body);
 }

@@ -1,7 +1,12 @@
 const { Chess } = require('../client/node_modules/chess.js');
 
 async function selectSource(page, source) {
-  if (source !== 'chesscom') return;
+  const targetSource = source || 'chesscom';
+  const labelMap = {
+    chesscom: 'Chess.com',
+    lichess: 'Lichess',
+    all: 'All',
+  };
   try {
     await page.waitForFunction(
       () => {
@@ -12,8 +17,9 @@ async function selectSource(page, source) {
       },
       { timeout: 60000 },
     );
-    await page.select('select[data-testid="filter-source"]', 'chesscom');
+    await page.select('select[data-testid="filter-source"]', targetSource);
   } catch (err) {
+    const label = labelMap[targetSource] || targetSource;
     await page.$$eval(
       'button',
       (buttons, label) => {
@@ -22,7 +28,7 @@ async function selectSource(page, source) {
         );
         if (target) target.click();
       },
-      'Chess.com',
+      label,
     );
   }
 }

@@ -2,7 +2,11 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { vi } from 'vitest';
 import DashboardFlow from './DashboardFlow';
-import type { DashboardPayload, PracticeQueueResponse } from '../api';
+import type {
+  DashboardPayload,
+  GameDetailResponse,
+  PracticeQueueResponse,
+} from '../api';
 
 vi.mock('@hello-pangea/dnd', () => ({
   DragDropContext: ({ children }: { children: React.ReactNode }) => (
@@ -45,7 +49,7 @@ vi.mock('../client/postgres', () => ({
   fetchPostgresRawPgns: vi.fn(),
 }));
 
-const { fetchDashboard } = await import('../client/dashboard');
+const { fetchDashboard, fetchGameDetail } = await import('../client/dashboard');
 const { fetchPracticeQueue } = await import('../client/practice');
 const { fetchPostgresStatus, fetchPostgresAnalysis, fetchPostgresRawPgns } =
   await import('../client/postgres');
@@ -204,6 +208,50 @@ const basePracticeQueue: PracticeQueueResponse = {
   ],
 };
 
+const baseGameDetail: GameDetailResponse = {
+  game_id: 'g1',
+  source: 'chesscom',
+  pgn: '1. e4 e5 2. Nf3 Nc6 1-0',
+  metadata: {
+    user_rating: 1400,
+    time_control: '300',
+    white_player: 'Alice',
+    black_player: 'Bob',
+    white_elo: 1400,
+    black_elo: 1380,
+    result: '1-0',
+    event: 'Test',
+    site: 'https://chess.com/game/123',
+    utc_date: '2026.01.01',
+    utc_time: '12:00:00',
+    termination: 'Normal',
+    start_timestamp_ms: 1761950400000,
+  },
+  analysis: [
+    {
+      tactic_id: 1,
+      position_id: 2,
+      game_id: 'g1',
+      motif: 'fork',
+      severity: 1.5,
+      best_uci: 'g1f3',
+      best_san: 'Nf3',
+      explanation: 'Best line',
+      eval_cp: 120,
+      created_at: '2026-01-01T00:00:00Z',
+      result: 'missed',
+      user_uci: 'g1f3',
+      eval_delta: -220,
+      move_number: 2,
+      ply: 3,
+      san: 'Nf3',
+      uci: 'g1f3',
+      side_to_move: 'w',
+      fen: 'test',
+    },
+  ],
+};
+
 const basePostgresStatus = {
   enabled: true,
   status: 'ok' as const,
@@ -230,6 +278,9 @@ const basePostgresRawPgns = {
 const setupBaseMocks = () => {
   (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
     baseDashboard,
+  );
+  (fetchGameDetail as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+    baseGameDetail,
   );
   (fetchPracticeQueue as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
     basePracticeQueue,
@@ -292,5 +343,20 @@ describe('DashboardFlow', () => {
     render(<DashboardFlow />);
 
     expect(screen.getByText('Loading…')).toBeInTheDocument();
+  });
+
+  it('opens game detail as an overlay modal from recent games', async () => {
+    render(<DashboardFlow />);
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId(/recent-games-row-/)).toHaveLength(2);
+    });
+
+    fireEvent.click(screen.getAllByTestId(/recent-games-row-/)[0]);
+
+    const modal = await screen.findByTestId('game-detail-modal');
+    expect(modal).toHaveAttribute('aria-modal', 'true');
+    expect(modal.className).toContain('fixed');
+    expect(screen.getByTestId('game-detail-close')).toBeInTheDocument();
   });
 });

@@ -1,28 +1,24 @@
-import type { RefObject } from 'react';
-
 interface PracticeAttemptButtonProps {
-  handlePracticeAttempt: (overrideMove?: string) => Promise<void>;
+  onPracticeAttempt: () => void;
   practiceSubmitting: boolean;
-  practiceMoveRef?: RefObject<HTMLInputElement>;
 }
 
 /**
  * Renders a button for submitting a practice attempt.
  *
- * @param handlePracticeAttempt - Function to handle the practice attempt submission. Accepts an optional overrideMove string and returns a Promise.
+ * @param onPracticeAttempt - Function to handle the practice attempt submission.
  * @param practiceSubmitting - Boolean indicating whether the submission is in progress. Disables the button and shows a loading state when true.
  *
  * The button displays "Submit attempt" by default, and "Submitting…" while the submission is in progress.
  */
 export default function PracticeAttemptButton({
-  handlePracticeAttempt,
+  onPracticeAttempt,
   practiceSubmitting,
-  practiceMoveRef,
 }: PracticeAttemptButtonProps) {
   return (
     <button
       className="button bg-teal text-night px-4 py-2 rounded-md font-display"
-      onClick={() => handlePracticeAttempt(practiceMoveRef?.current?.value)}
+      onClick={onPracticeAttempt}
       disabled={practiceSubmitting}
     >
       {practiceSubmitting ? 'Submitting…' : 'Submit attempt'}

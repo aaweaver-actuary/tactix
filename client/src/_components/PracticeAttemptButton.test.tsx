@@ -21,12 +21,12 @@ describe('PracticeAttemptButton', () => {
   });
 
   it('renders default label and is enabled when not submitting', () => {
-    const handlePracticeAttempt = vi.fn().mockResolvedValue(undefined);
+    const onPracticeAttempt = vi.fn();
 
     act(() => {
       root.render(
         <PracticeAttemptButton
-          handlePracticeAttempt={handlePracticeAttempt}
+          onPracticeAttempt={onPracticeAttempt}
           practiceSubmitting={false}
         />,
       );
@@ -39,12 +39,12 @@ describe('PracticeAttemptButton', () => {
   });
 
   it('renders submitting label and is disabled when submitting', () => {
-    const handlePracticeAttempt = vi.fn().mockResolvedValue(undefined);
+    const onPracticeAttempt = vi.fn();
 
     act(() => {
       root.render(
         <PracticeAttemptButton
-          handlePracticeAttempt={handlePracticeAttempt}
+          onPracticeAttempt={onPracticeAttempt}
           practiceSubmitting={true}
         />,
       );
@@ -56,12 +56,12 @@ describe('PracticeAttemptButton', () => {
   });
 
   it('calls handlePracticeAttempt on click', async () => {
-    const handlePracticeAttempt = vi.fn().mockResolvedValue(undefined);
+    const onPracticeAttempt = vi.fn();
 
     act(() => {
       root.render(
         <PracticeAttemptButton
-          handlePracticeAttempt={handlePracticeAttempt}
+          onPracticeAttempt={onPracticeAttempt}
           practiceSubmitting={false}
         />,
       );
@@ -73,20 +73,17 @@ describe('PracticeAttemptButton', () => {
       button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
 
-    expect(handlePracticeAttempt).toHaveBeenCalledTimes(1);
+    expect(onPracticeAttempt).toHaveBeenCalledTimes(1);
   });
 
-  it('passes the input ref value as an override move', async () => {
-    const handlePracticeAttempt = vi.fn().mockResolvedValue(undefined);
-    const input = document.createElement('input');
-    input.value = 'e2e4';
+  it('passes through the provided click handler', async () => {
+    const onPracticeAttempt = vi.fn();
 
     act(() => {
       root.render(
         <PracticeAttemptButton
-          handlePracticeAttempt={handlePracticeAttempt}
+          onPracticeAttempt={onPracticeAttempt}
           practiceSubmitting={false}
-          practiceMoveRef={{ current: input }}
         />,
       );
     });
@@ -97,6 +94,6 @@ describe('PracticeAttemptButton', () => {
       button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
 
-    expect(handlePracticeAttempt).toHaveBeenCalledWith('e2e4');
+    expect(onPracticeAttempt).toHaveBeenCalledTimes(1);
   });
 });

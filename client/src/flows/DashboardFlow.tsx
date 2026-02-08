@@ -791,6 +791,8 @@ export default function DashboardFlow() {
     };
   }
 
+  const getPracticeBaseFen = () => practiceFen || currentPractice?.fen || '';
+
   const submitPracticeMove = async (payload: {
     uci: string;
     nextFen?: string;
@@ -836,7 +838,7 @@ export default function DashboardFlow() {
       setPracticeSubmitError('Enter a move in UCI notation (e.g., e2e4).');
       return;
     }
-    const baseFen = practiceFen || currentPractice.fen;
+    const baseFen = getPracticeBaseFen();
     const moveResult = buildPracticeMove(baseFen, candidate);
     if (!moveResult) {
       setPracticeSubmitError(
@@ -849,7 +851,7 @@ export default function DashboardFlow() {
 
   const handlePracticeDrop = (from: string, to: string, piece: string) => {
     if (!currentPractice || practiceSubmitting) return false;
-    const baseFen = practiceFen || currentPractice.fen;
+    const baseFen = getPracticeBaseFen();
     const isPawn = typeof piece === 'string' && piece.endsWith('P');
     const promotion =
       isPawn && (to.endsWith('8') || to.endsWith('1')) ? 'q' : '';

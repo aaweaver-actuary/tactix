@@ -100,6 +100,14 @@ export default function PracticeAttemptCard({
   handlePracticeAttempt,
   handlePracticeDrop,
 }: PracticeAttemptCardProps) {
+  const handleInputSubmit = (move: string) => {
+    void handlePracticeAttempt(move);
+  };
+
+  const handleAttemptClick = () => {
+    void handlePracticeAttempt(practiceMoveRef.current?.value);
+  };
+
   return (
     <BaseCard
       className="p-4"
@@ -156,14 +164,13 @@ export default function PracticeAttemptCard({
                 <PracticeMoveInput
                   practiceMove={practiceMove}
                   onPracticeMoveChange={onPracticeMoveChange}
-                  onPracticeSubmit={(move) => void handlePracticeAttempt(move)}
+                  onPracticeSubmit={handleInputSubmit}
                   practiceSubmitting={practiceSubmitting}
                   inputRef={practiceMoveRef}
                 />
                 <PracticeAttemptButton
-                  handlePracticeAttempt={handlePracticeAttempt}
+                  onPracticeAttempt={handleAttemptClick}
                   practiceSubmitting={practiceSubmitting}
-                  practiceMoveRef={practiceMoveRef}
                 />
               </div>
               {practiceSubmitError ? (

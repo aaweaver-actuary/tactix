@@ -898,3 +898,9 @@ Session summary (2026-02-08):
 - Added PGN fixture parsing unit test with header, move list, final FEN, and deterministic game_id assertions.
 - Tests run: `make check` (green).
 - Current pass count: 13/128.
+Session summary (2026-02-08):
+- Memoized DashboardFlow handlers and practice helpers to satisfy hook lint; removed duplicate PracticeAttemptButton test.
+- Simplified Lichess cursor resolution to satisfy xenon; removed unused cursor parser.
+- Normalized minor API regression test formatting changes.
+- Tests run: `make lint`, `make test`, `make complexity`, `make guard`, `make dedup`, `make deadcode`, `make build`, `make check` (Vitest act warnings and pycycle parse warning remain).
+- Current pass count: 34/128.

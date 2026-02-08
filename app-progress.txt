@@ -1,4 +1,11 @@
 Session summary (2026-02-08):
+- Refactored PracticeUseCase to consolidate source/settings resolution and queue request construction.
+- Tests run: make check (before; task), make check (after; task).
+- Commit: 971e581
+- Before→After map:
+	- tactix/app/use_cases/practice.py → add shared _resolve_settings_for_source/_build_queue_request helpers.
+
+Session summary (2026-02-08):
 - Moved DuckDB unit-of-work wiring out of use-case defaults; use cases now require injected uow runners and factories wire DuckDb runners.
 - Added a fake-port unit test for dashboard raw PGN summary; updated cached dashboard test to inject the uow runner.
 - Tests run: runTests (all; summary passed=115); make check (task).

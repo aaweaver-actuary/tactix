@@ -53,12 +53,12 @@ class UserColorInferenceTests(unittest.TestCase):
 
 def _pgn_with_players(white: str, black: str, result: str) -> str:
     return (
-        "[Event \"Fixture\"]\n"
-        "[Site \"https://example.com\"]\n"
-        "[Date \"2024.07.01\"]\n"
-        f"[White \"{white}\"]\n"
-        f"[Black \"{black}\"]\n"
-        "[TimeControl \"60\"]\n"
-        f"[Result \"{result}\"]\n\n"
+        '[Event "Fixture"]\n'
+        '[Site "https://example.com"]\n'
+        '[Date "2024.07.01"]\n'
+        f'[White "{white}"]\n'
+        f'[Black "{black}"]\n'
+        '[TimeControl "60"]\n'
+        f'[Result "{result}"]\n\n'
         "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 1-0\n"
     )

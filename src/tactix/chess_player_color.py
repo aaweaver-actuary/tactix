@@ -97,3 +97,6 @@ class ChessPlayerColor(Enum):
         if self.is_white():
             return self._result_mapping_if_white
         return self._result_mapping_if_black
+
+
+_VULTURE_USED = (ChessPlayerColor.is_black,)

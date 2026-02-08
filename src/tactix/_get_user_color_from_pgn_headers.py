@@ -44,11 +44,15 @@ def _resolve_player_names_from_headers(headers: chess.pgn.Headers) -> tuple[str,
 def _resolve_user_color(white: str, black: str, user: str) -> ChessPlayerColor:
     """Return the player's color based on header names."""
     user_lower = _normalize_player_name(user)
-    is_white = bool(white) and white == user_lower
-    is_black = bool(black) and black == user_lower
-    if not is_white and not is_black:
-        raise ValueError(f"User '{user}' not found in PGN headers.")
-    return ChessPlayerColor.WHITE if is_white else ChessPlayerColor.BLACK
+    if _matches_user_color(white, user_lower):
+        return ChessPlayerColor.WHITE
+    if _matches_user_color(black, user_lower):
+        return ChessPlayerColor.BLACK
+    raise ValueError(f"User '{user}' not found in PGN headers.")
+
+
+def _matches_user_color(player: str, user_lower: str) -> bool:
+    return bool(player) and player == user_lower
 
 
 _VULTURE_USED = (_resolve_player_names_from_headers,)

@@ -11,6 +11,9 @@ Session summary (2026-02-08):
 	- client/src/flows/DashboardFlow.tsx inline delay → `PRACTICE_FEEDBACK_DELAY_MS` + `waitForPracticeFeedback` helper.
 
 Session summary (2026-02-08):
+- Reduced user color inference complexity and marked is_black as used to satisfy xenon/vulture checks.
+
+Session summary (2026-02-08):
 - Reduced time control parsing complexity for xenon by splitting slash parsing and normalization helpers; make check warnings remain unchanged.
 
 Session summary (2026-02-08):

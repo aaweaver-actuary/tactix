@@ -167,7 +167,7 @@
       "Step 4: Delete the feature branch if no longer needed",
       "Step 5: Update progress notes with the merge status"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

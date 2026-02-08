@@ -32,6 +32,18 @@ from tactix.define_pipeline_state__pipeline import (
 )
 
 
+class FakeCheckpointWriter:
+    """Test double for checkpoint persistence."""
+
+    def write_chesscom_cursor(self, path, cursor: str | None) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("" if cursor is None else cursor)
+
+    def write_lichess_checkpoint(self, path, since_ms: int) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(str(since_ms))
+
+
 def _sample_game(last_timestamp_ms: int) -> GameRow:
     return {
         "game_id": "game-1",
@@ -164,7 +176,7 @@ def test_pipeline_emissions(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_pipeline_no_games(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
-    no_games = PipelineNoGames()
+    no_games = PipelineNoGames(checkpoint_writer=FakeCheckpointWriter())
     settings = Settings(source="lichess")
     settings.checkpoint_path = tmp_path / "checkpoint.txt"
 
@@ -288,7 +300,7 @@ def test_pipeline_analysis_checkpoint(tmp_path) -> None:
 
 
 def test_pipeline_checkpoint_updates(tmp_path) -> None:
-    updates = PipelineCheckpointUpdates()
+    updates = PipelineCheckpointUpdates(checkpoint_writer=FakeCheckpointWriter())
 
     assert updates.cursor_last_timestamp(None) == 0
     assert updates.cursor_last_timestamp("123:cursor") == 123

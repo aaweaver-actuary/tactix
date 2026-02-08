@@ -6,12 +6,14 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from tactix.app.use_cases.dependencies import (
-    DefaultPostgresRepositoryProvider,
-    DefaultSettingsProvider,
-    DefaultStatusSerializer,
     PostgresRepositoryProvider,
     SettingsProvider,
     StatusSerializer,
+)
+from tactix.app.wiring import (
+    DefaultPostgresRepositoryProvider,
+    DefaultSettingsProvider,
+    DefaultStatusSerializer,
 )
 
 

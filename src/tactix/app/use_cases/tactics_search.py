@@ -8,14 +8,16 @@ from typing import Any
 from tactix.app.use_cases.dependencies import (
     DashboardRepositoryFactory,
     DateTimeCoercer,
+    SettingsProvider,
+    SourceNormalizer,
+    UnitOfWorkRunner,
+)
+from tactix.app.wiring import (
     DefaultDashboardRepositoryFactory,
     DefaultDateTimeCoercer,
     DefaultSettingsProvider,
     DefaultSourceNormalizer,
     DuckDbUnitOfWorkRunner,
-    SettingsProvider,
-    SourceNormalizer,
-    UnitOfWorkRunner,
 )
 from tactix.dashboard_query import DashboardQuery
 from tactix.tactics_search_filters import TacticsSearchFilters

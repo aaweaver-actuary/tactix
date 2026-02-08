@@ -13,6 +13,12 @@ from tactix.app.use_cases.dependencies import (
     CacheRefresher,
     DashboardRepositoryFactory,
     DateTimeCoercer,
+    PipelineRunner,
+    SettingsProvider,
+    SourceNormalizer,
+    UnitOfWorkRunner,
+)
+from tactix.app.wiring import (
     DefaultCacheRefresher,
     DefaultDashboardRepositoryFactory,
     DefaultDateTimeCoercer,
@@ -20,10 +26,6 @@ from tactix.app.use_cases.dependencies import (
     DefaultSettingsProvider,
     DefaultSourceNormalizer,
     DuckDbUnitOfWorkRunner,
-    PipelineRunner,
-    SettingsProvider,
-    SourceNormalizer,
-    UnitOfWorkRunner,
 )
 from tactix.config import Settings
 from tactix.dashboard_query import DashboardQuery

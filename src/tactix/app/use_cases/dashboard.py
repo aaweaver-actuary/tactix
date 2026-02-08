@@ -15,6 +15,12 @@ from tactix.app.use_cases.dependencies import (
     DashboardRepositoryFactory,
     DashboardStatsService,
     DashboardVersionProvider,
+    RawPgnRepositoryFactory,
+    SettingsProvider,
+    SourceNormalizer,
+    UnitOfWorkRunner,
+)
+from tactix.app.wiring import (
     DefaultDashboardCache,
     DefaultDashboardCacheKeyBuilder,
     DefaultDashboardFiltersResolver,
@@ -26,10 +32,6 @@ from tactix.app.use_cases.dependencies import (
     DefaultSettingsProvider,
     DefaultSourceNormalizer,
     DuckDbUnitOfWorkRunner,
-    RawPgnRepositoryFactory,
-    SettingsProvider,
-    SourceNormalizer,
-    UnitOfWorkRunner,
 )
 from tactix.config import Settings
 from tactix.dashboard_query import DashboardQuery

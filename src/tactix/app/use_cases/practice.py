@@ -8,15 +8,17 @@ from typing import Any
 
 from tactix.app.use_cases.dependencies import (
     Clock,
+    SettingsProvider,
+    SourceNormalizer,
+    TacticRepositoryFactory,
+    UnitOfWorkRunner,
+)
+from tactix.app.wiring import (
     DefaultClock,
     DefaultSettingsProvider,
     DefaultSourceNormalizer,
     DefaultTacticRepositoryFactory,
     DuckDbUnitOfWorkRunner,
-    SettingsProvider,
-    SourceNormalizer,
-    TacticRepositoryFactory,
-    UnitOfWorkRunner,
 )
 from tactix.config import Settings
 from tactix.models import PracticeAttemptRequest

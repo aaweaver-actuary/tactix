@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from tactix.config import Settings
 from tactix.define_pipeline_state__pipeline import (
@@ -17,8 +17,8 @@ from tactix.define_pipeline_state__pipeline import (
 )
 from tactix.FetchContext import FetchContext
 from tactix.GameRow import GameRow
-from tactix.infra.clients.chesscom_client import write_cursor as write_chesscom_cursor
-from tactix.infra.clients.lichess_client import write_checkpoint
+from tactix.app.wiring import DefaultCheckpointWriter
+from tactix.ports.checkpoint_writer import CheckpointWriter
 from tactix.latest_timestamp import latest_timestamp
 from tactix.no_games_payload_contexts import (
     build_no_games_after_dedupe_payload_context,
@@ -248,6 +248,8 @@ class PipelineEmissions:  # pylint: disable=too-many-arguments,too-many-position
 class PipelineNoGames:
     """Handle no-games branches in the pipeline."""
 
+    checkpoint_writer: CheckpointWriter = field(default_factory=DefaultCheckpointWriter)
+
     def no_games_checkpoint(
         self, settings: Settings, backfill_mode: bool, fetch_context: FetchContext
     ) -> int | None:
@@ -273,10 +275,16 @@ class PipelineNoGames:
         if backfill_mode:
             return None, last_timestamp_value
         if settings.source == "chesscom":
-            write_chesscom_cursor(settings.checkpoint_path, fetch_context.next_cursor)
+            self.checkpoint_writer.write_chesscom_cursor(
+                settings.checkpoint_path,
+                fetch_context.next_cursor,
+            )
             return None, last_timestamp_value
         checkpoint_value = max(fetch_context.since_ms, last_timestamp_value)
-        write_checkpoint(settings.checkpoint_path, checkpoint_value)
+        self.checkpoint_writer.write_lichess_checkpoint(
+            settings.checkpoint_path,
+            checkpoint_value,
+        )
         return checkpoint_value, checkpoint_value
 
     def build_no_games_payload(self, ctx: NoGamesPayloadContext) -> dict[str, object]:
@@ -407,6 +415,8 @@ class PipelineAnalysisCheckpoint:
 class PipelineCheckpointUpdates:  # pylint: disable=too-many-arguments,too-many-positional-arguments
     """Resolve and persist checkpoint metadata."""
 
+    checkpoint_writer: CheckpointWriter = field(default_factory=DefaultCheckpointWriter)
+
     def resolve_last_timestamp_value(self, games: list[GameRow], fallback: int) -> int:
         """Return the last timestamp from games or a fallback value."""
         if not games:
@@ -443,7 +453,10 @@ class PipelineCheckpointUpdates:  # pylint: disable=too-many-arguments,too-many-
         last_timestamp_value: int,
     ) -> tuple[int | None, int]:
         """Persist cursor and compute updated last timestamp."""
-        write_chesscom_cursor(settings.checkpoint_path, fetch_context.next_cursor)
+        self.checkpoint_writer.write_chesscom_cursor(
+            settings.checkpoint_path,
+            fetch_context.next_cursor,
+        )
         last_timestamp_value = self.resolve_chesscom_last_timestamp(
             fetch_context,
             games,
@@ -459,7 +472,10 @@ class PipelineCheckpointUpdates:  # pylint: disable=too-many-arguments,too-many-
     ) -> tuple[int | None, int]:
         """Persist and return the updated checkpoint value."""
         checkpoint_value = max(fetch_context.since_ms, latest_timestamp(games))
-        write_checkpoint(settings.checkpoint_path, checkpoint_value)
+        self.checkpoint_writer.write_lichess_checkpoint(
+            settings.checkpoint_path,
+            checkpoint_value,
+        )
         return checkpoint_value, checkpoint_value
 
     def update_daily_checkpoint(

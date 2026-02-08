@@ -139,10 +139,27 @@ class MetricsRepository(Protocol):
         """Update the metrics summary tables."""
 
 
+class PostgresRepository(Protocol):
+    """Repository interface for Postgres-backed read endpoints."""
+
+    def get_status(self) -> object:
+        """Return the Postgres status payload."""
+
+    def fetch_ops_events(self, limit: int = 10) -> list[dict[str, object]]:
+        """Return recent ops events."""
+
+    def fetch_analysis_tactics(self, limit: int = 10) -> list[dict[str, object]]:
+        """Return recent analyzed tactics."""
+
+    def fetch_raw_pgns_summary(self) -> dict[str, object]:
+        """Return summary data for raw PGNs."""
+
+
 _VULTURE_USED = (
     GameRepository,
     PositionRepository,
     TacticRepository,
     DashboardRepository,
     MetricsRepository,
+    PostgresRepository,
 )

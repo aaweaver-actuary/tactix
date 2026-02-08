@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 from tactix._resolve_dashboard_filters import _resolve_dashboard_filters
 from tactix.build_dashboard_cache_key__api_cache import _dashboard_cache_key
@@ -25,6 +25,8 @@ from tactix.normalize_source__source import _normalize_source
 from tactix.pipeline import get_dashboard_payload
 from tactix.ports.unit_of_work import UnitOfWork
 from tactix.set_dashboard_cache__api_cache import _set_dashboard_cache
+
+ResultT = TypeVar("ResultT")
 
 
 @dataclass
@@ -91,31 +93,18 @@ class DashboardUseCase:  # pylint: disable=too-many-instance-attributes
         start_datetime, end_datetime, normalized_source, settings = self.resolve_dashboard_filters(
             filters
         )
-        if db_name:
-            safe_name = Path(db_name).name
-            filename = safe_name if safe_name.endswith(".duckdb") else f"{safe_name}.duckdb"
-            settings.duckdb_path = settings.data_dir / filename
-        uow = self.unit_of_work_factory(settings.duckdb_path)
-        conn = uow.begin()
-        try:
-            self.init_schema(conn)
-            summary = self.fetch_pipeline_table_counts(
-                conn,
-                DashboardQuery(
-                    source=normalized_source,
-                    rating_bucket=filters.rating_bucket,
-                    time_control=filters.time_control,
-                    start_date=start_datetime,
-                    end_date=end_datetime,
-                ),
-            )
-        except Exception:
-            uow.rollback()
-            raise
-        else:
-            uow.commit()
-        finally:
-            uow.close()
+        settings = self._apply_db_name(settings, db_name)
+        query = DashboardQuery(
+            source=normalized_source,
+            rating_bucket=filters.rating_bucket,
+            time_control=filters.time_control,
+            start_date=start_datetime,
+            end_date=end_datetime,
+        )
+        summary = self._run_with_uow(
+            settings,
+            lambda conn: self.fetch_pipeline_table_counts(conn, query),
+        )
         response_source = "all" if normalized_source is None else normalized_source
         return {"source": response_source, "summary": summary}
 
@@ -128,23 +117,14 @@ class DashboardUseCase:  # pylint: disable=too-many-instance-attributes
     def get_raw_pgns_summary(self, source: str | None) -> dict[str, object]:
         normalized_source = self.normalize_source(source)
         settings = self.get_settings(source=normalized_source)
-        uow = self.unit_of_work_factory(settings.duckdb_path)
-        conn = uow.begin()
-        try:
-            self.init_schema(conn)
-            active_source = normalized_source or settings.source
-            payload = {
+        active_source = normalized_source or settings.source
+        return self._run_with_uow(
+            settings,
+            lambda conn: {
                 "source": active_source,
                 "summary": self.fetch_raw_pgns_summary(conn, source=active_source),
-            }
-        except Exception:
-            uow.rollback()
-            raise
-        else:
-            uow.commit()
-        finally:
-            uow.close()
-        return payload
+            },
+        )
 
     def _build_stats_payload(
         self,
@@ -155,12 +135,10 @@ class DashboardUseCase:  # pylint: disable=too-many-instance-attributes
         start_datetime, end_datetime, normalized_source, settings = self.resolve_dashboard_filters(
             filters
         )
-        uow = self.unit_of_work_factory(settings.duckdb_path)
-        conn = uow.begin()
-        try:
-            self.init_schema(conn)
-            response_source = "all" if normalized_source is None else normalized_source
-            payload = {
+        response_source = "all" if normalized_source is None else normalized_source
+
+        def handler(conn):
+            return {
                 "source": response_source,
                 "metrics_version": self.fetch_version(conn),
                 stats_key: stats_fetcher(
@@ -172,6 +150,27 @@ class DashboardUseCase:  # pylint: disable=too-many-instance-attributes
                     end_date=end_datetime,
                 ),
             }
+
+        return self._run_with_uow(settings, handler)
+
+    def _apply_db_name(self, settings: Settings, db_name: str | None) -> Settings:
+        if not db_name:
+            return settings
+        safe_name = Path(db_name).name
+        filename = safe_name if safe_name.endswith(".duckdb") else f"{safe_name}.duckdb"
+        settings.duckdb_path = settings.data_dir / filename
+        return settings
+
+    def _run_with_uow(
+        self,
+        settings: Settings,
+        handler: Callable[[Any], ResultT],
+    ) -> ResultT:
+        uow = self.unit_of_work_factory(settings.duckdb_path)
+        conn = uow.begin()
+        try:
+            self.init_schema(conn)
+            result = handler(conn)
         except Exception:
             uow.rollback()
             raise
@@ -179,7 +178,7 @@ class DashboardUseCase:  # pylint: disable=too-many-instance-attributes
             uow.commit()
         finally:
             uow.close()
-        return payload
+        return result
 
 
 def get_dashboard_use_case() -> DashboardUseCase:

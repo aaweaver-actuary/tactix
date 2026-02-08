@@ -25,3 +25,6 @@ class UnitOfWork(Protocol[ConnT_co]):
 
 
 UnitOfWorkFactory = Callable[..., UnitOfWork[ConnT_co]]
+
+
+_VULTURE_USED = (UnitOfWorkFactory,)

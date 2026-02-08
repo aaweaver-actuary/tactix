@@ -138,3 +138,6 @@ def default_postgres_unit_of_work_dependencies() -> PostgresUnitOfWorkRepository
         fetch_analysis_tactics=fetch_analysis_tactics_with_conn,
         fetch_raw_pgns_summary=fetch_raw_pgns_summary_with_conn,
     )
+
+
+_VULTURE_USED = (PostgresRepository, default_postgres_repository_dependencies)

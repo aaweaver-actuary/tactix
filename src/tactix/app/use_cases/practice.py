@@ -25,6 +25,17 @@ class GameNotFoundError(LookupError):
     """Raised when a game detail payload is missing a PGN."""
 
 
+@dataclass(frozen=True)
+class PracticeQueueRequest:
+    """Inputs for fetching practice queue items."""
+
+    normalized_source: str | None
+    include_failed_attempt: bool
+    settings: Settings
+    limit: int
+    exclude_seen: bool = False
+
+
 @dataclass
 class PracticeUseCase:
     get_settings: Callable[..., Settings] = get_settings
@@ -42,28 +53,16 @@ class PracticeUseCase:
     ) -> dict[str, object]:
         normalized_source = self.normalize_source(source)
         settings = self.get_settings(source=normalized_source)
-        uow = self.unit_of_work_factory(settings.duckdb_path)
-        conn = uow.begin()
-        try:
-            self.init_schema(conn)
-            queue = self.repository_factory(conn).fetch_practice_queue(
-                limit=limit,
-                source=normalized_source or settings.source,
-                include_failed_attempt=include_failed_attempt,
-            )
-            payload = {
-                "source": normalized_source or settings.source,
-                "include_failed_attempt": include_failed_attempt,
-                "items": queue,
-            }
-        except Exception:
-            uow.rollback()
-            raise
-        else:
-            uow.commit()
-        finally:
-            uow.close()
-        return payload
+        request = PracticeQueueRequest(
+            normalized_source=normalized_source,
+            include_failed_attempt=include_failed_attempt,
+            settings=settings,
+            limit=limit,
+        )
+        return self._run_with_uow(
+            settings,
+            lambda conn: self._queue_payload(request, self._fetch_queue_items(conn, request)),
+        )
 
     def get_next(
         self,
@@ -72,47 +71,102 @@ class PracticeUseCase:
     ) -> dict[str, object]:
         normalized_source = self.normalize_source(source)
         settings = self.get_settings(source=normalized_source)
-        uow = self.unit_of_work_factory(settings.duckdb_path)
-        conn = uow.begin()
-        try:
-            self.init_schema(conn)
-            items = self.repository_factory(conn).fetch_practice_queue(
-                limit=1,
-                source=normalized_source or settings.source,
-                include_failed_attempt=include_failed_attempt,
-                exclude_seen=True,
-            )
-            payload = {
-                "source": normalized_source or settings.source,
-                "include_failed_attempt": include_failed_attempt,
-                "item": items[0] if items else None,
-            }
-        except Exception:
-            uow.rollback()
-            raise
-        else:
-            uow.commit()
-        finally:
-            uow.close()
-        return payload
+        request = PracticeQueueRequest(
+            normalized_source=normalized_source,
+            include_failed_attempt=include_failed_attempt,
+            settings=settings,
+            limit=1,
+            exclude_seen=True,
+        )
+        return self._run_with_uow(
+            settings,
+            lambda conn: self._next_payload(request, self._fetch_queue_items(conn, request)),
+        )
 
     def submit_attempt(self, payload: PracticeAttemptRequest) -> dict[str, object]:
         settings = self.get_settings(source=payload.source)
-        uow = self.unit_of_work_factory(settings.duckdb_path)
-        conn = uow.begin()
         latency_ms = self._resolve_latency_ms(payload.served_at_ms)
         try:
-            self.init_schema(conn)
-            repo = self.repository_factory(conn)
-            result = repo.grade_practice_attempt(
-                payload.tactic_id,
-                payload.position_id,
-                payload.attempted_uci,
-                latency_ms=latency_ms,
+            return self._run_with_uow(
+                settings,
+                lambda conn: self._grade_attempt(conn, payload, latency_ms),
             )
         except ValueError as exc:
-            uow.rollback()
             raise PracticeAttemptError(str(exc)) from exc
+
+    def get_game_detail(self, game_id: str, source: str | None) -> dict[str, object]:
+        normalized_source = self.normalize_source(source)
+        settings = self.get_settings(source=normalized_source)
+        payload = self._run_with_uow(
+            settings,
+            lambda conn: self.repository_factory(conn).fetch_game_detail(
+                game_id,
+                settings.user,
+                normalized_source,
+            ),
+        )
+        if not payload.get("pgn"):
+            raise GameNotFoundError("Game not found")
+        return payload
+
+    def _fetch_queue_items(
+        self,
+        conn: Any,
+        request: PracticeQueueRequest,
+    ) -> list[dict[str, object]]:
+        return self.repository_factory(conn).fetch_practice_queue(
+            limit=request.limit,
+            source=request.normalized_source or request.settings.source,
+            include_failed_attempt=request.include_failed_attempt,
+            exclude_seen=request.exclude_seen,
+        )
+
+    def _queue_payload(
+        self,
+        request: PracticeQueueRequest,
+        items: list[dict[str, object]],
+    ) -> dict[str, object]:
+        return {
+            "source": request.normalized_source or request.settings.source,
+            "include_failed_attempt": request.include_failed_attempt,
+            "items": items,
+        }
+
+    def _next_payload(
+        self,
+        request: PracticeQueueRequest,
+        items: list[dict[str, object]],
+    ) -> dict[str, object]:
+        return {
+            "source": request.normalized_source or request.settings.source,
+            "include_failed_attempt": request.include_failed_attempt,
+            "item": items[0] if items else None,
+        }
+
+    def _grade_attempt(
+        self,
+        conn: Any,
+        payload: PracticeAttemptRequest,
+        latency_ms: int | None,
+    ) -> dict[str, object]:
+        repo = self.repository_factory(conn)
+        return repo.grade_practice_attempt(
+            payload.tactic_id,
+            payload.position_id,
+            payload.attempted_uci,
+            latency_ms=latency_ms,
+        )
+
+    def _run_with_uow(
+        self,
+        settings: Settings,
+        handler: Callable[[Any], dict[str, object]],
+    ) -> dict[str, object]:
+        uow = self.unit_of_work_factory(settings.duckdb_path)
+        conn = uow.begin()
+        try:
+            self.init_schema(conn)
+            result = handler(conn)
         except Exception:
             uow.rollback()
             raise
@@ -121,29 +175,6 @@ class PracticeUseCase:
         finally:
             uow.close()
         return result
-
-    def get_game_detail(self, game_id: str, source: str | None) -> dict[str, object]:
-        normalized_source = self.normalize_source(source)
-        settings = self.get_settings(source=normalized_source)
-        uow = self.unit_of_work_factory(settings.duckdb_path)
-        conn = uow.begin()
-        try:
-            self.init_schema(conn)
-            payload = self.repository_factory(conn).fetch_game_detail(
-                game_id,
-                settings.user,
-                normalized_source,
-            )
-        except Exception:
-            uow.rollback()
-            raise
-        else:
-            uow.commit()
-        finally:
-            uow.close()
-        if not payload.get("pgn"):
-            raise GameNotFoundError("Game not found")
-        return payload
 
     def _resolve_latency_ms(self, served_at_ms: int | None) -> int | None:
         if served_at_ms is None:

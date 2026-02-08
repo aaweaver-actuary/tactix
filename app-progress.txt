@@ -10,6 +10,13 @@ Session summary (2026-02-08):
 	- tests/test_line_tactic_context_builder.py + tests/test_position_context_builder.py → new unit coverage for builder objects.
 
 Session summary (2026-02-08):
+- Stabilized make check for offline runs by switching Python tooling to venv binaries and using local node binaries (prettier skipped if missing).
+- Refactored dashboard/practice use cases to satisfy complexity checks; added queue request helper structure.
+- Fixed unit-of-work test to inject connection factory, added normalize side filter test for coverage, and added vulture markers for repository/unit-of-work exports.
+- Updated Puppeteer Text component test to use a unique user data dir and safe cleanup.
+- Tests run: make check (pass) via terminal.
+
+Session summary (2026-02-08):
 - Verified UnitOfWork changes with make check and marked the UnitOfWork feature as passing.
 - Tests run: make check (pass); runTests still reports no tests found for targeted files.
 

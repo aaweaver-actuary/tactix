@@ -58,14 +58,13 @@ def test_postgres_unit_of_work_begins_transaction() -> None:
     conn = MagicMock()
     conn.autocommit = True
     with patch("tactix.db.postgres_unit_of_work._connection_kwargs", return_value={"host": "x"}):
-        with patch("tactix.db.postgres_unit_of_work.psycopg2.connect", return_value=conn):
-            uow = PostgresUnitOfWork(settings)
-            resolved = uow.begin()
-            assert resolved is conn
-            assert conn.autocommit is False
-            uow.commit()
-            conn.commit.assert_called_once()
-            uow.close()
+        uow = PostgresUnitOfWork(settings, connection_factory=lambda **_kwargs: conn)
+        resolved = uow.begin()
+        assert resolved is conn
+        assert conn.autocommit is False
+        uow.commit()
+        conn.commit.assert_called_once()
+        uow.close()
 
 
 def test_postgres_unit_of_work_returns_none_when_disabled() -> None:

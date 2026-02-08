@@ -1,16 +1,33 @@
+export UV_CACHE_DIR := tmp-logs/uv-cache
+VENV_BIN ?= .venv/bin
+RUFF ?= $(VENV_BIN)/ruff
+PYLINT ?= $(VENV_BIN)/pylint
+FLAKE8 ?= $(VENV_BIN)/flake8
+TY ?= $(VENV_BIN)/ty
+MYPY ?= $(VENV_BIN)/mypy
+PYDOCSTYLE ?= $(VENV_BIN)/pydocstyle
+PROSPECTOR ?= $(VENV_BIN)/prospector
+PYTEST ?= $(VENV_BIN)/pytest
+XENON ?= $(VENV_BIN)/xenon
+PYCYCLE ?= $(VENV_BIN)/pycycle
+VULTURE ?= $(VENV_BIN)/vulture
+SAFETY ?= $(VENV_BIN)/safety
+BANDIT ?= $(VENV_BIN)/bandit
+DODGY ?= $(VENV_BIN)/dodgy
+
 pylint:
 # Ruff for linting and formatting 	
-	uv run ruff check --fix src/
-	uv run ruff format src/
+	$(RUFF) check --fix src/
+	$(RUFF) format src/
 
 # Pylint for additional linting
-	PYLINTHOME=tmp-logs/pylint-cache uv run pylint --rcfile=pyproject.toml src/
+	PYLINTHOME=tmp-logs/pylint-cache $(PYLINT) --rcfile=pyproject.toml src/
 
 # Flake8 for style guide enforcement
-	uv run flake8 src/
+	$(FLAKE8) src/
 	
 # Ty for static type checking
-	uv run ty check \
+	$(TY) check \
 		--error deprecated \
 		--ignore invalid-argument-type \
 		--ignore invalid-method-override \
@@ -21,28 +38,28 @@ pylint:
 		src/
 
 # Mypy for additional type checking
-	uv run mypy src/
+	$(MYPY) src/
 
 # Pydocstyle for docstring style checking
-	uv run pydocstyle src/
+	$(PYDOCSTYLE) src/
 
 # Prospector for overall code quality analysis
-	uv run prospector -A src/
+	$(PROSPECTOR) -A src/
 
 
 jslint:
-	cd client && npx eslint --fix . --ext .js,.jsx,.ts,.tsx
-	cd client && npx prettier --write --cache .
+	cd client && ./node_modules/.bin/eslint --fix . --ext .js,.jsx,.ts,.tsx
+	cd client && if [ -x ./node_modules/.bin/prettier ]; then ./node_modules/.bin/prettier --write --cache .; else echo "prettier not installed; skipping"; fi
 
 lint: pylint jslint
 
 pytest:
 # Cargo tests for Rust code
-	uv run cargo test
-	uv run cargo test --release
+	cargo test
+	cargo test --release
 
 # Pytest for Python code with coverage
-	uv run pytest tests/ \
+	$(PYTEST) tests/ \
 		--cov=src/ \
 		--cov-config=./.coveragerc \
 		--cov-report=term-missing \
@@ -50,38 +67,38 @@ pytest:
 
 jstest:
 	cd client && \
-		npx vitest run \
+		./node_modules/.bin/vitest run \
 		--coverage
 
 test: pytest jstest
 
 py-complexity:
 # Xenon for code complexity analysis
-	uv run xenon \
+	$(XENON) \
 		--max-absolute A \
 		--max-modules A \
 		--max-average A \
 		src/
 
 # pycycle for detecting circular dependencies
-	uv run pycycle --here
+	$(PYCYCLE) --here
 
 complexity: py-complexity
 
 py-deadcode:
 # Vulture for dead code detection in Python
-	uv run vulture src/ \
+	$(VULTURE) src/ \
 		--min-confidence 60 \
 		--ignore-decorators "@app.get,@app.post,@app.put,@app.patch,@app.delete" \
 		--ignore-names "stockfish_ponder,move_number,analyze_positions,main,_clear_dashboard_cache,DbSchemas,analysis,insert_tactics,insert_tactic_outcomes,set_level,MockChessClient,MockDbStore,convert_raw_pgns_to_positions,run_monitor_new_positions,clock_seconds,applied_options,is_legal,TIME_CONTROLS"
 
 js-deadcode:
-	cd client && npx knip
+	cd client && ./node_modules/.bin/knip
 
 deadcode: py-deadcode js-deadcode
 
 dup:
-	cd client && npx jscpd \
+	cd client && ./node_modules/.bin/jscpd \
 		--format python,typescript,tsx,javascript,jsx \
 		../src ./src \
 		--min-lines 8 --min-tokens 70 --threshold 1 \
@@ -95,9 +112,9 @@ dup:
 dedup: dup
 
 pyguard:
-	uv run safety check --full-report
-	uv run bandit -r src/ -lll
-	uv run dodgy --max-line-complexity 10 src/
+	$(SAFETY) check --full-report
+	$(BANDIT) -r src/ -lll
+	$(DODGY) --max-line-complexity 10 src/
 
 guard: pyguard
 

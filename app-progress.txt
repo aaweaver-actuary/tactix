@@ -1,4 +1,9 @@
 Session summary (2026-02-08):
+- Fixed Lichess cursor checkpoint updates during windowed syncs and ensured next_cursor advances from fetched games.
+- Tests run: pytest tests/test_api_lichess_cursor_incremental.py -q.
+- Commit: 076a17b
+
+Session summary (2026-02-08):
 - Implemented Lichess cursor-based incremental sync (cursor filtering, checkpoint persistence, and API regression coverage).
 - Evidence log: tmp-logs/feature-lichess-cursor-incremental-2026-02-08.log.
 - Tests run: make check (task); runTests (failed to discover tests: "No tests found in the files").

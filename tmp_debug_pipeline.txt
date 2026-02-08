@@ -1,0 +1,10 @@
+db: /Users/andy/tactix/tmpxyyemft3/tactix_feature_pipeline_validation_2026_02_01.duckdb
+count: 8
+5 5 e8g8 d7d5 unclear piece=p labels=set()
+7 7 f6h5 c6e5 missed piece=n labels={'knight'}
+9 9 e8g8 f6d7 missed piece=n labels=set()
+10 10 e7f6 h8f8 missed piece=r labels=set()
+11 11 d7f6 d7e5 missed piece=n labels=set()
+12 12 e5c4 e5c4 found piece=n labels=set()
+13 13 c4a5 c4e5 missed piece=n labels=set()
+14 14 e5g4 e7f6 missed piece=b labels=set()

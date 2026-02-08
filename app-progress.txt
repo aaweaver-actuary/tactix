@@ -1,4 +1,10 @@
 Session summary (2026-02-08):
+- Added cursor-derived `since_ms` to chess.com incremental fetch requests and validated cursor-based incremental sync behavior.
+- Evidence log: tmp-logs/feature-chesscom-cursor-incremental-2026-02-08.log.
+- Tests run: /Users/andy/tactix/.venv/bin/python -m pytest tests/test_pipeline_support.py tests/test_chesscom_client.py tests/test_lichess_client.py tests/test_pipeline_state.py tests/test_api_chesscom_bullet_pipeline_canonical.py tests/test_api_chesscom_bullet_dashboard_practice_2026_02_01.py tests/test_api_helpers.py tests/test_use_cases_api_layer.py tests/test_practice_queue.py tests/test_tactics_analyzer.py -q; /Users/andy/tactix/.venv/bin/python -m pytest tests/test_api_chesscom_bullet_pipeline_regression.py -k cursor_incremental -q; make check.
+- Updated feature_list.json: marked "Chess.com incremental sync uses cursor to fetch only new games" as passing.
+
+Session summary (2026-02-08):
 - Refactored client E2E verification to use shared helper config and centralized practice queue limit parsing.
 - Tests run: make check (before; task), make check (after; task).
 - Commit: 9abd2564

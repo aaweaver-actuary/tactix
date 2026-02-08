@@ -20,7 +20,13 @@ def _fetch_chesscom_games(
     cursor_before = read_chesscom_cursor(settings.checkpoint_path)
     cursor_value = None if backfill_mode else cursor_before
     last_timestamp_value = _cursor_last_timestamp(cursor_value)
-    chesscom_result = _request_chesscom_games(client, cursor_value, backfill_mode)
+    since_ms = last_timestamp_value if cursor_value else 0
+    chesscom_result = _request_chesscom_games(
+        client,
+        cursor_value,
+        backfill_mode,
+        since_ms,
+    )
     raw_games = _chesscom_raw_games(chesscom_result)
     next_cursor = chesscom_result.next_cursor or cursor_value
     last_timestamp_value = chesscom_result.last_timestamp_ms

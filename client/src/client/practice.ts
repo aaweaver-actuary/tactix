@@ -9,12 +9,7 @@ export async function fetchPracticeQueue(
   source?: string,
   includeFailedAttempt = false,
 ): Promise<PracticeQueueResponse> {
-  const rawLimit = (import.meta.env.VITE_PRACTICE_QUEUE_LIMIT || '').trim();
-  const parsedLimit = rawLimit ? Number(rawLimit) : null;
-  const limit =
-    parsedLimit && Number.isFinite(parsedLimit) && parsedLimit > 0
-      ? parsedLimit
-      : undefined;
+  const limit = getPracticeQueueLimit();
   const params = Object.fromEntries(
     Object.entries({
       source: source === 'all' ? undefined : source,
@@ -26,6 +21,15 @@ export async function fetchPracticeQueue(
     params,
   });
   return res.data;
+}
+
+function getPracticeQueueLimit(): number | undefined {
+  const rawLimit = (import.meta.env.VITE_PRACTICE_QUEUE_LIMIT || '').trim();
+  const parsedLimit = rawLimit ? Number(rawLimit) : null;
+  if (!parsedLimit || !Number.isFinite(parsedLimit) || parsedLimit <= 0) {
+    return undefined;
+  }
+  return parsedLimit;
 }
 
 export async function submitPracticeAttempt(

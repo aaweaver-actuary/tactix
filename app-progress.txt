@@ -5,6 +5,10 @@ Session summary (2026-02-08):
 	- client/src/flows/DashboardFlow.tsx inline delay → `PRACTICE_FEEDBACK_DELAY_MS` + `waitForPracticeFeedback` helper.
 
 Session summary (2026-02-08):
+- Aligned canonical games table expectation to normalized time_control values.
+- Tests run: `pytest tests/test_api_chesscom_bullet_pipeline_canonical.py -k test_games_table_stores_canonical_metadata`.
+
+Session summary (2026-02-08):
 - Normalized games table time_control to bullet/blitz/rapid/classical/unknown; updated canonical games table expectations and integration snapshot query.
 - Added time control normalization unit coverage and fixture-based games row checks; verification log: tmp-logs/feature-time-control-normalization-2026-02-08.log.
 - Added a short practice feedback delay to keep Enter-submit UI feedback visible; re-verified enter submit.

@@ -1,4 +1,14 @@
 Session summary (2026-02-08):
+- Refactored practice attempt submission wiring to keep the button as a pure trigger and deduplicated base FEN resolution in the flow.
+- Tests run: make check (before; task), make check (after; task).
+- Commit: c31a019
+- Before→After map:
+	- client/src/_components/PracticeAttemptButton.tsx → button is trigger-only.
+	- client/src/_components/PracticeAttemptCard.tsx → owns move resolution for submits.
+	- client/src/flows/DashboardFlow.tsx → reuse base FEN resolution helper.
+	- client/src/_components/PracticeAttemptButton.test.tsx → updated for trigger-only button.
+
+Session summary (2026-02-08):
 - Fixed practice session progress totals to remain stable after successful attempts while incrementing the numerator.
 - Added input ref plumbing so practice submits can use the current move value reliably from the button and Enter key.
 - Added dashboard flow test for fixed progress totals and updated practice input/button tests.

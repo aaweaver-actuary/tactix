@@ -17,7 +17,6 @@ from tactix.app.use_cases.dependencies import (
     SourceNormalizer,
     UnitOfWorkRunner,
 )
-from tactix.config import Settings
 from tactix.dashboard_query import DashboardQuery
 from tactix.tactics_search_filters import TacticsSearchFilters
 

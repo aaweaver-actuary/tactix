@@ -13,7 +13,6 @@ from tactix.app.use_cases.dependencies import (
     SettingsProvider,
     StatusSerializer,
 )
-from tactix.config import Settings
 
 
 @dataclass

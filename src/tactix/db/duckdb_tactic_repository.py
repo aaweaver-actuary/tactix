@@ -11,6 +11,7 @@ from tactix.db._rows_to_dicts import _rows_to_dicts
 from tactix.db.raw_pgns_queries import latest_raw_pgns_query
 from tactix.db.record_training_attempt import record_training_attempt
 from tactix.define_base_db_store__db_store import BaseDbStore
+from tactix.domain.practice import PracticeAttemptCandidate, evaluate_practice_attempt
 from tactix.extract_pgn_metadata import extract_pgn_metadata
 from tactix.format_tactics__explanation import format_tactic_explanation
 from tactix.sql_tactics import (
@@ -33,19 +34,6 @@ class DuckDbTacticDependencies:
     extract_pgn_metadata: Callable[[str, str], dict[str, object]]
     require_position_id: Callable[[Mapping[str, object], str], None]
     latest_raw_pgns_query: Callable[[], str]
-
-
-@dataclass(frozen=True)
-class PracticeAttemptInputs:
-    """Grouped inputs for practice attempt payloads."""
-
-    tactic: Mapping[str, object]
-    tactic_id: int
-    position_id: int
-    attempted_uci: str
-    best_uci: str
-    correct: bool
-    latency_ms: int | None
 
 
 class DuckDbTacticRepository:
@@ -229,38 +217,35 @@ class DuckDbTacticRepository:
     ) -> dict[str, object]:
         """Grade a practice attempt and persist the result."""
         tactic = self._require_practice_tactic(tactic_id, position_id)
-        trimmed_attempt = self._normalize_attempted_uci(attempted_uci)
-        best_uci = self._normalize_best_uci(tactic)
-        correct = bool(best_uci) and trimmed_attempt.lower() == best_uci.lower()
-        best_san, explanation = self._resolve_practice_explanation(tactic, best_uci)
-        attempt_payload = self._build_practice_attempt_payload(
-            PracticeAttemptInputs(
+        evaluation = evaluate_practice_attempt(
+            PracticeAttemptCandidate(
                 tactic=tactic,
                 tactic_id=tactic_id,
                 position_id=position_id,
-                attempted_uci=trimmed_attempt,
-                best_uci=best_uci,
-                correct=correct,
+                attempted_uci=attempted_uci,
                 latency_ms=latency_ms,
-            )
+            ),
+            self._dependencies.format_tactic_explanation,
         )
-        attempt_id = self._dependencies.record_training_attempt(self._conn, attempt_payload)
-        message = self._build_practice_message(correct, tactic, best_uci)
+        attempt_id = self._dependencies.record_training_attempt(
+            self._conn,
+            evaluation.attempt_payload,
+        )
         return {
             "attempt_id": attempt_id,
             "tactic_id": tactic_id,
             "position_id": position_id,
             "source": tactic.get("source"),
-            "attempted_uci": trimmed_attempt,
-            "best_uci": best_uci,
-            "correct": correct,
-            "success": correct,
+            "attempted_uci": evaluation.attempted_uci,
+            "best_uci": evaluation.best_uci,
+            "correct": evaluation.correct,
+            "success": evaluation.correct,
             "motif": tactic.get("motif", "unknown"),
             "severity": tactic.get("severity", 0.0),
             "eval_delta": tactic.get("eval_delta", 0) or 0,
-            "message": message,
-            "best_san": best_san,
-            "explanation": explanation,
+            "message": evaluation.message,
+            "best_san": evaluation.best_san,
+            "explanation": evaluation.explanation,
             "latency_ms": latency_ms,
         }
 
@@ -364,84 +349,6 @@ class DuckDbTacticRepository:
         if not tactic or tactic.get("position_id") != position_id:
             raise ValueError("Tactic not found for position")
         return tactic
-
-    def _normalize_attempted_uci(self, attempted_uci: str) -> str:
-        trimmed = attempted_uci.strip()
-        if not trimmed:
-            raise ValueError("attempted_uci is required")
-        return trimmed
-
-    def _normalize_best_uci(self, tactic: Mapping[str, object]) -> str:
-        best_uci_raw = tactic.get("best_uci")
-        return str(best_uci_raw).strip() if best_uci_raw is not None else ""
-
-    def _resolve_practice_explanation(
-        self,
-        tactic: Mapping[str, object],
-        best_uci: str,
-    ) -> tuple[str | None, str | None]:
-        fen = self._string_or_none(tactic.get("fen"))
-        motif = self._string_or_none(tactic.get("motif"))
-        best_san = self._string_or_none(tactic.get("best_san"))
-        explanation = self._string_or_none(tactic.get("explanation"))
-        generated_san, generated_explanation = self._dependencies.format_tactic_explanation(
-            fen,
-            best_uci,
-            motif,
-        )
-        return self._resolve_explanation(
-            best_san,
-            explanation,
-            generated_san,
-            generated_explanation,
-        )
-
-    def _string_or_none(self, value: object) -> str | None:
-        if value is None:
-            return None
-        text = str(value).strip()
-        return text or None
-
-    def _resolve_explanation(
-        self,
-        best_san: str | None,
-        explanation: str | None,
-        generated_san: str | None,
-        generated_explanation: str | None,
-    ) -> tuple[str | None, str | None]:
-        if not best_san:
-            best_san = generated_san or None
-        if not explanation:
-            explanation = generated_explanation or None
-        return best_san, explanation
-
-    def _build_practice_attempt_payload(
-        self,
-        inputs: PracticeAttemptInputs,
-    ) -> dict[str, object]:
-        return {
-            "tactic_id": inputs.tactic_id,
-            "position_id": inputs.position_id,
-            "source": inputs.tactic.get("source"),
-            "attempted_uci": inputs.attempted_uci,
-            "correct": inputs.correct,
-            "success": inputs.correct,
-            "best_uci": inputs.best_uci,
-            "motif": inputs.tactic.get("motif", "unknown"),
-            "severity": inputs.tactic.get("severity", 0.0),
-            "eval_delta": inputs.tactic.get("eval_delta", 0) or 0,
-            "latency_ms": inputs.latency_ms,
-        }
-
-    def _build_practice_message(
-        self,
-        correct: bool,
-        tactic: Mapping[str, object],
-        best_uci: str,
-    ) -> str:
-        if correct:
-            return f"Correct! {tactic.get('motif', 'tactic')} found."
-        return f"Missed it. Best move was {best_uci or '--'}."
 
 
 def default_tactic_dependencies() -> DuckDbTacticDependencies:

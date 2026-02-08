@@ -11,8 +11,8 @@ from uuid import uuid4
 
 from tactix.app.use_cases.dependencies import (
     CacheRefresher,
-    DateTimeCoercer,
     DashboardRepositoryFactory,
+    DateTimeCoercer,
     DefaultCacheRefresher,
     DefaultDashboardRepositoryFactory,
     DefaultDateTimeCoercer,

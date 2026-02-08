@@ -47,9 +47,7 @@ class DashboardUseCase:  # pylint: disable=too-many-instance-attributes
         default_factory=DefaultDashboardCacheKeyBuilder
     )
     cache: DashboardCache = field(default_factory=DefaultDashboardCache)
-    payload_fetcher: DashboardPayloadFetcher = field(
-        default_factory=DefaultDashboardPayloadFetcher
-    )
+    payload_fetcher: DashboardPayloadFetcher = field(default_factory=DefaultDashboardPayloadFetcher)
     stats_service: DashboardStatsService = field(default_factory=DefaultDashboardStatsService)
     version_provider: DashboardVersionProvider = field(
         default_factory=DefaultDashboardVersionProvider

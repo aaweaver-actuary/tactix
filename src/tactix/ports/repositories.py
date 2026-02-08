@@ -69,6 +69,8 @@ class PracticeQueueRepository(Protocol):
         self,
         source: str,
         include_failed_attempt: bool = False,
+        limit: int = 20,
+        exclude_seen: bool = False,
     ) -> list[dict[str, object]]:
         """Return practice queue items for the given source."""
 
@@ -81,14 +83,22 @@ class TacticRepository(ConversionRepository, PracticeQueueRepository, Protocol):
 
     def grade_practice_attempt(
         self,
-        payload: Mapping[str, object],
+        tactic_id: int,
+        position_id: int,
+        attempted_uci: str,
+        latency_ms: int | None = None,
     ) -> dict[str, object]:
         """Grade a practice attempt payload."""
 
     def record_training_attempt(self, payload: Mapping[str, object]) -> int:
         """Insert a training attempt and return its id."""
 
-    def fetch_game_detail(self, game_id: str) -> dict[str, object] | None:
+    def fetch_game_detail(
+        self,
+        game_id: str,
+        user: str,
+        source: str | None = None,
+    ) -> dict[str, object]:
         """Return detailed game payloads when available."""
 
 

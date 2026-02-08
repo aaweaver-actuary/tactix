@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from tactix.domain.tactics_outcome import should_override_failed_attempt
+
 
 def _should_override_failed_attempt(
     result: str,
@@ -10,10 +12,4 @@ def _should_override_failed_attempt(
     target_motif: str,
 ) -> bool:
     """Return True when a failed attempt override should apply."""
-    return bool(
-        result == "unclear"
-        and swing is not None
-        and threshold is not None
-        and swing < threshold
-        and target_motif
-    )
+    return should_override_failed_attempt(result, swing, threshold, target_motif)

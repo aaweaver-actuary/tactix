@@ -1,12 +1,14 @@
 """Use-case dependency interfaces and default implementations."""
 
+# pylint: disable=too-few-public-methods,too-many-arguments,unused-import
+
 from __future__ import annotations
 
 import time as time_module
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Protocol, TypeVar
+from typing import Any, Protocol, TypeVar, cast
 
 from tactix._resolve_dashboard_filters import _resolve_dashboard_filters
 from tactix.build_dashboard_cache_key__api_cache import _dashboard_cache_key
@@ -223,7 +225,7 @@ class DefaultDashboardRepositoryFactory:
     """Default dashboard repository factory."""
 
     def create(self, conn: Any) -> DashboardRepository:
-        return dashboard_repository(conn)
+        return cast(DashboardRepository, dashboard_repository(conn))
 
 
 class RawPgnRepositoryFactory(Protocol):
@@ -238,7 +240,7 @@ class DefaultRawPgnRepositoryFactory:
     """Default raw PGN repository factory."""
 
     def create(self, conn: Any) -> RawPgnRepository:
-        return raw_pgn_repository(conn)
+        return cast(RawPgnRepository, raw_pgn_repository(conn))
 
 
 class TacticRepositoryFactory(Protocol):
@@ -253,7 +255,7 @@ class DefaultTacticRepositoryFactory:
     """Default tactic repository factory."""
 
     def create(self, conn: Any) -> TacticRepository:
-        return tactic_repository(conn)
+        return cast(TacticRepository, tactic_repository(conn))
 
 
 class DashboardStatsService(Protocol):

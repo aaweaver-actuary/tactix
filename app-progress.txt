@@ -1,4 +1,14 @@
 Session summary (2026-02-08):
+- Refactored client E2E verification to use shared helper config and centralized practice queue limit parsing.
+- Tests run: make check (before; task), make check (after; task).
+- Commit: 9abd2564
+- Before→After map:
+	- verification/helpers/client_e2e_helpers.js → shared E2E setup/actions.
+	- verification/puppeteer_feature_client_e2e_chesscom_bullet_2026_02_01.js → reuse helper.
+	- verification/integration_feature_client_e2e_chesscom_bullet_2026_02_01.js → reuse helper.
+	- client/src/client/practice.ts → extract practice queue limit parsing.
+
+Session summary (2026-02-08):
 - Added client E2E Puppeteer verification for the chess.com bullet canonical scenario with a configurable practice queue limit.
 - UI verification: verification/feature-client-e2e-chesscom-bullet-2026-02-01.png.
 - Tests run: node verification/puppeteer_feature_client_e2e_chesscom_bullet_2026_02_01.js; node verification/integration_feature_client_e2e_chesscom_bullet_2026_02_01.js; make check.

@@ -69,7 +69,7 @@
       "Step 4: Remove direct infra imports from use-case modules",
       "Step 5: Confirm tests provide port-compliant fakes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

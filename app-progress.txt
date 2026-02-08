@@ -2,6 +2,7 @@ Session summary (2026-02-08):
 - Implemented composition-root wiring for use-case defaults and introduced a checkpoint writer port to keep use-cases infra-free.
 - Updated pipeline support to use the checkpoint writer port; added a Postgres repository port; updated pipeline support tests to use a fake writer.
 - Tests run: runTests (failed to detect tests for tests/test_pipeline_support.py); pytest tests/test_pipeline_support.py (failed: ModuleNotFoundError: No module named 'chess'); make check (task).
+- Updated feature_list.json: marked "Ports exist but are bypassed by use cases" as passing.
 - Before→After map:
 	- tactix/app/use_cases/dependencies.py → protocols only, infra defaults moved out.
 	- tactix/app/wiring.py → new composition-root wiring for use-case defaults.

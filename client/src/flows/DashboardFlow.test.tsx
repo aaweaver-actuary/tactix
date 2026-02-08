@@ -1,5 +1,11 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  within,
+} from '@testing-library/react';
 import { vi } from 'vitest';
 import DashboardFlow from './DashboardFlow';
 import buildLichessAnalysisUrl from '../utils/buildLichessAnalysisUrl';
@@ -469,6 +475,158 @@ describe('DashboardFlow', () => {
     await waitFor(() => {
       expect(screen.getByText('1 of 5 attempts')).toBeInTheDocument();
       expect(screen.getByText('1 / 5 complete')).toBeInTheDocument();
+    });
+  });
+
+  it('renders the chess.com bullet canonical scenario with filtered games and missed tactics', async () => {
+    const lossGameId = 'chesscom-loss-2026-02-01';
+    const winGameId = 'chesscom-win-2026-02-01';
+    const canonicalDashboard: DashboardPayload = {
+      source: 'chesscom',
+      user: 'andy',
+      metrics_version: 7,
+      metrics: [
+        {
+          source: 'chesscom',
+          metric_type: 'motif_breakdown',
+          motif: 'hanging_piece',
+          window_days: null,
+          trend_date: null,
+          rating_bucket: 'all',
+          time_control: 'bullet',
+          total: 2,
+          found: 0,
+          missed: 2,
+          failed_attempt: 0,
+          unclear: 0,
+          found_rate: 0,
+          miss_rate: 1,
+          updated_at: '2026-02-01T00:00:00Z',
+        },
+      ],
+      recent_games: [
+        {
+          game_id: winGameId,
+          source: 'chesscom',
+          opponent: 'opponent-win',
+          result: '1-0',
+          played_at: '2026-02-01T12:00:00Z',
+          time_control: '60+0',
+          user_color: 'white',
+        },
+        {
+          game_id: lossGameId,
+          source: 'chesscom',
+          opponent: 'opponent-loss',
+          result: '0-1',
+          played_at: '2026-02-01T13:00:00Z',
+          time_control: '60+0',
+          user_color: 'white',
+        },
+      ],
+      positions: [],
+      tactics: [],
+    };
+    const canonicalPracticeQueue: PracticeQueueResponse = {
+      source: 'chesscom',
+      include_failed_attempt: false,
+      items: [
+        {
+          tactic_id: 11,
+          game_id: lossGameId,
+          position_id: 101,
+          source: 'chesscom',
+          motif: 'hanging_piece',
+          result: 'missed',
+          best_uci: 'g1f3',
+          user_uci: 'g1h3',
+          eval_delta: -1.6,
+          severity: 3,
+          created_at: '2026-02-01T12:30:00Z',
+          fen: startingFen,
+          position_uci: 'g1f3',
+          san: 'Nf3',
+          ply: 12,
+          move_number: 6,
+          side_to_move: 'w',
+          clock_seconds: 18,
+        },
+        {
+          tactic_id: 12,
+          game_id: lossGameId,
+          position_id: 102,
+          source: 'chesscom',
+          motif: 'hanging_piece',
+          result: 'missed',
+          best_uci: 'c4d5',
+          user_uci: 'c4b5',
+          eval_delta: -1.2,
+          severity: 2,
+          created_at: '2026-02-01T12:45:00Z',
+          fen: startingFen,
+          position_uci: 'c4d5',
+          san: 'Bxd5',
+          ply: 16,
+          move_number: 8,
+          side_to_move: 'w',
+          clock_seconds: 12,
+        },
+      ],
+    };
+
+    (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      canonicalDashboard,
+    );
+    (
+      fetchPracticeQueue as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValue(canonicalPracticeQueue);
+
+    render(<DashboardFlow />);
+
+    await waitFor(() => {
+      expect(fetchDashboard).toHaveBeenCalled();
+    });
+
+    fireEvent.change(screen.getByTestId('filter-source'), {
+      target: { value: 'chesscom' },
+    });
+    fireEvent.change(screen.getByTestId('filter-time-control'), {
+      target: { value: 'bullet' },
+    });
+    fireEvent.change(screen.getByTestId('filter-start-date'), {
+      target: { value: '2026-02-01' },
+    });
+    fireEvent.change(screen.getByTestId('filter-end-date'), {
+      target: { value: '2026-02-01' },
+    });
+
+    await waitFor(() => {
+      expect(fetchDashboard).toHaveBeenLastCalledWith('chesscom', {
+        motif: undefined,
+        time_control: 'bullet',
+        rating_bucket: undefined,
+        start_date: '2026-02-01',
+        end_date: '2026-02-01',
+      });
+    });
+
+    const gameRows = await screen.findAllByTestId(/recent-games-row-/);
+    expect(gameRows).toHaveLength(2);
+    expect(within(gameRows[0]).getByText('Win')).toBeInTheDocument();
+    expect(within(gameRows[1]).getByText('Loss')).toBeInTheDocument();
+
+    const practiceRows = await screen.findAllByTestId(/practice-queue-row-/);
+    expect(practiceRows).toHaveLength(2);
+    practiceRows.forEach((row) => {
+      expect(within(row).getByText('missed')).toBeInTheDocument();
+      fireEvent.click(row);
+    });
+
+    await waitFor(() => {
+      const lossCalls = (
+        fetchGameDetail as unknown as ReturnType<typeof vi.fn>
+      ).mock.calls.filter(([gameId]) => gameId === lossGameId);
+      expect(lossCalls).toHaveLength(2);
     });
   });
 });

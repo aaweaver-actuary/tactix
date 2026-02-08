@@ -233,7 +233,7 @@
       "Step 3: Verify exactly 2 games render with 1 win and 1 loss",
       "Step 4: Verify exactly 2 practice positions render, both tied to the loss game and labeled as missed tactics"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

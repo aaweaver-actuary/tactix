@@ -1,4 +1,10 @@
 Session summary (2026-02-08):
+- Added mocked client verification test for the chess.com bullet canonical scenario (2 games, 2 missed tactics tied to loss game).
+- Evidence: client/src/flows/DashboardFlow.test.tsx.
+- Tests run: runTests (client/src/flows/DashboardFlow.test.tsx; client/src/_components/{PracticeQueue,RecentGamesTable,PracticeAttemptCard,PracticeMoveInput,GameDetailModal,PracticeSessionProgress,MetricCard}.test.tsx; client/src/utils/{buildPracticeFeedback,fetchDashboard}.test.ts); runTests (client/src/flows/DashboardFlow.test.tsx); make check (task).
+- Updated feature_list.json: marked "Client verification (mocked, automated): chess.com bullet games + practice queue on 2026-02-01" as passing.
+
+Session summary (2026-02-08):
 - Refactored API verification test to reuse a shared dashboard game header fetch helper.
 - Tests run: make check (before; task), make check (after; task).
 - Commit: d6d84eb

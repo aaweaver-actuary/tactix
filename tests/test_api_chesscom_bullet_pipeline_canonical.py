@@ -21,6 +21,7 @@ from tactix._get_user_color_from_pgn_headers import _get_user_color_from_pgn_hea
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.chess_game_result import ChessGameResult
 from tactix.chess_player_color import ChessPlayerColor
+from tactix.chess_time_control import normalize_time_control_label
 from tactix.db.duckdb_store import get_connection
 from tactix.extract_last_timestamp_ms import extract_last_timestamp_ms
 
@@ -175,7 +176,7 @@ def _expected_game_metadata(
         "user_rating": metadata.get("user_rating"),
         "opp_rating": opp_rating,
         "result": _get_game_result_for_user_from_pgn_headers(headers, user).value,
-        "time_control": metadata.get("time_control"),
+        "time_control": normalize_time_control_label(metadata.get("time_control")),
         "played_at": played_at,
     }
 

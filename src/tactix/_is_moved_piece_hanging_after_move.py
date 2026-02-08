@@ -15,10 +15,23 @@ def _is_moved_piece_hanging_after_move(
     move: chess.Move,
     mover_color: bool,
 ) -> bool:
-    moved_piece = _moved_piece_before_move(board_before, move)
+    moved_piece = _moved_piece_after_move(board_after, move, mover_color)
+    if moved_piece is None:
+        moved_piece = _moved_piece_before_move(board_before, move)
     if moved_piece is None:
         return False
     return _is_hanging_after_move(board_after, move.to_square, moved_piece, mover_color)
+
+
+def _moved_piece_after_move(
+    board_after: chess.Board,
+    move: chess.Move,
+    mover_color: bool,
+) -> chess.Piece | None:
+    moved_piece = board_after.piece_at(move.to_square)
+    if moved_piece is None or moved_piece.color != mover_color:
+        return None
+    return moved_piece
 
 
 def _moved_piece_before_move(

@@ -21,6 +21,7 @@ from tactix._compute_severity__tactic import (
 )
 from tactix._evaluate_engine_position import _evaluate_engine_position
 from tactix._infer_hanging_or_detected_motif import _infer_hanging_or_detected_motif
+from tactix._is_moved_piece_hanging_after_move import _is_moved_piece_hanging_after_move
 from tactix._override_motif_for_missed import _override_motif_for_missed
 from tactix._parse_user_move import _parse_user_move
 from tactix._prepare_position_inputs import _prepare_position_inputs
@@ -80,6 +81,14 @@ class OutcomeOverridePositionContext:
     settings: Settings | None
 
 
+@dataclass(frozen=True)
+class MovedPieceHangingContext:
+    board_before: chess.Board
+    board_after: chess.Board
+    user_move: chess.Move
+    mover_color: bool
+
+
 def _capture_square_for_move(
     board: chess.Board,
     move: chess.Move,
@@ -87,55 +96,6 @@ def _capture_square_for_move(
     if board.is_en_passant(move):
         return move.to_square + (-8 if board.turn == chess.WHITE else 8)
     return move.to_square
-
-
-def _is_moved_piece_hanging(
-    board_after: chess.Board,
-    move: chess.Move,
-    mover_color: bool,
-) -> bool:
-    moved_piece = _moved_piece_on_target(board_after, move, mover_color)
-    if moved_piece is None:
-        return False
-    return _is_hanging_target_square(board_after, move.to_square, moved_piece, mover_color)
-
-
-def _moved_piece_on_target(
-    board_after: chess.Board,
-    move: chess.Move,
-    mover_color: bool,
-) -> chess.Piece | None:
-    moved_piece = board_after.piece_at(move.to_square)
-    if moved_piece is None or moved_piece.color != mover_color:
-        return None
-    return moved_piece
-
-
-def _is_hanging_target_square(
-    board_after: chess.Board,
-    target_square: chess.Square,
-    moved_piece: chess.Piece,
-    mover_color: bool,
-) -> bool:
-    if not board_after.is_attacked_by(not mover_color, target_square):
-        return False
-    return _resolve_defended_hanging(board_after, target_square, moved_piece, mover_color)
-
-
-def _resolve_defended_hanging(
-    board_after: chess.Board,
-    target_square: chess.Square,
-    moved_piece: chess.Piece,
-    mover_color: bool,
-) -> bool:
-    if not board_after.is_attacked_by(mover_color, target_square):
-        return True
-    return BaseTacticDetector.is_favorable_trade_on_square(
-        board_after,
-        target_square,
-        moved_piece,
-        not mover_color,
-    )
 
 
 def _should_override_hanging_motif(motif: str, board: chess.Board) -> bool:
@@ -153,15 +113,18 @@ def _should_override_hanging_motif(motif: str, board: chess.Board) -> bool:
 def _apply_moved_piece_hanging_override(
     result: str,
     motif: str,
-    board: chess.Board,
-    user_move: chess.Move,
-    mover_color: bool,
+    context: MovedPieceHangingContext,
 ) -> tuple[str, str]:
     if result == "found":
         return result, motif
-    if not _is_moved_piece_hanging(board, user_move, mover_color):
+    if not _is_moved_piece_hanging_after_move(
+        context.board_before,
+        context.board_after,
+        context.user_move,
+        context.mover_color,
+    ):
         return result, motif
-    if not _should_override_hanging_motif(motif, board):
+    if not _should_override_hanging_motif(motif, context.board_after):
         return result, motif
     return "missed", "hanging_piece"
 
@@ -404,9 +367,12 @@ def _prepare_tactic_row_input(
     result, motif = _apply_moved_piece_hanging_override(
         result,
         motif,
-        board,
-        user_move,
-        mover_color,
+        MovedPieceHangingContext(
+            board_before=motif_board,
+            board_after=board,
+            user_move=user_move,
+            mover_color=mover_color,
+        ),
     )
     severity = _compute_severity_for_position(
         build_severity_context(

@@ -1,4 +1,12 @@
 Session summary (2026-02-08):
+- Refactored games table row construction to delegate PGN header user fields into a dedicated helper, reducing coupling between row assembly and header parsing.
+- Added unit coverage for PGN header user field resolution (color, opponent rating, result).
+- Tests run: make check (before; task); make check (after; task).
+- Before→After map:
+	- src/tactix/build_games_table_row__pipeline.py user field resolution logic → src/tactix/resolve_user_fields__pgn_headers.py helper.
+	- tests/test_game_result_normalization.py → direct helper coverage for user field resolution.
+
+Session summary (2026-02-08):
 - Re-verified UI regressions via Puppeteer (enter submit, game detail modal, practice progress); screenshots refreshed in verification/.
 - Normalized game result parsing to win/loss/draw/unknown and defaulted unknown for missing results.
 - Added unit coverage for result normalization and games table row result mapping.

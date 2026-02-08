@@ -10,6 +10,7 @@ from tactix._get_game_result_for_user_from_pgn_headers import (
 )
 from tactix.build_games_table_row__pipeline import _build_games_table_row
 from tactix.chess_game_result import ChessGameResult
+from tactix.resolve_user_fields__pgn_headers import _resolve_user_fields__pgn_headers
 
 
 class GameResultNormalizationTests(unittest.TestCase):
@@ -51,6 +52,26 @@ class GameResultNormalizationTests(unittest.TestCase):
                     }
                 )
                 self.assertEqual(row.get("result"), expected)
+
+    def test_resolve_user_fields_maps_color_rating_and_result(self) -> None:
+        metadata = {"white_elo": 1200, "black_elo": 1500}
+        headers = _headers_for_result("white_player", "black_player", "1-0")
+        user_color, opp_rating, result = _resolve_user_fields__pgn_headers(
+            headers, metadata, "white_player"
+        )
+        self.assertEqual(user_color, "white")
+        self.assertEqual(opp_rating, 1500)
+        self.assertEqual(result, "win")
+
+    def test_resolve_user_fields_handles_missing_user(self) -> None:
+        metadata = {"white_elo": 1200, "black_elo": 1500}
+        headers = _headers_for_result("white_player", "black_player", "1-0")
+        user_color, opp_rating, result = _resolve_user_fields__pgn_headers(
+            headers, metadata, "missing"
+        )
+        self.assertIsNone(user_color)
+        self.assertIsNone(opp_rating)
+        self.assertEqual(result, "unknown")
 
 
 def _headers_for_result(white: str, black: str, result: str) -> chess.pgn.Headers:

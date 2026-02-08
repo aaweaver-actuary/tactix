@@ -10,24 +10,17 @@ import chess.pgn
 
 from tactix._empty_pgn_metadata import _empty_pgn_metadata
 from tactix._extract_metadata_from_headers import _extract_metadata_from_headers
-from tactix._get_game_result_for_user_from_pgn_headers import (
-    _get_game_result_for_user_from_pgn_headers,
-)
-from tactix._get_user_color_from_pgn_headers import _get_user_color_from_pgn_headers
-from tactix.chess_game_result import ChessGameResult
-from tactix.chess_player_color import ChessPlayerColor
 from tactix.chess_time_control import normalize_time_control_label
+from tactix.resolve_user_fields__pgn_headers import _resolve_user_fields__pgn_headers
 
 
 def _build_games_table_row(row: Mapping[str, object]) -> dict[str, object]:
     """Return a canonical games table row for a raw game row."""
-    pgn = str(row.get("pgn") or "")
-    user = str(row.get("user") or "")
+    pgn, user = str(row.get("pgn") or ""), str(row.get("user") or "")
     metadata, headers = _load_pgn_metadata(pgn, user)
-    user_color, opp_rating, result = _resolve_user_metadata(headers, metadata, user)
+    user_color, opp_rating, result = _resolve_user_fields__pgn_headers(headers, metadata, user)
     last_timestamp_ms = row.get("last_timestamp_ms")
     played_at = _resolve_played_at(metadata.get("start_timestamp_ms"), last_timestamp_ms)
-
     return {
         "game_id": str(row.get("game_id") or ""),
         "source": str(row.get("source") or ""),
@@ -60,28 +53,6 @@ def _load_pgn_metadata(
         return metadata, None
     headers = game.headers
     return _extract_metadata_from_headers(headers, user), headers
-
-
-def _resolve_user_metadata(
-    headers: chess.pgn.Headers | None,
-    metadata: Mapping[str, object],
-    user: str,
-) -> tuple[str | None, object | None, str | None]:
-    """Return user color, opponent rating, and result values."""
-    if headers is None:
-        return None, None, ChessGameResult.UNKNOWN.value
-    try:
-        color = _get_user_color_from_pgn_headers(headers, user)
-    except ValueError:
-        return None, None, ChessGameResult.UNKNOWN.value
-    if color == ChessPlayerColor.WHITE:
-        user_color = "white"
-        opp_rating = metadata.get("black_elo")
-    else:
-        user_color = "black"
-        opp_rating = metadata.get("white_elo")
-    result = _get_game_result_for_user_from_pgn_headers(headers, user).value
-    return user_color, opp_rating, result
 
 
 def _resolve_played_at(

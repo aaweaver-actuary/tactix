@@ -3,8 +3,8 @@
 import chess
 import chess.pgn
 
-from tactix._position_context_helpers import _get_user_color, logger
 from tactix.PgnContext import PgnContext
+from tactix.position_context_builder import DEFAULT_POSITION_CONTEXT_BUILDER, logger
 
 
 def _resolve_game_context(ctx: PgnContext) -> tuple[chess.pgn.Game, chess.Board, bool] | None:
@@ -19,5 +19,5 @@ def _resolve_game_context(ctx: PgnContext) -> tuple[chess.pgn.Game, chess.Board,
     if board is None:
         logger.warning("Unable to build board for PGN")
         return None
-    user_color = _get_user_color(ctx.white, ctx.user)
+    user_color = DEFAULT_POSITION_CONTEXT_BUILDER.get_user_color(ctx.white, ctx.user)
     return game, board, user_color

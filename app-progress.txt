@@ -1,4 +1,14 @@
 Session summary (2026-02-08):
+- Consolidated line tactic and position context helper modules into object-based builders.
+- Migrated call sites to builder objects and removed the legacy helper modules.
+- Added unit tests for the new builder objects.
+- Tests run: make check (before; exit code 2), make check (after; exit code 2).
+- Before→After map:
+	- tactix/line_tactic_helpers.py → tactix/line_tactic_context_builder.py (object builder), call sites in detect_tactics__motifs/_is_skewer_in_step.
+	- tactix/_position_context_helpers.py → tactix/position_context_builder.py (object builder), call sites in _position_from_node/_resolve_game_context/_normalize_side_filter.
+	- tests/test_line_tactic_context_builder.py + tests/test_position_context_builder.py → new unit coverage for builder objects.
+
+Session summary (2026-02-08):
 - Verified UnitOfWork changes with make check and marked the UnitOfWork feature as passing.
 - Tests run: make check (pass); runTests still reports no tests found for targeted files.
 

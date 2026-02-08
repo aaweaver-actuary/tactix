@@ -15,7 +15,10 @@ from tactix.DiscoveredAttackDetector import DiscoveredAttackDetector
 from tactix.DiscoveredCheckDetector import DiscoveredCheckDetector
 from tactix.ForkDetector import ForkDetector
 from tactix.HangingPieceDetector import HangingPieceDetector
-from tactix.line_tactic_helpers import LineTacticInputs, build_line_tactic_context
+from tactix.line_tactic_context_builder import (
+    DEFAULT_LINE_TACTIC_CONTEXT_BUILDER,
+    LineTacticContextInputs,
+)
 from tactix.PinDetector import PinDetector
 from tactix.SkewerDetector import SkewerDetector
 from tactix.TacticContext import TacticContext
@@ -66,7 +69,9 @@ def _is_pin_in_step(
     opponent: bool,
 ) -> bool:
     return _is_line_tactic(
-        build_line_tactic_context(LineTacticInputs(detector, board, start, step, opponent, False))
+        DEFAULT_LINE_TACTIC_CONTEXT_BUILDER.build(
+            LineTacticContextInputs(detector, board, start, step, opponent, False)
+        )
     )
 
 

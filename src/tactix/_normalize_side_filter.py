@@ -1,6 +1,6 @@
 """Normalize side-to-move filters."""
 
-from tactix._position_context_helpers import logger
+from tactix.position_context_builder import logger
 
 
 def _normalize_side_filter(side_to_move_filter: str | None) -> str | None:

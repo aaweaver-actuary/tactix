@@ -499,7 +499,7 @@
     "category": "functional",
     "description": "Time control is parsed and normalized to bullet, blitz, rapid, classical, or unknown",
     "steps": ["Step 1: Sync games for each supported time control", "Step 2: Query games table for those rows", "Step 3: Verify time_control values match expected normalized values"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

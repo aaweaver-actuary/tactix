@@ -15,6 +15,7 @@ from tactix._get_game_result_for_user_from_pgn_headers import (
 )
 from tactix._get_user_color_from_pgn_headers import _get_user_color_from_pgn_headers
 from tactix.chess_player_color import ChessPlayerColor
+from tactix.chess_time_control import normalize_time_control_label
 
 
 def _build_games_table_row(row: Mapping[str, object]) -> dict[str, object]:
@@ -35,7 +36,7 @@ def _build_games_table_row(row: Mapping[str, object]) -> dict[str, object]:
         "user_rating": metadata.get("user_rating"),
         "opp_rating": opp_rating,
         "result": result,
-        "time_control": metadata.get("time_control"),
+        "time_control": normalize_time_control_label(metadata.get("time_control")),
         "played_at": played_at,
         "pgn": pgn,
         "fetched_at": row.get("fetched_at"),

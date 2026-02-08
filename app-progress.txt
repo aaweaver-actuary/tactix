@@ -1,4 +1,13 @@
 Session summary (2026-02-08):
+- Normalized games table time_control to bullet/blitz/rapid/classical/unknown; updated canonical games table expectations and integration snapshot query.
+- Added time control normalization unit coverage and fixture-based games row checks; verification log: tmp-logs/feature-time-control-normalization-2026-02-08.log.
+- Added a short practice feedback delay to keep Enter-submit UI feedback visible; re-verified enter submit.
+- Regression UI checks (Puppeteer): issue_enter_submit, feature_game_detail_modal, issue_practice_progress, practice_attempt, motif_filters, feature_dashboard_cards_collapsible_move, feature_open_lichess_link, feature_listudy_assets, feature_110_dashboard, feature_107_positions, feature_028_practice_next_unseen (screenshots refreshed in verification/).
+- Tests run: runTests (tests/test_time_control_normalization.py) -> no tests found by runner.
+- Updated feature_list.json: marked "Time control is parsed and normalized to bullet, blitz, rapid, classical, or unknown" as passing.
+- Current pass count: 35/128.
+
+Session summary (2026-02-08):
 - Added games table persistence with canonical metadata extracted from PGN headers.
 - Added canonical metadata assertions to the chess.com bullet pipeline canonical test.
 - Evidence log: tmp-logs/feature-games-canonical-metadata-2026-02-08.log.

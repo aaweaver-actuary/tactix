@@ -903,6 +903,8 @@ export default function DashboardFlow() {
         setPracticeSession((prev) =>
           updatePracticeSessionStats(prev, response.correct),
         );
+        // Allow feedback to render before queue refresh resets practice state.
+        await new Promise((resolve) => setTimeout(resolve, 600));
         await loadPracticeQueue(source, includeFailedAttempt);
       } catch (err) {
         console.error(err);

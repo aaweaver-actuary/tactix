@@ -29,7 +29,7 @@ SOURCE = "chesscom"
 PROFILE = "bullet"
 FIXTURE_NAME = "chesscom_2_bullet_games.pgn"
 FIXTURE_DATE = date(2026, 2, 1)
-TIME_CONTROL = "120+1"
+TIME_CONTROL = "bullet"
 DB_NAME = "tactix_feature_pipeline_validation_2026_02_01"
 
 

@@ -1,4 +1,13 @@
 Session summary (2026-02-08):
+- Implemented listudy asset theming with a shared listudy assets utility, card texture, and practice header piece preview.
+- Added client NOTICE attribution for listudy board art and cburnett piece set.
+- Added PracticeAttemptCard test to verify listudy assets and created Listudy asset verification scripts.
+- UI verification (Puppeteer): verification/feature-listudy-assets-2026-02-08.png.
+- Evidence logs: tmp-logs/feature-listudy-assets-2026-02-08.log, tmp-logs/integration-feature-listudy-assets-2026-02-08.log.
+- Tests run: runTests (PracticeAttemptCard.test.tsx); node verification/puppeteer_feature_listudy_assets.js; node verification/integration_feature_listudy_assets.js; make check.
+- Updated feature_list.json: marked "[UI] Incorporate assets from listudy." as passing.
+
+Session summary (2026-02-08):
 - Refactored dashboard card drag/collapse props into BaseCardDragProps and forwarded props directly from DashboardFlow.
 - Tests run: make check (before; task), make check (after; task).
 - Commit: 4d6dc40

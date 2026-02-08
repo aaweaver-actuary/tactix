@@ -155,7 +155,7 @@
       "Step 4: Verify assets load in the client without console errors",
       "Step 5: Add a UI test or snapshot that verifies asset rendering"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

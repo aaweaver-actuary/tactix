@@ -477,6 +477,14 @@ class PipelineCheckpointUpdates:  # pylint: disable=too-many-arguments,too-many-
     ) -> tuple[int | None, int]:
         """Persist and return the updated checkpoint value."""
         cursor_value = fetch_context.next_cursor or fetch_context.cursor_value
+        if fetch_context.raw_games:
+            latest_raw = max(
+                fetch_context.raw_games,
+                key=lambda g: (int(g.get("last_timestamp_ms", 0)), str(g.get("game_id", ""))),
+            )
+            raw_cursor = f"{int(latest_raw.get('last_timestamp_ms', 0))}:{latest_raw.get('game_id', '')}"
+            if not cursor_value or cursor_value == fetch_context.cursor_value:
+                cursor_value = raw_cursor
         if not cursor_value and games:
             latest_game = max(
                 games,
@@ -503,7 +511,10 @@ class PipelineCheckpointUpdates:  # pylint: disable=too-many-arguments,too-many-
         last_timestamp_value: int,
     ) -> tuple[int | None, int]:  # pylint: disable=too-many-arguments,too-many-positional-arguments
         """Update daily checkpoint values after sync."""
-        if backfill_mode:
+        use_backfill = backfill_mode and not (
+            fetch_context.cursor_before or fetch_context.cursor_value
+        )
+        if use_backfill:
             return None, last_timestamp_value
         if settings.source == "chesscom":
             return self.update_chesscom_checkpoint(

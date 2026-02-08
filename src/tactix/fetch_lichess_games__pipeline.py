@@ -9,6 +9,7 @@ from tactix.config import Settings
 from tactix.FetchContext import FetchContext
 from tactix.infra.clients.lichess_client import (
     LichessFetchRequest,
+    build_cursor,
     read_checkpoint,
     resolve_fetch_window,
 )
@@ -23,9 +24,10 @@ def _fetch_lichess_games(
     window_end_ms: int | None,
 ) -> FetchContext:
     cursor_before = read_checkpoint(settings.checkpoint_path)
+    use_backfill = backfill_mode and cursor_before is None
     cursor_value, since_ms, until_ms = resolve_fetch_window(
         cursor_before,
-        backfill_mode,
+        use_backfill,
         window_start_ms,
         window_end_ms,
     )
@@ -37,7 +39,21 @@ def _fetch_lichess_games(
         )
     )
     raw_games = [cast(Mapping[str, object], row) for row in fetch_result.games]
-    next_cursor = fetch_result.next_cursor or cursor_value
+    next_cursor = fetch_result.next_cursor
+    if not next_cursor and raw_games:
+        latest_game = max(
+            raw_games,
+            key=lambda row: (
+                int(row.get("last_timestamp_ms", 0)),
+                str(row.get("game_id", "")),
+            ),
+        )
+        next_cursor = build_cursor(
+            int(latest_game.get("last_timestamp_ms", 0)),
+            str(latest_game.get("game_id", "")),
+        )
+    if not next_cursor:
+        next_cursor = cursor_value
     return FetchContext(
         raw_games=raw_games,
         since_ms=since_ms,

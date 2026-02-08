@@ -273,6 +273,12 @@ def _build_cursor(last_ts: int, game_id: str) -> str:
     return f"{last_ts}:{game_id}"
 
 
+def build_cursor(last_ts: int, game_id: str) -> str:
+    """Public helper to build a cursor token for incremental fetches."""
+
+    return _build_cursor(last_ts, game_id)
+
+
 def _parse_cursor(cursor: str | None) -> tuple[int, str]:
     """Parse a cursor token into timestamp and id."""
 
@@ -286,6 +292,27 @@ def _parse_cursor(cursor: str | None) -> tuple[int, str]:
     if cursor.isdigit():
         return int(cursor), ""
     return 0, cursor
+
+
+def parse_cursor(cursor: str | None) -> tuple[int, str]:
+    """Public helper to parse cursor values into timestamp and id."""
+
+    return _parse_cursor(cursor)
+
+
+def resolve_fetch_window(
+    cursor_before: str | None,
+    backfill_mode: bool,
+    window_start_ms: int | None,
+    window_end_ms: int | None,
+) -> tuple[str | None, int, int | None]:
+    """Resolve cursor, since, and until values for incremental fetches."""
+
+    if backfill_mode:
+        since_ms = window_start_ms if window_start_ms is not None else 0
+        return None, since_ms, window_end_ms
+    since_ms = _parse_cursor(cursor_before)[0]
+    return cursor_before, since_ms, None
 
 
 def _cursor_allows_game(game: dict, since_ts: int, since_game: str) -> bool:

@@ -12,17 +12,13 @@ from fastapi.testclient import TestClient
 from tactix.db.duckdb_store import get_connection
 from tactix.extract_game_id import extract_game_id
 from tactix.extract_last_timestamp_ms import extract_last_timestamp_ms
-from tactix.infra.clients.lichess_client import LichessClient
+from tactix.infra.clients.lichess_client import LichessClient, build_cursor
 from tactix.pgn_utils import split_pgn_chunks
 
 
 def _ensure_stockfish_available() -> None:
     if not shutil.which("stockfish"):
         pytest.skip("Stockfish binary not on PATH")
-
-
-def _build_cursor(last_ts: int, game_id: str) -> str:
-    return f"{last_ts}:{game_id}"
 
 
 def _build_cursor_expectations(
@@ -33,7 +29,7 @@ def _build_cursor_expectations(
         key=lambda row: (int(row["last_timestamp_ms"]), str(row["game_id"])),
     )
     cursor_row = ordered[0]
-    cursor = _build_cursor(
+    cursor = build_cursor(
         int(cursor_row["last_timestamp_ms"]),
         str(cursor_row["game_id"]),
     )
@@ -47,7 +43,7 @@ def _build_cursor_expectations(
         if (int(row["last_timestamp_ms"]), str(row["game_id"])) > cursor_tuple
     }
     expected_since_ms = int(cursor_row["last_timestamp_ms"])
-    expected_next_cursor = _build_cursor(
+    expected_next_cursor = build_cursor(
         int(ordered[-1]["last_timestamp_ms"]),
         str(ordered[-1]["game_id"]),
     )

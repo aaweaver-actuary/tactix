@@ -1,6 +1,12 @@
 const puppeteer = require('../client/node_modules/puppeteer');
 const { selectSource } = require('./enter_submit_helpers');
 const {
+  installLichessSpy,
+  resetLichessSpy,
+  waitForLichessUrl,
+  assertLichessAnalysisUrl,
+} = require('./helpers/lichess_open_helpers');
+const {
   openRecentGamesTable,
   ensureRecentGamesHasRows,
   waitForRecentGamesRowReady,
@@ -8,26 +14,6 @@ const {
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const source = process.env.TACTIX_SOURCE || 'chesscom';
-
-async function installLichessSpy(page) {
-  await page.evaluate(() => {
-    window.__lastLichessUrl = null;
-    window.open = (url) => {
-      if (url && url !== 'about:blank') {
-        window.__lastLichessUrl = url;
-      }
-      return {
-        close() {},
-        opener: null,
-        location: {
-          set href(nextUrl) {
-            if (nextUrl) window.__lastLichessUrl = nextUrl;
-          },
-        },
-      };
-    };
-  });
-}
 
 (async () => {
   const browser = await puppeteer.launch({ headless: 'new' });
@@ -62,21 +48,10 @@ async function installLichessSpy(page) {
       throw new Error('Open in Lichess button missing.');
     }
 
-    await page.evaluate(() => {
-      window.__lastLichessUrl = null;
-    });
+    await resetLichessSpy(page);
     await buttons[0].click();
-    await page.waitForFunction(() => Boolean(window.__lastLichessUrl), {
-      timeout: 15000,
-    });
-    const url = await page.evaluate(() => window.__lastLichessUrl || '');
-
-    if (!url.startsWith('https://lichess.org/analysis/pgn/')) {
-      throw new Error(`Unexpected Lichess URL: ${url}`);
-    }
-    if (!url.includes('?color=') || !url.includes('#')) {
-      throw new Error(`Lichess URL missing params: ${url}`);
-    }
+    const url = await waitForLichessUrl(page, 15000);
+    assertLichessAnalysisUrl(url);
 
     if (consoleErrors.length) {
       throw new Error(`Console errors detected: ${consoleErrors.join('\n')}`);

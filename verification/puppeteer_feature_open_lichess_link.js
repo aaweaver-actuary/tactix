@@ -2,6 +2,13 @@ const path = require('path');
 const puppeteer = require('../client/node_modules/puppeteer');
 const { attachConsoleCapture, captureScreenshot } = require('./helpers/puppeteer_capture');
 const {
+  installLichessSpy,
+  resetLichessSpy,
+  getLichessSpyState,
+  waitForLichessUrl,
+  assertLichessAnalysisUrl,
+} = require('./helpers/lichess_open_helpers');
+const {
   openRecentGamesTable,
   ensureRecentGamesHasRows,
   waitForRecentGamesRowReady,
@@ -26,30 +33,6 @@ const waitWithTimeout = async (promise, timeoutMs, label) => {
     clearTimeout(timeoutId);
   }
 };
-
-async function installLichessSpy(page) {
-  await page.evaluate(() => {
-    window.__lastLichessUrl = null;
-    window.__lastOpenArgs = null;
-    window.__openCallCount = 0;
-    window.open = (url) => {
-      window.__openCallCount += 1;
-      window.__lastOpenArgs = url || null;
-      if (url && url !== 'about:blank') {
-        window.__lastLichessUrl = url;
-      }
-      return {
-        close() {},
-        opener: null,
-        location: {
-          set href(nextUrl) {
-            if (nextUrl) window.__lastLichessUrl = nextUrl;
-          },
-        },
-      };
-    };
-  });
-}
 
 async function waitForDashboard(page) {
   await page.goto(targetUrl, {
@@ -106,11 +89,7 @@ async function verifyOpenLichessForSource(page, sourceLabel) {
     `Found button: ${buttonText.trim()} (disabled=${buttonDisabled}, testid=${buttonTestId})`,
   );
 
-  await page.evaluate(() => {
-    window.__lastLichessUrl = null;
-    window.__lastOpenArgs = null;
-    window.__openCallCount = 0;
-  });
+  await resetLichessSpy(page);
   await page.evaluate((selector) => {
     const target = document.querySelector(selector);
     if (!target) return;
@@ -122,37 +101,23 @@ async function verifyOpenLichessForSource(page, sourceLabel) {
     target.dispatchEvent(event);
   }, `[data-testid="${buttonTestId}"]`);
   await new Promise((resolve) => setTimeout(resolve, 500));
-  const openCountAfterClick = await page.evaluate(
-    () => window.__openCallCount || 0,
-  );
+  const { openCount: openCountAfterClick } = await getLichessSpyState(page);
   console.log(`window.open call count after click: ${openCountAfterClick}`);
   let url = '';
   try {
-    await waitWithTimeout(
-      page.waitForFunction(() => Boolean(window.__lastLichessUrl), {
-        timeout: 15000,
-      }),
+    url = await waitWithTimeout(
+      waitForLichessUrl(page, 15000),
       20000,
       `Lichess URL capture for ${sourceLabel}`,
     );
-    url = await page.evaluate(() => window.__lastLichessUrl || '');
   } catch (err) {
-    const openCount = await page.evaluate(() => window.__openCallCount || 0);
-    const lastOpenArgs = await page.evaluate(() => window.__lastOpenArgs || '');
+    const { openCount, lastOpenArgs } = await getLichessSpyState(page);
     throw new Error(
       `No Lichess URL captured for ${sourceLabel}. openCount=${openCount} lastOpenArgs=${lastOpenArgs}`,
     );
   }
 
-  if (!url.startsWith('https://lichess.org/analysis/pgn/')) {
-    throw new Error(`Unexpected Lichess URL for ${sourceLabel}: ${url}`);
-  }
-  if (!url.includes('?color=')) {
-    throw new Error(`Missing color param for ${sourceLabel}: ${url}`);
-  }
-  if (!url.includes('#')) {
-    throw new Error(`Missing move anchor for ${sourceLabel}: ${url}`);
-  }
+  assertLichessAnalysisUrl(url, `Lichess URL for ${sourceLabel}`);
 
 }
 

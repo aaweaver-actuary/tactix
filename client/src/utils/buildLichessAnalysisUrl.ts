@@ -10,30 +10,38 @@ const toColorParam = (turn: 'w' | 'b') => (turn === 'w' ? 'white' : 'black');
 
 const encodeMove = (move: string) => encodeURIComponent(move);
 
+const normalizeAnchorPly = (
+  anchorPly: number | null | undefined,
+  fallback: number,
+) => {
+  if (anchorPly === null || anchorPly === undefined) return fallback;
+  return Math.max(0, Math.floor(anchorPly));
+};
+
+const tryLoadPgn = (chess: Chess, pgn: string) => {
+  try {
+    return chess.loadPgn(pgn, { sloppy: true });
+  } catch {
+    return false;
+  }
+};
+
 export default function buildLichessAnalysisUrl(
   pgn: string | null | undefined,
   options: LichessAnalysisOptions = {},
 ): string | null {
-  if (!pgn) return null;
-  const sanitized = pgn.trim();
+  const sanitized = pgn?.trim();
   if (!sanitized) return null;
   const chess = new Chess();
-  try {
-    chess.loadPgn(sanitized, { sloppy: true });
-  } catch {
-    return null;
-  }
+  if (!tryLoadPgn(chess, sanitized)) return null;
 
   const history = chess.history();
   if (!history.length) return null;
 
   const movePath = history.map(encodeMove).join('_');
   const colorParam = toColorParam(chess.turn());
-  const anchorPly =
-    options.anchorPly !== undefined && options.anchorPly !== null
-      ? Math.max(0, Math.floor(options.anchorPly))
-      : history.length;
-  const anchor = anchorPly > 0 ? `#${anchorPly}` : '';
+  const anchorPly = normalizeAnchorPly(options.anchorPly, history.length);
+  const anchor = anchorPly ? `#${anchorPly}` : '';
 
   return `${LICHESS_ANALYSIS_BASE}/${movePath}?color=${colorParam}${anchor}`;
 }

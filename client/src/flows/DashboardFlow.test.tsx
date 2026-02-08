@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { vi } from 'vitest';
 import DashboardFlow from './DashboardFlow';
+import buildLichessAnalysisUrl from '../utils/buildLichessAnalysisUrl';
 import type {
   DashboardPayload,
   GameDetailResponse,
@@ -410,10 +411,13 @@ describe('DashboardFlow', () => {
       expect(fetchGameDetail).toHaveBeenCalledWith('g1', 'chesscom');
     });
 
+    const expectedUrl = buildLichessAnalysisUrl(baseGameDetail.pgn);
+    if (!expectedUrl) {
+      throw new Error('Expected Lichess analysis URL to be generated.');
+    }
+
     expect(openSpy).toHaveBeenCalledWith('about:blank', '_blank');
-    expect(popup.location.href).toBe(
-      'https://lichess.org/analysis/pgn/e3_e6_f3_f6?color=white#4',
-    );
+    expect(popup.location.href).toBe(expectedUrl);
     expect(popup.opener).toBeNull();
 
     openSpy.mockRestore();

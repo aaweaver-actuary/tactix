@@ -257,6 +257,12 @@ export default function DashboardFlow() {
     setFilters(next);
   };
 
+  const resolveGameSource = useCallback(
+    (rowSource?: string | null) =>
+      rowSource ?? (source === 'all' ? undefined : source),
+    [source],
+  );
+
   const handleOpenLichess = useCallback(
     async (row: { game_id?: string | null; source?: string | null }) => {
       if (!row.game_id) return;
@@ -264,7 +270,7 @@ export default function DashboardFlow() {
       try {
         const detail = await fetchGameDetail(
           row.game_id,
-          row.source ?? (source === 'all' ? undefined : source),
+          resolveGameSource(row.source),
         );
         const url = buildLichessAnalysisUrl(detail.pgn);
         if (!url) {
@@ -285,7 +291,7 @@ export default function DashboardFlow() {
         console.error(err);
       }
     },
-    [source, buildLichessAnalysisUrl, openLichessAnalysisWindow],
+    [buildLichessAnalysisUrl, openLichessAnalysisWindow, resolveGameSource],
   );
 
   const handleResetFilters = () => {
@@ -1346,7 +1352,7 @@ export default function DashboardFlow() {
       try {
         const detail = await fetchGameDetail(
           row.game_id,
-          row.source ?? (source === 'all' ? undefined : source),
+          resolveGameSource(row.source),
         );
         setGameDetail(detail);
       } catch (err) {
@@ -1474,7 +1480,7 @@ export default function DashboardFlow() {
     timeTroubleColumns,
     timeTroubleSortedRows,
     trendLatestRows,
-    source,
+    resolveGameSource,
   ]);
 
   const baseCardIds = useMemo(

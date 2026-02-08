@@ -10,17 +10,21 @@ import {
 export type BaseCardDragHandleProps =
   React.ButtonHTMLAttributes<HTMLButtonElement>;
 
-interface BaseCardProps extends HTMLAttributes<HTMLDivElement> {
+export interface BaseCardDragProps {
+  dragHandleProps?: BaseCardDragHandleProps;
+  dragHandleLabel?: string;
+  onCollapsedChange?: (collapsed: boolean) => void;
+}
+
+interface BaseCardProps
+  extends HTMLAttributes<HTMLDivElement>, BaseCardDragProps {
   header: ReactNode;
   children: ReactNode;
   defaultCollapsed?: boolean;
   collapsible?: boolean;
   headerClassName?: string;
   contentClassName?: string;
-  dragHandleProps?: BaseCardDragHandleProps;
-  dragHandleLabel?: string;
   dragHandleClassName?: string;
-  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 const INTERACTIVE_SELECTOR = 'button, a, input, select, textarea, label';

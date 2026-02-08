@@ -1,22 +1,17 @@
-import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
+import BaseCard, { BaseCardDragProps } from './BaseCard';
 import MetricsSummaryGrid from './MetricsSummaryGrid';
 
-interface MetricsSummaryCardProps {
+interface MetricsSummaryCardProps extends BaseCardDragProps {
   positions: number;
   tactics: number;
   metricsVersion: number;
-  dragHandleProps?: BaseCardDragHandleProps;
-  dragHandleLabel?: string;
-  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 export default function MetricsSummaryCard({
   positions,
   tactics,
   metricsVersion,
-  dragHandleProps,
-  dragHandleLabel,
-  onCollapsedChange,
+  ...dragProps
 }: MetricsSummaryCardProps) {
   return (
     <BaseCard
@@ -25,9 +20,7 @@ export default function MetricsSummaryCard({
         <h3 className="text-lg font-display text-sand">Metrics summary</h3>
       }
       contentClassName="pt-3"
-      dragHandleProps={dragHandleProps}
-      dragHandleLabel={dragHandleLabel}
-      onCollapsedChange={onCollapsedChange}
+      {...dragProps}
     >
       <MetricsSummaryGrid
         positions={positions}

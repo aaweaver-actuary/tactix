@@ -1,21 +1,16 @@
 import { JobProgressItem } from '../types';
 import Badge from './Badge';
-import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
+import BaseCard, { BaseCardDragProps } from './BaseCard';
 
-interface JobProgressCardProps {
+interface JobProgressCardProps extends BaseCardDragProps {
   entries: JobProgressItem[];
   status: 'idle' | 'running' | 'error' | 'complete';
-  dragHandleProps?: BaseCardDragHandleProps;
-  dragHandleLabel?: string;
-  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 export default function JobProgressCard({
   entries,
   status,
-  dragHandleProps,
-  dragHandleLabel,
-  onCollapsedChange,
+  ...dragProps
 }: JobProgressCardProps) {
   if (!entries.length) return null;
 
@@ -39,9 +34,7 @@ export default function JobProgressCard({
         </div>
       }
       contentClassName="pt-3"
-      dragHandleProps={dragHandleProps}
-      dragHandleLabel={dragHandleLabel}
-      onCollapsedChange={onCollapsedChange}
+      {...dragProps}
     >
       <ol className="space-y-2 text-sm">
         {entries.map((entry, index) => {

@@ -4,7 +4,7 @@ import { PracticeAttemptResponse, PracticeQueueItem } from '../api';
 import isPiecePlayable from '../utils/isPiecePlayable';
 import buildPracticeFeedback from '../utils/buildPracticeFeedback';
 import Badge from './Badge';
-import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
+import BaseCard, { BaseCardDragProps } from './BaseCard';
 import PracticeAttemptButton from './PracticeAttemptButton';
 import PracticeMoveInput from './PracticeMoveInput';
 import PracticeSessionProgress from './PracticeSessionProgress';
@@ -69,7 +69,7 @@ function buildPiece(pieceId: string) {
   return Piece;
 }
 
-interface PracticeAttemptCardProps {
+interface PracticeAttemptCardProps extends BaseCardDragProps {
   currentPractice: PracticeQueueItem | null;
   practiceSession: PracticeSessionStats;
   practiceFen: string;
@@ -83,9 +83,6 @@ interface PracticeAttemptCardProps {
   onPracticeMoveChange: (value: string) => void;
   handlePracticeAttempt: (overrideMove?: string) => Promise<void>;
   handlePracticeDrop: (from: string, to: string, piece: string) => boolean;
-  dragHandleProps?: BaseCardDragHandleProps;
-  dragHandleLabel?: string;
-  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 export default function PracticeAttemptCard({
@@ -102,9 +99,7 @@ export default function PracticeAttemptCard({
   onPracticeMoveChange,
   handlePracticeAttempt,
   handlePracticeDrop,
-  dragHandleProps,
-  dragHandleLabel,
-  onCollapsedChange,
+  ...dragProps
 }: PracticeAttemptCardProps) {
   const handleInputSubmit = (move: string) => {
     void handlePracticeAttempt(move);
@@ -127,9 +122,7 @@ export default function PracticeAttemptCard({
         </div>
       }
       contentClassName="pt-3"
-      dragHandleProps={dragHandleProps}
-      dragHandleLabel={dragHandleLabel}
-      onCollapsedChange={onCollapsedChange}
+      {...dragProps}
     >
       <PracticeSessionProgress stats={practiceSession} />
       {currentPractice ? (

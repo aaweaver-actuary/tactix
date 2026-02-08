@@ -1,22 +1,17 @@
 import { PostgresAnalysisRow } from '../api';
 import Badge from './Badge';
-import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
+import BaseCard, { BaseCardDragProps } from './BaseCard';
 import Text from './Text';
 
-interface PostgresAnalysisCardProps {
+interface PostgresAnalysisCardProps extends BaseCardDragProps {
   rows: PostgresAnalysisRow[];
   loading: boolean;
-  dragHandleProps?: BaseCardDragHandleProps;
-  dragHandleLabel?: string;
-  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 export default function PostgresAnalysisCard({
   rows,
   loading,
-  dragHandleProps,
-  dragHandleLabel,
-  onCollapsedChange,
+  ...dragProps
 }: PostgresAnalysisCardProps) {
   if (!rows.length && !loading) return null;
 
@@ -33,9 +28,7 @@ export default function PostgresAnalysisCard({
       }
       contentClassName="pt-3"
       data-testid="postgres-analysis"
-      dragHandleProps={dragHandleProps}
-      dragHandleLabel={dragHandleLabel}
-      onCollapsedChange={onCollapsedChange}
+      {...dragProps}
     >
       {rows.length ? (
         <ul className="space-y-2 text-xs text-sand/70">

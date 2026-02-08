@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ButtonHTMLAttributes } from 'react';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { ColumnDef } from '@tanstack/react-table';
 import { Chess, Square } from 'chess.js';
@@ -54,6 +53,10 @@ import {
   Hero,
   GameDetailModal,
 } from '../components';
+import type {
+  BaseCardDragHandleProps,
+  BaseCardDragProps,
+} from '../_components/BaseCard';
 import {
   PracticeSessionStats,
   resetPracticeSessionStats,
@@ -135,31 +138,13 @@ const openLichessAnalysisWindow = (url: string) => {
   window.open(url, '_blank', 'noopener,noreferrer');
 };
 
-type BaseCardRenderProps = {
-  dragHandleProps?: ButtonHTMLAttributes<HTMLButtonElement>;
-  dragHandleLabel?: string;
-  onCollapsedChange?: (collapsed: boolean) => void;
-};
+type BaseCardRenderProps = BaseCardDragProps;
 
 type BaseCardEntry = {
   id: string;
   label: string;
   visible: boolean;
   render: (props: BaseCardRenderProps) => JSX.Element | null;
-};
-
-const buildDragProps = (props: BaseCardRenderProps) => {
-  const dragProps: BaseCardRenderProps = {};
-  if (props.dragHandleProps) {
-    dragProps.dragHandleProps = props.dragHandleProps;
-  }
-  if (props.dragHandleLabel) {
-    dragProps.dragHandleLabel = props.dragHandleLabel;
-  }
-  if (props.onCollapsedChange) {
-    dragProps.onCollapsedChange = props.onCollapsedChange;
-  }
-  return dragProps;
 };
 
 export default function DashboardFlow() {
@@ -1420,7 +1405,7 @@ export default function DashboardFlow() {
             onChesscomProfileChange={handleChesscomProfileChange}
             onFiltersChange={handleFiltersChange}
             onResetFilters={handleResetFilters}
-            {...buildDragProps(props)}
+            {...props}
           />
         ),
       },
@@ -1433,7 +1418,7 @@ export default function DashboardFlow() {
             positions={totals.positions}
             tactics={totals.tactics}
             metricsVersion={data?.metrics_version ?? 0}
-            {...buildDragProps(props)}
+            {...props}
           />
         ),
       },
@@ -1445,7 +1430,7 @@ export default function DashboardFlow() {
           <PostgresStatusCard
             status={postgresStatus}
             loading={postgresLoading}
-            {...buildDragProps(props)}
+            {...props}
           />
         ),
       },
@@ -1461,7 +1446,7 @@ export default function DashboardFlow() {
             data={postgresRawPgns}
             loading={postgresRawPgnsLoading}
             error={postgresRawPgnsError}
-            {...buildDragProps(props)}
+            {...props}
           />
         ),
       },
@@ -1473,7 +1458,7 @@ export default function DashboardFlow() {
           <PostgresAnalysisCard
             rows={postgresAnalysis}
             loading={postgresAnalysisLoading}
-            {...buildDragProps(props)}
+            {...props}
           />
         ),
       },
@@ -1485,7 +1470,7 @@ export default function DashboardFlow() {
           <JobProgressCard
             entries={jobProgress}
             status={jobStatus}
-            {...buildDragProps(props)}
+            {...props}
           />
         ),
       },
@@ -1498,7 +1483,7 @@ export default function DashboardFlow() {
             metricsData={orderedMotifBreakdown}
             droppableId={MOTIF_CARD_DROPPABLE_ID}
             dropIndicatorIndex={motifDropIndicatorIndex}
-            {...buildDragProps(props)}
+            {...props}
           />
         ),
       },
@@ -1510,7 +1495,7 @@ export default function DashboardFlow() {
           <MotifTrendsCard
             data={trendLatestRows}
             columns={metricsTrendsColumns}
-            {...buildDragProps(props)}
+            {...props}
           />
         ),
       },
@@ -1522,7 +1507,7 @@ export default function DashboardFlow() {
           <TimeTroubleCorrelationCard
             data={timeTroubleSortedRows}
             columns={timeTroubleColumns}
-            {...buildDragProps(props)}
+            {...props}
           />
         ),
       },
@@ -1541,7 +1526,7 @@ export default function DashboardFlow() {
             rowTestId={(row, index) =>
               `practice-queue-row-${row.source ?? 'unknown'}-${index}`
             }
-            {...buildDragProps(props)}
+            {...props}
           />
         ),
       },
@@ -1558,7 +1543,7 @@ export default function DashboardFlow() {
               rowTestId={(row, index) =>
                 `recent-games-row-${row.source ?? 'unknown'}-${index}`
               }
-              {...buildDragProps(props)}
+              {...props}
             />
           ) : null,
       },
@@ -1577,7 +1562,7 @@ export default function DashboardFlow() {
                   ? `dashboard-game-row-${row.game_id}`
                   : 'dashboard-game-row-unknown'
               }
-              {...buildDragProps(props)}
+              {...props}
             />
           ) : null,
       },
@@ -1587,10 +1572,7 @@ export default function DashboardFlow() {
         visible: Boolean(data),
         render: (props) =>
           data ? (
-            <PositionsList
-              positionsData={data.positions}
-              {...buildDragProps(props)}
-            />
+            <PositionsList positionsData={data.positions} {...props} />
           ) : null,
       },
       {
@@ -1612,7 +1594,7 @@ export default function DashboardFlow() {
             onPracticeMoveChange={handlePracticeMoveChange}
             handlePracticeAttempt={handlePracticeAttempt}
             handlePracticeDrop={handlePracticeDrop}
-            {...buildDragProps(props)}
+            {...props}
           />
         ),
       },
@@ -1844,7 +1826,7 @@ export default function DashboardFlow() {
                             };
                             if (dragProvided.dragHandleProps) {
                               renderProps.dragHandleProps =
-                                dragProvided.dragHandleProps as ButtonHTMLAttributes<HTMLButtonElement>;
+                                dragProvided.dragHandleProps as BaseCardDragHandleProps;
                             }
                             return card.render(renderProps);
                           })()}

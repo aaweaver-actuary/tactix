@@ -3,7 +3,7 @@ import { LICHESS_PROFILE_OPTIONS } from '../utils/LICHESS_PROFILE_OPTIONS';
 import { SOURCE_OPTIONS } from '../utils/SOURCE_OPTIONS';
 import { ChessPlatform, ChesscomProfile, LichessProfile } from '../types';
 import Badge from './Badge';
-import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
+import BaseCard, { BaseCardDragProps } from './BaseCard';
 
 interface FiltersState {
   motif: string;
@@ -13,7 +13,7 @@ interface FiltersState {
   endDate: string;
 }
 
-interface FiltersCardProps {
+interface FiltersCardProps extends BaseCardDragProps {
   source: ChessPlatform;
   loading: boolean;
   lichessProfile: LichessProfile;
@@ -27,9 +27,6 @@ interface FiltersCardProps {
   onChesscomProfileChange: (next: ChesscomProfile) => void;
   onFiltersChange: (next: FiltersState) => void;
   onResetFilters: () => void;
-  dragHandleProps?: BaseCardDragHandleProps;
-  dragHandleLabel?: string;
-  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 export default function FiltersCard({
@@ -46,9 +43,7 @@ export default function FiltersCard({
   onChesscomProfileChange,
   onFiltersChange,
   onResetFilters,
-  dragHandleProps,
-  dragHandleLabel,
-  onCollapsedChange,
+  ...dragProps
 }: FiltersCardProps) {
   return (
     <BaseCard
@@ -60,9 +55,7 @@ export default function FiltersCard({
         </div>
       }
       contentClassName="pt-3"
-      dragHandleProps={dragHandleProps}
-      dragHandleLabel={dragHandleLabel}
-      onCollapsedChange={onCollapsedChange}
+      {...dragProps}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
         <label className="text-xs text-sand/60 flex flex-col gap-2">

@@ -1,22 +1,17 @@
 import { PostgresStatus } from '../api';
 import Badge from './Badge';
-import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
+import BaseCard, { BaseCardDragProps } from './BaseCard';
 import Text from './Text';
 
-interface PostgresStatusCardProps {
+interface PostgresStatusCardProps extends BaseCardDragProps {
   status: PostgresStatus | null;
   loading: boolean;
-  dragHandleProps?: BaseCardDragHandleProps;
-  dragHandleLabel?: string;
-  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 export default function PostgresStatusCard({
   status,
   loading,
-  dragHandleProps,
-  dragHandleLabel,
-  onCollapsedChange,
+  ...dragProps
 }: PostgresStatusCardProps) {
   if (!status && !loading) return null;
 
@@ -25,9 +20,7 @@ export default function PostgresStatusCard({
       <BaseCard
         className="p-4"
         header={<span className="sr-only">Postgres status</span>}
-        dragHandleProps={dragHandleProps}
-        dragHandleLabel={dragHandleLabel}
-        onCollapsedChange={onCollapsedChange}
+        {...dragProps}
       >
         <div className="text-sand/70">Loading Postgres status...</div>
       </BaseCard>
@@ -53,9 +46,7 @@ export default function PostgresStatusCard({
       }
       contentClassName="pt-3"
       data-testid="postgres-status"
-      dragHandleProps={dragHandleProps}
-      dragHandleLabel={dragHandleLabel}
-      onCollapsedChange={onCollapsedChange}
+      {...dragProps}
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="flex flex-col gap-1">

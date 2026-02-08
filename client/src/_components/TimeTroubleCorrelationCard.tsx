@@ -1,23 +1,18 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
-import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
+import BaseCard, { BaseCardDragProps } from './BaseCard';
 import TimeTroubleCorrelation from './TimeTroubleCorrelation';
 
-interface TimeTroubleCorrelationCardProps {
+interface TimeTroubleCorrelationCardProps extends BaseCardDragProps {
   data: DashboardPayload['metrics'];
   columns: ColumnDef<DashboardPayload['metrics'][number]>[];
-  dragHandleProps?: BaseCardDragHandleProps;
-  dragHandleLabel?: string;
-  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 export default function TimeTroubleCorrelationCard({
   data,
   columns,
-  dragHandleProps,
-  dragHandleLabel,
-  onCollapsedChange,
+  ...dragProps
 }: TimeTroubleCorrelationCardProps) {
   return (
     <BaseCard
@@ -32,9 +27,7 @@ export default function TimeTroubleCorrelationCard({
         </div>
       }
       contentClassName="pt-3"
-      dragHandleProps={dragHandleProps}
-      dragHandleLabel={dragHandleLabel}
-      onCollapsedChange={onCollapsedChange}
+      {...dragProps}
     >
       <p className="text-xs text-sand/70 mb-3">
         Correlation between time trouble (≤30s or ≤10% of the initial clock) and

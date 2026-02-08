@@ -1,13 +1,10 @@
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
-import BaseCard, { BaseCardDragHandleProps } from './BaseCard';
+import BaseCard, { BaseCardDragProps } from './BaseCard';
 import Text from './Text';
 
-interface PositionsListProps {
+interface PositionsListProps extends BaseCardDragProps {
   positionsData: DashboardPayload['positions'];
-  dragHandleProps?: BaseCardDragHandleProps;
-  dragHandleLabel?: string;
-  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 /**
@@ -26,9 +23,7 @@ interface PositionsListProps {
  */
 export default function PositionsList({
   positionsData,
-  dragHandleProps,
-  dragHandleLabel,
-  onCollapsedChange,
+  ...dragProps
 }: PositionsListProps) {
   const header = (
     <div className="flex items-center justify-between">
@@ -42,9 +37,7 @@ export default function PositionsList({
       className="p-4"
       header={header}
       contentClassName="pt-3"
-      dragHandleProps={dragHandleProps}
-      dragHandleLabel={dragHandleLabel}
-      onCollapsedChange={onCollapsedChange}
+      {...dragProps}
     >
       <div className="flex flex-col gap-3">
         {positionsData.map((pos) => (

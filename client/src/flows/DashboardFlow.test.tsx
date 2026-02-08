@@ -310,6 +310,12 @@ const buildPracticeQueue = (count: number): PracticeQueueResponse => ({
   })),
 });
 
+const changeFilter = (testId: string, value: string) => {
+  fireEvent.change(screen.getByTestId(testId), {
+    target: { value },
+  });
+};
+
 const setupBaseMocks = () => {
   (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
     baseDashboard,
@@ -587,18 +593,10 @@ describe('DashboardFlow', () => {
       expect(fetchDashboard).toHaveBeenCalled();
     });
 
-    fireEvent.change(screen.getByTestId('filter-source'), {
-      target: { value: 'chesscom' },
-    });
-    fireEvent.change(screen.getByTestId('filter-time-control'), {
-      target: { value: 'bullet' },
-    });
-    fireEvent.change(screen.getByTestId('filter-start-date'), {
-      target: { value: '2026-02-01' },
-    });
-    fireEvent.change(screen.getByTestId('filter-end-date'), {
-      target: { value: '2026-02-01' },
-    });
+    changeFilter('filter-source', 'chesscom');
+    changeFilter('filter-time-control', 'bullet');
+    changeFilter('filter-start-date', '2026-02-01');
+    changeFilter('filter-end-date', '2026-02-01');
 
     await waitFor(() => {
       expect(fetchDashboard).toHaveBeenLastCalledWith('chesscom', {

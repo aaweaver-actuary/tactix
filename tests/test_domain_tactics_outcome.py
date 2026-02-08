@@ -25,3 +25,20 @@ def test_resolve_unclear_outcome_context_from_string() -> None:
     assert resolved.user_move_uci == "e2e3"
     assert resolved.swing == -90
     assert resolved_threshold == 120
+
+
+def test_resolve_unclear_outcome_context_full_args() -> None:
+    resolved, resolved_threshold = resolve_unclear_outcome_context(
+        "unclear",
+        None,
+        ("fork", "e2e4", "e2e3", -90, 140),
+        None,
+        {},
+    )
+    assert isinstance(resolved, BaseOutcomeContext)
+    assert resolved.result == "unclear"
+    assert resolved.motif == "fork"
+    assert resolved.best_move == "e2e4"
+    assert resolved.user_move_uci == "e2e3"
+    assert resolved.swing == -90
+    assert resolved_threshold == 140

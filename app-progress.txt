@@ -1,4 +1,11 @@
 Session summary (2026-02-08):
+- Consolidated unclear outcome key ordering to a shared helper and extended domain coverage for full positional arguments.
+- Tests run: make check (before; task), make check (after).
+- Before→After map:
+	- tactix/domain/tactics_outcome.py → reuse shared unclear-value key ordering helper.
+	- tests/test_domain_tactics_outcome.py → add full-args resolution coverage.
+
+Session summary (2026-02-08):
 - Added domain modules for conversion payloads, practice attempt grading, and tactic outcome resolution; wired pipeline helpers, repositories, and outcome helpers to the domain layer.
 - Aligned repository port signatures with actual implementations and added casts in dependency factories to satisfy type checking.
 - Added isolated unit tests for the new domain logic.

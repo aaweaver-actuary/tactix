@@ -40,16 +40,14 @@ def resolve_unclear_outcome_context(
     return resolved, values["threshold"]
 
 
+def _unclear_value_keys() -> tuple[str, ...]:
+    return ("motif", "best_move", "user_move_uci", "swing", "threshold")
+
+
 def _init_unclear_values(
     params: UnclearOutcomeParams | None,
 ) -> dict[str, Any]:
-    values: dict[str, Any] = {
-        "motif": None,
-        "best_move": None,
-        "user_move_uci": None,
-        "swing": None,
-        "threshold": None,
-    }
+    values: dict[str, Any] = dict.fromkeys(_unclear_value_keys())
     if params is None:
         return values
     values.update(
@@ -75,7 +73,7 @@ def _apply_unclear_legacy(values: dict[str, Any], legacy: dict[str, Any]) -> Non
 def _apply_unclear_args(values: dict[str, Any], args: tuple[Any, ...]) -> None:
     if not args:
         return
-    ordered_keys = ("motif", "best_move", "user_move_uci", "swing", "threshold")
+    ordered_keys = _unclear_value_keys()
     if len(args) > len(ordered_keys):
         raise TypeError("Too many positional arguments")
     for key, value in zip(ordered_keys, args, strict=False):

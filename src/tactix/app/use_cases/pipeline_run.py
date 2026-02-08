@@ -3,28 +3,31 @@
 from __future__ import annotations
 
 import shutil
-from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from tactix.coerce_date_to_datetime__datetime import _coerce_date_to_datetime
-from tactix.config import Settings, get_settings
-from tactix.dashboard_query import DashboardQuery
-from tactix.db.dashboard_repository_provider import (
-    fetch_opportunity_motif_counts,
-    fetch_pipeline_table_counts,
+from tactix.app.use_cases.dependencies import (
+    CacheRefresher,
+    DateTimeCoercer,
+    DashboardRepositoryFactory,
+    DefaultCacheRefresher,
+    DefaultDashboardRepositoryFactory,
+    DefaultDateTimeCoercer,
+    DefaultPipelineRunner,
+    DefaultSettingsProvider,
+    DefaultSourceNormalizer,
+    DuckDbUnitOfWorkRunner,
+    PipelineRunner,
+    SettingsProvider,
+    SourceNormalizer,
+    UnitOfWorkRunner,
 )
-from tactix.db.duckdb_store import init_schema
-from tactix.db.duckdb_unit_of_work import DuckDbUnitOfWork
-from tactix.list_sources_for_cache_refresh__api_cache import _sources_for_cache_refresh
-from tactix.normalize_source__source import _normalize_source
-from tactix.pipeline import run_daily_game_sync
+from tactix.config import Settings
+from tactix.dashboard_query import DashboardQuery
 from tactix.pipeline_run_filters import PipelineRunFilters
-from tactix.ports.unit_of_work import UnitOfWork
-from tactix.refresh_dashboard_cache_async__api_cache import _refresh_dashboard_cache_async
 from tactix.trace_context import trace_context
 
 
@@ -34,25 +37,18 @@ class PipelineWindowError(ValueError):
 
 @dataclass
 class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
-    get_settings: Callable[..., Settings] = get_settings
-    normalize_source: Callable[[str | None], str | None] = _normalize_source
-    coerce_date_to_datetime: Callable[..., Any] = _coerce_date_to_datetime
-    run_daily_game_sync: Callable[..., object] = run_daily_game_sync
-    refresh_dashboard_cache_async: Callable[[list[str | None]], None] = (
-        _refresh_dashboard_cache_async
+    settings_provider: SettingsProvider = field(default_factory=DefaultSettingsProvider)
+    source_normalizer: SourceNormalizer = field(default_factory=DefaultSourceNormalizer)
+    date_time_coercer: DateTimeCoercer = field(default_factory=DefaultDateTimeCoercer)
+    pipeline_runner: PipelineRunner = field(default_factory=DefaultPipelineRunner)
+    cache_refresher: CacheRefresher = field(default_factory=DefaultCacheRefresher)
+    dashboard_repository_factory: DashboardRepositoryFactory = field(
+        default_factory=DefaultDashboardRepositoryFactory
     )
-    sources_for_cache_refresh: Callable[[str | None], list[str | None]] = _sources_for_cache_refresh
-    fetch_pipeline_table_counts: Callable[[Any, DashboardQuery], dict[str, int]] = (
-        fetch_pipeline_table_counts
-    )
-    fetch_opportunity_motif_counts: Callable[[Any, DashboardQuery], dict[str, int]] = (
-        fetch_opportunity_motif_counts
-    )
-    unit_of_work_factory: Callable[[Path], UnitOfWork] = DuckDbUnitOfWork
-    init_schema: Callable[[Any], None] = init_schema
+    uow_runner: UnitOfWorkRunner = field(default_factory=DuckDbUnitOfWorkRunner)
 
     def run(self, filters: PipelineRunFilters) -> dict[str, object]:
-        normalized_source = self.normalize_source(filters.source)
+        normalized_source = self.source_normalizer.normalize(filters.source)
         settings = self._resolve_pipeline_settings(normalized_source, filters)
         run_id = uuid4().hex
         settings.run_id = run_id
@@ -60,14 +56,16 @@ class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
             filters
         )
         with trace_context(run_id=run_id, op_id="pipeline.run"):
-            result = self.run_daily_game_sync(
+            result = self.pipeline_runner.run(
                 settings,
                 source=normalized_source,
                 window_start_ms=window_start_ms,
                 window_end_ms=window_end_ms,
                 profile=None,
             )
-            self.refresh_dashboard_cache_async(self.sources_for_cache_refresh(normalized_source))
+            self.cache_refresher.refresh(
+                self.cache_refresher.sources_for_refresh(normalized_source)
+            )
             counts, motif_counts = self._fetch_pipeline_counts(
                 settings.duckdb_path,
                 DashboardQuery(
@@ -91,27 +89,23 @@ class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
         db_path: Path,
         query: DashboardQuery,
     ) -> tuple[dict[str, int], dict[str, int]]:
-        uow = self.unit_of_work_factory(db_path)
-        conn = uow.begin()
-        try:
-            self.init_schema(conn)
-            counts = self.fetch_pipeline_table_counts(conn, query)
-            motif_counts = self.fetch_opportunity_motif_counts(conn, query)
-        except Exception:
-            uow.rollback()
-            raise
-        else:
-            uow.commit()
-        finally:
-            uow.close()
-        return counts, motif_counts
+        def handler(conn: Any) -> tuple[dict[str, int], dict[str, int]]:
+            repo = self.dashboard_repository_factory.create(conn)
+            counts = repo.fetch_pipeline_table_counts(query)
+            motif_counts = repo.fetch_opportunity_motif_counts(query)
+            return counts, motif_counts
+
+        return self.uow_runner.run(db_path, handler)
 
     def _resolve_pipeline_settings(
         self,
         normalized_source: str | None,
         filters: PipelineRunFilters,
     ) -> Settings:
-        settings = self.get_settings(source=normalized_source, profile=filters.profile)
+        settings = self.settings_provider.get_settings(
+            source=normalized_source,
+            profile=filters.profile,
+        )
         self._apply_user_settings(settings, filters.user_id)
         self._apply_fixture_settings(settings, filters.use_fixture, filters.fixture_name)
         self._apply_db_settings(settings, filters.db_name, filters.reset_db)
@@ -183,8 +177,8 @@ class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
         self,
         filters: PipelineRunFilters,
     ) -> tuple[datetime | None, datetime | None, int | None, int | None]:
-        start_datetime = self.coerce_date_to_datetime(filters.start_date)
-        end_datetime = self.coerce_date_to_datetime(filters.end_date, end_of_day=True)
+        start_datetime = self.date_time_coercer.coerce(filters.start_date)
+        end_datetime = self.date_time_coercer.coerce(filters.end_date, end_of_day=True)
         window_start_ms = self._datetime_to_ms(start_datetime)
         window_end_ms = self._datetime_to_ms(end_datetime)
         if window_end_ms is not None:

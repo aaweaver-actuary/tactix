@@ -35,33 +35,52 @@ class DummyUnitOfWork:
         self.close_calls += 1
 
 
+class DummyUnitOfWorkRunner:
+    def __init__(self, uow: DummyUnitOfWork) -> None:
+        self._uow = uow
+
+    def run(self, _db_path, handler):
+        conn = self._uow.begin()
+        try:
+            result = handler(conn)
+        except Exception:
+            self._uow.rollback()
+            raise
+        else:
+            self._uow.commit()
+        finally:
+            self._uow.close()
+        return result
+
+
 def test_dashboard_use_case_returns_cached_payload(tmp_path) -> None:
     payload = {"status": "ok", "metrics_version": 5}
     settings = SimpleNamespace(duckdb_path=tmp_path / "tactix.duckdb", data_dir=tmp_path)
+    payload_fetcher = SimpleNamespace(fetch=MagicMock())
     use_case = DashboardUseCase(
-        resolve_dashboard_filters=lambda _filters: (None, None, None, settings),
-        dashboard_cache_key=lambda _settings, _query: ("key",),
-        get_cached_dashboard_payload=lambda _key: payload,
-        get_dashboard_payload=MagicMock(),
-        set_dashboard_cache=MagicMock(),
+        filters_resolver=SimpleNamespace(resolve=lambda _filters: (None, None, None, settings)),
+        cache_key_builder=SimpleNamespace(build=lambda _settings, _query: ("key",)),
+        cache=SimpleNamespace(get=lambda _key: payload, set=MagicMock()),
+        payload_fetcher=payload_fetcher,
     )
 
     result = use_case.get_dashboard(DashboardQueryFilters(), None)
 
     assert result == payload
-    use_case.get_dashboard_payload.assert_not_called()
+    payload_fetcher.fetch.assert_not_called()
 
 
 def test_dashboard_use_case_summary_uses_counts(tmp_path) -> None:
     settings = SimpleNamespace(duckdb_path=tmp_path / "tactix.duckdb", data_dir=tmp_path)
     conn = MagicMock()
     uow = DummyUnitOfWork(conn)
+    uow_runner = DummyUnitOfWorkRunner(uow)
     counts = {"games": 12}
+    repo = SimpleNamespace(fetch_pipeline_table_counts=lambda _query: counts)
     use_case = DashboardUseCase(
-        resolve_dashboard_filters=lambda _filters: (None, None, None, settings),
-        unit_of_work_factory=lambda _path: uow,
-        init_schema=MagicMock(),
-        fetch_pipeline_table_counts=lambda _conn, _query: counts,
+        filters_resolver=SimpleNamespace(resolve=lambda _filters: (None, None, None, settings)),
+        dashboard_repository_factory=SimpleNamespace(create=lambda _conn: repo),
+        uow_runner=uow_runner,
     )
 
     result = use_case.get_summary(DashboardQueryFilters(), "custom")
@@ -83,10 +102,9 @@ def test_practice_use_case_game_detail_not_found(tmp_path) -> None:
     repo.fetch_game_detail.return_value = {"pgn": ""}
     uow = DummyUnitOfWork(MagicMock())
     use_case = PracticeUseCase(
-        get_settings=lambda **_kwargs: settings,
-        unit_of_work_factory=lambda _path: uow,
-        init_schema=MagicMock(),
-        repository_factory=lambda _conn: repo,
+        settings_provider=SimpleNamespace(get_settings=lambda **_kwargs: settings),
+        repository_factory=SimpleNamespace(create=lambda _conn: repo),
+        uow_runner=DummyUnitOfWorkRunner(uow),
     )
 
     try:
@@ -107,11 +125,10 @@ def test_practice_use_case_submit_attempt_errors(tmp_path) -> None:
     repo.grade_practice_attempt.side_effect = ValueError("bad")
     uow = DummyUnitOfWork(MagicMock())
     use_case = PracticeUseCase(
-        get_settings=lambda **_kwargs: settings,
-        unit_of_work_factory=lambda _path: uow,
-        init_schema=MagicMock(),
-        repository_factory=lambda _conn: repo,
-        time_provider=lambda: 1.0,
+        settings_provider=SimpleNamespace(get_settings=lambda **_kwargs: settings),
+        repository_factory=SimpleNamespace(create=lambda _conn: repo),
+        uow_runner=DummyUnitOfWorkRunner(uow),
+        clock=SimpleNamespace(now=lambda: 1.0),
     )
     payload = SimpleNamespace(
         tactic_id=1,
@@ -133,13 +150,13 @@ def test_tactics_search_use_case_returns_payload(tmp_path) -> None:
     settings = SimpleNamespace(duckdb_path=tmp_path / "tactix.duckdb", source="lichess")
     tactics = [{"tactic_id": 1}]
     uow = DummyUnitOfWork(MagicMock())
+    repo = SimpleNamespace(fetch_recent_tactics=lambda _query, limit: tactics)
     use_case = TacticsSearchUseCase(
-        get_settings=lambda **_kwargs: settings,
-        unit_of_work_factory=lambda _path: uow,
-        init_schema=MagicMock(),
-        fetch_recent_tactics=lambda _conn, _query, limit: tactics,
-        coerce_date_to_datetime=lambda _value, end_of_day=False: None,
-        normalize_source=lambda _source: None,
+        settings_provider=SimpleNamespace(get_settings=lambda **_kwargs: settings),
+        dashboard_repository_factory=SimpleNamespace(create=lambda _conn: repo),
+        uow_runner=DummyUnitOfWorkRunner(uow),
+        date_time_coercer=SimpleNamespace(coerce=lambda _value, end_of_day=False: None),
+        source_normalizer=SimpleNamespace(normalize=lambda _source: None),
     )
 
     result = use_case.search(TacticsSearchFilters(), 5)
@@ -162,17 +179,22 @@ def test_pipeline_run_use_case_runs_and_returns_counts(tmp_path) -> None:
     )
     conn = MagicMock()
     uow = DummyUnitOfWork(conn)
+    cache_refresher = SimpleNamespace(
+        refresh=MagicMock(),
+        sources_for_refresh=lambda _source: ["lichess"],
+    )
+    repo = SimpleNamespace(
+        fetch_pipeline_table_counts=lambda _query: {"games": 1},
+        fetch_opportunity_motif_counts=lambda _query: {"fork": 2},
+    )
     use_case = PipelineRunUseCase(
-        get_settings=lambda **_kwargs: settings,
-        normalize_source=lambda _source: "lichess",
-        coerce_date_to_datetime=lambda _value, end_of_day=False: None,
-        run_daily_game_sync=lambda *_args, **_kwargs: {"status": "ok"},
-        refresh_dashboard_cache_async=MagicMock(),
-        sources_for_cache_refresh=lambda _source: {"lichess"},
-        fetch_pipeline_table_counts=lambda _conn, _query: {"games": 1},
-        fetch_opportunity_motif_counts=lambda _conn, _query: {"fork": 2},
-        unit_of_work_factory=lambda _path: uow,
-        init_schema=MagicMock(),
+        settings_provider=SimpleNamespace(get_settings=lambda **_kwargs: settings),
+        source_normalizer=SimpleNamespace(normalize=lambda _source: "lichess"),
+        date_time_coercer=SimpleNamespace(coerce=lambda _value, end_of_day=False: None),
+        pipeline_runner=SimpleNamespace(run=lambda *_args, **_kwargs: {"status": "ok"}),
+        cache_refresher=cache_refresher,
+        dashboard_repository_factory=SimpleNamespace(create=lambda _conn: repo),
+        uow_runner=DummyUnitOfWorkRunner(uow),
     )
 
     result = use_case.run(PipelineRunFilters())
@@ -181,7 +203,7 @@ def test_pipeline_run_use_case_runs_and_returns_counts(tmp_path) -> None:
     assert isinstance(result["run_id"], str)
     assert result["counts"] == {"games": 1}
     assert result["motif_counts"] == {"fork": 2}
-    use_case.refresh_dashboard_cache_async.assert_called_once()
+    cache_refresher.refresh.assert_called_once()
     assert uow.commit_calls == 1
     assert uow.rollback_calls == 0
     assert uow.close_calls == 1
@@ -192,9 +214,9 @@ def test_postgres_use_case_status_payload() -> None:
     repo.get_status.return_value = "status"
     repo.fetch_ops_events.return_value = []
     use_case = PostgresUseCase(
-        get_settings=lambda: "settings",
-        repository_factory=lambda _settings, _uow_factory: repo,
-        serialize_status=lambda _status: {"status": "ok"},
+        settings_provider=SimpleNamespace(get_settings=lambda: "settings"),
+        repository_provider=SimpleNamespace(create=lambda _settings: repo),
+        status_serializer=SimpleNamespace(serialize=lambda _status: {"status": "ok"}),
     )
 
     result = use_case.get_status(5)

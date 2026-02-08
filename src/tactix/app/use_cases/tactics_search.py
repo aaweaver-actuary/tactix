@@ -2,42 +2,45 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass
-from pathlib import Path
+from dataclasses import dataclass, field
 from typing import Any
 
-from tactix.coerce_date_to_datetime__datetime import _coerce_date_to_datetime
-from tactix.config import Settings, get_settings
+from tactix.app.use_cases.dependencies import (
+    DashboardRepositoryFactory,
+    DateTimeCoercer,
+    DefaultDashboardRepositoryFactory,
+    DefaultDateTimeCoercer,
+    DefaultSettingsProvider,
+    DefaultSourceNormalizer,
+    DuckDbUnitOfWorkRunner,
+    SettingsProvider,
+    SourceNormalizer,
+    UnitOfWorkRunner,
+)
+from tactix.config import Settings
 from tactix.dashboard_query import DashboardQuery
-from tactix.db.dashboard_repository_provider import fetch_recent_tactics
-from tactix.db.duckdb_store import init_schema
-from tactix.db.duckdb_unit_of_work import DuckDbUnitOfWork
-from tactix.normalize_source__source import _normalize_source
-from tactix.ports.unit_of_work import UnitOfWork
 from tactix.tactics_search_filters import TacticsSearchFilters
 
 
 @dataclass
 class TacticsSearchUseCase:
-    get_settings: Callable[..., Settings] = get_settings
-    unit_of_work_factory: Callable[[Path], UnitOfWork] = DuckDbUnitOfWork
-    init_schema: Callable[[Any], None] = init_schema
-    fetch_recent_tactics: Callable[..., list[dict[str, object]]] = fetch_recent_tactics
-    coerce_date_to_datetime: Callable[..., Any] = _coerce_date_to_datetime
-    normalize_source: Callable[[str | None], str | None] = _normalize_source
+    settings_provider: SettingsProvider = field(default_factory=DefaultSettingsProvider)
+    source_normalizer: SourceNormalizer = field(default_factory=DefaultSourceNormalizer)
+    date_time_coercer: DateTimeCoercer = field(default_factory=DefaultDateTimeCoercer)
+    dashboard_repository_factory: DashboardRepositoryFactory = field(
+        default_factory=DefaultDashboardRepositoryFactory
+    )
+    uow_runner: UnitOfWorkRunner = field(default_factory=DuckDbUnitOfWorkRunner)
 
     def search(self, filters: TacticsSearchFilters, limit: int) -> dict[str, object]:
-        normalized_source = self.normalize_source(filters.source)
-        settings = self.get_settings(source=normalized_source)
-        start_datetime = self.coerce_date_to_datetime(filters.start_date)
-        end_datetime = self.coerce_date_to_datetime(filters.end_date, end_of_day=True)
-        uow = self.unit_of_work_factory(settings.duckdb_path)
-        conn = uow.begin()
-        try:
-            self.init_schema(conn)
-            tactics = self.fetch_recent_tactics(
-                conn,
+        normalized_source = self.source_normalizer.normalize(filters.source)
+        settings = self.settings_provider.get_settings(source=normalized_source)
+        start_datetime = self.date_time_coercer.coerce(filters.start_date)
+        end_datetime = self.date_time_coercer.coerce(filters.end_date, end_of_day=True)
+
+        def handler(conn: Any) -> dict[str, object]:
+            repo = self.dashboard_repository_factory.create(conn)
+            tactics = repo.fetch_recent_tactics(
                 DashboardQuery(
                     source=normalized_source,
                     motif=filters.motif,
@@ -49,15 +52,9 @@ class TacticsSearchUseCase:
                 limit=limit,
             )
             response_source = "all" if normalized_source is None else normalized_source
-            payload = {"source": response_source, "limit": limit, "tactics": tactics}
-        except Exception:
-            uow.rollback()
-            raise
-        else:
-            uow.commit()
-        finally:
-            uow.close()
-        return payload
+            return {"source": response_source, "limit": limit, "tactics": tactics}
+
+        return self.uow_runner.run(settings.duckdb_path, handler)
 
 
 def get_tactics_search_use_case() -> TacticsSearchUseCase:

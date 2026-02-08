@@ -1,4 +1,14 @@
 Session summary (2026-02-08):
+- Implemented dependency objects for use-case wiring to replace callable injection across pipeline, dashboard, practice, tactics search, and postgres use cases.
+- Updated use-case tests to use fakes implementing the new interfaces and added a shared dummy unit-of-work runner for assertions.
+- Tests run: make check (task); pytest tests/test_api_chesscom_bullet_pipeline_canonical.py tests/test_chesscom_bullet_pipeline_2026_02_01.py tests/test_api_lichess_blitz_pipeline_regression.py; pytest tests/test_api_chesscom_bullet_pipeline_regression.py -k idempotency; pytest tests/test_use_cases_api_layer.py.
+- Tests run (runTests tool): failed to detect tests for targeted files and test_use_cases_api_layer.py; used pytest fallback.
+- Before→After map:
+	- tactix/app/use_cases/dependencies.py → new dependency interfaces and default implementations for use-case wiring.
+	- tactix/app/use_cases/{pipeline_run,dashboard,practice,tactics_search,postgres}.py → swap callable injection for dependency objects and repository factories.
+	- tests/test_use_cases_api_layer.py → fakes updated to implement dependency interfaces.
+
+Session summary (2026-02-08):
 - Consolidated line tactic and position context helper modules into object-based builders.
 - Migrated call sites to builder objects and removed the legacy helper modules.
 - Added unit tests for the new builder objects.

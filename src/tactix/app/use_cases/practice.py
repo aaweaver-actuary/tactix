@@ -2,19 +2,24 @@
 
 from __future__ import annotations
 
-import time as time_module
 from collections.abc import Callable
-from dataclasses import dataclass
-from pathlib import Path
+from dataclasses import dataclass, field
 from typing import Any
 
-from tactix.config import Settings, get_settings
-from tactix.db.duckdb_store import init_schema
-from tactix.db.duckdb_unit_of_work import DuckDbUnitOfWork
-from tactix.db.tactic_repository_provider import tactic_repository
+from tactix.app.use_cases.dependencies import (
+    Clock,
+    DefaultClock,
+    DefaultSettingsProvider,
+    DefaultSourceNormalizer,
+    DefaultTacticRepositoryFactory,
+    DuckDbUnitOfWorkRunner,
+    SettingsProvider,
+    SourceNormalizer,
+    TacticRepositoryFactory,
+    UnitOfWorkRunner,
+)
+from tactix.config import Settings
 from tactix.models import PracticeAttemptRequest
-from tactix.normalize_source__source import _normalize_source
-from tactix.ports.unit_of_work import UnitOfWork
 
 
 class PracticeAttemptError(ValueError):
@@ -38,12 +43,13 @@ class PracticeQueueRequest:
 
 @dataclass
 class PracticeUseCase:
-    get_settings: Callable[..., Settings] = get_settings
-    unit_of_work_factory: Callable[[Path], UnitOfWork] = DuckDbUnitOfWork
-    init_schema: Callable[[Any], None] = init_schema
-    repository_factory: Callable[[Any], Any] = tactic_repository
-    normalize_source: Callable[[str | None], str | None] = _normalize_source
-    time_provider: Callable[[], float] = time_module.time
+    settings_provider: SettingsProvider = field(default_factory=DefaultSettingsProvider)
+    source_normalizer: SourceNormalizer = field(default_factory=DefaultSourceNormalizer)
+    repository_factory: TacticRepositoryFactory = field(
+        default_factory=DefaultTacticRepositoryFactory
+    )
+    uow_runner: UnitOfWorkRunner = field(default_factory=DuckDbUnitOfWorkRunner)
+    clock: Clock = field(default_factory=DefaultClock)
 
     def get_queue(
         self,
@@ -51,8 +57,8 @@ class PracticeUseCase:
         include_failed_attempt: bool,
         limit: int,
     ) -> dict[str, object]:
-        normalized_source = self.normalize_source(source)
-        settings = self.get_settings(source=normalized_source)
+        normalized_source = self.source_normalizer.normalize(source)
+        settings = self.settings_provider.get_settings(source=normalized_source)
         request = PracticeQueueRequest(
             normalized_source=normalized_source,
             include_failed_attempt=include_failed_attempt,
@@ -69,8 +75,8 @@ class PracticeUseCase:
         source: str | None,
         include_failed_attempt: bool,
     ) -> dict[str, object]:
-        normalized_source = self.normalize_source(source)
-        settings = self.get_settings(source=normalized_source)
+        normalized_source = self.source_normalizer.normalize(source)
+        settings = self.settings_provider.get_settings(source=normalized_source)
         request = PracticeQueueRequest(
             normalized_source=normalized_source,
             include_failed_attempt=include_failed_attempt,
@@ -84,7 +90,7 @@ class PracticeUseCase:
         )
 
     def submit_attempt(self, payload: PracticeAttemptRequest) -> dict[str, object]:
-        settings = self.get_settings(source=payload.source)
+        settings = self.settings_provider.get_settings(source=payload.source)
         latency_ms = self._resolve_latency_ms(payload.served_at_ms)
         try:
             return self._run_with_uow(
@@ -95,11 +101,11 @@ class PracticeUseCase:
             raise PracticeAttemptError(str(exc)) from exc
 
     def get_game_detail(self, game_id: str, source: str | None) -> dict[str, object]:
-        normalized_source = self.normalize_source(source)
-        settings = self.get_settings(source=normalized_source)
+        normalized_source = self.source_normalizer.normalize(source)
+        settings = self.settings_provider.get_settings(source=normalized_source)
         payload = self._run_with_uow(
             settings,
-            lambda conn: self.repository_factory(conn).fetch_game_detail(
+            lambda conn: self.repository_factory.create(conn).fetch_game_detail(
                 game_id,
                 settings.user,
                 normalized_source,
@@ -114,7 +120,7 @@ class PracticeUseCase:
         conn: Any,
         request: PracticeQueueRequest,
     ) -> list[dict[str, object]]:
-        return self.repository_factory(conn).fetch_practice_queue(
+        return self.repository_factory.create(conn).fetch_practice_queue(
             limit=request.limit,
             source=request.normalized_source or request.settings.source,
             include_failed_attempt=request.include_failed_attempt,
@@ -149,7 +155,7 @@ class PracticeUseCase:
         payload: PracticeAttemptRequest,
         latency_ms: int | None,
     ) -> dict[str, object]:
-        repo = self.repository_factory(conn)
+        repo = self.repository_factory.create(conn)
         return repo.grade_practice_attempt(
             payload.tactic_id,
             payload.position_id,
@@ -162,24 +168,12 @@ class PracticeUseCase:
         settings: Settings,
         handler: Callable[[Any], dict[str, object]],
     ) -> dict[str, object]:
-        uow = self.unit_of_work_factory(settings.duckdb_path)
-        conn = uow.begin()
-        try:
-            self.init_schema(conn)
-            result = handler(conn)
-        except Exception:
-            uow.rollback()
-            raise
-        else:
-            uow.commit()
-        finally:
-            uow.close()
-        return result
+        return self.uow_runner.run(settings.duckdb_path, handler)
 
     def _resolve_latency_ms(self, served_at_ms: int | None) -> int | None:
         if served_at_ms is None:
             return None
-        now_ms = int(self.time_provider() * 1000)
+        now_ms = int(self.clock.now() * 1000)
         return max(0, now_ms - served_at_ms)
 
 

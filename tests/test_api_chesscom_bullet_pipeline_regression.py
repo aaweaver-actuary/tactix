@@ -220,6 +220,36 @@ def _snapshot_idempotency_state(
     }
 
 
+def _build_cursor_expectations(
+    fixture_rows: list[dict[str, object]],
+) -> tuple[str, set[str], int, str | None]:
+    ordered_rows = sorted(
+        fixture_rows,
+        key=lambda row: int(row.get("last_timestamp_ms", 0)),
+    )
+    cursor_row = ordered_rows[0]
+    cursor = _build_cursor(
+        int(cursor_row["last_timestamp_ms"]),
+        str(cursor_row["game_id"]),
+    )
+    filtered_rows = _filter_by_cursor(list(fixture_rows), cursor)
+    expected_ids = {row["game_id"] for row in filtered_rows}
+
+    expected_since_ms, _ = _parse_cursor(cursor)
+    expected_next_cursor = None
+    if filtered_rows:
+        newest = max(
+            filtered_rows,
+            key=lambda row: int(row.get("last_timestamp_ms", 0)),
+        )
+        expected_next_cursor = _build_cursor(
+            int(newest.get("last_timestamp_ms", 0)),
+            str(newest.get("game_id", "")),
+        )
+
+    return cursor, expected_ids, expected_since_ms, expected_next_cursor
+
+
 def test_api_pipeline_chesscom_bullet_fixture_regression() -> None:
     _ensure_stockfish_available()
 
@@ -519,28 +549,10 @@ def test_api_pipeline_chesscom_cursor_incremental_sync() -> None:
         }
         for chunk in chunks
     ]
-    ordered_rows = list(fixture_rows)
-    ordered_rows.sort(key=lambda row: int(row.get("last_timestamp_ms", 0)))
-    cursor_row = ordered_rows[0]
-    cursor = _build_cursor(
-        int(cursor_row["last_timestamp_ms"]),
-        str(cursor_row["game_id"]),
+    cursor, expected_ids, expected_since_ms, expected_next_cursor = (
+        _build_cursor_expectations(fixture_rows)
     )
-    filtered_rows = _filter_by_cursor(list(fixture_rows), cursor)
-    expected_ids = {row["game_id"] for row in filtered_rows}
     assert expected_ids
-
-    expected_since_ms, _ = _parse_cursor(cursor)
-    expected_next_cursor = None
-    if filtered_rows:
-        newest = max(
-            filtered_rows,
-            key=lambda row: int(row.get("last_timestamp_ms", 0)),
-        )
-        expected_next_cursor = _build_cursor(
-            int(newest.get("last_timestamp_ms", 0)),
-            str(newest.get("game_id", "")),
-        )
 
     try:
         import tactix.api as api_module

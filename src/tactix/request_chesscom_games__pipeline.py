@@ -10,10 +10,9 @@ def _request_chesscom_games(
     backfill_mode: bool,
     since_ms: int,
 ) -> ChesscomFetchResult:
-    return client.fetch_incremental_games(
-        ChesscomFetchRequest(
-            cursor=cursor_value,
-            full_history=backfill_mode,
-            since_ms=since_ms,
-        )
+    request = ChesscomFetchRequest(
+        cursor=cursor_value,
+        full_history=backfill_mode,
+        since_ms=since_ms,
     )
+    return client.fetch_incremental_games(request)

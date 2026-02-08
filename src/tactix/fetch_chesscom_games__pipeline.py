@@ -18,9 +18,7 @@ def _fetch_chesscom_games(
 ) -> FetchContext:
     """Fetch Chess.com games and return a populated fetch context."""
     cursor_before = read_chesscom_cursor(settings.checkpoint_path)
-    cursor_value = None if backfill_mode else cursor_before
-    last_timestamp_value = _cursor_last_timestamp(cursor_value)
-    since_ms = last_timestamp_value if cursor_value else 0
+    cursor_value, since_ms = _resolve_cursor_state(cursor_before, backfill_mode)
     chesscom_result = _request_chesscom_games(
         client,
         cursor_value,
@@ -39,3 +37,13 @@ def _fetch_chesscom_games(
         chesscom_result=chesscom_result,
         last_timestamp_ms=last_timestamp_value,
     )
+
+
+def _resolve_cursor_state(
+    cursor_before: str | None,
+    backfill_mode: bool,
+) -> tuple[str | None, int]:
+    cursor_value = None if backfill_mode else cursor_before
+    if not cursor_value:
+        return None, 0
+    return cursor_value, _cursor_last_timestamp(cursor_value)

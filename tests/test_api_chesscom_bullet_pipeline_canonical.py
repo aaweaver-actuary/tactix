@@ -250,6 +250,20 @@ def canonical_games(canonical_db_path: Path) -> list[tuple[str, chess.pgn.Game]]
     return games
 
 
+def test_canonical_pipeline_games_store_pgn_text(canonical_db_path: Path) -> None:
+    conn = get_connection(canonical_db_path)
+    try:
+        rows = _fetch_canonical_game_rows(conn)
+    finally:
+        conn.close()
+    if not rows:
+        raise AssertionError("Expected canonical games rows to be present")
+    for row in rows:
+        pgn_text = row.get("pgn")
+        assert isinstance(pgn_text, str)
+        assert pgn_text.strip() != ""
+
+
 def test_canonical_pipeline_ingests_two_games(canonical_games) -> None:
     assert len(canonical_games) == 2
 

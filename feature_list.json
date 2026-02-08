@@ -522,7 +522,7 @@
     "category": "functional",
     "description": "PGN text is stored or referenced as the source of truth",
     "steps": ["Step 1: Sync a game with PGN content", "Step 2: Verify pgn field is non-empty or contains a pointer", "Step 3: If stored externally, verify pointer resolves to the PGN text"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

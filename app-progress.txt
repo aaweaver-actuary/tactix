@@ -1,4 +1,11 @@
 Session summary (2026-02-08):
+- Re-verified core UI regressions via Puppeteer (enter submit, game detail modal, practice progress, dashboard cards collapse/move, open Lichess link, listudy assets, motif filters, practice attempt, dashboard 110, positions); screenshots refreshed in verification/.
+- Added PGN storage assertions for games table rows and canonical pipeline rows to ensure non-empty PGN text is persisted.
+- Tests run: node verification/puppeteer_issue_enter_submit.js; node verification/puppeteer_feature_game_detail_modal.js; node verification/puppeteer_issue_practice_progress.js; node verification/puppeteer_feature_dashboard_cards_collapsible_move.js; node verification/puppeteer_feature_open_lichess_link.js; node verification/puppeteer_feature_listudy_assets.js; node verification/puppeteer_motif_filters.js; node verification/puppeteer_practice_attempt.js; node verification/puppeteer_feature_110_dashboard.js; node verification/puppeteer_feature_107_positions.js; pytest tests/test_games_table_pgn_storage.py tests/test_api_chesscom_bullet_pipeline_canonical.py -q; make check.
+- Updated feature_list.json: marked "PGN text is stored or referenced as the source of truth" as passing.
+- Current pass count: 38/128.
+
+Session summary (2026-02-08):
 - Refactored games table row construction to delegate PGN header user fields into a dedicated helper, reducing coupling between row assembly and header parsing.
 - Added unit coverage for PGN header user field resolution (color, opponent rating, result).
 - Tests run: make check (before; task); make check (after; task).

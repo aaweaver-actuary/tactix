@@ -93,7 +93,7 @@
       "Step 4: Verify the UI updates appropriately without errors",
       "Step 5: Add or update a UI test that asserts Enter submits the form"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

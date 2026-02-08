@@ -1,6 +1,7 @@
 interface PracticeMoveInputProps {
   practiceMove: string;
   onPracticeMoveChange: (value: string) => void;
+  onPracticeSubmit: () => void;
   practiceSubmitting: boolean;
 }
 
@@ -16,12 +17,19 @@ interface PracticeMoveInputProps {
 export default function PracticeMoveInput({
   practiceMove,
   onPracticeMoveChange,
+  onPracticeSubmit,
   practiceSubmitting,
 }: PracticeMoveInputProps) {
   return (
     <input
       value={practiceMove}
       onChange={(event) => onPracticeMoveChange(event.target.value)}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' || practiceSubmitting) return;
+        if (!event.currentTarget.value.trim()) return;
+        event.preventDefault();
+        onPracticeSubmit();
+      }}
       placeholder="Enter your move (UCI e.g., e2e4)"
       className="flex-1 min-w-[220px] rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand placeholder:text-sand/40"
       disabled={practiceSubmitting}

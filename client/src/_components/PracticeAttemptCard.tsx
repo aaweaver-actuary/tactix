@@ -154,6 +154,7 @@ export default function PracticeAttemptCard({
                 <PracticeMoveInput
                   practiceMove={practiceMove}
                   onPracticeMoveChange={onPracticeMoveChange}
+                  onPracticeSubmit={() => void handlePracticeAttempt()}
                   practiceSubmitting={practiceSubmitting}
                 />
                 <PracticeAttemptButton

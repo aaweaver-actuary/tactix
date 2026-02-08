@@ -1,4 +1,11 @@
 Session summary (2026-02-08):
+- Implemented enter-to-submit handling for the practice move input and added UI coverage for Enter submission.
+- UI verification: Puppeteer enter-submit run with keyboard input; screenshot verification/ui-enter-submit-2026-02-08.png; logs tmp-logs/ui-enter-submit-2026-02-08.json and tmp-logs/enter-submit-run.log.
+- Added CI integration script: verification/integration_feature_enter_submit.js.
+- Tests run: pytest tests/test_api_dashboard_cache.py tests/test_api_practice.py tests/test_api_jobs.py tests/test_practice_queue.py tests/test_tactics_analyzer.py tests/test_position_extractor.py tests/test_unit_of_work.py tests/test_pgn_fixture_parsing.py tests/test_pipeline_helpers.py tests/test_duckdb_dashboard_repository.py tests/test_stockfish_runner.py tests/test_chesscom_client.py; npm test (client); node verification/integration_feature_enter_submit.js; make check.
+- Updated feature_list.json: marked "[UI] Pressing enter inside a text box should submit when something has been typed into the box" as passing.
+
+Session summary (2026-02-08):
 - NOTE: Do not start uvicorn locally for UI verification. Docker Compose services are the source of truth. Always use `docker ps` and health curls to confirm API/UI are running (ports 8000/5173/8080) before Puppeteer.
 - Refactored PracticeUseCase to consolidate source/settings resolution and queue request construction.
 - Tests run: make check (before; task), make check (after; task).

@@ -43,6 +43,25 @@ END
 """
 
 
+def _fixture_game_filter_sql() -> str:
+    return f"""
+    WHERE source = %s
+      AND utc_date = %s
+      AND {BULLET_TIME_CONTROL_SQL}
+      AND game_id = ANY(%s)
+      AND pgn_hash = ANY(%s)
+    """
+
+
+def _fixture_query_args() -> tuple[str, str, list[str], list[str]]:
+    return (
+        SOURCE,
+        FIXTURE_DATE_TEXT,
+        list(_fixture_game_ids()),
+        list(_fixture_pgn_hashes()),
+    )
+
+
 @dataclass(frozen=True)
 class HangingPosition:
     position_id: int
@@ -485,16 +504,12 @@ def pg_conn():
 def test_exactly_two_bullet_games_ingested_for_2026_02_01(pg_conn):
     with pg_conn.cursor() as cur:
         cur.execute(
-            """
+            f"""
             SELECT COUNT(*)
             FROM tactix_pgns.raw_pgns
-            WHERE source = %s
-              AND utc_date = %s
-              AND split_part(time_control, '+', 1)::int <= 180
-                            AND game_id = ANY(%s)
-                            AND pgn_hash = ANY(%s)
+            {_fixture_game_filter_sql()}
             """,
-                        (SOURCE, FIXTURE_DATE_TEXT, list(_fixture_game_ids()), list(_fixture_pgn_hashes())),
+            _fixture_query_args(),
         )
         count = cur.fetchone()[0]
     assert count == 2
@@ -511,14 +526,10 @@ def test_outcome_distribution_is_one_win_one_loss(pg_conn):
                 SELECT
                     {OUTCOME_CASE_SQL} AS outcome
                 FROM tactix_pgns.raw_pgns
-                WHERE source = %s
-                  AND utc_date = %s
-                  AND {BULLET_TIME_CONTROL_SQL}
-                                    AND game_id = ANY(%s)
-                                    AND pgn_hash = ANY(%s)
+                {_fixture_game_filter_sql()}
             ) AS outcomes
             """,
-                        (SOURCE, FIXTURE_DATE_TEXT, list(_fixture_game_ids()), list(_fixture_pgn_hashes())),
+            _fixture_query_args(),
         )
         wins, losses = cur.fetchone()
     assert wins == 1
@@ -543,14 +554,10 @@ def test_rating_deltas_match_expectations(pg_conn):
                     END AS rating_delta,
                     {OUTCOME_CASE_SQL} AS outcome
                 FROM tactix_pgns.raw_pgns
-                WHERE source = %s
-                  AND utc_date = %s
-                  AND {BULLET_TIME_CONTROL_SQL}
-                                    AND game_id = ANY(%s)
-                                    AND pgn_hash = ANY(%s)
+                {_fixture_game_filter_sql()}
             ) AS ratings
             """,
-                        (SOURCE, FIXTURE_DATE_TEXT, list(_fixture_game_ids()), list(_fixture_pgn_hashes())),
+            _fixture_query_args(),
         )
         loss_gt_50, win_le_50, losses, wins = cur.fetchone()
     assert losses == 1

@@ -16,27 +16,67 @@ from tactix.resolve_user_fields__pgn_headers import _resolve_user_fields__pgn_he
 
 def _build_games_table_row(row: Mapping[str, object]) -> dict[str, object]:
     """Return a canonical games table row for a raw game row."""
-    pgn, user = str(row.get("pgn") or ""), str(row.get("user") or "")
-    metadata, headers = _load_pgn_metadata(pgn, user)
-    user_color, opp_rating, result = _resolve_user_fields__pgn_headers(headers, metadata, user)
-    last_timestamp_ms = row.get("last_timestamp_ms")
-    played_at = _resolve_played_at(metadata.get("start_timestamp_ms"), last_timestamp_ms)
+    fields = _coerce_row_fields(row)
+    metadata, headers = _load_pgn_metadata(fields["pgn"], fields["user"])
+    user_color, opp_rating, result = _resolve_user_fields__pgn_headers(
+        headers, metadata, fields["user"]
+    )
+    played_at = _resolve_played_at(metadata.get("start_timestamp_ms"), fields["last_timestamp_ms"])
+    resolved = _resolve_user_fields_payload(user_color, opp_rating, result, played_at)
+    return _assemble_games_table_row(fields, metadata, resolved)
+
+
+def _coerce_row_fields(row: Mapping[str, object]) -> dict[str, object]:
+    """Return normalized input fields from a raw game row."""
     return {
         "game_id": str(row.get("game_id") or ""),
         "source": str(row.get("source") or ""),
-        "user": user,
-        "user_id": user,
+        "user": str(row.get("user") or ""),
+        "pgn": str(row.get("pgn") or ""),
+        "fetched_at": row.get("fetched_at"),
+        "ingested_at": row.get("ingested_at"),
+        "last_timestamp_ms": row.get("last_timestamp_ms"),
+        "cursor": row.get("cursor"),
+    }
+
+
+def _resolve_user_fields_payload(
+    user_color: str | None,
+    opp_rating: int | None,
+    result: str,
+    played_at: datetime | None,
+) -> dict[str, object]:
+    """Return resolved user fields for the games table row."""
+    return {
         "user_color": user_color,
-        "user_rating": metadata.get("user_rating"),
         "opp_rating": opp_rating,
         "result": result,
-        "time_control": normalize_time_control_label(metadata.get("time_control")),
         "played_at": played_at,
-        "pgn": pgn,
-        "fetched_at": row.get("fetched_at"),
-        "ingested_at": _resolve_ingested_at(row.get("ingested_at")),
-        "last_timestamp_ms": last_timestamp_ms,
-        "cursor": row.get("cursor"),
+    }
+
+
+def _assemble_games_table_row(
+    fields: dict[str, object],
+    metadata: dict[str, object],
+    resolved: dict[str, object],
+) -> dict[str, object]:
+    """Return a canonical games table row for storage."""
+    return {
+        "game_id": fields["game_id"],
+        "source": fields["source"],
+        "user": fields["user"],
+        "user_id": fields["user"],
+        "user_color": resolved["user_color"],
+        "user_rating": metadata.get("user_rating"),
+        "opp_rating": resolved["opp_rating"],
+        "result": resolved["result"],
+        "time_control": normalize_time_control_label(metadata.get("time_control")),
+        "played_at": resolved["played_at"],
+        "pgn": fields["pgn"],
+        "fetched_at": fields["fetched_at"],
+        "ingested_at": _resolve_ingested_at(fields["ingested_at"]),
+        "last_timestamp_ms": fields["last_timestamp_ms"],
+        "cursor": fields["cursor"],
     }
 
 

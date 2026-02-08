@@ -32,6 +32,10 @@ class GameNotFoundError(LookupError):
     """Raised when a game detail payload is missing a PGN."""
 
 
+def _missing_uow_runner() -> UnitOfWorkRunner:
+    raise ValueError("uow_runner is required for PracticeUseCase")
+
+
 @dataclass(frozen=True)
 class PracticeQueueRequest:
     """Inputs for fetching practice queue items."""
@@ -50,7 +54,7 @@ class PracticeUseCase:
     repository_factory: TacticRepositoryFactory = field(
         default_factory=DefaultTacticRepositoryFactory
     )
-    uow_runner: UnitOfWorkRunner = field(default_factory=DuckDbUnitOfWorkRunner)
+    uow_runner: UnitOfWorkRunner = field(default_factory=_missing_uow_runner)
     clock: Clock = field(default_factory=DefaultClock)
 
     def get_queue(
@@ -180,7 +184,7 @@ class PracticeUseCase:
 
 
 def get_practice_use_case() -> PracticeUseCase:
-    return PracticeUseCase()
+    return PracticeUseCase(uow_runner=DuckDbUnitOfWorkRunner())
 
 
 __all__ = [

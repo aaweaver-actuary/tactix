@@ -1,4 +1,21 @@
 Session summary (2026-02-08):
+- Moved DuckDB unit-of-work wiring out of use-case defaults; use cases now require injected uow runners and factories wire DuckDb runners.
+- Added a fake-port unit test for dashboard raw PGN summary; updated cached dashboard test to inject the uow runner.
+- Tests run: runTests (all; summary passed=115); make check (task).
+- UI verification: skipped (no UI changes).
+- Updated feature_list.json: marked "Use cases perform infrastructure work (DuckDB connections, schema init)" as passing.
+- Before→After map:
+	- tactix/app/use_cases/{dashboard,pipeline_run,practice,tactics_search}.py → require uow runner injection, wire DuckDb runners in factories.
+	- tests/test_use_cases_api_layer.py → add uow runner injection and raw PGN summary coverage.
+	- feature_list.json → mark the infra-free use-case feature as passing.
+
+Session summary (2026-02-08):
+- Regression verification for chess.com bullet canonical pipeline + SyncGames idempotency.
+- UI verification via Puppeteer could not run because uvicorn could not bind to 0.0.0.0 or 127.0.0.1 in this environment (operation not permitted). Logged failure in tmp-logs/verification_chesscom_bullet_ui_2026_02_08_failure.log; no new screenshots produced.
+- Automated tests: pytest tests/test_api_chesscom_bullet_pipeline_canonical.py (pass); pytest tests/test_api_chesscom_bullet_pipeline_regression.py -k test_api_pipeline_chesscom_bullet_idempotency (pass).
+- Evidence logs: tmp-logs/verification_chesscom_bullet_canonical_pytest_2026_02_08.log, tmp-logs/verification_chesscom_bullet_idempotency_pytest_2026_02_08.log.
+
+Session summary (2026-02-08):
 - Implemented composition-root wiring for use-case defaults and introduced a checkpoint writer port to keep use-cases infra-free.
 - Updated pipeline support to use the checkpoint writer port; added a Postgres repository port; updated pipeline support tests to use a fake writer.
 - Tests run: runTests (failed to detect tests for tests/test_pipeline_support.py); pytest tests/test_pipeline_support.py (failed: ModuleNotFoundError: No module named 'chess'); make check (task).

@@ -23,6 +23,10 @@ from tactix.dashboard_query import DashboardQuery
 from tactix.tactics_search_filters import TacticsSearchFilters
 
 
+def _missing_uow_runner() -> UnitOfWorkRunner:
+    raise ValueError("uow_runner is required for TacticsSearchUseCase")
+
+
 @dataclass
 class TacticsSearchUseCase:
     settings_provider: SettingsProvider = field(default_factory=DefaultSettingsProvider)
@@ -31,7 +35,7 @@ class TacticsSearchUseCase:
     dashboard_repository_factory: DashboardRepositoryFactory = field(
         default_factory=DefaultDashboardRepositoryFactory
     )
-    uow_runner: UnitOfWorkRunner = field(default_factory=DuckDbUnitOfWorkRunner)
+    uow_runner: UnitOfWorkRunner = field(default_factory=_missing_uow_runner)
 
     def search(self, filters: TacticsSearchFilters, limit: int) -> dict[str, object]:
         normalized_source = self.source_normalizer.normalize(filters.source)
@@ -59,7 +63,7 @@ class TacticsSearchUseCase:
 
 
 def get_tactics_search_use_case() -> TacticsSearchUseCase:
-    return TacticsSearchUseCase()
+    return TacticsSearchUseCase(uow_runner=DuckDbUnitOfWorkRunner())
 
 
 __all__ = ["TacticsSearchUseCase", "get_tactics_search_use_case"]

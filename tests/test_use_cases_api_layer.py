@@ -57,11 +57,14 @@ def test_dashboard_use_case_returns_cached_payload(tmp_path) -> None:
     payload = {"status": "ok", "metrics_version": 5}
     settings = SimpleNamespace(duckdb_path=tmp_path / "tactix.duckdb", data_dir=tmp_path)
     payload_fetcher = SimpleNamespace(fetch=MagicMock())
+    uow = DummyUnitOfWork(MagicMock())
+    uow_runner = DummyUnitOfWorkRunner(uow)
     use_case = DashboardUseCase(
         filters_resolver=SimpleNamespace(resolve=lambda _filters: (None, None, None, settings)),
         cache_key_builder=SimpleNamespace(build=lambda _settings, _query: ("key",)),
         cache=SimpleNamespace(get=lambda _key: payload, set=MagicMock()),
         payload_fetcher=payload_fetcher,
+        uow_runner=uow_runner,
     )
 
     result = use_case.get_dashboard(DashboardQueryFilters(), None)
@@ -87,6 +90,28 @@ def test_dashboard_use_case_summary_uses_counts(tmp_path) -> None:
 
     assert result == {"source": "all", "summary": counts}
     assert settings.duckdb_path == tmp_path / "custom.duckdb"
+    assert uow.commit_calls == 1
+    assert uow.rollback_calls == 0
+    assert uow.close_calls == 1
+
+
+def test_dashboard_use_case_raw_pgns_summary(tmp_path) -> None:
+    settings = SimpleNamespace(duckdb_path=tmp_path / "tactix.duckdb", source="lichess")
+    conn = MagicMock()
+    uow = DummyUnitOfWork(conn)
+    uow_runner = DummyUnitOfWorkRunner(uow)
+    repo = MagicMock()
+    repo.fetch_raw_pgns_summary.return_value = {"count": 3}
+    use_case = DashboardUseCase(
+        settings_provider=SimpleNamespace(get_settings=lambda **_kwargs: settings),
+        raw_pgn_repository_factory=SimpleNamespace(create=lambda _conn: repo),
+        uow_runner=uow_runner,
+    )
+
+    result = use_case.get_raw_pgns_summary(None)
+
+    assert result == {"source": "lichess", "summary": {"count": 3}}
+    repo.fetch_raw_pgns_summary.assert_called_once_with(source="lichess")
     assert uow.commit_calls == 1
     assert uow.rollback_calls == 0
     assert uow.close_calls == 1

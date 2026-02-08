@@ -81,7 +81,7 @@
       "Step 4: Verify tests still pass without use-cases touching infra APIs",
       "Step 5: Add unit tests that exercise use-cases with fake ports"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

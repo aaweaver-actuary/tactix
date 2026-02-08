@@ -40,6 +40,10 @@ from tactix.dashboard_query_filters import DashboardQueryFilters
 ResultT = TypeVar("ResultT")
 
 
+def _missing_uow_runner() -> UnitOfWorkRunner:
+    raise ValueError("uow_runner is required for DashboardUseCase")
+
+
 @dataclass
 class DashboardUseCase:  # pylint: disable=too-many-instance-attributes
     filters_resolver: DashboardFiltersResolver = field(
@@ -60,7 +64,7 @@ class DashboardUseCase:  # pylint: disable=too-many-instance-attributes
     raw_pgn_repository_factory: RawPgnRepositoryFactory = field(
         default_factory=DefaultRawPgnRepositoryFactory
     )
-    uow_runner: UnitOfWorkRunner = field(default_factory=DuckDbUnitOfWorkRunner)
+    uow_runner: UnitOfWorkRunner = field(default_factory=_missing_uow_runner)
     settings_provider: SettingsProvider = field(default_factory=DefaultSettingsProvider)
     source_normalizer: SourceNormalizer = field(default_factory=DefaultSourceNormalizer)
 
@@ -185,7 +189,7 @@ class DashboardUseCase:  # pylint: disable=too-many-instance-attributes
 
 
 def get_dashboard_use_case() -> DashboardUseCase:
-    return DashboardUseCase()
+    return DashboardUseCase(uow_runner=DuckDbUnitOfWorkRunner())
 
 
 __all__ = ["DashboardUseCase", "get_dashboard_use_case"]

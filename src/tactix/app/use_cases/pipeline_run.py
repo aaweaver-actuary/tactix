@@ -37,6 +37,10 @@ class PipelineWindowError(ValueError):
     """Raised when a pipeline run window is invalid."""
 
 
+def _missing_uow_runner() -> UnitOfWorkRunner:
+    raise ValueError("uow_runner is required for PipelineRunUseCase")
+
+
 @dataclass
 class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
     settings_provider: SettingsProvider = field(default_factory=DefaultSettingsProvider)
@@ -47,7 +51,7 @@ class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
     dashboard_repository_factory: DashboardRepositoryFactory = field(
         default_factory=DefaultDashboardRepositoryFactory
     )
-    uow_runner: UnitOfWorkRunner = field(default_factory=DuckDbUnitOfWorkRunner)
+    uow_runner: UnitOfWorkRunner = field(default_factory=_missing_uow_runner)
 
     def run(self, filters: PipelineRunFilters) -> dict[str, object]:
         normalized_source = self.source_normalizer.normalize(filters.source)
@@ -202,7 +206,7 @@ class PipelineRunUseCase:  # pylint: disable=too-many-instance-attributes
 
 
 def get_pipeline_run_use_case() -> PipelineRunUseCase:
-    return PipelineRunUseCase()
+    return PipelineRunUseCase(uow_runner=DuckDbUnitOfWorkRunner())
 
 
 __all__ = ["PipelineRunUseCase", "PipelineWindowError", "get_pipeline_run_use_case"]

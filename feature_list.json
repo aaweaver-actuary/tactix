@@ -510,7 +510,7 @@
       "Step 3: Select a known game where user is Black",
       "Step 4: Verify user_color stored as black"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

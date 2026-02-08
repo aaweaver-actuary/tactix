@@ -1,4 +1,17 @@
 Session summary (2026-02-08):
+- Aligned the recent games detail test with the bottom-aligned modal behavior.
+- Tests run: make check (before; task), make check (after; task).
+- Before→After map:
+	- client/src/flows/DashboardFlow.test.tsx overlay modal expectation → bottom-aligned modal assertion.
+
+Session summary (2026-02-08):
+- Re-verified UI regressions via Puppeteer (enter submit, game detail modal, practice progress) and updated the modal click target to avoid the action button; screenshots refreshed in verification/.
+- Verified user_color inference from PGN headers via pytest tests/test_user_color_inference.py.
+- Updated feature_list.json to mark user color inference as passing.
+- Tests run: node verification/puppeteer_issue_enter_submit.js; node verification/puppeteer_feature_game_detail_modal.js; node verification/puppeteer_issue_practice_progress.js; pytest tests/test_user_color_inference.py -q; make check (task).
+- Current pass count: 36/128.
+
+Session summary (2026-02-08):
 - Normalized PGN player names for user color and rating inference to handle annotated headers.
 - Added user color inference unit coverage using fixture PGNs and annotated player headers.
 - Tests run: runTests (tests/test_user_color_inference.py) -> tool reported "No tests found in the files"; runTests (10 core test files) -> same error.

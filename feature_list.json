@@ -57,7 +57,7 @@
       "Step 4: Add unit tests that cover the domain logic in isolation",
       "Step 5: Confirm no domain module imports FastAPI, DB drivers, or client SDKs"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

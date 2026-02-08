@@ -3,6 +3,7 @@ Session summary (2026-02-08):
 - Aligned repository port signatures with actual implementations and added casts in dependency factories to satisfy type checking.
 - Added isolated unit tests for the new domain logic.
 - Tests run: runTests (failed to detect tests for new domain files); pytest tests/test_domain_conversion_payload.py tests/test_domain_practice.py tests/test_domain_tactics_outcome.py; make check (task).
+- Updated feature_list.json: marked "Domain layer is empty; logic remains scattered in helper modules" as passing.
 - Before→After map:
 	- tactix/domain/{conversion_payload.py,practice.py,tactics_outcome.py} → new domain logic modules.
 	- tactix/{conversion_payload__pipeline.py,should_override_failed_attempt__tactics.py,resolve_unclear_outcome_context.py} → delegate to domain helpers.

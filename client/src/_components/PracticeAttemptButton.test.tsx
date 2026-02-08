@@ -75,25 +75,4 @@ describe('PracticeAttemptButton', () => {
 
     expect(onPracticeAttempt).toHaveBeenCalledTimes(1);
   });
-
-  it('passes through the provided click handler', async () => {
-    const onPracticeAttempt = vi.fn();
-
-    act(() => {
-      root.render(
-        <PracticeAttemptButton
-          onPracticeAttempt={onPracticeAttempt}
-          practiceSubmitting={false}
-        />,
-      );
-    });
-
-    const button = container.querySelector('button') as HTMLButtonElement;
-
-    await act(async () => {
-      button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    });
-
-    expect(onPracticeAttempt).toHaveBeenCalledTimes(1);
-  });
 });

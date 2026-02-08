@@ -495,11 +495,24 @@ class PipelineCheckpointUpdates:  # pylint: disable=too-many-arguments,too-many-
         )
         return f"{int(latest_game.get('last_timestamp_ms', 0))}:{latest_game.get('game_id', '')}"
 
-    def _resolve_lichess_cursor(self, fetch_context: FetchContext, games: list[GameRow]) -> str:
-        cursor_value = fetch_context.next_cursor or fetch_context.cursor_value
+    def _initial_lichess_cursor(self, fetch_context: FetchContext) -> str | None:
+        return fetch_context.next_cursor or fetch_context.cursor_value
+
+    def _apply_raw_lichess_cursor(
+        self,
+        cursor_value: str | None,
+        fetch_context: FetchContext,
+    ) -> str | None:
         raw_cursor = self._cursor_from_raw_games(fetch_context.raw_games or [])
-        if raw_cursor and (not cursor_value or cursor_value == fetch_context.cursor_value):
-            cursor_value = raw_cursor
+        if not raw_cursor:
+            return cursor_value
+        if cursor_value and cursor_value != fetch_context.cursor_value:
+            return cursor_value
+        return raw_cursor
+
+    def _resolve_lichess_cursor(self, fetch_context: FetchContext, games: list[GameRow]) -> str:
+        cursor_value = self._initial_lichess_cursor(fetch_context)
+        cursor_value = self._apply_raw_lichess_cursor(cursor_value, fetch_context)
         if not cursor_value:
             cursor_value = self._cursor_from_games(games)
         return cursor_value or str(fetch_context.since_ms)

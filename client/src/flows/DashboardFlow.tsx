@@ -264,9 +264,12 @@ export default function DashboardFlow() {
     setChesscomProfile(next);
   };
 
-  const handleFiltersChange = (next: typeof filters) => {
-    setFilters(next);
-  };
+  const handleFiltersChange = useCallback(
+    (next: typeof filters) => {
+      setFilters(next);
+    },
+    [setFilters],
+  );
 
   const resolveGameSource = useCallback(
     (rowSource?: string | null) =>
@@ -302,10 +305,10 @@ export default function DashboardFlow() {
         console.error(err);
       }
     },
-    [buildLichessAnalysisUrl, openLichessAnalysisWindow, resolveGameSource],
+    [resolveGameSource],
   );
 
-  const handleResetFilters = () => {
+  const handleResetFilters = useCallback(() => {
     setFilters({
       motif: 'all',
       timeControl: 'all',
@@ -313,7 +316,7 @@ export default function DashboardFlow() {
       startDate: '',
       endDate: '',
     });
-  };
+  }, [setFilters]);
 
   const handleBackfillStartChange = (value: string) => {
     setBackfillStartDate(value);
@@ -327,9 +330,12 @@ export default function DashboardFlow() {
     setIncludeFailedAttempt(next);
   };
 
-  const handlePracticeMoveChange = (value: string) => {
-    setPracticeMove(value);
-  };
+  const handlePracticeMoveChange = useCallback(
+    (value: string) => {
+      setPracticeMove(value);
+    },
+    [setPracticeMove],
+  );
 
   async function load(
     nextSource: ChessPlatform = source,
@@ -348,22 +354,31 @@ export default function DashboardFlow() {
     }
   }
 
-  async function loadPracticeQueue(
-    nextSource: ChessPlatform = source,
-    includeFailed = includeFailedAttempt,
-    resetSession = false,
-  ): Promise<void> {
-    setPracticeLoading(true);
-    setPracticeError(null);
-    try {
-      const payload = await fetchPracticeQueue(nextSource, includeFailed);
-      setPracticeQueue(payload.items);
-      if (resetSession) {
-        const nextScope = `${nextSource}:${includeFailed}`;
-        const shouldReset = practiceSessionScopeRef.current !== nextScope;
-        practiceSessionScopeRef.current = nextScope;
-        if (shouldReset) {
-          setPracticeSession(resetPracticeSessionStats(payload.items.length));
+  const loadPracticeQueue = useCallback(
+    async (
+      nextSource: ChessPlatform = source,
+      includeFailed = includeFailedAttempt,
+      resetSession = false,
+    ): Promise<void> => {
+      setPracticeLoading(true);
+      setPracticeError(null);
+      try {
+        const payload = await fetchPracticeQueue(nextSource, includeFailed);
+        setPracticeQueue(payload.items);
+        if (resetSession) {
+          const nextScope = `${nextSource}:${includeFailed}`;
+          const shouldReset = practiceSessionScopeRef.current !== nextScope;
+          practiceSessionScopeRef.current = nextScope;
+          if (shouldReset) {
+            setPracticeSession(resetPracticeSessionStats(payload.items.length));
+          } else {
+            setPracticeSession((prev) => {
+              if (prev.total <= 0 && prev.completed === 0) {
+                return { ...prev, total: payload.items.length };
+              }
+              return prev;
+            });
+          }
         } else {
           setPracticeSession((prev) => {
             if (prev.total <= 0 && prev.completed === 0) {
@@ -372,21 +387,15 @@ export default function DashboardFlow() {
             return prev;
           });
         }
-      } else {
-        setPracticeSession((prev) => {
-          if (prev.total <= 0 && prev.completed === 0) {
-            return { ...prev, total: payload.items.length };
-          }
-          return prev;
-        });
+      } catch (err) {
+        console.error(err);
+        setPracticeError('Failed to load practice queue');
+      } finally {
+        setPracticeLoading(false);
       }
-    } catch (err) {
-      console.error(err);
-      setPracticeError('Failed to load practice queue');
-    } finally {
-      setPracticeLoading(false);
-    }
-  }
+    },
+    [includeFailedAttempt, source],
+  );
 
   async function loadPostgres(): Promise<void> {
     setPostgresLoading(true);
@@ -826,108 +835,150 @@ export default function DashboardFlow() {
     setJobStatus('idle');
   }
 
-  function buildPracticeMove(
-    fen: string,
-    rawMove: string,
-  ): { uci: string; nextFen: string; from: string; to: string } | null {
-    const trimmed = rawMove.trim().toLowerCase();
-    if (trimmed.length < 4) return null;
-    const from = trimmed.slice(0, 2) as Square;
-    const to = trimmed.slice(2, 4) as Square;
-    const board = new Chess(fen);
-    const piece = board.get(from);
-    const needsPromotion =
-      piece?.type === 'p' && (to.endsWith('8') || to.endsWith('1'));
-    const promotion =
-      trimmed.length > 4 ? trimmed[4] : needsPromotion ? 'q' : undefined;
-    let move = null;
-    try {
-      move = board.move({ from, to, promotion });
-    } catch (err) {
-      console.warn('Invalid move attempt', err);
-      return null;
-    }
-    if (!move) return null;
-    return {
-      uci: `${from}${to}${promotion ?? ''}`,
-      nextFen: board.fen(),
-      from,
-      to,
-    };
-  }
+  const buildPracticeMove = useCallback(
+    (
+      fen: string,
+      rawMove: string,
+    ): { uci: string; nextFen: string; from: string; to: string } | null => {
+      const trimmed = rawMove.trim().toLowerCase();
+      if (trimmed.length < 4) return null;
+      const from = trimmed.slice(0, 2) as Square;
+      const to = trimmed.slice(2, 4) as Square;
+      const board = new Chess(fen);
+      const piece = board.get(from);
+      const needsPromotion =
+        piece?.type === 'p' && (to.endsWith('8') || to.endsWith('1'));
+      const promotion =
+        trimmed.length > 4 ? trimmed[4] : needsPromotion ? 'q' : undefined;
+      let move = null;
+      try {
+        move = board.move({ from, to, promotion });
+      } catch (err) {
+        console.warn('Invalid move attempt', err);
+        return null;
+      }
+      if (!move) return null;
+      return {
+        uci: `${from}${to}${promotion ?? ''}`,
+        nextFen: board.fen(),
+        from,
+        to,
+      };
+    },
+    [],
+  );
 
-  const getPracticeBaseFen = () => practiceFen || currentPractice?.fen || '';
+  const getPracticeBaseFen = useCallback(
+    () => practiceFen || currentPractice?.fen || '',
+    [currentPractice, practiceFen],
+  );
 
-  const submitPracticeMove = async (payload: {
-    uci: string;
-    nextFen?: string;
-    from?: string;
-    to?: string;
-  }) => {
-    if (!currentPractice) return;
-    setPracticeSubmitting(true);
-    setPracticeSubmitError(null);
-    setPracticeFeedback(null);
-    setPracticeMove(payload.uci);
-    if (payload.nextFen) {
-      setPracticeFen(payload.nextFen);
-    }
-    if (payload.from && payload.to) {
-      setPracticeLastMove({ from: payload.from, to: payload.to });
-    }
-    try {
-      const response = await submitPracticeAttempt({
-        tactic_id: currentPractice.tactic_id,
-        position_id: currentPractice.position_id,
-        attempted_uci: payload.uci,
-        source,
-        served_at_ms: practiceServedAtMs ?? undefined,
-      });
-      setPracticeFeedback(response);
-      setPracticeSession((prev) =>
-        updatePracticeSessionStats(prev, response.correct),
-      );
-      await loadPracticeQueue(source, includeFailedAttempt);
-    } catch (err) {
-      console.error(err);
-      setPracticeSubmitError('Failed to submit practice attempt');
-    } finally {
-      setPracticeSubmitting(false);
-    }
-  };
+  const submitPracticeMove = useCallback(
+    async (payload: {
+      uci: string;
+      nextFen?: string;
+      from?: string;
+      to?: string;
+    }) => {
+      if (!currentPractice) return;
+      setPracticeSubmitting(true);
+      setPracticeSubmitError(null);
+      setPracticeFeedback(null);
+      setPracticeMove(payload.uci);
+      if (payload.nextFen) {
+        setPracticeFen(payload.nextFen);
+      }
+      if (payload.from && payload.to) {
+        setPracticeLastMove({ from: payload.from, to: payload.to });
+      }
+      try {
+        const response = await submitPracticeAttempt({
+          tactic_id: currentPractice.tactic_id,
+          position_id: currentPractice.position_id,
+          attempted_uci: payload.uci,
+          source,
+          served_at_ms: practiceServedAtMs ?? undefined,
+        });
+        setPracticeFeedback(response);
+        setPracticeSession((prev) =>
+          updatePracticeSessionStats(prev, response.correct),
+        );
+        await loadPracticeQueue(source, includeFailedAttempt);
+      } catch (err) {
+        console.error(err);
+        setPracticeSubmitError('Failed to submit practice attempt');
+      } finally {
+        setPracticeSubmitting(false);
+      }
+    },
+    [
+      currentPractice,
+      includeFailedAttempt,
+      loadPracticeQueue,
+      practiceServedAtMs,
+      setPracticeFeedback,
+      setPracticeFen,
+      setPracticeLastMove,
+      setPracticeMove,
+      setPracticeSession,
+      setPracticeSubmitError,
+      setPracticeSubmitting,
+      source,
+    ],
+  );
 
-  const handlePracticeAttempt = async (overrideMove?: string) => {
-    if (!currentPractice) return;
-    const candidate = overrideMove ?? practiceMove;
-    if (!candidate.trim()) {
-      setPracticeSubmitError('Enter a move in UCI notation (e.g., e2e4).');
-      return;
-    }
-    const baseFen = getPracticeBaseFen();
-    const moveResult = buildPracticeMove(baseFen, candidate);
-    if (!moveResult) {
-      setPracticeSubmitError(
-        'Illegal move for this position. Try a legal UCI move.',
-      );
-      return;
-    }
-    await submitPracticeMove(moveResult);
-  };
+  const handlePracticeAttempt = useCallback(
+    async (overrideMove?: string) => {
+      if (!currentPractice) return;
+      const candidate = overrideMove ?? practiceMove;
+      if (!candidate.trim()) {
+        setPracticeSubmitError('Enter a move in UCI notation (e.g., e2e4).');
+        return;
+      }
+      const baseFen = getPracticeBaseFen();
+      const moveResult = buildPracticeMove(baseFen, candidate);
+      if (!moveResult) {
+        setPracticeSubmitError(
+          'Illegal move for this position. Try a legal UCI move.',
+        );
+        return;
+      }
+      await submitPracticeMove(moveResult);
+    },
+    [
+      buildPracticeMove,
+      currentPractice,
+      getPracticeBaseFen,
+      practiceMove,
+      setPracticeSubmitError,
+      submitPracticeMove,
+    ],
+  );
 
-  const handlePracticeDrop = (from: string, to: string, piece: string) => {
-    if (!currentPractice || practiceSubmitting) return false;
-    const baseFen = getPracticeBaseFen();
-    const isPawn = typeof piece === 'string' && piece.endsWith('P');
-    const promotion =
-      isPawn && (to.endsWith('8') || to.endsWith('1')) ? 'q' : '';
-    const moveResult = buildPracticeMove(baseFen, `${from}${to}${promotion}`);
-    if (!moveResult) {
-      setPracticeSubmitError('Illegal move for this position.');
-      return false;
-    }
-    void submitPracticeMove(moveResult);
-    return true;
-  };
+  const handlePracticeDrop = useCallback(
+    (from: string, to: string, piece: string) => {
+      if (!currentPractice || practiceSubmitting) return false;
+      const baseFen = getPracticeBaseFen();
+      const isPawn = typeof piece === 'string' && piece.endsWith('P');
+      const promotion =
+        isPawn && (to.endsWith('8') || to.endsWith('1')) ? 'q' : '';
+      const moveResult = buildPracticeMove(baseFen, `${from}${to}${promotion}`);
+      if (!moveResult) {
+        setPracticeSubmitError('Illegal move for this position.');
+        return false;
+      }
+      void submitPracticeMove(moveResult);
+      return true;
+    },
+    [
+      buildPracticeMove,
+      currentPractice,
+      getPracticeBaseFen,
+      practiceSubmitting,
+      setPracticeSubmitError,
+      submitPracticeMove,
+    ],
+  );
 
   const totals = useMemo(() => {
     if (!data) return { positions: 0, tactics: 0 };
@@ -1608,6 +1659,7 @@ export default function DashboardFlow() {
     handlePracticeAttempt,
     handlePracticeDrop,
     handlePracticeMoveChange,
+    handleFiltersChange,
     handleResetFilters,
     includeFailedAttempt,
     jobProgress,

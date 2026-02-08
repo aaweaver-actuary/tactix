@@ -294,12 +294,6 @@ def _parse_cursor(cursor: str | None) -> tuple[int, str]:
     return 0, cursor
 
 
-def parse_cursor(cursor: str | None) -> tuple[int, str]:
-    """Public helper to parse cursor values into timestamp and id."""
-
-    return _parse_cursor(cursor)
-
-
 def resolve_fetch_window(
     cursor_before: str | None,
     backfill_mode: bool,

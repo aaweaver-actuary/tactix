@@ -98,8 +98,8 @@ def test_api_pipeline_lichess_cursor_incremental_sync() -> None:  # noqa: PLR091
         }
         for chunk in chunks
     ]
-    cursor, expected_ids, expected_since_ms, expected_next_cursor = (
-        _build_cursor_expectations(fixture_rows)
+    cursor, expected_ids, expected_since_ms, expected_next_cursor = _build_cursor_expectations(
+        fixture_rows
     )
     assert expected_ids
 

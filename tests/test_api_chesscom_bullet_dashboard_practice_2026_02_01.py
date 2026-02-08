@@ -234,11 +234,7 @@ def test_api_practice_queue_contains_hung_bishop_and_knight(
     canonical_client: TestClient,
 ) -> None:
     games = _fetch_recent_games(canonical_client)
-    loss_game_id = next(
-        game.get("game_id")
-        for game in games
-        if game.get("result") == "loss"
-    )
+    loss_game_id = next(game.get("game_id") for game in games if game.get("result") == "loss")
     if not isinstance(loss_game_id, str):
         raise AssertionError("Expected loss game_id string")
 

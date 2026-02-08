@@ -50,6 +50,7 @@ class PipelineStateTests(unittest.TestCase):
         self.chesscom_correspondence_fixture_path = (
             Path(__file__).resolve().parent / "fixtures" / "chesscom_correspondence_sample.pgn"
         )
+
     def test_checkpoint_and_metrics_files_written(self) -> None:
         settings = Settings(
             duckdb_path=self.tmp_dir / "tactix.duckdb",

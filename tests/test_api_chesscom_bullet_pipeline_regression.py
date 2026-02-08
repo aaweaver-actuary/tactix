@@ -549,8 +549,8 @@ def test_api_pipeline_chesscom_cursor_incremental_sync() -> None:
         }
         for chunk in chunks
     ]
-    cursor, expected_ids, expected_since_ms, expected_next_cursor = (
-        _build_cursor_expectations(fixture_rows)
+    cursor, expected_ids, expected_since_ms, expected_next_cursor = _build_cursor_expectations(
+        fixture_rows
     )
     assert expected_ids
 

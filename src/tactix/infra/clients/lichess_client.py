@@ -377,18 +377,17 @@ def read_checkpoint(path: Path) -> str | None:
     value = raw.strip()
     if not value:
         return None
-
-    cursor_value = None
-    if ":" in value:
-        prefix, _ = value.split(":", 1)
-        if prefix.isdigit():
-            cursor_value = value
-    elif value.isdigit():
-        cursor_value = value
-
+    cursor_value = _normalize_checkpoint(value)
     if cursor_value is None:
         logger.warning("Invalid checkpoint file, resetting to 0: %s", path)
     return cursor_value
+
+
+def _normalize_checkpoint(value: str) -> str | None:
+    if ":" in value:
+        prefix, _ = value.split(":", 1)
+        return value if prefix.isdigit() else None
+    return value if value.isdigit() else None
 
 
 def write_checkpoint(path: Path, cursor: str | int | None) -> None:

@@ -18,6 +18,28 @@ type AnalysisRow = {
   blunder: boolean;
 };
 
+const formatEvalValue = (value: number | null) =>
+  value !== null ? value : '--';
+
+const renderEvalFlag = (blunder: boolean, evalDelta: number | null) => {
+  if (blunder) return <Badge label="Blunder" />;
+  if (evalDelta !== null) return <span className="text-sand/60">OK</span>;
+  return <span className="text-sand/40">--</span>;
+};
+
+const AnalysisMoveCell = ({
+  moveLabel,
+  moveSan,
+}: {
+  moveLabel: string;
+  moveSan: string;
+}) => (
+  <div>
+    <div className="text-sand/70">{moveLabel}</div>
+    <div className="font-mono text-xs">{moveSan}</div>
+  </div>
+);
+
 interface GameDetailModalProps {
   open: boolean;
   onClose: () => void;
@@ -71,10 +93,10 @@ export default function GameDetailModal({
         header: 'Move',
         accessorKey: 'moveLabel',
         cell: ({ row }) => (
-          <div>
-            <div className="text-sand/70">{row.original.moveLabel}</div>
-            <div className="font-mono text-xs">{row.original.moveSan}</div>
-          </div>
+          <AnalysisMoveCell
+            moveLabel={row.original.moveLabel}
+            moveSan={row.original.moveSan}
+          />
         ),
       },
       {
@@ -89,7 +111,7 @@ export default function GameDetailModal({
         accessorKey: 'evalCp',
         cell: ({ row }) => (
           <span className="font-mono">
-            {row.original.evalCp !== null ? row.original.evalCp : '--'}
+            {formatEvalValue(row.original.evalCp)}
           </span>
         ),
       },
@@ -98,7 +120,7 @@ export default function GameDetailModal({
         accessorKey: 'evalDelta',
         cell: ({ row }) => (
           <span className="font-mono">
-            {row.original.evalDelta !== null ? row.original.evalDelta : '--'}
+            {formatEvalValue(row.original.evalDelta)}
           </span>
         ),
       },
@@ -106,13 +128,7 @@ export default function GameDetailModal({
         header: 'Flags',
         id: 'flags',
         cell: ({ row }) =>
-          row.original.blunder ? (
-            <Badge label="Blunder" />
-          ) : row.original.evalDelta !== null ? (
-            <span className="text-sand/60">OK</span>
-          ) : (
-            <span className="text-sand/40">--</span>
-          ),
+          renderEvalFlag(row.original.blunder, row.original.evalDelta),
       },
     ],
     [],
@@ -433,30 +449,22 @@ export default function GameDetailModal({
                         analysisRows.map((row) => (
                           <tr key={row.key} className="border-b border-white/5">
                             <td className="py-1">
-                              <div className="text-sand/70">
-                                {row.moveLabel}
-                              </div>
-                              <div className="font-mono text-xs">
-                                {row.moveSan}
-                              </div>
+                              <AnalysisMoveCell
+                                moveLabel={row.moveLabel}
+                                moveSan={row.moveSan}
+                              />
                             </td>
                             <td className="py-1 uppercase tracking-wide">
                               {row.motif}
                             </td>
                             <td className="py-1 font-mono">
-                              {row.evalCp !== null ? row.evalCp : '--'}
+                              {formatEvalValue(row.evalCp)}
                             </td>
                             <td className="py-1 font-mono">
-                              {row.evalDelta !== null ? row.evalDelta : '--'}
+                              {formatEvalValue(row.evalDelta)}
                             </td>
                             <td className="py-1">
-                              {row.blunder ? (
-                                <Badge label="Blunder" />
-                              ) : row.evalDelta !== null ? (
-                                <span className="text-sand/60">OK</span>
-                              ) : (
-                                <span className="text-sand/40">--</span>
-                              )}
+                              {renderEvalFlag(row.blunder, row.evalDelta)}
                             </td>
                           </tr>
                         ))

@@ -1,19 +1,18 @@
 const path = require('path');
 const puppeteer = require('../client/node_modules/puppeteer');
 const { attachConsoleCapture, captureScreenshot } = require('./helpers/puppeteer_capture');
-const { selectSource } = require('./enter_submit_helpers');
+const {
+  getTextContent,
+  waitForDashboard,
+  openRecentGamesTable,
+  ensureRecentGamesHasRows,
+  waitForRecentGamesRowReady,
+} = require('./helpers/game_detail_modal_helpers');
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const source = process.env.TACTIX_SOURCE || 'lichess';
 const SCREENSHOT_NAME =
   process.env.TACTIX_SCREENSHOT_NAME || 'feature-game-detail-modal-2026-02-08.png';
-
-async function getTextContent(handle) {
-  if (!handle) return '';
-  const prop = await handle.getProperty('textContent');
-  const value = await prop.jsonValue();
-  return value ? String(value) : '';
-}
 
 (async () => {
   console.log('Launching browser...');
@@ -23,38 +22,10 @@ async function getTextContent(handle) {
 
   try {
     console.log('Navigating to dashboard...');
-    await page.goto(targetUrl, { waitUntil: 'networkidle0' });
-    await page.waitForSelector('[data-testid="filter-source"]');
-    await selectSource(page, source);
-    await page.waitForSelector('[data-testid="action-run"]');
-    await page.click('[data-testid="action-run"]');
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    await page.waitForSelector('[data-testid="dashboard-card-tactics-table"]');
-
-    await page.click('[data-testid="recent-games-card"] [role="button"]');
-    await page.waitForSelector('[data-testid="recent-games-card"] table');
-
-    const firstRow = await page.waitForSelector(
-      '[data-testid="recent-games-card"] table tbody tr',
-    );
-    const firstRowText = await getTextContent(firstRow);
-    if (firstRowText.toLowerCase().includes('no rows')) {
-      throw new Error('No recent games rows found for selected source');
-    }
-    for (let attempt = 0; attempt < 6; attempt += 1) {
-      const row = await page.waitForSelector(
-        '[data-testid="recent-games-card"] table tbody tr',
-      );
-      const rowText = await getTextContent(row);
-      const lower = rowText.toLowerCase();
-      if (!lower.includes('loading') && !lower.includes('no rows')) {
-        break;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (attempt === 5) {
-        throw new Error('Recent games table did not return any rows');
-      }
-    }
+    await waitForDashboard(page, targetUrl, source);
+    await openRecentGamesTable(page);
+    await ensureRecentGamesHasRows(page);
+    await waitForRecentGamesRowReady(page);
     await page.click('[data-testid="recent-games-card"] table tbody tr');
     await page.waitForSelector('[data-testid="game-detail-modal"]', {
       visible: true,

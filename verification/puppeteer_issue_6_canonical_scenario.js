@@ -1,11 +1,14 @@
-const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
 const puppeteer = require('../client/node_modules/puppeteer');
 const {
   attachConsoleCapture,
   captureScreenshot,
 } = require('./helpers/puppeteer_capture');
+const {
+  startBackend,
+  waitForHealth,
+  runPipeline,
+} = require('./helpers/backend_canonical_helpers');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const CLIENT_DIR = path.resolve(ROOT_DIR, 'client');
@@ -28,67 +31,6 @@ const TARGET_URL =
 const SCREENSHOT_NAME =
   process.env.TACTIX_SCREENSHOT_NAME ||
   'issue-6-chesscom-bullet-canonical-2026-02-01.png';
-
-function startBackend() {
-  return new Promise((resolve, reject) => {
-    if (DUCKDB_PATH) {
-      fs.mkdirSync(path.dirname(DUCKDB_PATH), { recursive: true });
-      if (fs.existsSync(DUCKDB_PATH)) {
-        fs.unlinkSync(DUCKDB_PATH);
-      }
-    }
-    const proc = spawn(
-      BACKEND_CMD,
-      [
-        '-m',
-        'uvicorn',
-        'tactix.api:app',
-        '--host',
-        '0.0.0.0',
-        '--port',
-        BACKEND_PORT,
-      ],
-      {
-        cwd: ROOT_DIR,
-        env: {
-          ...process.env,
-          ...(DUCKDB_PATH ? { TACTIX_DUCKDB_PATH: DUCKDB_PATH } : {}),
-          TACTIX_SOURCE: 'chesscom',
-          TACTIX_USER: 'groborger',
-          TACTIX_CHESSCOM_PROFILE: 'bullet',
-          TACTIX_CHESSCOM_USE_FIXTURE: '1',
-          TACTIX_USE_FIXTURE: '1',
-          CHESSCOM_USERNAME: 'groborger',
-          CHESSCOM_USER: 'groborger',
-        },
-        stdio: ['ignore', 'pipe', 'pipe'],
-      },
-    );
-
-    const onData = (data) => {
-      const text = data.toString();
-      if (text.includes('Uvicorn running')) {
-        cleanup();
-        resolve(proc);
-      }
-    };
-
-    const onError = (err) => {
-      cleanup();
-      reject(err);
-    };
-
-    function cleanup() {
-      proc.stdout.off('data', onData);
-      proc.stderr.off('data', onData);
-      proc.off('error', onError);
-    }
-
-    proc.stdout.on('data', onData);
-    proc.stderr.on('data', onData);
-    proc.on('error', onError);
-  });
-}
 
 function startDevServer() {
   return new Promise((resolve, reject) => {
@@ -125,51 +67,8 @@ function startDevServer() {
   });
 }
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-async function waitForHealth(retries = 20, delayMs = 500) {
-  const url = new URL(`${API_BASE}/api/health`);
-  for (let attempt = 0; attempt < retries; attempt += 1) {
-    try {
-      const response = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${API_TOKEN}` },
-      });
-      if (response.ok) return;
-    } catch (err) {
-      // ignore until retries exhausted
-    }
-    await sleep(delayMs);
-  }
-  throw new Error('Backend health check failed');
-}
-
-async function runPipeline() {
-  const url = new URL(`${API_BASE}/api/pipeline/run`);
-  url.searchParams.set('source', 'chesscom');
-  url.searchParams.set('profile', 'bullet');
-  url.searchParams.set('user_id', 'groborger');
-  url.searchParams.set('start_date', '2026-02-01');
-  url.searchParams.set('end_date', '2026-02-01');
-  url.searchParams.set('use_fixture', 'true');
-  url.searchParams.set('fixture_name', 'chesscom_2_bullet_games.pgn');
-  url.searchParams.set('reset_db', 'true');
-
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    const response = await fetch(url.toString(), {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${API_TOKEN}` },
-    });
-    if (response.ok) {
-      return response.json();
-    }
-    const body = await response.text();
-    if (attempt === 3) {
-      throw new Error(`Pipeline run failed: ${response.status} ${body}`);
-    }
-    await sleep(1000);
-  }
-  return null;
-}
+const TEST_USER = 'groborger';
+const RUN_DATE = '2026-02-01';
 
 async function setDateInput(page, selector, value) {
   await page.click(selector, { clickCount: 3 });
@@ -196,10 +95,37 @@ async function expandCard(page, selector) {
   try {
     if (!BACKEND_RUNNING) {
       console.log('Starting backend...');
-      backend = await startBackend();
+      backend = await startBackend({
+        rootDir: ROOT_DIR,
+        backendCmd: BACKEND_CMD,
+        backendPort: BACKEND_PORT,
+        duckdbPath: DUCKDB_PATH,
+        env: {
+          TACTIX_SOURCE: 'chesscom',
+          TACTIX_USER: TEST_USER,
+          TACTIX_CHESSCOM_PROFILE: 'bullet',
+          TACTIX_CHESSCOM_USE_FIXTURE: '1',
+          TACTIX_USE_FIXTURE: '1',
+          CHESSCOM_USERNAME: TEST_USER,
+          CHESSCOM_USER: TEST_USER,
+        },
+      });
     }
-    await waitForHealth();
-    await runPipeline();
+    await waitForHealth({ apiBase: API_BASE, apiToken: API_TOKEN });
+    await runPipeline({
+      apiBase: API_BASE,
+      apiToken: API_TOKEN,
+      source: 'chesscom',
+      profile: 'bullet',
+      userId: TEST_USER,
+      startDate: RUN_DATE,
+      endDate: RUN_DATE,
+      useFixture: true,
+      fixtureName: 'chesscom_2_bullet_games.pgn',
+      resetDb: true,
+      retries: 3,
+      retryDelayMs: 1000,
+    });
     console.log('Starting dev server...');
     devServer = await startDevServer();
 
@@ -235,8 +161,8 @@ async function expandCard(page, selector) {
     await page.select('[data-testid="filter-chesscom-profile"]', 'bullet');
     await page.waitForSelector('[data-testid="filter-time-control"]');
     await page.select('[data-testid="filter-time-control"]', 'bullet');
-    await setDateInput(page, '[data-testid="filter-start-date"]', '2026-02-01');
-    await setDateInput(page, '[data-testid="filter-end-date"]', '2026-02-01');
+    await setDateInput(page, '[data-testid="filter-start-date"]', RUN_DATE);
+    await setDateInput(page, '[data-testid="filter-end-date"]', RUN_DATE);
 
     await page.waitForSelector('[data-testid="recent-games-card"]');
     await page.waitForSelector('[data-testid="practice-queue-card"]');

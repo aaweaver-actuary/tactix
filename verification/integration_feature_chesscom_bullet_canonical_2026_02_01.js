@@ -1,6 +1,11 @@
 const fs = require('fs');
 const path = require('path');
-const { spawn, spawnSync } = require('child_process');
+const { spawnSync } = require('child_process');
+const {
+  startBackend,
+  waitForHealth,
+  runPipeline,
+} = require('./helpers/backend_canonical_helpers');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const BACKEND_CMD = path.join(ROOT_DIR, '.venv', 'bin', 'python');
@@ -27,69 +32,11 @@ const DB_PATH =
     'tmp-logs',
     'feature_chesscom_bullet_canonical_integration_2026_02_07.duckdb',
   );
+const RUN_DATE = '2026-02-01';
 
-const PYTHON_CMD = process.env.TACTIX_PYTHON || path.join(ROOT_DIR, '.venv', 'bin', 'python');
+const PYTHON_CMD =
+  process.env.TACTIX_PYTHON || path.join(ROOT_DIR, '.venv', 'bin', 'python');
 const FALLBACK_PYTHON = 'python';
-
-function startBackend() {
-  return new Promise((resolve, reject) => {
-    fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-    if (fs.existsSync(DB_PATH)) {
-      fs.unlinkSync(DB_PATH);
-    }
-    const proc = spawn(
-      BACKEND_CMD,
-      [
-        '-m',
-        'uvicorn',
-        'tactix.api:app',
-        '--host',
-        '0.0.0.0',
-        '--port',
-        BACKEND_PORT,
-      ],
-      {
-        cwd: ROOT_DIR,
-        env: {
-          ...process.env,
-          TACTIX_API_TOKEN: API_TOKEN,
-          TACTIX_DUCKDB_PATH: DB_PATH,
-          TACTIX_SOURCE: 'chesscom',
-          TACTIX_USER: TEST_USER,
-          TACTIX_CHESSCOM_PROFILE: 'bullet',
-          TACTIX_CHESSCOM_USE_FIXTURE: '1',
-          TACTIX_USE_FIXTURE: '1',
-          CHESSCOM_USERNAME: TEST_USER,
-          CHESSCOM_USER: TEST_USER,
-        },
-        stdio: ['ignore', 'pipe', 'pipe'],
-      },
-    );
-
-    const onData = (data) => {
-      const text = data.toString();
-      if (text.includes('Uvicorn running')) {
-        cleanup();
-        resolve(proc);
-      }
-    };
-
-    const onError = (err) => {
-      cleanup();
-      reject(err);
-    };
-
-    function cleanup() {
-      proc.stdout.off('data', onData);
-      proc.stderr.off('data', onData);
-      proc.off('error', onError);
-    }
-
-    proc.stdout.on('data', onData);
-    proc.stderr.on('data', onData);
-    proc.on('error', onError);
-  });
-}
 
 function requireValue(value, label) {
   if (value === null || value === undefined || value === '') {
@@ -119,7 +66,7 @@ function ratingDelta(metadata) {
 
 function loadDbSnapshot(dbPath) {
   const python = fs.existsSync(PYTHON_CMD) ? PYTHON_CMD : FALLBACK_PYTHON;
-  const script = `import json, sys\nimport duckdb\n\npath = sys.argv[1]\nconn = duckdb.connect(path)\ntry:\n    games = conn.execute(\n        """\n        SELECT game_id, user_rating, time_control, played_at\n        FROM games\n        WHERE source = 'chesscom'\n        AND time_control = '120+1'\n        AND CAST(played_at AS DATE) = '2026-02-01'\n        ORDER BY game_id\n        """\n    ).fetchall()\n    queue = conn.execute(\n        """\n        SELECT opportunity_id, game_id, position_id, fen, result, motif\n        FROM practice_queue\n        WHERE source = 'chesscom'\n        ORDER BY opportunity_id\n        """\n    ).fetchall()\nfinally:\n    conn.close()\n\nprint(json.dumps({\n    'games': [\n        {\n            'game_id': row[0],\n            'user_rating': row[1],\n            'time_control': row[2],\n            'played_at': str(row[3]) if row[3] is not None else None,\n        }\n        for row in games\n    ],\n    'practice_queue': [\n        {\n            'opportunity_id': row[0],\n            'game_id': row[1],\n            'position_id': row[2],\n            'fen': row[3],\n            'result': row[4],\n            'motif': row[5],\n        }\n        for row in queue\n    ],\n}))\n`;
+  const script = `import json, sys\nimport duckdb\n\npath = sys.argv[1]\nconn = duckdb.connect(path)\ntry:\n    games = conn.execute(\n        """\n        SELECT game_id, user_rating, time_control, played_at\n        FROM games\n        WHERE source = 'chesscom'\n        AND time_control = '120+1'\n        AND CAST(played_at AS DATE) = '${RUN_DATE}'\n        ORDER BY game_id\n        """\n    ).fetchall()\n    queue = conn.execute(\n        """\n        SELECT opportunity_id, game_id, position_id, fen, result, motif\n        FROM practice_queue\n        WHERE source = 'chesscom'\n        ORDER BY opportunity_id\n        """\n    ).fetchall()\nfinally:\n    conn.close()\n\nprint(json.dumps({\n    'games': [\n        {\n            'game_id': row[0],\n            'user_rating': row[1],\n            'time_control': row[2],\n            'played_at': str(row[3]) if row[3] is not None else None,\n        }\n        for row in games\n    ],\n    'practice_queue': [\n        {\n            'opportunity_id': row[0],\n            'game_id': row[1],\n            'position_id': row[2],\n            'fen': row[3],\n            'result': row[4],\n            'motif': row[5],\n        }\n        for row in queue\n    ],\n}))\n`;
   const result = spawnSync(python, ['-c', script, dbPath], {
     encoding: 'utf-8',
   });
@@ -130,54 +77,12 @@ function loadDbSnapshot(dbPath) {
 }
 
 
-async function runPipeline() {
-  const url = new URL(`${API_BASE}/api/pipeline/run`);
-  url.searchParams.set('source', 'chesscom');
-  url.searchParams.set('profile', 'bullet');
-  url.searchParams.set('user_id', TEST_USER);
-  url.searchParams.set('start_date', '2026-02-01');
-  url.searchParams.set('end_date', '2026-02-01');
-  url.searchParams.set('use_fixture', 'true');
-  url.searchParams.set('fixture_name', 'chesscom_2_bullet_games.pgn');
-  url.searchParams.set('reset_db', 'true');
-
-  const response = await fetch(url.toString(), {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${API_TOKEN}` },
-  });
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Pipeline run failed: ${response.status} ${body}`);
-  }
-  return response.json();
-}
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-async function waitForHealth(retries = 20, delayMs = 500) {
-  const url = new URL(`${API_BASE}/api/health`);
-  for (let attempt = 0; attempt < retries; attempt += 1) {
-    try {
-      const response = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${API_TOKEN}` },
-      });
-      if (response.ok) {
-        return;
-      }
-    } catch (err) {
-      // ignore until retries exhausted
-    }
-    await sleep(delayMs);
-  }
-  throw new Error('Backend health check failed');
-}
-
 async function fetchDashboard() {
   const url = new URL(`${API_BASE}/api/dashboard`);
   url.searchParams.set('source', 'chesscom');
   url.searchParams.set('time_control', 'bullet');
-  url.searchParams.set('start_date', '2026-02-01');
-  url.searchParams.set('end_date', '2026-02-01');
+  url.searchParams.set('start_date', RUN_DATE);
+  url.searchParams.set('end_date', RUN_DATE);
 
   const response = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${API_TOKEN}` },
@@ -222,11 +127,37 @@ async function fetchGameDetail(gameId) {
   try {
     if (!BACKEND_RUNNING) {
       console.log('Starting backend...');
-      backend = await startBackend();
+      backend = await startBackend({
+        rootDir: ROOT_DIR,
+        backendCmd: BACKEND_CMD,
+        backendPort: BACKEND_PORT,
+        duckdbPath: DB_PATH,
+        env: {
+          TACTIX_API_TOKEN: API_TOKEN,
+          TACTIX_SOURCE: 'chesscom',
+          TACTIX_USER: TEST_USER,
+          TACTIX_CHESSCOM_PROFILE: 'bullet',
+          TACTIX_CHESSCOM_USE_FIXTURE: '1',
+          TACTIX_USE_FIXTURE: '1',
+          CHESSCOM_USERNAME: TEST_USER,
+          CHESSCOM_USER: TEST_USER,
+        },
+      });
     }
-    await waitForHealth();
+    await waitForHealth({ apiBase: API_BASE, apiToken: API_TOKEN });
 
-    const payload = await runPipeline();
+    const payload = await runPipeline({
+      apiBase: API_BASE,
+      apiToken: API_TOKEN,
+      source: 'chesscom',
+      profile: 'bullet',
+      userId: TEST_USER,
+      startDate: RUN_DATE,
+      endDate: RUN_DATE,
+      useFixture: true,
+      fixtureName: 'chesscom_2_bullet_games.pgn',
+      resetDb: true,
+    });
 
     const dashboard = await fetchDashboard();
     const recentGames = dashboard.recent_games || [];

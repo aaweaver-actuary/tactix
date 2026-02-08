@@ -53,10 +53,6 @@ import {
   Hero,
   GameDetailModal,
 } from '../components';
-import type {
-  BaseCardDragHandleProps,
-  BaseCardDragProps,
-} from '../_components/BaseCard';
 import {
   PracticeSessionStats,
   resetPracticeSessionStats,
@@ -138,7 +134,12 @@ const openLichessAnalysisWindow = (url: string) => {
   window.open(url, '_blank', 'noopener,noreferrer');
 };
 
-type BaseCardRenderProps = BaseCardDragProps;
+type BaseCardDragHandleProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
+type BaseCardRenderProps = {
+  dragHandleProps?: BaseCardDragHandleProps;
+  dragHandleLabel?: string;
+  onCollapsedChange?: (collapsed: boolean) => void;
+};
 
 type BaseCardEntry = {
   id: string;

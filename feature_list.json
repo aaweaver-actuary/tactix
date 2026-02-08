@@ -516,7 +516,7 @@
     "category": "functional",
     "description": "Game result is parsed to win, loss, draw, or unknown",
     "steps": ["Step 1: Sync games with known results", "Step 2: Verify result column values map to win/loss/draw", "Step 3: Verify unknown result is stored as unknown when missing"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

@@ -33,7 +33,7 @@ class ChessPlayerColor(Enum):
 
         result_mapping() -> dict[str, ChessGameResult]:
             Returns a mapping from result strings:
-                ("win", "loss", "draw", "incomplete", "1-0", "0-1", "1/2-1/2")
+                ("win", "loss", "draw", "unknown", "1-0", "0-1", "1/2-1/2")
             to ChessGameResult values, adjusted for the player's color.
     """
 
@@ -71,7 +71,8 @@ class ChessPlayerColor(Enum):
             "win": ChessGameResult.WIN,
             "loss": ChessGameResult.LOSS,
             "draw": ChessGameResult.DRAW,
-            "incomplete": ChessGameResult.INCOMPLETE,
+            "unknown": ChessGameResult.UNKNOWN,
+            "incomplete": ChessGameResult.UNKNOWN,
         }
 
     @property

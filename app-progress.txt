@@ -1,4 +1,12 @@
 Session summary (2026-02-08):
+- Re-verified UI regressions via Puppeteer (enter submit, game detail modal, practice progress); screenshots refreshed in verification/.
+- Normalized game result parsing to win/loss/draw/unknown and defaulted unknown for missing results.
+- Added unit coverage for result normalization and games table row result mapping.
+- Tests run: node verification/puppeteer_issue_enter_submit.js; node verification/puppeteer_feature_game_detail_modal.js; node verification/puppeteer_issue_practice_progress.js; pytest tests/test_game_result_normalization.py -q; make check (task).
+- Updated feature_list.json: marked "Game result is parsed to win, loss, draw, or unknown" as passing.
+- Current pass count: 37/128.
+
+Session summary (2026-02-08):
 - Aligned the recent games detail test with the bottom-aligned modal behavior.
 - Tests run: make check (before; task), make check (after; task).
 - Before→After map:

@@ -14,6 +14,7 @@ from tactix._get_game_result_for_user_from_pgn_headers import (
     _get_game_result_for_user_from_pgn_headers,
 )
 from tactix._get_user_color_from_pgn_headers import _get_user_color_from_pgn_headers
+from tactix.chess_game_result import ChessGameResult
 from tactix.chess_player_color import ChessPlayerColor
 from tactix.chess_time_control import normalize_time_control_label
 
@@ -68,11 +69,11 @@ def _resolve_user_metadata(
 ) -> tuple[str | None, object | None, str | None]:
     """Return user color, opponent rating, and result values."""
     if headers is None:
-        return None, None, None
+        return None, None, ChessGameResult.UNKNOWN.value
     try:
         color = _get_user_color_from_pgn_headers(headers, user)
     except ValueError:
-        return None, None, None
+        return None, None, ChessGameResult.UNKNOWN.value
     if color == ChessPlayerColor.WHITE:
         user_color = "white"
         opp_rating = metadata.get("black_elo")

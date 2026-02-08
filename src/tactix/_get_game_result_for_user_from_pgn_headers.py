@@ -23,11 +23,11 @@ def _get_game_result_for_user_from_pgn_headers(
 ) -> ChessGameResult:
     if _is_pgn_headers(headers):
         pgn_headers = cast("PgnHeaders", headers)
-        return pgn_headers.result or ChessGameResult.INCOMPLETE
+        return pgn_headers.result or ChessGameResult.UNKNOWN
     chess_headers = cast(chess.pgn.Headers, headers)
     result = _resolve_result_str(chess_headers)
     if result is None:
-        return ChessGameResult.INCOMPLETE
+        return ChessGameResult.UNKNOWN
     color = _get_user_color_from_pgn_headers(chess_headers, user)
     return _resolve_game_result(result, color)
 
@@ -47,4 +47,4 @@ def _resolve_game_result(result: str, color: ChessPlayerColor) -> ChessGameResul
     try:
         return ChessGameResult.from_str(result, color)
     except ValueError:
-        return ChessGameResult.INCOMPLETE
+        return ChessGameResult.UNKNOWN

@@ -17,7 +17,7 @@ class ChessGameResult(StrEnum):
         WIN: Indicates a win.
         LOSS: Indicates a loss.
         DRAW: Indicates a draw.
-        INCOMPLETE: Indicates the game is incomplete.
+        UNKNOWN: Indicates the game result is unknown.
 
     Methods:
         from_str(result_str: str, color: ChessPlayerColor) -> ChessGameResult:
@@ -28,7 +28,7 @@ class ChessGameResult(StrEnum):
     WIN = "win"
     LOSS = "loss"
     DRAW = "draw"
-    INCOMPLETE = "incomplete"
+    UNKNOWN = "unknown"
 
     @classmethod
     def from_str(cls, result_str: str, color: ChessPlayerColor) -> ChessGameResult:

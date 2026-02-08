@@ -41,7 +41,7 @@ class PgnHeaders:  # pylint: disable=too-many-instance-attributes
         self.date = _coerce_pgn_date(self.date)
         self._convert_round_to_int()
         if not self.result:
-            self.result = ChessGameResult.INCOMPLETE
+            self.result = ChessGameResult.UNKNOWN
 
     def _convert_round_to_int(self):
         """Normalize the round value into an integer."""

@@ -1,4 +1,10 @@
 Session summary (2026-02-08):
+- Verified existing automated coverage for enter-submit, modal overlay, and practice progress numerator-only behavior; no code changes needed.
+- Tests run: make check (before; task); make check (after; task).
+- Before→After map:
+	- No changes required (tests already present in client/src/_components/PracticeMoveInput.test.tsx and client/src/flows/DashboardFlow.test.tsx).
+
+Session summary (2026-02-08):
 - Aligned the recent games modal test to assert overlay/backdrop traits instead of bottom alignment.
 - Tests run: make check (before; task); make check (after; task, exit code 2 at prospector step).
 - Before→After map:

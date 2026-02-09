@@ -1,44 +1,30 @@
 const { Chess } = require('../client/node_modules/chess.js');
 
+const SOURCE_LABELS = {
+  chesscom: 'Chess.com',
+  lichess: 'Lichess',
+  all: 'All',
+};
+
+async function waitForSourceResponse(page, targetSource, endpoint) {
+  await page.waitForResponse((response) => {
+    if (!response.url().includes(endpoint)) return false;
+    if (response.status() !== 200) return false;
+    try {
+      const url = new URL(response.url());
+      const value = url.searchParams.get('source');
+      if (targetSource === 'all') {
+        return value === null;
+      }
+      return value === targetSource;
+    } catch (err) {
+      return false;
+    }
+  }, { timeout: 60000 });
+}
+
 async function selectSource(page, source) {
   const targetSource = source || 'chesscom';
-  const labelMap = {
-    chesscom: 'Chess.com',
-    lichess: 'Lichess',
-    all: 'All',
-  };
-  const waitForDashboardSource = async () => {
-    await page.waitForResponse((response) => {
-      if (!response.url().includes('/api/dashboard')) return false;
-      if (response.status() !== 200) return false;
-      try {
-        const url = new URL(response.url());
-        const value = url.searchParams.get('source');
-        if (targetSource === 'all') {
-          return value === null;
-        }
-        return value === targetSource;
-      } catch (err) {
-        return false;
-      }
-    }, { timeout: 60000 });
-  };
-  const waitForPracticeQueueSource = async () => {
-    await page.waitForResponse((response) => {
-      if (!response.url().includes('/api/practice/queue')) return false;
-      if (response.status() !== 200) return false;
-      try {
-        const url = new URL(response.url());
-        const value = url.searchParams.get('source');
-        if (targetSource === 'all') {
-          return value === null;
-        }
-        return value === targetSource;
-      } catch (err) {
-        return false;
-      }
-    }, { timeout: 60000 });
-  };
   try {
     await page.waitForFunction(
       () => {
@@ -56,8 +42,16 @@ async function selectSource(page, source) {
     if (currentValue === targetSource) {
       return;
     }
-    const dashboardPromise = waitForDashboardSource();
-    const practicePromise = waitForPracticeQueueSource();
+    const dashboardPromise = waitForSourceResponse(
+      page,
+      targetSource,
+      '/api/dashboard',
+    );
+    const practicePromise = waitForSourceResponse(
+      page,
+      targetSource,
+      '/api/practice/queue',
+    );
     await page.select('select[data-testid="filter-source"]', targetSource);
     await page.waitForFunction(
       (value) => {
@@ -71,7 +65,7 @@ async function selectSource(page, source) {
     );
     await Promise.all([dashboardPromise, practicePromise]);
   } catch (err) {
-    const label = labelMap[targetSource] || targetSource;
+    const label = SOURCE_LABELS[targetSource] || targetSource;
     await page.$$eval(
       'button',
       (buttons, label) => {
@@ -82,8 +76,8 @@ async function selectSource(page, source) {
       },
       label,
     );
-    await waitForDashboardSource();
-    await waitForPracticeQueueSource();
+    await waitForSourceResponse(page, targetSource, '/api/dashboard');
+    await waitForSourceResponse(page, targetSource, '/api/practice/queue');
   }
 }
 

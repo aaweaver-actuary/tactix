@@ -11,6 +11,33 @@ from tactix.build_position_id__positions import _build_position_id
 from tactix.db._rows_to_dicts import _rows_to_dicts
 
 
+def _build_position_id_for_row(position: Mapping[str, object]) -> int:
+    return _build_position_id(
+        str(position.get("fen") or ""),
+        str(position.get("side_to_move") or ""),
+    )
+
+
+def _build_position_insert_values(
+    position: Mapping[str, object],
+    position_id: int,
+) -> list[object]:
+    return [
+        position_id,
+        position.get("game_id"),
+        position.get("user"),
+        position.get("source"),
+        position.get("fen"),
+        position.get("ply"),
+        position.get("move_number"),
+        position.get("side_to_move"),
+        position.get("uci"),
+        position.get("san"),
+        position.get("clock_seconds"),
+        position.get("is_legal", True),
+    ]
+
+
 @dataclass(frozen=True)
 class DuckDbPositionDependencies:
     """Dependencies used by the position repository."""
@@ -65,10 +92,7 @@ class DuckDbPositionRepository:
             return []
         ids: list[int] = []
         for pos in positions:
-            position_id = _build_position_id(
-                str(pos.get("fen") or ""),
-                str(pos.get("side_to_move") or ""),
-            )
+            position_id = _build_position_id_for_row(pos)
             self._conn.execute(
                 """
                 INSERT INTO positions (
@@ -86,20 +110,7 @@ class DuckDbPositionRepository:
                     is_legal
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                [
-                    position_id,
-                    pos.get("game_id"),
-                    pos.get("user"),
-                    pos.get("source"),
-                    pos.get("fen"),
-                    pos.get("ply"),
-                    pos.get("move_number"),
-                    pos.get("side_to_move"),
-                    pos.get("uci"),
-                    pos.get("san"),
-                    pos.get("clock_seconds"),
-                    pos.get("is_legal", True),
-                ],
+                _build_position_insert_values(pos, position_id),
             )
             ids.append(position_id)
         return ids

@@ -368,7 +368,7 @@ class PipelineHelperTests(unittest.TestCase):
                 "fen": "8/8/8/8/8/8/8/8 w - - 0 1",
                 "ply": 1,
                 "move_number": 1,
-                "side_to_move": "white",
+                "side_to_move": "black",
                 "uci": "d2d4",
                 "san": "d4",
             },

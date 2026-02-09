@@ -1,4 +1,15 @@
 Session summary (2026-02-09):
+- Refactored DuckDB position inserts and verification helpers to reduce duplication; extracted game detail modal assertions and centralized source response waits.
+- Stabilized pipeline helper fixture by avoiding duplicate position_id collisions.
+- Tests run: make check (before; task; exit code 2 at prospector step); /Users/andy/tactix/.venv/bin/python -m pytest tests/test_pipeline_helpers.py -q; make check (after; task; exit code 2 at prospector step).
+- Before→After map:
+	- src/tactix/db/duckdb_position_repository.py inline position_id and insert payload assembly → _build_position_id_for_row + _build_position_insert_values helpers.
+	- tests/test_position_id_hash.py inline FEN string → FEN_SAMPLE constant.
+	- verification/enter_submit_helpers.js duplicated response waits → waitForSourceResponse helper + SOURCE_LABELS map.
+	- verification/puppeteer_feature_game_detail_modal.js inline selectors/assertions → SELECTORS + open/assert helpers.
+	- tests/test_pipeline_helpers.py duplicate position_id fixture → varied side_to_move.
+
+Session summary (2026-02-09):
 - Re-ran regression UI automation for enter-submit, game detail modal, and practice progress; refreshed screenshots in verification/.
 - Stabilized verification helpers by pre-registering source-change response waits and avoiding pipeline runs in the game detail modal dashboard setup.
 - Added stable position_id hashing from FEN plus side-to-move and applied it to DuckDB position inserts; added unit coverage for hash stability and side changes.

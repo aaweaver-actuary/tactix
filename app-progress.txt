@@ -1038,6 +1038,11 @@ Session summary (2026-02-08):
 Session summary (2026-02-09):
 - Updated schema migration assertions to track `SCHEMA_VERSION` after user moves view additions.
 - Validated schema migration unit coverage with pytest; full `make check` green.
+
+Session summary (2026-02-09):
+- Allow duplicate position rows in DuckDB when position_id hashes match across games.
+- Join metrics and mate-in-one matrix queries on game_id to avoid duplicate rows.
+- Tests run: pytest tests/test_mate_in_one_outcome_matrix.py; pytest tests/test_metrics_refresh.py; make check (green).
 - Tests run: `make check` (green; existing Vitest act warnings and pycycle .venv parse warning unchanged).
 - Before→After map:
 	- src/tactix/postgres_store_impl.py shim re-exports → deprecated stub (canonical repository modules only).

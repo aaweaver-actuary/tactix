@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS raw_pgns (
 
 POSITIONS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS positions (
-    position_id BIGINT PRIMARY KEY,
+    position_id BIGINT,
     game_id TEXT,
     user TEXT,
     source TEXT,

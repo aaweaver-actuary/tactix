@@ -149,7 +149,9 @@ def _fetch_metric_inputs(
             r.last_timestamp_ms
         FROM tactics t
         LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
-        LEFT JOIN positions p ON p.position_id = t.position_id
+        LEFT JOIN positions p
+            ON p.position_id = t.position_id
+            AND p.game_id = t.game_id
         LEFT JOIN latest_pgns r ON r.game_id = p.game_id AND r.source = p.source
         """
     )

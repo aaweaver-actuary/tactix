@@ -97,7 +97,9 @@ def _fetch_mate_rows(
             g.result
         FROM tactics t
         JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
-        JOIN positions p ON p.position_id = t.position_id
+        JOIN positions p
+            ON p.position_id = t.position_id
+            AND p.game_id = t.game_id
         JOIN games g ON g.game_id = t.game_id
         WHERE t.motif = 'mate'
         ORDER BY t.game_id

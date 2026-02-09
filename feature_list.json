@@ -1,6 +1,54 @@
 [
   {
     "category": "functional",
+    "description": "[UI] Settings-based cards should be remade into modals",
+    "steps": [
+      "Step 1: Identify the settings-based cards on the main dashboard",
+      "Step 2: Replace each settings card view with a modal overlay",
+      "Step 3: Ensure the modal opens from the same entry point and can be dismissed",
+      "Step 4: Verify the modal content matches the previous card content",
+      "Step 5: Add or update a UI test that asserts modal behavior for settings"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Implement ChessboardModal",
+    "steps": [
+      "Step 1: Add a ChessboardModal component that renders a chessboard",
+      "Step 2: Wire the modal to open from the intended UI entry point",
+      "Step 3: Verify the modal can be closed via UI controls",
+      "Step 4: Confirm the chessboard renders the expected position data",
+      "Step 5: Add or update a UI test that verifies the modal behavior"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[test] pytest confirming that none of the JavaScript/Typescript files contain the raw button html tag except for the BaseButton component",
+    "steps": [
+      "Step 1: Add a pytest that scans client JS/TS files for raw <button> tags",
+      "Step 2: Exclude the BaseButton component from the scan",
+      "Step 3: Assert the test fails when any other file uses <button>",
+      "Step 4: Verify the test runs in the standard pytest suite",
+      "Step 5: Confirm make check includes the test"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[feature] BaseModal component escape key functionality",
+    "steps": [
+      "Step 1: Open a BaseModal-backed view in the UI",
+      "Step 2: Press Escape and confirm the modal closes",
+      "Step 3: Ensure the close action matches the existing close control behavior",
+      "Step 4: Verify no console errors occur during Escape handling",
+      "Step 5: Add or update a UI test that asserts Escape closes the modal"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
     "description": "[Testing] Test fixture PGN is correctly parsed by tactix",
     "steps": [
       "Step 1: Load the canonical PGN fixture from the tests/fixtures directory using the standard parsing entrypoint",

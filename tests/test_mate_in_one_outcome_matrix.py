@@ -110,15 +110,12 @@ def _fetch_mate_rows(
 def test_mate_in_one_fixture_has_expected_game_results(matrix_db_path: Path) -> None:
     conn = get_connection(matrix_db_path)
     try:
-        rows = conn.execute(
-            "SELECT game_id, result FROM games ORDER BY game_id"
-        ).fetchall()
+        rows = conn.execute("SELECT game_id, result FROM games ORDER BY game_id").fetchall()
     finally:
         conn.close()
 
     assert dict(rows) == {
-        game_id: str(expected["game_result"])
-        for game_id, expected in EXPECTED_BY_GAME.items()
+        game_id: str(expected["game_result"]) for game_id, expected in EXPECTED_BY_GAME.items()
     }
 
 
@@ -135,7 +132,7 @@ def test_mate_in_one_rows_link_to_specific_game_and_position(matrix_db_path: Pat
 
     assert len(rows) == 3
     assert len(position_ids) == 3
-    assert all(position_id is not None for position_id, in position_ids)
+    assert all(position_id is not None for (position_id,) in position_ids)
     for (
         game_id,
         position_id,

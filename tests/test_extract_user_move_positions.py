@@ -11,9 +11,7 @@ from tactix.db.position_repository_provider import (
 )
 from tactix.extract_positions import extract_positions
 
-FIXTURE_PATH = (
-    Path(__file__).resolve().parent / "fixtures" / "user_move_positions_fixture.pgn"
-)
+FIXTURE_PATH = Path(__file__).resolve().parent / "fixtures" / "user_move_positions_fixture.pgn"
 
 
 def load_fixture__user_move_positions() -> str:

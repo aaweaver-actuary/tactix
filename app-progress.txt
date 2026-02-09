@@ -1,4 +1,11 @@
 Session summary (2026-02-09):
+- Added new GitHub issues to the top of feature_list.json (Settings cards -> modals, ChessboardModal, BaseModal escape key, BaseButton-only raw button test).
+- Fixed BaseTable pagination handler to avoid setter-prop lint false positives in component structure tests.
+- Accepted formatter-only updates in user move and mate-in-one tests.
+- Tests run: make lint; make pytest; make jstest; make complexity; make guard; make dedup; make deadcode; make build; make check.
+- Commit: f7a5a93.
+
+Session summary (2026-02-09):
 - Refactored dashboard stream handling to reuse shared job-progress and metrics-update helpers, simplified BaseTable class name handling, and consolidated practice progress DOM selectors/labels for Puppeteer verification.
 - Extracted fixture helpers for user move position tests and clarified game detail modal analysis label checks.
 - Tests run: make check (before; task); make check (after; task).

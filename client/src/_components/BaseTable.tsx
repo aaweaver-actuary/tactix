@@ -86,9 +86,14 @@ export default function BaseTable<TData>({
     .filter(Boolean)
     .join(' ');
   const cellClassNames = ['py-2', cellClassName].filter(Boolean).join(' ');
-  const handleRowClick = (row: TData, event: React.MouseEvent<HTMLElement>) => {
+  const handleRowClick = (
+    row: TData,
+    event: React.MouseEvent<HTMLElement>,
+    stopPropagation = false,
+  ) => {
     if (!onRowClick) return;
     if (isInteractiveTarget(event.target)) return;
+    if (stopPropagation) event.stopPropagation();
     onRowClick(row);
   };
 
@@ -187,11 +192,7 @@ export default function BaseTable<TData>({
                       className={cellClassNames}
                       onClick={
                         onRowClick
-                          ? (event) => {
-                              if (isInteractiveTarget(event.target)) return;
-                              event.stopPropagation();
-                              onRowClick(row.original);
-                            }
+                          ? (event) => handleRowClick(row.original, event, true)
                           : undefined
                       }
                     >

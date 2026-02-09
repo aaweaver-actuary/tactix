@@ -1,4 +1,10 @@
 Session summary (2026-02-08):
+- Simplified BaseTable click handling by routing row/cell clicks through a single guarded handler while preserving interactive element bypasses and data-testids.
+- Tests run: make check (before; task); make check (after; task).
+- Before→After map:
+	- client/src/_components/BaseTable.tsx inline cell click guard + duplicate handler → single `handleRowClick` with optional propagation stop.
+
+Session summary (2026-02-08):
 - Re-ran required UI regressions (enter submit, game detail modal, practice progress) and refreshed screenshots (verification/ui-enter-submit-2026-02-08-regression.png, verification/feature-game-detail-modal-2026-02-08-regression.png, verification/issue-practice-progress-2026-02-08-regression.png).
 - Ensured table row clicks trigger the game detail modal by guarding interactive elements and handling cell clicks.
 - Added ExtractUserMovePositions unit coverage with a single-game fixture to assert user-to-move ply counts, fen/ply presence, user_to_move, position_id uniqueness per fen+side, game_id linkage, and created_at.

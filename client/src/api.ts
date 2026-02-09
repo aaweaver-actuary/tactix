@@ -68,7 +68,7 @@ export type DashboardPayload = {
   metrics_version: number;
 };
 
-export type SourceSyncSourceRow = {
+type SourceSyncSourceRow = {
   source: string;
   games_played: number;
   synced: boolean;

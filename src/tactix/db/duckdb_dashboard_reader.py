@@ -94,10 +94,25 @@ class DuckDbDashboardReader:
 
 
 def _fetch_source_sync(conn: duckdb.DuckDBPyConnection) -> dict[str, object]:
-    cutoff_ms = int(
-        (datetime.now(tz=UTC) - timedelta(days=SOURCE_SYNC_WINDOW_DAYS)).timestamp() * 1000
-    )
-    rows = conn.execute(
+    cutoff_ms = _source_sync_cutoff_ms()
+    rows = _fetch_source_sync_rows(conn, cutoff_ms)
+    rows_by_source = _map_source_sync_rows(rows)
+    sources = _build_source_sync_sources(rows_by_source)
+    return {
+        "window_days": SOURCE_SYNC_WINDOW_DAYS,
+        "sources": sources,
+    }
+
+
+def _source_sync_cutoff_ms() -> int:
+    return int((datetime.now(tz=UTC) - timedelta(days=SOURCE_SYNC_WINDOW_DAYS)).timestamp() * 1000)
+
+
+def _fetch_source_sync_rows(
+    conn: duckdb.DuckDBPyConnection,
+    cutoff_ms: int,
+) -> list[tuple[object, object, object]]:
+    return conn.execute(
         f"""
         WITH latest_pgns AS (
             {latest_raw_pgns_query()}
@@ -113,33 +128,43 @@ def _fetch_source_sync(conn: duckdb.DuckDBPyConnection) -> dict[str, object]:
         """,
         [cutoff_ms],
     ).fetchall()
-    rows_by_source = {
-        str(source): {
+
+
+def _map_source_sync_rows(
+    rows: list[tuple[object, object, object]],
+) -> dict[str, dict[str, object]]:
+    rows_by_source: dict[str, dict[str, object]] = {}
+    for source, games_played, latest_timestamp_ms in rows:
+        if not source:
+            continue
+        rows_by_source[str(source)] = {
             "games_played": int(games_played or 0),
             "latest_timestamp_ms": latest_timestamp_ms,
         }
-        for source, games_played, latest_timestamp_ms in rows
-        if source
-    }
+    return rows_by_source
+
+
+def _build_source_sync_sources(
+    rows_by_source: dict[str, dict[str, object]],
+) -> list[dict[str, object]]:
     extra_sources = sorted(set(rows_by_source) - set(SYNC_SOURCES))
     ordered_sources = [*SYNC_SOURCES, *extra_sources]
-    sources: list[dict[str, object]] = []
-    for source in ordered_sources:
-        row = rows_by_source.get(source, {})
-        games_played = int(row.get("games_played") or 0)
-        latest_timestamp_ms = row.get("latest_timestamp_ms")
-        latest_played_at = _timestamp_ms_to_iso(latest_timestamp_ms)
-        sources.append(
-            {
-                "source": source,
-                "games_played": games_played,
-                "synced": games_played > 0,
-                "latest_played_at": latest_played_at,
-            }
-        )
+    return [_build_source_sync_entry(source, rows_by_source) for source in ordered_sources]
+
+
+def _build_source_sync_entry(
+    source: str,
+    rows_by_source: dict[str, dict[str, object]],
+) -> dict[str, object]:
+    row = rows_by_source.get(source, {})
+    games_played = int(row.get("games_played") or 0)
+    latest_timestamp_ms = row.get("latest_timestamp_ms")
+    latest_played_at = _timestamp_ms_to_iso(latest_timestamp_ms)
     return {
-        "window_days": SOURCE_SYNC_WINDOW_DAYS,
-        "sources": sources,
+        "source": source,
+        "games_played": games_played,
+        "synced": games_played > 0,
+        "latest_played_at": latest_played_at,
     }
 
 

@@ -13,9 +13,6 @@ async function waitForDashboard(page, targetUrl, source) {
   await page.goto(targetUrl, { waitUntil: 'networkidle0' });
   await page.waitForSelector('[data-testid="filter-source"]');
   await selectSource(page, source);
-  await page.waitForSelector('[data-testid="action-run"]');
-  await page.click('[data-testid="action-run"]');
-  await delay(2000);
   await page.waitForSelector('[data-testid="dashboard-card-tactics-table"]');
 }
 

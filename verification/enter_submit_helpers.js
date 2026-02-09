@@ -49,6 +49,15 @@ async function selectSource(page, source) {
       },
       { timeout: 60000 },
     );
+    const currentValue = await page.$eval(
+      'select[data-testid="filter-source"]',
+      (el) => (el instanceof HTMLSelectElement ? el.value : ''),
+    );
+    if (currentValue === targetSource) {
+      return;
+    }
+    const dashboardPromise = waitForDashboardSource();
+    const practicePromise = waitForPracticeQueueSource();
     await page.select('select[data-testid="filter-source"]', targetSource);
     await page.waitForFunction(
       (value) => {
@@ -60,8 +69,7 @@ async function selectSource(page, source) {
       { timeout: 60000 },
       targetSource,
     );
-    await waitForDashboardSource();
-    await waitForPracticeQueueSource();
+    await Promise.all([dashboardPromise, practicePromise]);
   } catch (err) {
     const label = labelMap[targetSource] || targetSource;
     await page.$$eval(

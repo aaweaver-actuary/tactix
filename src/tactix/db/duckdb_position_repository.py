@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 import duckdb
 
+from tactix.build_position_id__positions import _build_position_id
 from tactix.db._rows_to_dicts import _rows_to_dicts
 
 
@@ -62,11 +63,12 @@ class DuckDbPositionRepository:
         """Insert position rows and return new ids."""
         if not positions:
             return []
-        row = self._conn.execute("SELECT MAX(position_id) FROM positions").fetchone()
-        next_id = int(row[0] or 0) if row else 0
         ids: list[int] = []
         for pos in positions:
-            next_id += 1
+            position_id = _build_position_id(
+                str(pos.get("fen") or ""),
+                str(pos.get("side_to_move") or ""),
+            )
             self._conn.execute(
                 """
                 INSERT INTO positions (
@@ -85,7 +87,7 @@ class DuckDbPositionRepository:
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
-                    next_id,
+                    position_id,
                     pos.get("game_id"),
                     pos.get("user"),
                     pos.get("source"),
@@ -99,7 +101,7 @@ class DuckDbPositionRepository:
                     pos.get("is_legal", True),
                 ],
             )
-            ids.append(next_id)
+            ids.append(position_id)
         return ids
 
 

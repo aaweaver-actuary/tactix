@@ -567,7 +567,7 @@
       "Step 3: Verify the position_id matches",
       "Step 4: Change side-to-move and verify position_id changes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

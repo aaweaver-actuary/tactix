@@ -1,3 +1,11 @@
+Session summary (2026-02-09):
+- Re-ran regression UI automation for enter-submit, game detail modal, and practice progress; refreshed screenshots in verification/.
+- Stabilized verification helpers by pre-registering source-change response waits and avoiding pipeline runs in the game detail modal dashboard setup.
+- Added stable position_id hashing from FEN plus side-to-move and applied it to DuckDB position inserts; added unit coverage for hash stability and side changes.
+- Tests run: node verification/puppeteer_issue_enter_submit.js; node verification/puppeteer_feature_game_detail_modal.js; node verification/puppeteer_issue_practice_progress.js; runTests tests/test_position_id_hash.py (tool reported no tests found); make check (task).
+- Updated feature_list.json: marked "Position_id is a stable hash of FEN plus side-to-move" as passing.
+- Current pass count: 41/128.
+
 Session summary (2026-02-08):
 - Simplified pipeline migration setup by delegating user_moves view creation to the shared migration helper.
 - Extracted setup helpers for the user moves view test to keep the main test flow focused.

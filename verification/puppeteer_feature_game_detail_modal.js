@@ -26,9 +26,9 @@ const SCREENSHOT_NAME =
     await openRecentGamesTable(page);
     await ensureRecentGamesHasRows(page);
     await waitForRecentGamesRowReady(page);
-    await page.click(
-      '[data-testid="recent-games-card"] table tbody tr td:first-child',
-    );
+    const rowSelector = '[data-testid^="recent-games-row-"]';
+    await page.waitForSelector(rowSelector);
+    await page.click(rowSelector);
     await page.waitForSelector('[data-testid="game-detail-modal"]', {
       visible: true,
     });

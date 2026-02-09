@@ -1,4 +1,12 @@
 Session summary (2026-02-08):
+- Re-ran required UI regressions (enter submit, game detail modal, practice progress) and refreshed screenshots (verification/ui-enter-submit-2026-02-08-regression.png, verification/feature-game-detail-modal-2026-02-08-regression.png, verification/issue-practice-progress-2026-02-08-regression.png).
+- Ensured table row clicks trigger the game detail modal by guarding interactive elements and handling cell clicks.
+- Added ExtractUserMovePositions unit coverage with a single-game fixture to assert user-to-move ply counts, fen/ply presence, user_to_move, position_id uniqueness per fen+side, game_id linkage, and created_at.
+- Tests run: node verification/puppeteer_issue_enter_submit.js; node verification/puppeteer_feature_game_detail_modal.js; node verification/puppeteer_issue_practice_progress.js; runTests tests/test_extract_user_move_positions.py (tool reported "No tests found"); make check (task).
+- Updated feature_list.json: marked "ExtractUserMovePositions creates positions for every user-to-move ply" as passing.
+- Current pass count: 39/128.
+
+Session summary (2026-02-08):
 - Re-ran required UI regressions (enter-submit, game detail modal, practice progress) plus additional core UI checks; refreshed verification screenshots.
 - Hardened enter-submit Puppeteer helpers to scope best-move and FEN lookups to the Practice attempt card and validate UCI values.
 - Verified user color inference from PGN headers via pytest using fixture games (white/black) and annotations.

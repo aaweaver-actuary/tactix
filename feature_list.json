@@ -539,7 +539,7 @@
       "Step 9: Verify game_id is linked correctly",
       "Step 10: Verify created_at is set"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

@@ -10,6 +10,12 @@ import {
 import { useMemo, useState } from 'react';
 
 const DEFAULT_PAGE_SIZES = [5, 10, 20];
+const INTERACTIVE_SELECTOR = 'button, a, input, select, textarea, label';
+
+const isInteractiveTarget = (target: EventTarget | null) => {
+  if (!(target instanceof HTMLElement)) return false;
+  return Boolean(target.closest(INTERACTIVE_SELECTOR));
+};
 
 type BaseTableProps<TData> = {
   data: TData[] | null;
@@ -80,6 +86,11 @@ export default function BaseTable<TData>({
     .filter(Boolean)
     .join(' ');
   const cellClassNames = ['py-2', cellClassName].filter(Boolean).join(' ');
+  const handleRowClick = (row: TData, event: React.MouseEvent<HTMLElement>) => {
+    if (!onRowClick) return;
+    if (isInteractiveTarget(event.target)) return;
+    onRowClick(row);
+  };
 
   return (
     <div className={wrapperClassName}>
@@ -162,14 +173,28 @@ export default function BaseTable<TData>({
                     .filter(Boolean)
                     .join(' ')}
                   onClick={
-                    onRowClick ? () => onRowClick(row.original) : undefined
+                    onRowClick
+                      ? (event) => handleRowClick(row.original, event)
+                      : undefined
                   }
                   data-testid={
                     rowTestId ? rowTestId(row.original, index) : undefined
                   }
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className={cellClassNames}>
+                    <td
+                      key={cell.id}
+                      className={cellClassNames}
+                      onClick={
+                        onRowClick
+                          ? (event) => {
+                              if (isInteractiveTarget(event.target)) return;
+                              event.stopPropagation();
+                              onRowClick(row.original);
+                            }
+                          : undefined
+                      }
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),

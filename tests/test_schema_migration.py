@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from tactix.db.duckdb_store import (
+    SCHEMA_VERSION,
     _should_attempt_wal_recovery,
     get_connection,
     get_schema_version,
@@ -75,7 +76,7 @@ class SchemaMigrationTests(unittest.TestCase):
 
         migrate_schema(conn)
 
-        self.assertEqual(get_schema_version(conn), 9)
+        self.assertEqual(get_schema_version(conn), SCHEMA_VERSION)
 
         raw_rows = conn.execute(
             "SELECT raw_pgn_id, game_id, pgn, pgn_version, last_timestamp_ms, cursor FROM raw_pgns"
@@ -114,7 +115,7 @@ class SchemaMigrationTests(unittest.TestCase):
 
         migrate_schema(conn)
 
-        self.assertEqual(get_schema_version(conn), 9)
+        self.assertEqual(get_schema_version(conn), SCHEMA_VERSION)
         columns = {row[1] for row in conn.execute("PRAGMA table_info('raw_pgns')").fetchall()}
         self.assertIn("raw_pgn_id", columns)
         self.assertIn("pgn_hash", columns)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from pathlib import Path
 
 import duckdb
@@ -247,6 +248,28 @@ def _dashboard_repository(conn: duckdb.DuckDBPyConnection) -> DuckDbDashboardRep
     )
 
 
+def _wrap_dashboard_fetcher(fetcher: Callable[..., list[dict[str, object]]]):
+    def _fetcher(
+        _conn: duckdb.DuckDBPyConnection,
+        dashboard_query: DashboardQuery,
+        **kwargs: object,
+    ) -> list[dict[str, object]]:
+        return fetcher(dashboard_query, **kwargs)
+
+    return _fetcher
+
+
+def _build_dashboard_fetchers(
+    repository: DuckDbDashboardRepository,
+) -> DuckDbDashboardFetchers:
+    return DuckDbDashboardFetchers(
+        metrics=_wrap_dashboard_fetcher(repository.fetch_metrics),
+        recent_games=_wrap_dashboard_fetcher(repository.fetch_recent_games),
+        recent_positions=_wrap_dashboard_fetcher(repository.fetch_recent_positions),
+        recent_tactics=_wrap_dashboard_fetcher(repository.fetch_recent_tactics),
+    )
+
+
 class DuckDbStore(BaseDbStore):
     """DuckDB-backed store implementation."""
 
@@ -268,46 +291,13 @@ class DuckDbStore(BaseDbStore):
         conn = get_connection(self._db_path)
         repository = _dashboard_repository(conn)
 
-        def _metrics_fetcher(
-            _conn: duckdb.DuckDBPyConnection,
-            dashboard_query: DashboardQuery,
-            **kwargs: object,
-        ) -> list[dict[str, object]]:
-            return repository.fetch_metrics(dashboard_query, **kwargs)
-
-        def _recent_games_fetcher(
-            _conn: duckdb.DuckDBPyConnection,
-            dashboard_query: DashboardQuery,
-            **kwargs: object,
-        ) -> list[dict[str, object]]:
-            return repository.fetch_recent_games(dashboard_query, **kwargs)
-
-        def _recent_positions_fetcher(
-            _conn: duckdb.DuckDBPyConnection,
-            dashboard_query: DashboardQuery,
-            **kwargs: object,
-        ) -> list[dict[str, object]]:
-            return repository.fetch_recent_positions(dashboard_query, **kwargs)
-
-        def _recent_tactics_fetcher(
-            _conn: duckdb.DuckDBPyConnection,
-            dashboard_query: DashboardQuery,
-            **kwargs: object,
-        ) -> list[dict[str, object]]:
-            return repository.fetch_recent_tactics(dashboard_query, **kwargs)
-
         reader = DuckDbDashboardReader(
             conn,
             user=self.settings.user,
             dependencies=DuckDbDashboardDependencies(
                 resolve_query=resolve_dashboard_query,
                 clone_query=clone_dashboard_query,
-                fetchers=DuckDbDashboardFetchers(
-                    metrics=_metrics_fetcher,
-                    recent_games=_recent_games_fetcher,
-                    recent_positions=_recent_positions_fetcher,
-                    recent_tactics=_recent_tactics_fetcher,
-                ),
+                fetchers=_build_dashboard_fetchers(repository),
                 fetch_version=fetch_version,
                 init_schema=init_schema,
             ),

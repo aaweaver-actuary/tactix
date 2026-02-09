@@ -19,6 +19,8 @@ const SCREENSHOT_NAME =
   process.env.TACTIX_SCREENSHOT_NAME ||
   'feature-open-lichess-link-2026-02-08.png';
 
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const waitWithTimeout = async (promise, timeoutMs, label) => {
   let timeoutId;
   const timeoutPromise = new Promise((_, reject) => {
@@ -58,14 +60,46 @@ async function setSourceFilter(page, sourceValue) {
   );
 }
 
+async function getSourceFilterValue(page) {
+  return page.evaluate(() => {
+    const select = document.querySelector('[data-testid="filter-source"]');
+    return select ? select.value : null;
+  });
+}
+
+async function clickByTestId(page, testId) {
+  await page.evaluate((selector) => {
+    const target = document.querySelector(selector);
+    if (!target) return;
+    const event = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+    });
+    target.dispatchEvent(event);
+  }, `[data-testid="${testId}"]`);
+}
+
+async function captureLichessUrl(page, sourceLabel) {
+  try {
+    return await waitWithTimeout(
+      waitForLichessUrl(page, 15000),
+      20000,
+      `Lichess URL capture for ${sourceLabel}`,
+    );
+  } catch (err) {
+    const { openCount, lastOpenArgs } = await getLichessSpyState(page);
+    throw new Error(
+      `No Lichess URL captured for ${sourceLabel}. openCount=${openCount} lastOpenArgs=${lastOpenArgs}`,
+    );
+  }
+}
+
 async function verifyOpenLichessForSource(page, sourceLabel) {
   console.log(`Verifying Open in Lichess for ${sourceLabel}...`);
   await installLichessSpy(page);
   await setSourceFilter(page, sourceLabel);
-  const sourceValue = await page.evaluate(() => {
-    const select = document.querySelector('[data-testid="filter-source"]');
-    return select ? select.value : null;
-  });
+  const sourceValue = await getSourceFilterValue(page);
   console.log(`Filter source value: ${sourceValue}`);
   await page.waitForSelector('[data-testid="action-run"]', {
     timeout: 60000,
@@ -108,33 +142,11 @@ async function verifyOpenLichessForSource(page, sourceLabel) {
   );
 
   await resetLichessSpy(page);
-  await page.evaluate((selector) => {
-    const target = document.querySelector(selector);
-    if (!target) return;
-    const event = new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-    });
-    target.dispatchEvent(event);
-  }, `[data-testid="${buttonTestId}"]`);
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await clickByTestId(page, buttonTestId);
+  await delay(500);
   const { openCount: openCountAfterClick } = await getLichessSpyState(page);
   console.log(`window.open call count after click: ${openCountAfterClick}`);
-  let url = '';
-  try {
-    url = await waitWithTimeout(
-      waitForLichessUrl(page, 15000),
-      20000,
-      `Lichess URL capture for ${sourceLabel}`,
-    );
-  } catch (err) {
-    const { openCount, lastOpenArgs } = await getLichessSpyState(page);
-    throw new Error(
-      `No Lichess URL captured for ${sourceLabel}. openCount=${openCount} lastOpenArgs=${lastOpenArgs}`,
-    );
-  }
-
+  const url = await captureLichessUrl(page, sourceLabel);
   assertLichessAnalysisUrl(url, `Lichess URL for ${sourceLabel}`);
 
 }

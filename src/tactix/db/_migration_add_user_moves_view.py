@@ -7,13 +7,11 @@ import duckdb
 from tactix.db.raw_pgns_queries import latest_raw_pgns_query
 
 
-def _migration_add_user_moves_view(conn: duckdb.DuckDBPyConnection) -> None:
-    """Create or replace the user_moves view with played_at data."""
-    conn.execute(
-        f"""
+def _build_user_moves_view_sql(latest_pgns_sql: str) -> str:
+    return f"""
         CREATE OR REPLACE VIEW user_moves AS
         WITH latest_pgns AS (
-            {latest_raw_pgns_query()}
+            {latest_pgns_sql}
         )
         SELECT
             p.position_id AS user_move_id,
@@ -31,7 +29,11 @@ def _migration_add_user_moves_view(conn: duckdb.DuckDBPyConnection) -> None:
             AND latest_pgns.source = p.source
         WHERE COALESCE(p.user_to_move, TRUE) = TRUE
         """
-    )
 
 
-__all__ = ["_migration_add_user_moves_view"]
+def _migration_add_user_moves_view(conn: duckdb.DuckDBPyConnection) -> None:
+    """Create or replace the user_moves view with played_at data."""
+    conn.execute(_build_user_moves_view_sql(latest_raw_pgns_query()))
+
+
+__all__ = ["_build_user_moves_view_sql", "_migration_add_user_moves_view"]

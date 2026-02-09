@@ -1015,6 +1015,10 @@ Session summary (2026-02-08):
 	- src/tactix/tactic_metadata.py monolithic helpers → focused parsing/lookup helpers.
 	- src/tactix/db/duckdb_dashboard_reader.py _fetch_source_sync → helper-driven assembly.
 	- client/src/api.ts exported SourceSyncSourceRow → local type.
+
+Session summary (2026-02-09):
+- Updated schema migration assertions to track `SCHEMA_VERSION` after user moves view additions.
+- Validated schema migration unit coverage with pytest; full `make check` green.
 - Tests run: `make check` (green; existing Vitest act warnings and pycycle .venv parse warning unchanged).
 - Before→After map:
 	- src/tactix/postgres_store_impl.py shim re-exports → deprecated stub (canonical repository modules only).

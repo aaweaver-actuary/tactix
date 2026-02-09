@@ -18,7 +18,7 @@ import JobProgressCard from './_components/JobProgressCard';
 import PracticeAttemptCard from './_components/PracticeAttemptCard';
 import GameDetailModal from './_components/GameDetailModal';
 import ChessboardModal from './_components/ChessboardModal';
-import BaseButton from './_components/BaseButton';
+import ActionButton from './_components/ActionButton';
 
 export {
   Hero,
@@ -40,5 +40,5 @@ export {
   PracticeAttemptCard,
   GameDetailModal,
   ChessboardModal,
-  BaseButton,
+  ActionButton,
 };

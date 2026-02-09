@@ -53,7 +53,7 @@ import {
   Hero,
   GameDetailModal,
   ChessboardModal,
-  BaseButton,
+  ActionButton,
 } from '../components';
 import {
   PracticeSessionStats,
@@ -187,7 +187,6 @@ type BaseCardEntry = {
   visible: boolean;
   render: (props: BaseCardRenderProps) => JSX.Element | null;
 };
-
 type PositionEntry = DashboardPayload['positions'][number];
 
 export default function DashboardFlow() {
@@ -1345,7 +1344,7 @@ export default function DashboardFlow() {
             return <span className="text-sand/40">--</span>;
           }
           return (
-            <BaseButton
+            <ActionButton
               className="rounded border border-white/10 px-2 py-1 text-xs text-sand/80 hover:border-white/30"
               data-testid={`open-lichess-${row.original.game_id}`}
               onClick={(event) => {
@@ -1354,7 +1353,7 @@ export default function DashboardFlow() {
               }}
             >
               Open in Lichess
-            </BaseButton>
+            </ActionButton>
           );
         },
       },

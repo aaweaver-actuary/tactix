@@ -556,7 +556,7 @@
       "Step 9: Verify no user_moves exist for opponent-to-move plies",
       "Step 10: Verify each user_move links to a valid position_id"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

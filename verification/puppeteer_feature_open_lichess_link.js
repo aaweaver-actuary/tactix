@@ -13,7 +13,6 @@ const {
   ensureRecentGamesHasRows,
   waitForRecentGamesRowReady,
 } = require('./helpers/game_detail_modal_helpers');
-const { selectSource } = require('./enter_submit_helpers');
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const SCREENSHOT_NAME =
@@ -44,10 +43,25 @@ async function waitForDashboard(page) {
   });
 }
 
+async function setSourceFilter(page, sourceValue) {
+  await page.waitForSelector('[data-testid="filter-source"]', {
+    timeout: 60000,
+  });
+  await page.select('[data-testid="filter-source"]', sourceValue);
+  await page.waitForFunction(
+    (value) => {
+      const select = document.querySelector('[data-testid="filter-source"]');
+      return select && select.value === value;
+    },
+    { timeout: 60000 },
+    sourceValue,
+  );
+}
+
 async function verifyOpenLichessForSource(page, sourceLabel) {
   console.log(`Verifying Open in Lichess for ${sourceLabel}...`);
   await installLichessSpy(page);
-  await selectSource(page, sourceLabel);
+  await setSourceFilter(page, sourceLabel);
   const sourceValue = await page.evaluate(() => {
     const select = document.querySelector('[data-testid="filter-source"]');
     return select ? select.value : null;

@@ -1,4 +1,13 @@
 Session summary (2026-02-08):
+- Re-ran regression UI automation (enter submit, game detail modal, practice progress) plus additional core checks; refreshed screenshots in verification/.
+- Hardened verification helpers to ensure recent games expansion and stable Open in Lichess filter selection during UI checks.
+- Added a DuckDB migration to refresh the user_moves view with played_at timestamps and user-to-move filtering.
+- Added UTC headers to the user move fixture and unit coverage for user_moves view validation.
+- Tests run: node verification/puppeteer_issue_enter_submit.js; node verification/puppeteer_feature_game_detail_modal.js; node verification/puppeteer_issue_practice_progress.js; node verification/puppeteer_practice_attempt.js; node verification/puppeteer_motif_filters.js; node verification/puppeteer_feature_dashboard_cards_collapsible_move.js; node verification/puppeteer_feature_open_lichess_link.js; node verification/puppeteer_feature_listudy_assets.js; node verification/puppeteer_feature_110_dashboard.js; node verification/puppeteer_feature_107_positions.js; runTests (all); make check (task).
+- Updated feature_list.json: marked "User moves are recorded per position with played UCI and timestamps" as passing.
+- Current pass count: 40/128.
+
+Session summary (2026-02-08):
 - Simplified BaseTable click handling by routing row/cell clicks through a single guarded handler while preserving interactive element bypasses and data-testids.
 - Tests run: make check (before; task); make check (after; task).
 - Before→After map:

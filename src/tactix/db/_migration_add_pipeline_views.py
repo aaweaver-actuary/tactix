@@ -41,18 +41,26 @@ def _migration_add_pipeline_views(conn: duckdb.DuckDBPyConnection) -> None:
     )
 
     conn.execute(
-        """
+        f"""
         CREATE OR REPLACE VIEW user_moves AS
+        WITH latest_pgns AS (
+            {latest_raw_pgns_query()}
+        )
         SELECT
-            position_id AS user_move_id,
-            position_id,
-            game_id,
-            user,
-            source,
-            uci AS played_uci,
-            san AS played_san,
-            created_at
-        FROM positions
+            p.position_id AS user_move_id,
+            p.position_id,
+            p.game_id,
+            p.user,
+            p.source,
+            p.uci AS played_uci,
+            p.san AS played_san,
+            to_timestamp(latest_pgns.last_timestamp_ms / 1000) AS played_at,
+            p.created_at
+        FROM positions p
+        LEFT JOIN latest_pgns
+            ON latest_pgns.game_id = p.game_id
+            AND latest_pgns.source = p.source
+        WHERE COALESCE(p.user_to_move, TRUE) = TRUE
         """
     )
 

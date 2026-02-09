@@ -23,6 +23,7 @@ from tactix.db._migration_add_tactic_metadata import _migration_add_tactic_metad
 from tactix.db._migration_add_training_attempt_latency import (
     _migration_add_training_attempt_latency,
 )
+from tactix.db._migration_add_user_moves_view import _migration_add_user_moves_view
 from tactix.db._migration_base_tables import _migration_base_tables
 from tactix.db._migration_raw_pgns_versioning import _migration_raw_pgns_versioning
 from tactix.db.duckdb_dashboard_reader import (
@@ -154,7 +155,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 );
 """
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 
 
 def _should_attempt_wal_recovery(exc: BaseException) -> bool:
@@ -324,6 +325,7 @@ _SCHEMA_MIGRATIONS = [
     (7, _migration_add_pipeline_views),
     (8, _migration_add_games_table),
     (9, _migration_add_tactic_metadata),
+    (10, _migration_add_user_moves_view),
 ]
 
 

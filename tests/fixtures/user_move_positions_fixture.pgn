@@ -1,6 +1,8 @@
 [Event "User Move Positions Fixture"]
 [Site "https://example.com/game/fixture-1"]
 [Date "2026.02.08"]
+[UTCDate "2026.02.08"]
+[UTCTime "12:34:56"]
 [White "Tester"]
 [Black "Opponent"]
 [Result "*"]

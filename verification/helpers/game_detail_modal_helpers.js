@@ -18,8 +18,25 @@ async function waitForDashboard(page, targetUrl, source) {
 }
 
 async function openRecentGamesTable(page) {
-  await page.click('[data-testid="recent-games-card"] [role="button"]');
-  await page.waitForSelector('[data-testid="recent-games-card"] table');
+  const cardSelector = '[data-testid="recent-games-card"]';
+  const headerSelector = `${cardSelector} [role="button"]`;
+  await page.waitForSelector(headerSelector);
+  const isCollapsed = await page.$eval(
+    headerSelector,
+    (header) => header.getAttribute('aria-expanded') === 'false',
+  );
+  if (isCollapsed) {
+    await page.click(headerSelector);
+  }
+  await page.waitForFunction(
+    (selector) => {
+      const node = document.querySelector(selector);
+      return node && node.getAttribute('data-state') === 'expanded';
+    },
+    { timeout: 60000 },
+    `${cardSelector} [data-state]`,
+  );
+  await page.waitForSelector(`${cardSelector} table`);
 }
 
 async function ensureRecentGamesHasRows(page) {

@@ -1,9 +1,12 @@
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CHESSCOM_PROFILE_OPTIONS } from '../utils/CHESSCOM_PROFILE_OPTIONS';
 import { LICHESS_PROFILE_OPTIONS } from '../utils/LICHESS_PROFILE_OPTIONS';
 import { SOURCE_OPTIONS } from '../utils/SOURCE_OPTIONS';
 import { ChessPlatform, ChesscomProfile, LichessProfile } from '../types';
 import Badge from './Badge';
 import BaseCard, { BaseCardDragProps } from './BaseCard';
+import Text from './Text';
 
 interface FiltersState {
   motif: string;
@@ -45,176 +48,232 @@ export default function FiltersCard({
   onResetFilters,
   ...dragProps
 }: FiltersCardProps) {
-  return (
-    <BaseCard
-      className="p-4"
-      header={
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-display text-sand">Filters</h3>
-          <Badge label="Live" />
-        </div>
-      }
-      contentClassName="pt-3"
-      {...dragProps}
-    >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const filtersBody = (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
+      <label className="text-xs text-sand/60 flex flex-col gap-2">
+        Site / source
+        <select
+          className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
+          value={source}
+          onChange={(event) =>
+            onSourceChange(event.target.value as ChessPlatform)
+          }
+          disabled={loading}
+          data-testid="filter-source"
+        >
+          {SOURCE_OPTIONS.map((opt) => (
+            <option key={opt.id} value={opt.id}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      {source === 'lichess' ? (
         <label className="text-xs text-sand/60 flex flex-col gap-2">
-          Site / source
+          Lichess profile
           <select
             className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
-            value={source}
+            value={lichessProfile}
             onChange={(event) =>
-              onSourceChange(event.target.value as ChessPlatform)
+              onLichessProfileChange(event.target.value as LichessProfile)
             }
             disabled={loading}
-            data-testid="filter-source"
+            data-testid="filter-lichess-profile"
           >
-            {SOURCE_OPTIONS.map((opt) => (
+            {LICHESS_PROFILE_OPTIONS.map((opt) => (
               <option key={opt.id} value={opt.id}>
                 {opt.label}
               </option>
             ))}
           </select>
         </label>
-        {source === 'lichess' ? (
-          <label className="text-xs text-sand/60 flex flex-col gap-2">
-            Lichess profile
-            <select
-              className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
-              value={lichessProfile}
-              onChange={(event) =>
-                onLichessProfileChange(event.target.value as LichessProfile)
-              }
-              disabled={loading}
-              data-testid="filter-lichess-profile"
-            >
-              {LICHESS_PROFILE_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-        {source === 'chesscom' ? (
-          <label className="text-xs text-sand/60 flex flex-col gap-2">
-            Chess.com time class
-            <select
-              className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
-              value={chesscomProfile}
-              onChange={(event) =>
-                onChesscomProfileChange(event.target.value as ChesscomProfile)
-              }
-              disabled={loading}
-              data-testid="filter-chesscom-profile"
-            >
-              {CHESSCOM_PROFILE_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+      ) : null}
+      {source === 'chesscom' ? (
         <label className="text-xs text-sand/60 flex flex-col gap-2">
-          Motif
+          Chess.com time class
           <select
             className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
-            value={filters.motif}
+            value={chesscomProfile}
             onChange={(event) =>
-              onFiltersChange({ ...filters, motif: event.target.value })
+              onChesscomProfileChange(event.target.value as ChesscomProfile)
             }
             disabled={loading}
-            data-testid="filter-motif"
+            data-testid="filter-chesscom-profile"
           >
-            {motifOptions.map((motif) => (
-              <option key={motif} value={motif}>
-                {motif === 'all' ? 'All motifs' : motif}
+            {CHESSCOM_PROFILE_OPTIONS.map((opt) => (
+              <option key={opt.id} value={opt.id}>
+                {opt.label}
               </option>
             ))}
           </select>
         </label>
-        <label className="text-xs text-sand/60 flex flex-col gap-2">
-          Time control
-          <select
-            className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
-            value={filters.timeControl}
+      ) : null}
+      <label className="text-xs text-sand/60 flex flex-col gap-2">
+        Motif
+        <select
+          className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
+          value={filters.motif}
+          onChange={(event) =>
+            onFiltersChange({ ...filters, motif: event.target.value })
+          }
+          disabled={loading}
+          data-testid="filter-motif"
+        >
+          {motifOptions.map((motif) => (
+            <option key={motif} value={motif}>
+              {motif === 'all' ? 'All motifs' : motif}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="text-xs text-sand/60 flex flex-col gap-2">
+        Time control
+        <select
+          className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
+          value={filters.timeControl}
+          onChange={(event) =>
+            onFiltersChange({
+              ...filters,
+              timeControl: event.target.value,
+            })
+          }
+          disabled={loading}
+          data-testid="filter-time-control"
+        >
+          {timeControlOptions.map((value) => (
+            <option key={value} value={value}>
+              {value === 'all' ? 'All time controls' : value}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="text-xs text-sand/60 flex flex-col gap-2">
+        Rating band
+        <select
+          className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
+          value={filters.ratingBucket}
+          onChange={(event) =>
+            onFiltersChange({
+              ...filters,
+              ratingBucket: event.target.value,
+            })
+          }
+          disabled={loading}
+          data-testid="filter-rating"
+        >
+          {ratingOptions.map((value) => (
+            <option key={value} value={value}>
+              {value === 'all' ? 'All ratings' : value}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="flex flex-col gap-2 text-xs text-sand/60">
+        Date range
+        <div className="flex gap-2">
+          <input
+            type="date"
+            value={filters.startDate}
             onChange={(event) =>
               onFiltersChange({
                 ...filters,
-                timeControl: event.target.value,
+                startDate: event.target.value,
               })
             }
+            className="flex-1 rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
             disabled={loading}
-            data-testid="filter-time-control"
-          >
-            {timeControlOptions.map((value) => (
-              <option key={value} value={value}>
-                {value === 'all' ? 'All time controls' : value}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-xs text-sand/60 flex flex-col gap-2">
-          Rating band
-          <select
-            className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
-            value={filters.ratingBucket}
+            data-testid="filter-start-date"
+          />
+          <input
+            type="date"
+            value={filters.endDate}
             onChange={(event) =>
               onFiltersChange({
                 ...filters,
-                ratingBucket: event.target.value,
+                endDate: event.target.value,
               })
             }
+            className="flex-1 rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
             disabled={loading}
-            data-testid="filter-rating"
-          >
-            {ratingOptions.map((value) => (
-              <option key={value} value={value}>
-                {value === 'all' ? 'All ratings' : value}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="flex flex-col gap-2 text-xs text-sand/60">
-          Date range
-          <div className="flex gap-2">
-            <input
-              type="date"
-              value={filters.startDate}
-              onChange={(event) =>
-                onFiltersChange({
-                  ...filters,
-                  startDate: event.target.value,
-                })
-              }
-              className="flex-1 rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
-              disabled={loading}
-              data-testid="filter-start-date"
-            />
-            <input
-              type="date"
-              value={filters.endDate}
-              onChange={(event) =>
-                onFiltersChange({
-                  ...filters,
-                  endDate: event.target.value,
-                })
-              }
-              className="flex-1 rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
-              disabled={loading}
-              data-testid="filter-end-date"
-            />
-          </div>
-          <button
-            className="self-start text-xs text-sand/50 hover:text-sand"
-            onClick={onResetFilters}
-            disabled={loading}
-          >
-            Reset filters
-          </button>
+            data-testid="filter-end-date"
+          />
         </div>
+        <button
+          className="self-start text-xs text-sand/50 hover:text-sand"
+          onClick={onResetFilters}
+          disabled={loading}
+        >
+          Reset filters
+        </button>
       </div>
-    </BaseCard>
+    </div>
+  );
+
+  return (
+    <>
+      <BaseCard
+        className="p-4"
+        header={
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-display text-sand">Filters</h3>
+              <Badge label="Live" />
+            </div>
+            <button
+              type="button"
+              className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
+              onClick={() => setModalOpen(true)}
+              data-testid="filters-open"
+              disabled={loading}
+            >
+              Open filters
+            </button>
+          </div>
+        }
+        contentClassName="pt-3"
+        {...dragProps}
+      >
+        <Text value="Refine the dashboard using source and motif filters." />
+      </BaseCard>
+      {modalOpen
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-sm"
+              role="dialog"
+              aria-modal="true"
+              data-testid="filters-modal"
+              onClick={(event) => {
+                if (event.target === event.currentTarget) {
+                  setModalOpen(false);
+                }
+              }}
+            >
+              <div className="w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/95 p-5 shadow-2xl">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <Text mode="uppercase" value="Filters" />
+                    <div className="text-xs text-sand/60">
+                      Adjust sources, motifs, and time windows
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setModalOpen(false)}
+                    className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
+                    aria-label="Close filters"
+                    data-testid="filters-modal-close"
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="mt-4">{filtersBody}</div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }

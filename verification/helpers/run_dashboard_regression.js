@@ -30,6 +30,32 @@ const captureScreenshot = async (page, screenshotName) => {
   return outPath;
 };
 
+const openFiltersModal = async (page) => {
+  const modalSelector = '[data-testid="filters-modal"]';
+  if (await page.$(modalSelector)) return;
+  await page.waitForSelector('[data-testid="filters-open"]', {
+    timeout: SELECT_TIMEOUT_MS,
+  });
+  await page.click('[data-testid="filters-open"]');
+  await page.waitForSelector(modalSelector, { timeout: SELECT_TIMEOUT_MS });
+};
+
+const closeFiltersModal = async (page) => {
+  const modalSelector = '[data-testid="filters-modal"]';
+  if (!(await page.$(modalSelector))) return;
+  const closeButton = await page.$('[data-testid="filters-modal-close"]');
+  if (closeButton) {
+    await closeButton.click();
+  } else {
+    await page.click(modalSelector);
+  }
+  await page.waitForFunction(
+    (selector) => !document.querySelector(selector),
+    { timeout: SELECT_TIMEOUT_MS },
+    modalSelector,
+  );
+};
+
 const runDashboardRegression = async ({
   targetUrl,
   screenshotName,
@@ -49,6 +75,7 @@ const runDashboardRegression = async ({
 
   try {
     await page.goto(targetUrl, { waitUntil, timeout: SELECT_TIMEOUT_MS });
+    await openFiltersModal(page);
     await page.waitForSelector('[data-testid="filter-source"]', {
       timeout: SELECT_TIMEOUT_MS,
     });
@@ -63,6 +90,8 @@ const runDashboardRegression = async ({
       });
       await page.select(`[data-testid="${profileTestId}"]`, profileValue);
     }
+
+    await closeFiltersModal(page);
 
     await page.waitForSelector(`[data-testid="${actionTestId}"]`, {
       timeout: SELECT_TIMEOUT_MS,

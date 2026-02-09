@@ -26,6 +26,7 @@ async function waitForSourceResponse(page, targetSource, endpoint) {
 async function selectSource(page, source) {
   const targetSource = source || 'chesscom';
   try {
+    await ensureFiltersModalOpen(page);
     await page.waitForFunction(
       () => {
         const el = document.querySelector(
@@ -64,6 +65,7 @@ async function selectSource(page, source) {
       targetSource,
     );
     await Promise.all([dashboardPromise, practicePromise]);
+    await closeFiltersModal(page);
   } catch (err) {
     const label = SOURCE_LABELS[targetSource] || targetSource;
     await page.$$eval(
@@ -78,7 +80,36 @@ async function selectSource(page, source) {
     );
     await waitForSourceResponse(page, targetSource, '/api/dashboard');
     await waitForSourceResponse(page, targetSource, '/api/practice/queue');
+    await closeFiltersModal(page);
   }
+}
+
+async function ensureFiltersModalOpen(page) {
+  const modalSelector = '[data-testid="filters-modal"]';
+  const openSelector = '[data-testid="filters-open"]';
+  const modal = await page.$(modalSelector);
+  if (modal) return;
+  await page.waitForSelector(openSelector, { timeout: 60000 });
+  await page.click(openSelector);
+  await page.waitForSelector(modalSelector, { timeout: 60000 });
+}
+
+async function closeFiltersModal(page) {
+  const modalSelector = '[data-testid="filters-modal"]';
+  const closeSelector = '[data-testid="filters-modal-close"]';
+  const modal = await page.$(modalSelector);
+  if (!modal) return;
+  const closeButton = await page.$(closeSelector);
+  if (closeButton) {
+    await closeButton.click();
+  } else {
+    await page.click(modalSelector);
+  }
+  await page.waitForFunction(
+    (selector) => !document.querySelector(selector),
+    { timeout: 60000 },
+    modalSelector,
+  );
 }
 
 async function getBestMoveFromPage(page) {
@@ -140,4 +171,6 @@ module.exports = {
   getBestMoveFromPage,
   getFenFromPage,
   buildFallbackMove,
+  ensureFiltersModalOpen,
+  closeFiltersModal,
 };

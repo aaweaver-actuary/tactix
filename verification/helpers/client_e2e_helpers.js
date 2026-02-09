@@ -133,22 +133,36 @@ async function setDateInput(page, selector, value) {
 }
 
 async function ensureFiltersExpanded(page) {
-  await page.waitForSelector('h3', { timeout: 60000 });
-  await page.$$eval('h3', (headers) => {
-    const target = headers.find(
-      (header) => (header.textContent || '').trim() === 'Filters',
-    );
-    const button = target?.closest('[role="button"]');
-    if (button && button.getAttribute('aria-expanded') === 'false') {
-      button.click();
-    }
+  await openFiltersModal(page);
+}
+
+async function openFiltersModal(page) {
+  const modalSelector = '[data-testid="filters-modal"]';
+  if (await page.$(modalSelector)) return;
+  await page.waitForSelector('[data-testid="filters-open"]', {
+    timeout: 60000,
   });
+  await page.click('[data-testid="filters-open"]');
+  await page.waitForSelector(modalSelector, { timeout: 60000 });
   await page.waitForFunction(
-    () => {
-      const input = document.querySelector('[data-testid="filter-source"]');
-      return input && input.offsetParent !== null;
-    },
+    () => Boolean(document.querySelector('[data-testid="filter-source"]')),
     { timeout: 60000 },
+  );
+}
+
+async function closeFiltersModal(page) {
+  const modalSelector = '[data-testid="filters-modal"]';
+  if (!(await page.$(modalSelector))) return;
+  const closeButton = await page.$('[data-testid="filters-modal-close"]');
+  if (closeButton) {
+    await closeButton.click();
+  } else {
+    await page.click(modalSelector);
+  }
+  await page.waitForFunction(
+    (selector) => !document.querySelector(selector),
+    { timeout: 60000 },
+    modalSelector,
   );
 }
 
@@ -195,6 +209,7 @@ async function applyFilters(page, runDate) {
 
   await setDateInput(page, '[data-testid="filter-start-date"]', runDate);
   await setDateInput(page, '[data-testid="filter-end-date"]', runDate);
+  await closeFiltersModal(page);
 }
 
 async function step(label, fn) {
@@ -211,8 +226,10 @@ module.exports = {
   buildClientE2EConfig,
   ensureCardExpanded,
   ensureFiltersExpanded,
+  closeFiltersModal,
   getPracticeQueueLimitEnv,
   launchBackend,
+  openFiltersModal,
   RUN_DATE,
   setDateInput,
   startDevServer,

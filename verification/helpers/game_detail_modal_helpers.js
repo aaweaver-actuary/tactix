@@ -11,7 +11,6 @@ async function getTextContent(handle) {
 
 async function waitForDashboard(page, targetUrl, source) {
   await page.goto(targetUrl, { waitUntil: 'networkidle0' });
-  await page.waitForSelector('[data-testid="filter-source"]');
   await selectSource(page, source);
   await page.waitForSelector('[data-testid="dashboard-card-tactics-table"]');
 }

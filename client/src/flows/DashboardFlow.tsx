@@ -374,8 +374,10 @@ export default function DashboardFlow() {
           const nextScope = `${nextSource}:${includeFailed}`;
           const shouldReset = practiceSessionScopeRef.current !== nextScope;
           const shouldInitialize = !practiceSessionInitializedRef.current;
+          const shouldKeepSession =
+            !shouldReset && practiceSession.completed > 0;
           practiceSessionScopeRef.current = nextScope;
-          if (shouldReset || shouldInitialize) {
+          if ((shouldReset || shouldInitialize) && !shouldKeepSession) {
             practiceSessionInitializedRef.current = true;
             setPracticeSession(resetPracticeSessionStats(payload.items.length));
           }
@@ -387,7 +389,7 @@ export default function DashboardFlow() {
         setPracticeLoading(false);
       }
     },
-    [includeFailedAttempt, source],
+    [includeFailedAttempt, practiceSession.completed, source],
   );
 
   async function loadPostgres(): Promise<void> {

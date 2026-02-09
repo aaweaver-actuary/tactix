@@ -337,6 +337,13 @@ const changeFilter = (testId: string, value: string) => {
   });
 };
 
+const openFiltersModal = async () => {
+  fireEvent.click(screen.getByTestId('filters-open'));
+  await waitFor(() => {
+    expect(screen.getByTestId('filters-modal')).toBeInTheDocument();
+  });
+};
+
 const setupBaseMocks = () => {
   (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
     baseDashboard,
@@ -639,6 +646,8 @@ describe('DashboardFlow', () => {
     await waitFor(() => {
       expect(fetchDashboard).toHaveBeenCalled();
     });
+
+    await openFiltersModal();
 
     changeFilter('filter-source', 'chesscom');
     changeFilter('filter-time-control', 'bullet');

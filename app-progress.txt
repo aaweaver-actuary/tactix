@@ -1,4 +1,12 @@
 Session summary (2026-02-09):
+- Fixed practice session progress reset by preserving totals when refreshing the queue mid-session.
+- Remade the Filters dashboard card into a modal-based settings view with a header entry button and modal overlay controls.
+- Updated dashboard test and Puppeteer helpers to open/close the filters modal before interacting with filter inputs.
+- Added settings modal UI automation plus integration verification.
+- Tests run: node verification/puppeteer_issue_enter_submit.js; node verification/puppeteer_feature_game_detail_modal.js; node verification/puppeteer_issue_practice_progress.js (failed, then reran after fix); node verification/puppeteer_feature_dashboard_cards_collapsible_move.js; node verification/puppeteer_feature_open_lichess_link.js; node verification/puppeteer_feature_listudy_assets.js; node verification/puppeteer_motif_filters.js; node verification/puppeteer_practice_attempt.js; node verification/puppeteer_feature_110_dashboard.js; node verification/puppeteer_feature_107_positions.js; node verification/puppeteer_feature_settings_modal.js; node verification/integration_feature_settings_modal.js.
+- Evidence: verification/feature-settings-modal-open-2026-02-09.png; verification/feature-settings-modal-closed-2026-02-09.png.
+
+Session summary (2026-02-09):
 - Added new GitHub issues to the top of feature_list.json (Settings cards -> modals, ChessboardModal, BaseModal escape key, BaseButton-only raw button test).
 - Fixed BaseTable pagination handler to avoid setter-prop lint false positives in component structure tests.
 - Accepted formatter-only updates in user move and mate-in-one tests.

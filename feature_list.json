@@ -9,7 +9,7 @@
       "Step 4: Verify the modal content matches the previous card content",
       "Step 5: Add or update a UI test that asserts modal behavior for settings"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

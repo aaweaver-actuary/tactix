@@ -80,7 +80,13 @@ async function selectSource(page, source) {
 }
 
 async function getBestMoveFromPage(page) {
-  const bestLabel = await page.$$eval('span', (spans) => {
+  const bestLabel = await page.$$eval('h3', (headers) => {
+    const header = headers.find((node) =>
+      (node.textContent || '').includes('Practice attempt'),
+    );
+    const card = header?.closest('.card');
+    if (!card) return '';
+    const spans = Array.from(card.querySelectorAll('span'));
     const best = spans.find((span) => {
       const text = span.textContent?.trim() || '';
       return text.startsWith('Best ') && text !== 'Best --';
@@ -89,16 +95,23 @@ async function getBestMoveFromPage(page) {
   });
 
   const rawBestMove = bestLabel.replace('Best ', '').trim();
-  if (!rawBestMove || rawBestMove === '--') {
+  const uciPattern = /^[a-h][1-8][a-h][1-8][qrbn]?$/i;
+  if (!rawBestMove || rawBestMove === '--' || !uciPattern.test(rawBestMove)) {
     return null;
   }
   return rawBestMove;
 }
 
 async function getFenFromPage(page) {
-  const fen = await page.$$eval('p', (nodes) => {
+  const fen = await page.$$eval('h3', (headers) => {
     const fenRegex =
       /^[prnbqkPRNBQK1-8\/]+ [wb] [KQkq-]+ [a-h1-8-]+ \d+ \d+$/;
+    const header = headers.find((node) =>
+      (node.textContent || '').includes('Practice attempt'),
+    );
+    const card = header?.closest('.card');
+    if (!card) return '';
+    const nodes = Array.from(card.querySelectorAll('p'));
     const match = nodes
       .map((node) => node.textContent?.trim() || '')
       .find((text) => fenRegex.test(text));

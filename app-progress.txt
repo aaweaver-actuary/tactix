@@ -1,4 +1,11 @@
 Session summary (2026-02-08):
+- Re-ran required UI regressions (enter-submit, game detail modal, practice progress) plus additional core UI checks; refreshed verification screenshots.
+- Hardened enter-submit Puppeteer helpers to scope best-move and FEN lookups to the Practice attempt card and validate UCI values.
+- Verified user color inference from PGN headers via pytest using fixture games (white/black) and annotations.
+- Tests run: node verification/puppeteer_issue_enter_submit.js; node verification/puppeteer_feature_game_detail_modal.js; node verification/puppeteer_issue_practice_progress.js; node verification/puppeteer_feature_dashboard_cards_collapsible_move.js; node verification/puppeteer_feature_open_lichess_link.js; node verification/puppeteer_feature_listudy_assets.js; node verification/puppeteer_motif_filters.js; node verification/puppeteer_practice_attempt.js; node verification/puppeteer_feature_110_dashboard.js; node verification/puppeteer_feature_107_positions.js; pytest tests/test_user_color_inference.py -q; make check (task).
+- Current pass count: 38/128.
+
+Session summary (2026-02-08):
 - Verified existing automated coverage for enter-submit, modal overlay, and practice progress numerator-only behavior; no code changes needed.
 - Tests run: make check (before; task); make check (after; task).
 - Before→After map:

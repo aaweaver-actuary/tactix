@@ -29,8 +29,6 @@ TACTIC_ANALYSIS_COLUMNS = """
     t.explanation,
     t.target_piece,
     t.target_square,
-    t.target_piece,
-    t.target_square,
     t.eval_cp,
     t.created_at
 """

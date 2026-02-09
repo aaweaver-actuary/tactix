@@ -8,11 +8,7 @@ import duckdb
 def _migration_add_tactic_metadata(conn: duckdb.DuckDBPyConnection) -> None:
     """Ensure tactic metadata columns exist."""
     columns = {row[1] for row in conn.execute("PRAGMA table_info('tactics')").fetchall()}
-    if "tactic_piece" not in columns:
-        conn.execute("ALTER TABLE tactics ADD COLUMN tactic_piece TEXT")
-    if "mate_type" not in columns:
-        conn.execute("ALTER TABLE tactics ADD COLUMN mate_type TEXT")
-    if "target_piece" not in columns:
-        conn.execute("ALTER TABLE tactics ADD COLUMN target_piece TEXT")
-    if "target_square" not in columns:
-        conn.execute("ALTER TABLE tactics ADD COLUMN target_square TEXT")
+    for column_name in ("tactic_piece", "mate_type", "target_piece", "target_square"):
+        if column_name in columns:
+            continue
+        conn.execute(f"ALTER TABLE tactics ADD COLUMN {column_name} TEXT")

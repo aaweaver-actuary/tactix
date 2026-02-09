@@ -17,26 +17,44 @@ def _load_resume_positions(
     game_ids: list[str],
     source: str,
 ) -> tuple[list[dict[str, object]], int, str]:
-    positions: list[dict[str, object]] = []
-    resume_index = -1
-    analysis_signature = ""
-    if analysis_checkpoint_path.exists():
-        existing_positions = fetch_positions_for_games(conn, game_ids)
-        if existing_positions:
-            positions_to_analyze = [
-                pos for pos in existing_positions if pos.get("user_to_move", True)
-            ]
-            analysis_signature = _analysis_signature(
-                game_ids,
-                len(positions_to_analyze),
-                source,
-            )
-            resume_index = _read_analysis_checkpoint(analysis_checkpoint_path, analysis_signature)
-            if resume_index >= RESUME_INDEX_START:
-                logger.info("Resuming analysis at index=%s for source=%s", resume_index, source)
-                positions = positions_to_analyze
-            else:
-                _clear_analysis_checkpoint(analysis_checkpoint_path)
-        else:
-            _clear_analysis_checkpoint(analysis_checkpoint_path)
-    return positions, resume_index, analysis_signature
+    return _load_resume_context(conn, analysis_checkpoint_path, game_ids, source)
+
+
+def _load_resume_context(
+    conn,
+    analysis_checkpoint_path,
+    game_ids: list[str],
+    source: str,
+) -> tuple[list[dict[str, object]], int, str]:
+    if not analysis_checkpoint_path.exists():
+        return [], -1, ""
+    positions_to_analyze = _fetch_positions_to_analyze(
+        conn,
+        analysis_checkpoint_path,
+        game_ids,
+    )
+    if not positions_to_analyze:
+        return [], -1, ""
+    analysis_signature = _analysis_signature(
+        game_ids,
+        len(positions_to_analyze),
+        source,
+    )
+    resume_index = _read_analysis_checkpoint(analysis_checkpoint_path, analysis_signature)
+    if resume_index >= RESUME_INDEX_START:
+        logger.info("Resuming analysis at index=%s for source=%s", resume_index, source)
+        return positions_to_analyze, resume_index, analysis_signature
+    _clear_analysis_checkpoint(analysis_checkpoint_path)
+    return [], resume_index, analysis_signature
+
+
+def _fetch_positions_to_analyze(
+    conn,
+    analysis_checkpoint_path,
+    game_ids: list[str],
+) -> list[dict[str, object]]:
+    existing_positions = fetch_positions_for_games(conn, game_ids)
+    if not existing_positions:
+        _clear_analysis_checkpoint(analysis_checkpoint_path)
+        return []
+    return [pos for pos in existing_positions if pos.get("user_to_move", True)]

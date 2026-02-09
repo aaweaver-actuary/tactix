@@ -39,19 +39,10 @@ def append_positions_with_post_moves(
 def _build_post_move_position(
     position: dict[str, object],
 ) -> dict[str, object] | None:
-    if not position.get("user_to_move", True):
+    context = _resolve_post_move_context(position)
+    if context is None:
         return None
-    fen = str(position.get("fen") or "")
-    uci = str(position.get("uci") or "")
-    if not fen or not uci:
-        return None
-    board = _board_from_fen(fen)
-    move = _move_from_uci(uci) if board is not None else None
-    if board is None or move is None:
-        return None
-    if move not in board.legal_moves:
-        logger.warning("Skipping post-move build for illegal move %s on FEN %s", uci, fen)
-        return None
+    board, move = context
     board.push(move)
     return {
         **position,
@@ -62,6 +53,52 @@ def _build_post_move_position(
         "user_to_move": False,
         "is_legal": True,
     }
+
+
+def _resolve_post_move_context(
+    position: dict[str, object],
+) -> tuple[chess.Board, chess.Move] | None:
+    fen_uci = _extract_fen_uci(position)
+    if fen_uci is None:
+        return None
+    fen, uci = fen_uci
+    board = _board_from_fen(fen)
+    if board is None:
+        return None
+    move = _move_from_uci(uci)
+    if move is None:
+        return None
+    if not _is_legal_post_move(board, move, uci, fen):
+        return None
+    return board, move
+
+
+def _extract_fen_uci(position: dict[str, object]) -> tuple[str, str] | None:
+    if not position.get("user_to_move", True):
+        return None
+    fen = str(position.get("fen") or "")
+    uci = str(position.get("uci") or "")
+    return _ensure_fen_uci(fen, uci)
+
+
+def _ensure_fen_uci(fen: str, uci: str) -> tuple[str, str] | None:
+    if not fen:
+        return None
+    if not uci:
+        return None
+    return fen, uci
+
+
+def _is_legal_post_move(
+    board: chess.Board,
+    move: chess.Move,
+    uci: str,
+    fen: str,
+) -> bool:
+    if move in board.legal_moves:
+        return True
+    logger.warning("Skipping post-move build for illegal move %s on FEN %s", uci, fen)
+    return False
 
 
 def _board_from_fen(fen: str) -> chess.Board | None:

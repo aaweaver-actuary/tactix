@@ -7,7 +7,7 @@ from tactix.utils.logger import funclogger
 
 
 @dataclass(frozen=True)
-class TacticRowDetails:
+class TacticRowDetails:  # pylint: disable=too-many-instance-attributes
     best_uci: str | None
     best_san: str | None
     explanation: str | None

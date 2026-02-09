@@ -17,7 +17,20 @@ def _ensure_positions_columns(conn: duckdb.DuckDBPyConnection) -> None:
         conn.execute("UPDATE positions SET user_to_move = TRUE WHERE user_to_move IS NULL")
 
 
+def _ensure_tactics_columns(conn: duckdb.DuckDBPyConnection) -> None:
+    columns = {row[1] for row in conn.execute("PRAGMA table_info('tactics')").fetchall()}
+    if "target_piece" not in columns:
+        conn.execute("ALTER TABLE tactics ADD COLUMN target_piece TEXT")
+    if "target_square" not in columns:
+        conn.execute("ALTER TABLE tactics ADD COLUMN target_square TEXT")
+
+
 def _create_games_view(conn: duckdb.DuckDBPyConnection) -> None:
+    row = conn.execute(
+        "SELECT table_type FROM information_schema.tables WHERE table_name = 'games'"
+    ).fetchone()
+    if row and row[0] == "BASE TABLE":
+        return
     conn.execute(
         f"""
         CREATE OR REPLACE VIEW games AS
@@ -133,6 +146,7 @@ def _create_practice_queue_view(conn: duckdb.DuckDBPyConnection) -> None:
 def _migration_add_pipeline_views(conn: duckdb.DuckDBPyConnection) -> None:
     """Ensure pipeline compatibility views and columns exist."""
     _ensure_positions_columns(conn)
+    _ensure_tactics_columns(conn)
     _create_games_view(conn)
     _migration_add_user_moves_view(conn)
     _create_opportunities_view(conn)

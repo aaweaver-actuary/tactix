@@ -164,9 +164,15 @@ SCHEMA_VERSION = 11
 
 def _should_attempt_wal_recovery(exc: BaseException) -> bool:
     """Return True when WAL recovery is allowed for the given exception."""
-    message = str(exc).lower()
-    if "wal replay failed" not in message and "wal error" not in message:
-        return False
+    return _is_wal_failure(str(exc).lower()) and _is_wal_recovery_enabled()
+
+
+def _is_wal_failure(message: str) -> bool:
+    wal_terms = ("wal replay failed", "wal error", "failure while replaying")
+    return any(term in message for term in wal_terms)
+
+
+def _is_wal_recovery_enabled() -> bool:
     return (
         bool(os.environ.get("PYTEST_CURRENT_TEST"))
         or os.environ.get("TACTIX_ENV", "").lower() == "dev"

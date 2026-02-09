@@ -9,6 +9,7 @@ import {
   listudyPieces,
 } from '../utils/listudyAssets';
 import Badge from './Badge';
+import BaseButton from './BaseButton';
 import Chessboard from './Chessboard';
 import Text from './Text';
 
@@ -61,15 +62,13 @@ export default function ChessboardModal({
               Review the selected position in context
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
+          <BaseButton
             className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
-            aria-label="Close chessboard"
+            onClick={onClose}
             data-testid="chessboard-modal-close"
           >
             Close
-          </button>
+          </BaseButton>
         </div>
 
         {!position ? (

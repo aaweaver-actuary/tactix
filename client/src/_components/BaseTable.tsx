@@ -8,6 +8,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
+import BaseButton from './BaseButton';
 
 const DEFAULT_PAGE_SIZES = [5, 10, 20];
 const joinClassNames = (...classes: Array<string | null | undefined>) =>
@@ -113,8 +114,7 @@ export default function BaseTable<TData>({
 
                   return (
                     <th key={header.id} className={headerClassNames}>
-                      <button
-                        type="button"
+                      <BaseButton
                         onClick={
                           canSort
                             ? header.column.getToggleSortingHandler()
@@ -143,7 +143,7 @@ export default function BaseTable<TData>({
                                 : '↕'}
                           </span>
                         ) : null}
-                      </button>
+                      </BaseButton>
                     </th>
                   );
                 })}
@@ -214,22 +214,20 @@ export default function BaseTable<TData>({
       {showPagination ? (
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-sand/70">
           <div className="flex items-center gap-2">
-            <button
-              type="button"
+            <BaseButton
               className="rounded border border-white/10 px-2 py-1 hover:border-white/30"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
               Prev
-            </button>
-            <button
-              type="button"
+            </BaseButton>
+            <BaseButton
               className="rounded border border-white/10 px-2 py-1 hover:border-white/30"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
               Next
-            </button>
+            </BaseButton>
           </div>
           <div>
             Page {table.getState().pagination.pageIndex + 1} of {pageCount}

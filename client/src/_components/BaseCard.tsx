@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import BaseButton from './BaseButton';
 
 export type BaseCardDragHandleProps =
   React.ButtonHTMLAttributes<HTMLButtonElement>;
@@ -128,7 +129,7 @@ export default function BaseCard({
         <div className="flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">{header}</div>
           {dragHandleProps ? (
-            <button
+            <BaseButton
               type={dragHandleProps.type || 'button'}
               {...dragHandleProps}
               aria-label={dragHandleAriaLabel}
@@ -143,7 +144,7 @@ export default function BaseCard({
                 <circle cx="8" cy="17" r="1.5" fill="currentColor" />
                 <circle cx="16" cy="17" r="1.5" fill="currentColor" />
               </svg>
-            </button>
+            </BaseButton>
           ) : null}
         </div>
       </div>

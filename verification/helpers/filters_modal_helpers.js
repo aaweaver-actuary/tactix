@@ -6,6 +6,14 @@ const SOURCE_SELECTOR = '[data-testid="filter-source"]';
 async function openFiltersModal(page) {
   if (await page.$(MODAL_SELECTOR)) return;
   await page.waitForSelector(OPEN_SELECTOR, { timeout: 60000 });
+  await page.waitForFunction(
+    (selector) => {
+      const button = document.querySelector(selector);
+      return button && !button.disabled;
+    },
+    { timeout: 60000 },
+    OPEN_SELECTOR,
+  );
   await page.click(OPEN_SELECTOR);
   await page.waitForSelector(MODAL_SELECTOR, { timeout: 60000 });
   await page.waitForSelector(SOURCE_SELECTOR, { timeout: 60000 });

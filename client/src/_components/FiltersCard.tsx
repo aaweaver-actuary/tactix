@@ -5,6 +5,7 @@ import { LICHESS_PROFILE_OPTIONS } from '../utils/LICHESS_PROFILE_OPTIONS';
 import { SOURCE_OPTIONS } from '../utils/SOURCE_OPTIONS';
 import { ChessPlatform, ChesscomProfile, LichessProfile } from '../types';
 import Badge from './Badge';
+import BaseButton from './BaseButton';
 import BaseCard, { BaseCardDragProps } from './BaseCard';
 import Text from './Text';
 
@@ -180,13 +181,13 @@ export default function FiltersCard({
             data-testid="filter-end-date"
           />
         </div>
-        <button
+        <BaseButton
           className="self-start text-xs text-sand/50 hover:text-sand"
           onClick={onResetFilters}
           disabled={loading}
         >
           Reset filters
-        </button>
+        </BaseButton>
       </div>
     </div>
   );
@@ -201,15 +202,14 @@ export default function FiltersCard({
               <h3 className="text-lg font-display text-sand">Filters</h3>
               <Badge label="Live" />
             </div>
-            <button
-              type="button"
+            <BaseButton
               className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
               onClick={() => setModalOpen(true)}
               data-testid="filters-open"
               disabled={loading}
             >
               Open filters
-            </button>
+            </BaseButton>
           </div>
         }
         contentClassName="pt-3"
@@ -238,15 +238,14 @@ export default function FiltersCard({
                       Adjust sources, motifs, and time windows
                     </div>
                   </div>
-                  <button
-                    type="button"
+                  <BaseButton
                     onClick={() => setModalOpen(false)}
                     className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
                     aria-label="Close filters"
                     data-testid="filters-modal-close"
                   >
                     Close
-                  </button>
+                  </BaseButton>
                 </div>
                 <div className="mt-4">{filtersBody}</div>
               </div>

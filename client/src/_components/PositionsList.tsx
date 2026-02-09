@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
+import BaseButton from './BaseButton';
 import BaseCard, { BaseCardDragProps } from './BaseCard';
 import Text from './Text';
 
@@ -23,14 +24,13 @@ const PositionRow = ({ testId, onClick, children }: PositionRowProps) => {
     'flex items-center justify-between text-sm border-b border-white/10 pb-2';
   if (onClick) {
     return (
-      <button
-        type="button"
+      <BaseButton
         data-testid={testId}
         onClick={onClick}
         className={`${baseClassName} w-full text-left`}
       >
         {children}
-      </button>
+      </BaseButton>
     );
   }
 

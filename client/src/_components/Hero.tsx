@@ -2,6 +2,7 @@ import { SOURCE_OPTIONS } from '../utils/SOURCE_OPTIONS';
 import { LICHESS_PROFILE_LABELS } from '../utils/LICHESS_PROFILE_OPTIONS';
 import { CHESSCOM_PROFILE_LABELS } from '../utils/CHESSCOM_PROFILE_OPTIONS';
 import { ChessPlatform, ChesscomProfile, LichessProfile } from '../types';
+import BaseButton from './BaseButton';
 import Text from './Text';
 
 interface HeroProps {
@@ -79,7 +80,7 @@ export default function Hero({
         />
         <div className="flex gap-2 mt-3 flex-wrap">
           {SOURCE_OPTIONS.map((opt) => (
-            <button
+            <BaseButton
               key={opt.id}
               className={`button px-3 py-2 rounded-md border text-sm ${
                 source === opt.id
@@ -90,44 +91,44 @@ export default function Hero({
               disabled={loading}
             >
               {opt.label}
-            </button>
+            </BaseButton>
           ))}
         </div>
       </div>
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap gap-3">
-          <button
+          <BaseButton
             className="button bg-teal text-night px-4 py-3 rounded-lg font-display"
             onClick={onRun}
             disabled={actionsDisabled}
             data-testid="action-run"
           >
             {loading ? 'Running…' : 'Run + Refresh'}
-          </button>
-          <button
+          </BaseButton>
+          <BaseButton
             className="button border border-teal/50 text-teal px-4 py-3 rounded-lg"
             onClick={onBackfill}
             disabled={actionsDisabled}
             data-testid="action-backfill"
           >
             Backfill history
-          </button>
-          <button
+          </BaseButton>
+          <BaseButton
             className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
             onClick={onMigrate}
             disabled={actionsDisabled}
             data-testid="action-migrate"
           >
             Run migrations
-          </button>
-          <button
+          </BaseButton>
+          <BaseButton
             className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
             onClick={onRefresh}
             disabled={actionsDisabled}
             data-testid="action-refresh"
           >
             Refresh metrics
-          </button>
+          </BaseButton>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs text-sand/70">
           <span className="uppercase tracking-wide">Backfill range</span>

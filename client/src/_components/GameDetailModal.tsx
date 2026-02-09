@@ -2,6 +2,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GameDetailResponse } from '../api';
+import BaseButton from './BaseButton';
 import BaseTable from './BaseTable';
 import Badge from './Badge';
 import Text from './Text';
@@ -222,15 +223,14 @@ export default function GameDetailModal({
               Review moves, metadata, and analysis
             </div>
           </div>
-          <button
-            type="button"
+          <BaseButton
             onClick={onClose}
             className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
             aria-label="Close game details"
             data-testid="game-detail-close"
           >
             Close
-          </button>
+          </BaseButton>
         </div>
 
         <div className="mt-4">
@@ -341,8 +341,7 @@ export default function GameDetailModal({
                   className="mt-3 flex flex-wrap items-center gap-2"
                   data-testid="game-detail-navigation"
                 >
-                  <button
-                    type="button"
+                  <BaseButton
                     className="rounded-md border border-white/10 px-2 py-1 text-xs text-sand/70 hover:border-white/30 disabled:opacity-40"
                     onClick={() => setCurrentMoveIndex(0)}
                     disabled={!moveCount || currentMoveIndex === 0}
@@ -350,9 +349,8 @@ export default function GameDetailModal({
                     data-testid="game-detail-nav-first"
                   >
                     First
-                  </button>
-                  <button
-                    type="button"
+                  </BaseButton>
+                  <BaseButton
                     className="rounded-md border border-white/10 px-2 py-1 text-xs text-sand/70 hover:border-white/30 disabled:opacity-40"
                     onClick={() =>
                       setCurrentMoveIndex((prev) => Math.max(0, prev - 1))
@@ -362,9 +360,8 @@ export default function GameDetailModal({
                     data-testid="game-detail-nav-prev"
                   >
                     Prev
-                  </button>
-                  <button
-                    type="button"
+                  </BaseButton>
+                  <BaseButton
                     className="rounded-md border border-white/10 px-2 py-1 text-xs text-sand/70 hover:border-white/30 disabled:opacity-40"
                     onClick={() =>
                       setCurrentMoveIndex((prev) =>
@@ -376,9 +373,8 @@ export default function GameDetailModal({
                     data-testid="game-detail-nav-next"
                   >
                     Next
-                  </button>
-                  <button
-                    type="button"
+                  </BaseButton>
+                  <BaseButton
                     className="rounded-md border border-white/10 px-2 py-1 text-xs text-sand/70 hover:border-white/30 disabled:opacity-40"
                     onClick={() => setCurrentMoveIndex(lastMoveIndex)}
                     disabled={!moveCount || currentMoveIndex === lastMoveIndex}
@@ -386,7 +382,7 @@ export default function GameDetailModal({
                     data-testid="game-detail-nav-last"
                   >
                     Last
-                  </button>
+                  </BaseButton>
                   <span className="text-xs text-sand/50">
                     Use ←/→ for prev/next, ↑/↓ for start/end
                   </span>

@@ -33,7 +33,7 @@
       "Step 4: Verify the test runs in the standard pytest suite",
       "Step 5: Confirm make check includes the test"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

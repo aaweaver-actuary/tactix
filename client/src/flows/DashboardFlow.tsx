@@ -53,6 +53,7 @@ import {
   Hero,
   GameDetailModal,
   ChessboardModal,
+  BaseButton,
 } from '../components';
 import {
   PracticeSessionStats,
@@ -228,6 +229,9 @@ export default function DashboardFlow() {
   const [practiceSession, setPracticeSession] = useState<PracticeSessionStats>(
     () => resetPracticeSessionStats(0),
   );
+  const practiceSessionCompletedRef = useRef(0);
+  const practiceSessionTotalRef = useRef<number | null>(null);
+  const practiceScopeRef = useRef(`${source}:${includeFailedAttempt}`);
   const practiceSessionScopeRef = useRef(`${source}:${includeFailedAttempt}`);
   const practiceSessionInitializedRef = useRef(false);
   const [jobProgress, setJobProgress] = useState<JobProgressItem[]>([]);
@@ -292,6 +296,9 @@ export default function DashboardFlow() {
   );
 
   const handleSourceChange = (next: ChessPlatform) => {
+    practiceScopeRef.current = `${next}:${includeFailedAttempt}`;
+    practiceSessionTotalRef.current = null;
+    practiceSessionCompletedRef.current = 0;
     setSource(next);
   };
 
@@ -389,6 +396,9 @@ export default function DashboardFlow() {
   };
 
   const handleIncludeFailedAttemptChange = (next: boolean) => {
+    practiceScopeRef.current = `${source}:${next}`;
+    practiceSessionTotalRef.current = null;
+    practiceSessionCompletedRef.current = 0;
     setIncludeFailedAttempt(next);
   };
 
@@ -425,20 +435,22 @@ export default function DashboardFlow() {
       setPracticeLoading(true);
       setPracticeError(null);
       try {
+        const requestScope = `${nextSource}:${includeFailed}`;
         const payload = await fetchPracticeQueue(nextSource, includeFailed);
+        if (practiceScopeRef.current !== requestScope) {
+          return;
+        }
         setPracticeQueue(payload.items);
         if (resetSession) {
-          const nextScope = `${nextSource}:${includeFailed}`;
-          const shouldReset = practiceSessionScopeRef.current !== nextScope;
-          const shouldInitialize = !practiceSessionInitializedRef.current;
-          const shouldKeepSession =
-            !shouldReset && practiceSession.completed > 0;
-          practiceSessionScopeRef.current = nextScope;
-          if ((shouldReset || shouldInitialize) && !shouldKeepSession) {
-            practiceSessionInitializedRef.current = true;
-            setPracticeSession(resetPracticeSessionStats(payload.items.length));
-          }
+          practiceSessionScopeRef.current = requestScope;
         }
+        setPracticeSession((prev) => {
+          if (prev.total > 0) return prev;
+          practiceSessionInitializedRef.current = true;
+          practiceSessionCompletedRef.current = 0;
+          practiceSessionTotalRef.current = payload.items.length;
+          return resetPracticeSessionStats(payload.items.length);
+        });
       } catch (err) {
         console.error(err);
         setPracticeError('Failed to load practice queue');
@@ -507,6 +519,10 @@ export default function DashboardFlow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source, includeFailedAttempt]);
 
+  useEffect(() => {
+    practiceScopeRef.current = `${source}:${includeFailedAttempt}`;
+  }, [source, includeFailedAttempt]);
+
   const currentPractice = useMemo(
     () => (practiceQueue.length ? practiceQueue[0] : null),
     [practiceQueue],
@@ -515,7 +531,6 @@ export default function DashboardFlow() {
   useEffect(() => {
     function resetPracticeData(): void {
       setPracticeMove('');
-      setPracticeFeedback(null);
       setPracticeSubmitError(null);
       setPracticeLastMove(null);
       setPracticeFen(currentPractice?.fen ?? '');
@@ -911,9 +926,11 @@ export default function DashboardFlow() {
           served_at_ms: practiceServedAtMs ?? undefined,
         });
         setPracticeFeedback(response);
-        setPracticeSession((prev) =>
-          updatePracticeSessionStats(prev, response.correct),
-        );
+        setPracticeSession((prev) => {
+          const nextStats = updatePracticeSessionStats(prev, response.correct);
+          practiceSessionCompletedRef.current = nextStats.completed;
+          return nextStats;
+        });
         // Allow feedback to render before queue refresh resets practice state.
         await waitForPracticeFeedback();
         await loadPracticeQueue(source, includeFailedAttempt);
@@ -1328,8 +1345,7 @@ export default function DashboardFlow() {
             return <span className="text-sand/40">--</span>;
           }
           return (
-            <button
-              type="button"
+            <BaseButton
               className="rounded border border-white/10 px-2 py-1 text-xs text-sand/80 hover:border-white/30"
               data-testid={`open-lichess-${row.original.game_id}`}
               onClick={(event) => {
@@ -1338,7 +1354,7 @@ export default function DashboardFlow() {
               }}
             >
               Open in Lichess
-            </button>
+            </BaseButton>
           );
         },
       },

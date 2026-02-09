@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import BaseCard from './BaseCard';
+import BaseButton from './BaseButton';
 
 describe('BaseCard', () => {
   it('defaults to collapsed and toggles on click', () => {
@@ -45,7 +46,7 @@ describe('BaseCard', () => {
         header={
           <div>
             <span>Interactive header</span>
-            <button type="button">Action</button>
+            <BaseButton>Action</BaseButton>
           </div>
         }
       >

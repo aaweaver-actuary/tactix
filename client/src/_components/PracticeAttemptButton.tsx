@@ -1,3 +1,5 @@
+import BaseButton from './BaseButton';
+
 interface PracticeAttemptButtonProps {
   onPracticeAttempt: () => void;
   practiceSubmitting: boolean;
@@ -16,12 +18,12 @@ export default function PracticeAttemptButton({
   practiceSubmitting,
 }: PracticeAttemptButtonProps) {
   return (
-    <button
+    <BaseButton
       className="button bg-teal text-night px-4 py-2 rounded-md font-display"
       onClick={onPracticeAttempt}
       disabled={practiceSubmitting}
     >
       {practiceSubmitting ? 'Submitting…' : 'Submit attempt'}
-    </button>
+    </BaseButton>
   );
 }

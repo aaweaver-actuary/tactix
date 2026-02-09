@@ -12,6 +12,7 @@ from tactix.engine_result import EngineResult
 from tactix.detect_tactics__motifs import BaseTacticDetector, build_default_motif_detector_suite
 from tactix._is_profile_in import _is_profile_in
 from tactix.analyze_position import analyze_position
+from tactix.tactic_scope import is_supported_motif
 from tests.fixture_helpers import (
     discovered_attack_fixture_position,
     hanging_piece_fixture_position,
@@ -115,6 +116,10 @@ class TacticsAnalyzerTests(unittest.TestCase):
         self.assertTrue(_is_profile_in(lichess_rapid, {"rapid"}))
         self.assertFalse(_is_profile_in(lichess_rapid, {"blitz"}))
 
+    @unittest.skipUnless(
+        is_supported_motif("mate", mate_in=2),
+        "Mate in 2 disabled in current scope",
+    )
     def test_mate_in_two_unclear_persists(self) -> None:
         class StubEngine:
             def __init__(self) -> None:
@@ -224,6 +229,7 @@ class TacticsAnalyzerTests(unittest.TestCase):
         self.assertEqual(stored_outcome[0], "unclear")
         self.assertEqual(stored_outcome[1], position["uci"])
 
+    @unittest.skipUnless(is_supported_motif("pin"), "Pin disabled in current scope")
     def test_pin_unclear_persists(self) -> None:
         position = pin_fixture_position()
         board = chess.Board(str(position["fen"]))
@@ -263,6 +269,7 @@ class TacticsAnalyzerTests(unittest.TestCase):
         self.assertEqual(stored_outcome[0], "unclear")
         self.assertEqual(stored_outcome[1], position["uci"])
 
+    @unittest.skipUnless(is_supported_motif("skewer"), "Skewer disabled in current scope")
     def test_skewer_unclear_persists(self) -> None:
         position = skewer_fixture_position()
         board = chess.Board(str(position["fen"]))
@@ -302,6 +309,10 @@ class TacticsAnalyzerTests(unittest.TestCase):
         self.assertEqual(stored_outcome[0], "unclear")
         self.assertEqual(stored_outcome[1], position["uci"])
 
+    @unittest.skipUnless(
+        is_supported_motif("discovered_attack"),
+        "Discovered attack disabled in current scope",
+    )
     def test_discovered_attack_unclear_persists(self) -> None:
         position = discovered_attack_fixture_position()
         board = chess.Board(str(position["fen"]))
@@ -380,6 +391,7 @@ class TacticsAnalyzerTests(unittest.TestCase):
         self.assertEqual(stored_outcome[0], "unclear")
         self.assertEqual(stored_outcome[1], position["uci"])
 
+    @unittest.skipUnless(is_supported_motif("fork"), "Fork disabled in current scope")
     def test_fork_missed_reclassified_failed_attempt(self) -> None:
         class StubEngine:
             def __init__(self) -> None:
@@ -421,6 +433,7 @@ class TacticsAnalyzerTests(unittest.TestCase):
         self.assertEqual(tactic_row["motif"], "fork")
         self.assertEqual(outcome_row["result"], "failed_attempt")
 
+    @unittest.skipUnless(is_supported_motif("fork"), "Fork disabled in current scope")
     def test_fork_unclear_persists(self) -> None:
         class StubEngine:
             def __init__(self) -> None:
@@ -484,6 +497,10 @@ class TacticsAnalyzerTests(unittest.TestCase):
         self.assertEqual(stored_outcome[0], "unclear")
         self.assertEqual(stored_outcome[1], position["uci"])
 
+    @unittest.skipUnless(
+        is_supported_motif("discovered_attack"),
+        "Discovered attack disabled in current scope",
+    )
     def test_discovered_attack_unclear_reclassified_failed_attempt(self) -> None:
         class StubEngine:
             def __init__(self) -> None:

@@ -9,7 +9,7 @@
       "Step 4: Update tests/fixtures to align with the scoped motifs",
       "Step 5: Verify no other motifs are emitted in API responses"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

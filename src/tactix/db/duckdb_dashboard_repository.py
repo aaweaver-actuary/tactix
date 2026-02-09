@@ -22,6 +22,7 @@ from tactix.db._rating_bucket_clause import _rating_bucket_clause
 from tactix.db._rows_to_dicts import _rows_to_dicts
 from tactix.db.raw_pgns_queries import latest_raw_pgns_query
 from tactix.extract_pgn_metadata import extract_pgn_metadata
+from tactix.tactic_scope import allowed_motif_list, is_allowed_motif_filter
 
 
 @dataclass(frozen=True)
@@ -109,7 +110,7 @@ class DuckDbDashboardRepository:
         )
         return _fetch_opportunity_motif_counts(self._conn, self._dependencies, sql, params)
 
-    def fetch_metrics(
+    def fetch_metrics(  # noqa: PLR0915
         self,
         query: DashboardQuery | str | None = None,
         *,
@@ -118,31 +119,10 @@ class DuckDbDashboardRepository:
     ) -> list[dict[str, object]]:
         deps = self._dependencies
         resolved = deps.resolve_query(query, filters=filters, **legacy)
-        sql = "SELECT * FROM metrics_summary"
-        params: list[object] = []
-        conditions: list[str] = []
-        if resolved.source:
-            conditions.append("source = ?")
-            params.append(resolved.source)
-        deps.filters.append_optional_filter(conditions, params, "motif = ?", resolved.motif)
-        deps.filters.append_optional_filter(
-            conditions, params, "rating_bucket = ?", resolved.rating_bucket
-        )
-        deps.filters.append_optional_filter(
-            conditions,
-            params,
-            "time_control = ?",
-            resolved.time_control,
-        )
-        deps.filters.append_date_range_filters(
-            conditions,
-            params,
-            resolved.start_date,
-            resolved.end_date,
-            "trend_date",
-        )
-        if conditions:
-            sql += " WHERE " + " AND ".join(conditions)
+        normalized_motif = deps.filters.normalize_filter(resolved.motif)
+        if normalized_motif and not is_allowed_motif_filter(normalized_motif):
+            return []
+        sql, params = _build_metrics_query(deps, resolved, normalized_motif)
         result = self._conn.execute(sql, params)
         return deps.rows_to_dicts(result)
 
@@ -223,6 +203,9 @@ def _fetch_pipeline_table_counts(
     sql: str,
     params: list[object],
 ) -> dict[str, int]:
+    motif_clause, motif_params = _scoped_motif_clause("o")
+    conversion_clause, conversion_params = _scoped_motif_clause("c")
+    practice_clause, practice_params = _scoped_motif_clause("q")
     sql += f"""
         SELECT
             (SELECT COUNT(*) FROM games_filtered) AS games,
@@ -240,18 +223,24 @@ def _fetch_pipeline_table_counts(
             (
                 SELECT COUNT(*)
                 {_opportunities_from_games_filtered()}
+                WHERE {motif_clause}
             ) AS opportunities,
             (
                 SELECT COUNT(*)
                 FROM conversions c
                 {_games_filtered_join_clause("c")}
+                WHERE {conversion_clause}
             ) AS conversions,
             (
                 SELECT COUNT(*)
                 FROM practice_queue q
                 {_games_filtered_join_clause("q")}
+                WHERE {practice_clause}
             ) AS practice_queue
     """
+    params.extend(motif_params)
+    params.extend(conversion_params)
+    params.extend(practice_params)
     result = conn.execute(sql, params)
     row = result.fetchone()
     if not row:
@@ -273,12 +262,15 @@ def _fetch_opportunity_motif_counts(
     sql: str,
     params: list[object],
 ) -> dict[str, int]:
+    motif_clause, motif_params = _scoped_motif_clause("o")
     sql += f"""
         SELECT o.motif, COUNT(*) AS total
         {_opportunities_from_games_filtered()}
+        WHERE {motif_clause}
         GROUP BY o.motif
         ORDER BY o.motif
     """
+    params.extend(motif_params)
     rows = deps.rows_to_dicts(conn.execute(sql, params))
     return {str(row.get("motif")): int(row.get("total") or 0) for row in rows}
 
@@ -318,6 +310,54 @@ def _games_filtered_join_clause(alias: str) -> str:
 
 def _opportunities_from_games_filtered() -> str:
     return "FROM opportunities o\n" + _games_filtered_join_clause("o")
+
+
+def _build_metrics_query(
+    deps: DuckDbDashboardRepositoryDependencies,
+    resolved: DashboardQuery,
+    normalized_motif: str | None,
+) -> tuple[str, list[object]]:
+    sql = "SELECT * FROM metrics_summary"
+    params: list[object] = []
+    conditions: list[str] = []
+    if resolved.source:
+        conditions.append("source = ?")
+        params.append(resolved.source)
+    deps.filters.append_optional_filter(conditions, params, "motif = ?", normalized_motif)
+    deps.filters.append_optional_filter(
+        conditions, params, "rating_bucket = ?", resolved.rating_bucket
+    )
+    deps.filters.append_optional_filter(
+        conditions,
+        params,
+        "time_control = ?",
+        resolved.time_control,
+    )
+    if normalized_motif is None:
+        allowed = allowed_motif_list()
+        placeholders = ", ".join(["?"] * len(allowed))
+        conditions.append(f"(motif IN ({placeholders}) OR motif IS NULL)")
+        params.extend(allowed)
+    deps.filters.append_date_range_filters(
+        conditions,
+        params,
+        resolved.start_date,
+        resolved.end_date,
+        "trend_date",
+    )
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
+    return sql, params
+
+
+def _scoped_motif_clause(alias: str) -> tuple[str, list[object]]:
+    allowed = allowed_motif_list()
+    placeholders = ", ".join(["?"] * len(allowed))
+    clause = (
+        f"{alias}.motif IN ({placeholders})"
+        f" AND ({alias}.motif != 'mate' OR {alias}.mate_type IS NOT NULL)"
+    )
+    return clause, list(allowed)
 
 
 def _append_game_query_filters(
@@ -435,7 +475,8 @@ def _append_recent_tactics_filters(
     normalized_rating: str | None,
 ) -> None:
     _append_optional_filter(conditions, params, "p.source = ?", query.source)
-    _append_optional_filter(conditions, params, "t.motif = ?", normalized_motif)
+    if not _append_scoped_tactics_motif_filters(conditions, params, normalized_motif):
+        return
     _append_time_control_filter(conditions, params, query.time_control, "r.time_control")
     if normalized_rating:
         conditions.append(_rating_bucket_clause(normalized_rating))
@@ -446,6 +487,26 @@ def _append_recent_tactics_filters(
         query.end_date,
         "t.created_at",
     )
+
+
+def _append_scoped_tactics_motif_filters(
+    conditions: list[str],
+    params: list[object],
+    normalized_motif: str | None,
+) -> bool:
+    if normalized_motif and not is_allowed_motif_filter(normalized_motif):
+        conditions.append("1 = 0")
+        return False
+    _append_optional_filter(conditions, params, "t.motif = ?", normalized_motif)
+    if normalized_motif == "mate":
+        conditions.append("t.mate_type IS NOT NULL")
+    if normalized_motif is None:
+        allowed = allowed_motif_list()
+        placeholders = ", ".join(["?"] * len(allowed))
+        conditions.append(f"t.motif IN ({placeholders})")
+        params.extend(allowed)
+        conditions.append("(t.motif != 'mate' OR t.mate_type IS NOT NULL)")
+    return True
 
 
 def _resolve_recent_game_user(row: Mapping[str, object], user: str | None) -> str:

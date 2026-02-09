@@ -11,3 +11,8 @@ Session summary (2026-02-09):
 Session summary (2026-02-09):
 - Note: user requested that we record they never said the authorization prompt; proceeding with review/commit per their instruction.
 - Reviewed staged hanging-target metadata and pipeline view updates; `make check` green.
+
+Session summary (2026-02-09):
+- Scoped tactics to hanging piece + mate in 1 across dashboard, metrics, practice queue, and Postgres analysis reads; added motif scope tests and integration verification script.
+- Manual verification: puppeteer motif filters screenshot saved.
+- Tests run: make check; node verification/puppeteer_motif_filters.js (TACTIX_SCREENSHOT_NAME=feature-scope-motifs-2026-02-09.png); node verification/integration_feature_scope_motifs.js.

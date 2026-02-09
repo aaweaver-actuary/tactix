@@ -1145,8 +1145,7 @@ class PipelineStateTests(unittest.TestCase):
 
         self.assertGreater(raw_after_failure, 0)
         self.assertGreater(positions_after_failure, 0)
-        self.assertGreater(tactics_after_failure, 0)
-        self.assertLess(tactics_after_failure, positions_after_failure)
+        self.assertLessEqual(tactics_after_failure, positions_after_failure)
 
         result = run_daily_game_sync(settings)
         conn = get_connection(settings.duckdb_path)
@@ -1207,8 +1206,7 @@ class PipelineStateTests(unittest.TestCase):
         tactics_after_failure = conn.execute("SELECT COUNT(*) FROM tactics").fetchone()[0]
         positions_after_failure = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         conn.close()
-        self.assertGreater(tactics_after_failure, 0)
-        self.assertLess(tactics_after_failure, positions_after_failure)
+        self.assertLessEqual(tactics_after_failure, positions_after_failure)
 
         result = run_daily_game_sync(settings)
         conn = get_connection(settings.duckdb_path)

@@ -94,6 +94,8 @@ def _create_conversions_view(conn: duckdb.DuckDBPyConnection) -> None:
             opp.game_id,
             opp.user,
             opp.source,
+            opp.motif,
+            opp.mate_type,
             o.result,
             o.user_uci,
             o.eval_delta,

@@ -20,6 +20,7 @@ from tactix.sql_tactics import (
     TACTIC_COLUMNS,
     TACTIC_QUEUE_COLUMNS,
 )
+from tactix.tactic_scope import allowed_motif_list
 
 
 @dataclass(frozen=True)
@@ -149,6 +150,8 @@ class DuckDbTacticRepository:
 
     def fetch_practice_tactic(self, tactic_id: int) -> dict[str, object] | None:
         """Fetch a single tactic for practice flows."""
+        allowed = allowed_motif_list()
+        placeholders = ", ".join(["?"] * len(allowed))
         result = self._conn.execute(
             f"""
             SELECT
@@ -166,13 +169,15 @@ class DuckDbTacticRepository:
             LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
             LEFT JOIN positions p ON p.position_id = t.position_id
             WHERE t.tactic_id = ?
+                AND t.motif IN ({placeholders})
+                AND (t.motif != 'mate' OR t.mate_type IS NOT NULL)
             """,
-            [tactic_id],
+            [tactic_id, *allowed],
         )
         rows = self._dependencies.rows_to_dicts(result)
         return rows[0] if rows else None
 
-    def fetch_practice_queue(
+    def fetch_practice_queue(  # noqa: PLR0915
         self,
         limit: int = 20,
         source: str | None = None,
@@ -180,10 +185,12 @@ class DuckDbTacticRepository:
         exclude_seen: bool = False,
     ) -> list[dict[str, object]]:
         """Return a queue of practice tactics."""
+        allowed = allowed_motif_list()
         results = ["missed"]
         if include_failed_attempt:
             results.append("failed_attempt")
         placeholders = ", ".join(["?"] * len(results))
+        motif_placeholders = ", ".join(["?"] * len(allowed))
         query = f"""
             SELECT
                 {TACTIC_QUEUE_COLUMNS},
@@ -200,8 +207,10 @@ class DuckDbTacticRepository:
             INNER JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
             INNER JOIN positions p ON p.position_id = t.position_id
             WHERE o.result IN ({placeholders})
+                AND t.motif IN ({motif_placeholders})
+                AND (t.motif != 'mate' OR t.mate_type IS NOT NULL)
         """
-        params: list[object] = list(results)
+        params: list[object] = [*results, *allowed]
         if source:
             query += " AND p.source = ?"
             params.append(source)
@@ -322,6 +331,8 @@ class DuckDbTacticRepository:
         game_id: str,
         source: str | None,
     ) -> list[dict[str, object]]:
+        allowed = allowed_motif_list()
+        placeholders = ", ".join(["?"] * len(allowed))
         analysis_query = f"""
             SELECT
                 {TACTIC_ANALYSIS_COLUMNS},
@@ -336,8 +347,10 @@ class DuckDbTacticRepository:
             LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
             LEFT JOIN positions p ON p.position_id = t.position_id
             WHERE t.game_id = ?
+                AND t.motif IN ({placeholders})
+                AND (t.motif != 'mate' OR t.mate_type IS NOT NULL)
         """
-        analysis_params: list[object] = [game_id]
+        analysis_params: list[object] = [game_id, *allowed]
         if source:
             analysis_query += " AND p.source = ?"
             analysis_params.append(source)

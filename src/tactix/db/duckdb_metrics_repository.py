@@ -12,6 +12,7 @@ import duckdb
 from tactix.db._rows_to_dicts import _rows_to_dicts
 from tactix.db.duckdb_store import init_schema
 from tactix.db.raw_pgns_queries import latest_raw_pgns_query
+from tactix.tactic_scope import allowed_motif_list
 from tactix.utils.to_int import to_int
 
 
@@ -132,6 +133,8 @@ def _fetch_metric_inputs(
     deps: DuckDbMetricsDependencies,
 ) -> list[dict[str, object]]:
     latest_query = deps.latest_raw_pgns_query()
+    allowed_motifs = allowed_motif_list()
+    motif_placeholders = ", ".join(["?"] * len(allowed_motifs))
     result = conn.execute(
         f"""
         WITH latest_pgns AS (
@@ -140,6 +143,7 @@ def _fetch_metric_inputs(
         SELECT
             t.game_id,
             t.motif,
+            t.mate_type,
             COALESCE(o.result, 'unclear') AS result,
             p.source,
             p.clock_seconds,
@@ -153,7 +157,10 @@ def _fetch_metric_inputs(
             ON p.position_id = t.position_id
             AND p.game_id = t.game_id
         LEFT JOIN latest_pgns r ON r.game_id = p.game_id AND r.source = p.source
-        """
+        WHERE t.motif IN ({motif_placeholders})
+            AND (t.motif != 'mate' OR t.mate_type IS NOT NULL)
+        """,
+        list(allowed_motifs),
     )
     raw_rows = deps.rows_to_dicts(result)
     for row in raw_rows:

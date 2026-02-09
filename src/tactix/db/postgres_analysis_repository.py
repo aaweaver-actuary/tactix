@@ -16,6 +16,7 @@ from tactix.define_tactic_insert_plan__db_store import TacticInsertPlan
 from tactix.init_analysis_schema import init_analysis_schema
 from tactix.postgres_analysis_enabled import postgres_analysis_enabled
 from tactix.postgres_connection import postgres_connection
+from tactix.tactic_scope import allowed_motif_list
 
 
 def fetch_analysis_tactics(settings: Settings, limit: int = 10) -> list[dict[str, Any]]:
@@ -33,6 +34,8 @@ def fetch_analysis_tactics_with_conn(
     if conn is None or not postgres_analysis_enabled(settings):
         return []
     init_analysis_schema(conn)
+    allowed = allowed_motif_list()
+    placeholders = ", ".join(["%s"] * len(allowed))
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
             f"""
@@ -58,10 +61,12 @@ def fetch_analysis_tactics_with_conn(
             FROM {ANALYSIS_SCHEMA}.tactics t
             LEFT JOIN {ANALYSIS_SCHEMA}.tactic_outcomes o
                 ON o.tactic_id = t.tactic_id
+            WHERE t.motif IN ({placeholders})
+                AND (t.motif != 'mate' OR t.mate_type IS NOT NULL)
             ORDER BY t.created_at DESC
             LIMIT %s
             """,
-            (limit,),
+            (*allowed, limit),
         )
         rows = cur.fetchall()
     return [dict(row) for row in rows]

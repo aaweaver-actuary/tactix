@@ -79,13 +79,14 @@ class DashboardFilterTests(unittest.TestCase):
         position_ids = insert_positions(conn, positions)
 
         for row, position_id in zip(rows, position_ids, strict=False):
-            motif = "fork" if row["game_id"].endswith("1111") else "pin"
+            motif = "hanging_piece" if row["game_id"].endswith("1111") else "mate"
             upsert_tactic_with_outcome(
                 conn,
                 {
                     "game_id": row["game_id"],
                     "position_id": position_id,
                     "motif": motif,
+                    "mate_type": "back_rank" if motif == "mate" else None,
                     "severity": 1.0,
                     "best_uci": "e2e4",
                     "eval_cp": 120,
@@ -112,12 +113,12 @@ class DashboardFilterTests(unittest.TestCase):
         tactics = fetch_recent_tactics(
             conn,
             source="lichess",
-            motif="fork",
+            motif="hanging_piece",
             rating_bucket="1200-1399",
             time_control="600+5",
         )
         self.assertEqual(len(tactics), 1)
-        self.assertEqual(tactics[0].get("motif"), "fork")
+        self.assertEqual(tactics[0].get("motif"), "hanging_piece")
 
 
 if __name__ == "__main__":

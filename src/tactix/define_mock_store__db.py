@@ -9,6 +9,7 @@ from typing import cast
 from tactix.dashboard_query import DashboardQuery, resolve_dashboard_query
 from tactix.define_base_db_store__db_store import BaseDbStore
 from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
+from tactix.tactic_scope import is_allowed_motif_filter, is_scoped_motif_row
 
 
 class MockDbStore(BaseDbStore):
@@ -113,12 +114,36 @@ def _row_matches_filters(
     return all(
         (
             _matches_value(row, "source", query.source),
-            _matches_value(row, "motif", query.motif),
+            _matches_scoped_motif(row, query.motif),
             _matches_value(row, "rating_bucket", query.rating_bucket),
             _matches_value(row, "time_control", query.time_control),
             _matches_date_range(row, query.start_date, query.end_date),
         )
     )
+
+
+def _matches_scoped_motif(row: Mapping[str, object], motif: str | None) -> bool:
+    mate_type = row.get("mate_type")
+    if motif is None:
+        return _matches_row_motif(row, mate_type)
+    return _matches_requested_motif(row, motif, mate_type)
+
+
+def _matches_row_motif(row: Mapping[str, object], mate_type: object | None) -> bool:
+    row_motif = row.get("motif")
+    if row_motif is None:
+        return True
+    return is_scoped_motif_row(str(row_motif), mate_type or None)
+
+
+def _matches_requested_motif(
+    row: Mapping[str, object],
+    motif: str,
+    mate_type: object | None,
+) -> bool:
+    if not is_allowed_motif_filter(motif) or not _matches_value(row, "motif", motif):
+        return False
+    return motif != "mate" or mate_type is not None
 
 
 def _matches_value(row: Mapping[str, object], key: str, value: str | None) -> bool:

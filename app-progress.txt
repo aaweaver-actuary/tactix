@@ -958,6 +958,17 @@ Session summary (2026-02-05):
 
 Session summary (2026-02-05):
 - Removed the remaining Postgres store re-export shim by stubbing the module; all imports now target `db.postgres_repository` directly.
+
+Session summary (2026-02-08):
+- Refactored tactic metadata helpers to satisfy xenon complexity checks without behavior changes.
+- Split DuckDB dashboard source sync assembly into focused helper functions.
+- Removed unused exported SourceSyncSourceRow type to satisfy knip.
+- Tests run: `make check` (green; existing Vitest act() warnings unchanged).
+- Commit: 50033ad
+- Before→After map:
+	- src/tactix/tactic_metadata.py monolithic helpers → focused parsing/lookup helpers.
+	- src/tactix/db/duckdb_dashboard_reader.py _fetch_source_sync → helper-driven assembly.
+	- client/src/api.ts exported SourceSyncSourceRow → local type.
 - Tests run: `make check` (green; existing Vitest act warnings and pycycle .venv parse warning unchanged).
 - Before→After map:
 	- src/tactix/postgres_store_impl.py shim re-exports → deprecated stub (canonical repository modules only).

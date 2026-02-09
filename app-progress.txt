@@ -1,4 +1,13 @@
 Session summary (2026-02-09):
+- Refactored shared modal shell markup into a reusable component while keeping modal test IDs and close behaviors intact.
+- Tests run: make check (before; task; exit code 2; output truncated in tool); make check (after; task; exit code 2; output truncated in tool).
+- Before→After map:
+	- client/src/_components/ChessboardModal.tsx inline modal wrapper/backdrop handler → ModalShell usage with shared layout.
+	- client/src/_components/FiltersCard.tsx inline modal wrapper/backdrop handler → ModalShell usage with shared layout.
+	- client/src/_components/GameDetailModal.tsx inline modal wrapper/backdrop handler → ModalShell usage with shared layout.
+	- client/src/_components/ModalShell.tsx new shared modal frame component.
+
+Session summary (2026-02-09):
 - Added BaseButton and replaced all raw button tags across client components/tests; added pytest to forbid raw <button> outside BaseButton.
 - Stabilized practice session progress by initializing totals once and keeping feedback visible after queue refresh; updated filters modal helper to wait for enabled open button.
 - Tests run: node verification/puppeteer_issue_enter_submit.js; node verification/puppeteer_feature_game_detail_modal.js; node verification/puppeteer_issue_practice_progress.js; node verification/puppeteer_feature_dashboard_cards_collapsible_move.js; node verification/puppeteer_feature_open_lichess_link.js; node verification/puppeteer_feature_listudy_assets.js; node verification/puppeteer_motif_filters.js; node verification/puppeteer_practice_attempt.js; node verification/puppeteer_feature_110_dashboard.js; node verification/puppeteer_feature_107_positions.js; make check.

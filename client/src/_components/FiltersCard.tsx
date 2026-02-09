@@ -7,6 +7,7 @@ import { ChessPlatform, ChesscomProfile, LichessProfile } from '../types';
 import Badge from './Badge';
 import BaseButton from './BaseButton';
 import BaseCard, { BaseCardDragProps } from './BaseCard';
+import ModalShell from './ModalShell';
 import Text from './Text';
 
 interface FiltersState {
@@ -219,37 +220,29 @@ export default function FiltersCard({
       </BaseCard>
       {modalOpen
         ? createPortal(
-            <div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-sm"
-              role="dialog"
-              aria-modal="true"
-              data-testid="filters-modal"
-              onClick={(event) => {
-                if (event.target === event.currentTarget) {
-                  setModalOpen(false);
-                }
-              }}
+            <ModalShell
+              testId="filters-modal"
+              onClose={() => setModalOpen(false)}
+              panelClassName="max-w-5xl"
             >
-              <div className="w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/95 p-5 shadow-2xl">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <Text mode="uppercase" value="Filters" />
-                    <div className="text-xs text-sand/60">
-                      Adjust sources, motifs, and time windows
-                    </div>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <Text mode="uppercase" value="Filters" />
+                  <div className="text-xs text-sand/60">
+                    Adjust sources, motifs, and time windows
                   </div>
-                  <BaseButton
-                    onClick={() => setModalOpen(false)}
-                    className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
-                    aria-label="Close filters"
-                    data-testid="filters-modal-close"
-                  >
-                    Close
-                  </BaseButton>
                 </div>
-                <div className="mt-4">{filtersBody}</div>
+                <BaseButton
+                  onClick={() => setModalOpen(false)}
+                  className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
+                  aria-label="Close filters"
+                  data-testid="filters-modal-close"
+                >
+                  Close
+                </BaseButton>
               </div>
-            </div>,
+              <div className="mt-4">{filtersBody}</div>
+            </ModalShell>,
             document.body,
           )
         : null}

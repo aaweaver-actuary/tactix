@@ -1,4 +1,3 @@
-import type { MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import type { DashboardPayload } from '../api';
 import {
@@ -11,6 +10,7 @@ import {
 import Badge from './Badge';
 import BaseButton from './BaseButton';
 import Chessboard from './Chessboard';
+import ModalShell from './ModalShell';
 import Text from './Text';
 
 type PositionEntry = DashboardPayload['positions'][number];
@@ -40,75 +40,65 @@ export default function ChessboardModal({
   const moveLabel = `Move ${position?.move_number ?? '--'}`;
   const sanLabel = position?.san ? `SAN ${position.san}` : 'SAN --';
   const clockLabel = `${position?.clock_seconds ?? '--'}s`;
-  const handleBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) {
-      onClose();
-    }
-  };
-
   return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      data-testid="chessboard-modal"
-      onClick={handleBackdropClick}
+    <ModalShell
+      testId="chessboard-modal"
+      onClose={onClose}
+      panelClassName="max-w-4xl"
     >
-      <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/95 p-5 shadow-2xl">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <Text mode="uppercase" value="Position board" />
-            <div className="text-xs text-sand/60">
-              Review the selected position in context
-            </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <Text mode="uppercase" value="Position board" />
+          <div className="text-xs text-sand/60">
+            Review the selected position in context
           </div>
-          <BaseButton
-            className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
-            onClick={onClose}
-            data-testid="chessboard-modal-close"
-          >
-            Close
-          </BaseButton>
         </div>
-
-        {!position ? (
-          <div className="mt-4 text-sm text-sand/70">
-            Select a position to view the board.
-          </div>
-        ) : (
-          <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-[360px_1fr]">
-            <div
-              className="rounded-lg border border-white/10 bg-white/5 p-3"
-              data-testid="chessboard-modal-board"
-            >
-              <Chessboard
-                id="chessboard-modal-board"
-                position={fen}
-                boardOrientation={orientation}
-                boardWidth={340}
-                showBoardNotation
-                customNotationStyle={listudyNotationStyle}
-                customBoardStyle={listudyBoardStyle}
-                customLightSquareStyle={listudyLightSquareStyle}
-                customDarkSquareStyle={listudyDarkSquareStyle}
-                customPieces={listudyPieces}
-              />
-            </div>
-            <div className="space-y-4">
-              <div>
-                <Text value="FEN" />
-                <Text value={fen || '--'} mode="monospace" size="xs" />
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs text-sand/70">
-                <Badge label={moveLabel} />
-                <Badge label={sanLabel} />
-                <Badge label={clockLabel} />
-              </div>
-            </div>
-          </div>
-        )}
+        <BaseButton
+          className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
+          onClick={onClose}
+          data-testid="chessboard-modal-close"
+        >
+          Close
+        </BaseButton>
       </div>
-    </div>,
+
+      {!position ? (
+        <div className="mt-4 text-sm text-sand/70">
+          Select a position to view the board.
+        </div>
+      ) : (
+        <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-[360px_1fr]">
+          <div
+            className="rounded-lg border border-white/10 bg-white/5 p-3"
+            data-testid="chessboard-modal-board"
+          >
+            <Chessboard
+              id="chessboard-modal-board"
+              position={fen}
+              boardOrientation={orientation}
+              boardWidth={340}
+              showBoardNotation
+              customNotationStyle={listudyNotationStyle}
+              customBoardStyle={listudyBoardStyle}
+              customLightSquareStyle={listudyLightSquareStyle}
+              customDarkSquareStyle={listudyDarkSquareStyle}
+              customPieces={listudyPieces}
+            />
+          </div>
+          <div className="space-y-4">
+            <div>
+              <Text value="FEN" />
+              <Text value={fen || '--'} mode="monospace" size="xs" />
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs text-sand/70">
+              <Badge label={moveLabel} />
+              <Badge label={sanLabel} />
+              <Badge label={clockLabel} />
+            </div>
+          </div>
+        </div>
+      )}
+    </ModalShell>,
     document.body,
   );
 }

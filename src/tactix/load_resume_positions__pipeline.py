@@ -23,11 +23,18 @@ def _load_resume_positions(
     if analysis_checkpoint_path.exists():
         existing_positions = fetch_positions_for_games(conn, game_ids)
         if existing_positions:
-            analysis_signature = _analysis_signature(game_ids, len(existing_positions), source)
+            positions_to_analyze = [
+                pos for pos in existing_positions if pos.get("user_to_move", True)
+            ]
+            analysis_signature = _analysis_signature(
+                game_ids,
+                len(positions_to_analyze),
+                source,
+            )
             resume_index = _read_analysis_checkpoint(analysis_checkpoint_path, analysis_signature)
             if resume_index >= RESUME_INDEX_START:
                 logger.info("Resuming analysis at index=%s for source=%s", resume_index, source)
-                positions = existing_positions
+                positions = positions_to_analyze
             else:
                 _clear_analysis_checkpoint(analysis_checkpoint_path)
         else:

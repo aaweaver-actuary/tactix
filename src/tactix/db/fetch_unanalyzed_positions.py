@@ -14,7 +14,10 @@ def fetch_unanalyzed_positions(
 ) -> list[dict[str, object]]:
     """Return positions that have not yet been analyzed."""
     params: list[object] = []
-    filters: list[str] = ["t.position_id IS NULL"]
+    filters: list[str] = [
+        "t.position_id IS NULL",
+        "COALESCE(p.user_to_move, TRUE) = TRUE",
+    ]
     if game_ids:
         placeholders = ", ".join(["?"] * len(game_ids))
         filters.append(f"p.game_id IN ({placeholders})")

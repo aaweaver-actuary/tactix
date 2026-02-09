@@ -638,7 +638,7 @@
       "Step 9: Verify this post-move position is used for USER_HANGING_PIECE",
       "Step 10: Verify the related pre-move position remains intact"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

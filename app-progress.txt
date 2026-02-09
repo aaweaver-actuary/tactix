@@ -1,4 +1,9 @@
 Session summary (2026-02-09):
+- Added post-move position derivation for user moves, persisted user_to_move flags, and kept analysis to user-to-move positions.
+- Added unit coverage for post-move position creation using the user move fixture.
+- Tests run: node verification/puppeteer_feature_107_positions.js; runTests tests/test_extract_user_move_positions.py (tool reported no tests found); make check.
+
+Session summary (2026-02-09):
 - Refactored filters modal Escape-close verification to reuse shared helpers while preserving modal behavior and test IDs.
 - Tests run: make check (before); make check (after).
 - Before→After map:

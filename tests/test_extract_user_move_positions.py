@@ -4,6 +4,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import chess
+
+from tactix.build_post_move_positions__positions import (
+    build_post_move_positions__positions,
+)
 from tactix.db.duckdb_store import get_connection, init_schema
 from tactix.db.position_repository_provider import (
     fetch_positions_for_games,
@@ -70,6 +75,28 @@ class ExtractUserMovePositionsTests(unittest.TestCase):
             self.assertEqual(row.get("game_id"), game_id)
             self.assertTrue(row.get("user_to_move"))
             self.assertIsNotNone(row.get("created_at"))
+
+    def test_post_move_positions_created_for_user_moves(self) -> None:
+        game_id = "fixture-game-1"
+        positions = extract_positions__fixture(game_id)
+        post_positions = build_post_move_positions__positions(positions)
+
+        self.assertEqual(len(post_positions), len(positions))
+
+        for base, post in zip(positions, post_positions):
+            self.assertEqual(post.get("game_id"), base.get("game_id"))
+            self.assertFalse(post.get("user_to_move"))
+            self.assertEqual(post.get("ply"), base.get("ply", 0) + 1)
+            self.assertNotEqual(post.get("fen"), base.get("fen"))
+
+            board = chess.Board(str(base.get("fen")))
+            move = chess.Move.from_uci(str(base.get("uci")))
+            board.push(move)
+            self.assertEqual(post.get("fen"), board.fen())
+            self.assertEqual(
+                post.get("side_to_move"),
+                "white" if board.turn == chess.WHITE else "black",
+            )
 
 
 if __name__ == "__main__":

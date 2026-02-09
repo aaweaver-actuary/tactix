@@ -31,6 +31,7 @@ def _build_position_insert_values(
         position.get("ply"),
         position.get("move_number"),
         position.get("side_to_move"),
+        position.get("user_to_move", True),
         position.get("uci"),
         position.get("san"),
         position.get("clock_seconds"),
@@ -104,11 +105,12 @@ class DuckDbPositionRepository:
                     ply,
                     move_number,
                     side_to_move,
+                    user_to_move,
                     uci,
                     san,
                     clock_seconds,
                     is_legal
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 _build_position_insert_values(pos, position_id),
             )

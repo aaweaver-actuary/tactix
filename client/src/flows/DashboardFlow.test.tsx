@@ -394,6 +394,19 @@ describe('DashboardFlow', () => {
     expect(motifSelect.value).toBe('fork');
   });
 
+  it('closes the filters modal on Escape', async () => {
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+    await openFiltersModal();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('filters-modal')).not.toBeInTheDocument();
+    });
+  });
+
   it('shows per-site 90-day sync counts from backend metrics on initial load', async () => {
     (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
       sourceSyncDashboard,

@@ -1,4 +1,9 @@
 Session summary (2026-02-09):
+- Added Escape key handling to shared modal shell so BaseModal-backed views close on Escape, plus a dashboard flow test to cover it.
+- Added manual Puppeteer verification + integration coverage for Escape-to-close behavior with new screenshots.
+- Tests run: node verification/puppeteer_feature_modal_escape.js; node verification/integration_feature_modal_escape.js; make check.
+
+Session summary (2026-02-09):
 - Added ActionButton to keep Base components scoped to _components and replaced DashboardFlow button usage; cleaned up the corrupted backfill helper block.
 - Tests run: make jstest; make check (task).
 

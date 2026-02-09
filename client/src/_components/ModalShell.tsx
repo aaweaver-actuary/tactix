@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { MouseEvent, ReactNode } from 'react';
 
 type ModalShellProps = {
@@ -18,6 +19,19 @@ export default function ModalShell({
   alignClassName,
   panelClassName,
 }: ModalShellProps) {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      onClose();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
   const handleBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
       onClose();

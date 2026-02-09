@@ -45,7 +45,7 @@
       "Step 4: Verify no console errors occur during Escape handling",
       "Step 5: Add or update a UI test that asserts Escape closes the modal"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

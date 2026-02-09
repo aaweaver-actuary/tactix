@@ -467,9 +467,9 @@ describe('DashboardFlow', () => {
 
     const modal = await screen.findByTestId('chessboard-modal');
     expect(modal).toHaveAttribute('aria-modal', 'true');
-    expect(screen.getByTestId('mock-chessboard')).toBeInTheDocument();
+    expect(within(modal).getByTestId('mock-chessboard')).toBeInTheDocument();
     expect(
-      screen.getByText(baseDashboard.positions[0].fen),
+      within(modal).getByText(baseDashboard.positions[0].fen),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('chessboard-modal-close'));

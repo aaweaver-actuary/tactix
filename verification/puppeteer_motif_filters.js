@@ -1,6 +1,7 @@
 const puppeteer = require('../client/node_modules/puppeteer');
 const fs = require('fs');
 const path = require('path');
+const { openFiltersModal, closeFiltersModal } = require('./helpers/filters_modal_helpers');
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const screenshotName =
@@ -25,6 +26,7 @@ const dashboardResponse = (url, response) =>
   });
 
   await page.goto(targetUrl, { waitUntil: 'networkidle0' });
+  await openFiltersModal(page);
   await page.waitForSelector('[data-testid="filter-motif"]');
   await page.waitForSelector('[data-testid="motif-breakdown"]');
 
@@ -78,6 +80,7 @@ const dashboardResponse = (url, response) =>
   }
 
   await new Promise((resolve) => setTimeout(resolve, 1500));
+  await closeFiltersModal(page);
 
   const outDir = path.resolve(__dirname);
   fs.mkdirSync(outDir, { recursive: true });

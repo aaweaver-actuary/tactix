@@ -13,6 +13,7 @@ const {
   ensureRecentGamesHasRows,
   waitForRecentGamesRowReady,
 } = require('./helpers/game_detail_modal_helpers');
+const { openFiltersModal } = require('./helpers/filters_modal_helpers');
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const SCREENSHOT_NAME =
@@ -40,15 +41,11 @@ async function waitForDashboard(page) {
     waitUntil: 'domcontentloaded',
     timeout: 60000,
   });
-  await page.waitForSelector('[data-testid="filter-source"]', {
-    timeout: 60000,
-  });
+  await openFiltersModal(page);
 }
 
 async function setSourceFilter(page, sourceValue) {
-  await page.waitForSelector('[data-testid="filter-source"]', {
-    timeout: 60000,
-  });
+  await openFiltersModal(page);
   await page.select('[data-testid="filter-source"]', sourceValue);
   await page.waitForFunction(
     (value) => {

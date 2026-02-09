@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const puppeteer = require('../client/node_modules/puppeteer');
+const { openFiltersModal, closeFiltersModal } = require('./helpers/filters_modal_helpers');
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const screenshotName =
@@ -11,8 +12,10 @@ const source = process.env.TACTIX_SOURCE || 'lichess';
 async function selectSource(page) {
   if (source !== 'chesscom') return;
   const selector = '[data-testid="filter-source"]';
+  await openFiltersModal(page);
   await page.waitForSelector(selector, { timeout: 60000 });
   await page.select(selector, 'chesscom');
+  await closeFiltersModal(page);
 }
 
 (async () => {

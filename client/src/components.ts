@@ -17,6 +17,7 @@ import PostgresAnalysisCard from './_components/PostgresAnalysisCard';
 import JobProgressCard from './_components/JobProgressCard';
 import PracticeAttemptCard from './_components/PracticeAttemptCard';
 import GameDetailModal from './_components/GameDetailModal';
+import ChessboardModal from './_components/ChessboardModal';
 
 export {
   Hero,
@@ -37,4 +38,5 @@ export {
   JobProgressCard,
   PracticeAttemptCard,
   GameDetailModal,
+  ChessboardModal,
 };

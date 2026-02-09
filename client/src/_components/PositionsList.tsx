@@ -5,6 +5,11 @@ import Text from './Text';
 
 interface PositionsListProps extends BaseCardDragProps {
   positionsData: DashboardPayload['positions'];
+  onPositionClick?: (position: DashboardPayload['positions'][number]) => void;
+  rowTestId?: (
+    position: DashboardPayload['positions'][number],
+    index: number,
+  ) => string;
 }
 
 /**
@@ -23,6 +28,8 @@ interface PositionsListProps extends BaseCardDragProps {
  */
 export default function PositionsList({
   positionsData,
+  onPositionClick,
+  rowTestId,
   ...dragProps
 }: PositionsListProps) {
   const header = (
@@ -40,18 +47,44 @@ export default function PositionsList({
       {...dragProps}
     >
       <div className="flex flex-col gap-3">
-        {positionsData.map((pos) => (
-          <div
-            key={pos.position_id}
-            className="flex items-center justify-between text-sm border-b border-white/10 pb-2"
-          >
-            <div>
-              <Text mode="monospace" size="xs" value={pos.fen} />
-              <Text mt="2" value={`Move ${pos.move_number} · ${pos.san}`} />
+        {positionsData.map((pos, index) => {
+          const testId = rowTestId
+            ? rowTestId(pos, index)
+            : `positions-row-${pos.position_id}`;
+          const rowContent = (
+            <>
+              <div>
+                <Text mode="monospace" size="xs" value={pos.fen} />
+                <Text mt="2" value={`Move ${pos.move_number} · ${pos.san}`} />
+              </div>
+              <Badge label={`${pos.clock_seconds ?? '--'}s`} />
+            </>
+          );
+
+          if (onPositionClick) {
+            return (
+              <button
+                key={pos.position_id}
+                type="button"
+                data-testid={testId}
+                onClick={() => onPositionClick(pos)}
+                className="flex w-full items-center justify-between text-left text-sm border-b border-white/10 pb-2"
+              >
+                {rowContent}
+              </button>
+            );
+          }
+
+          return (
+            <div
+              key={pos.position_id}
+              data-testid={testId}
+              className="flex items-center justify-between text-sm border-b border-white/10 pb-2"
+            >
+              {rowContent}
             </div>
-            <Badge label={`${pos.clock_seconds ?? '--'}s`} />
-          </div>
-        ))}
+          );
+        })}
       </div>
     </BaseCard>
   );

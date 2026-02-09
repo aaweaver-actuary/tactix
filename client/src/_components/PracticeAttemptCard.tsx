@@ -1,5 +1,5 @@
 import type { CSSProperties, RefObject } from 'react';
-import { Chessboard } from 'react-chessboard';
+import Chessboard from './Chessboard';
 import { PracticeAttemptResponse, PracticeQueueItem } from '../api';
 import isPiecePlayable from '../utils/isPiecePlayable';
 import buildPracticeFeedback from '../utils/buildPracticeFeedback';

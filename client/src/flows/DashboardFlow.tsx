@@ -52,6 +52,7 @@ import {
   PositionsList,
   Hero,
   GameDetailModal,
+  ChessboardModal,
 } from '../components';
 import {
   PracticeSessionStats,
@@ -271,6 +272,10 @@ export default function DashboardFlow() {
   const [gameDetail, setGameDetail] = useState<GameDetailResponse | null>(null);
   const [gameDetailLoading, setGameDetailLoading] = useState(false);
   const [gameDetailError, setGameDetailError] = useState<string | null>(null);
+  const [chessboardModalOpen, setChessboardModalOpen] = useState(false);
+  const [chessboardPosition, setChessboardPosition] = useState<
+    DashboardPayload['positions'][number] | null
+  >(null);
 
   const normalizedFilters = useMemo<DashboardFilters>(
     () => ({
@@ -328,6 +333,19 @@ export default function DashboardFlow() {
       rowSource ?? (source === 'all' ? undefined : source),
     [source],
   );
+
+  const handleOpenChessboardModal = useCallback(
+    (position: DashboardPayload['positions'][number]) => {
+      setChessboardPosition(position);
+      setChessboardModalOpen(true);
+    },
+    [],
+  );
+
+  const handleCloseChessboardModal = useCallback(() => {
+    setChessboardModalOpen(false);
+    setChessboardPosition(null);
+  }, []);
 
   const handleOpenLichess = useCallback(
     async (row: { game_id?: string | null; source?: string | null }) => {
@@ -1622,7 +1640,12 @@ export default function DashboardFlow() {
         visible: Boolean(data),
         render: (props) =>
           data ? (
-            <PositionsList positionsData={data.positions} {...props} />
+            <PositionsList
+              positionsData={data.positions}
+              onPositionClick={handleOpenChessboardModal}
+              rowTestId={(row) => `positions-row-${row.position_id}`}
+              {...props}
+            />
           ) : null,
       },
       {
@@ -1658,6 +1681,7 @@ export default function DashboardFlow() {
     handlePracticeDrop,
     handlePracticeMoveChange,
     handleFiltersChange,
+    handleOpenChessboardModal,
     handleResetFilters,
     includeFailedAttempt,
     jobProgress,
@@ -1899,6 +1923,11 @@ export default function DashboardFlow() {
         </Droppable>
       </DragDropContext>
       {practiceError ? <ErrorCard message={practiceError} /> : null}
+      <ChessboardModal
+        open={chessboardModalOpen}
+        position={chessboardPosition}
+        onClose={handleCloseChessboardModal}
+      />
       <GameDetailModal
         open={gameDetailOpen}
         onClose={() => setGameDetailOpen(false)}

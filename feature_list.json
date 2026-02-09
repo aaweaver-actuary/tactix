@@ -21,7 +21,7 @@
       "Step 4: Confirm the chessboard renders the expected position data",
       "Step 5: Add or update a UI test that verifies the modal behavior"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

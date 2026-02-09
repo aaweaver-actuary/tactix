@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const puppeteer = require('../client/node_modules/puppeteer');
+const { openFiltersModal, closeFiltersModal } = require('./helpers/filters_modal_helpers');
 
 const baseUrl = process.env.TACTIX_DASHBOARD_URL || 'http://localhost:5173';
 const source = process.env.TACTIX_SOURCE || 'lichess';
@@ -29,18 +30,13 @@ async function delay(ms) {
 
   try {
     await page.goto(baseUrl, { waitUntil: 'networkidle0', timeout: 60000 });
-    await page.waitForSelector('[data-testid="filter-source"]', {
-      timeout: 60000,
-    });
+    await openFiltersModal(page);
 
     if (source === 'chesscom') {
-      await page.$$eval('button', (buttons) => {
-        const target = buttons.find(
-          (btn) => btn.textContent && btn.textContent.includes('Chess.com'),
-        );
-        if (target) target.click();
-      });
+      await page.select('[data-testid="filter-source"]', 'chesscom');
     }
+
+    await closeFiltersModal(page);
 
     await delay(2000);
     await page.waitForSelector('table', { timeout: 60000 });

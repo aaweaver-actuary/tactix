@@ -1,4 +1,11 @@
 Session summary (2026-02-09):
+- Added ChessboardModal with a react-chessboard wrapper, showing FEN/metadata and listudy styling; wired Latest positions rows to open the modal with close controls.
+- Made positions rows clickable with stable test IDs and extended dashboard coverage to verify chessboard modal open/close behavior.
+- Updated Puppeteer helpers for Open in Lichess, motif filters, dashboard, and positions checks to open the filters modal before interacting with filter inputs.
+- Tests run: node verification/puppeteer_issue_enter_submit.js; node verification/puppeteer_feature_game_detail_modal.js; node verification/puppeteer_issue_practice_progress.js; node verification/puppeteer_feature_dashboard_cards_collapsible_move.js; node verification/puppeteer_feature_open_lichess_link.js; node verification/puppeteer_feature_listudy_assets.js; node verification/puppeteer_motif_filters.js; node verification/puppeteer_practice_attempt.js; node verification/puppeteer_feature_110_dashboard.js; node verification/puppeteer_feature_107_positions.js; node verification/puppeteer_feature_chessboard_modal.js; node verification/integration_feature_chessboard_modal.js; make check.
+- Evidence: verification/feature-chessboard-modal-open-2026-02-09.png; verification/feature-chessboard-modal-closed-2026-02-09.png.
+
+Session summary (2026-02-09):
 - Refactored dashboard filter handling and job/backfill helpers to reduce duplicated state updates while keeping modal behavior/test IDs intact.
 - Consolidated filters modal open/close automation into a shared helper and reused it across Puppeteer/integration scripts and E2E helpers.
 - Tests run: make check (before; task; output truncated in tool); make check (after; task).

@@ -459,6 +459,26 @@ describe('DashboardFlow', () => {
     expect(screen.getByTestId('game-detail-close')).toBeInTheDocument();
   });
 
+  it('opens and closes the chessboard modal from latest positions', async () => {
+    render(<DashboardFlow />);
+
+    const positionRow = await screen.findByTestId('positions-row-1');
+    fireEvent.click(positionRow);
+
+    const modal = await screen.findByTestId('chessboard-modal');
+    expect(modal).toHaveAttribute('aria-modal', 'true');
+    expect(screen.getByTestId('mock-chessboard')).toBeInTheDocument();
+    expect(
+      screen.getByText(baseDashboard.positions[0].fen),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('chessboard-modal-close'));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('chessboard-modal')).not.toBeInTheDocument();
+    });
+  });
+
   it('opens the Lichess analysis URL from the recent games table', async () => {
     const popup = {
       location: { href: '' },

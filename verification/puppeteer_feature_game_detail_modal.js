@@ -14,6 +14,8 @@ const source = process.env.TACTIX_SOURCE || 'lichess';
 const SCREENSHOT_NAME =
   process.env.TACTIX_SCREENSHOT_NAME || 'feature-game-detail-modal-2026-02-08.png';
 
+const ANALYSIS_FLAG_LABELS = ['Flags', 'Blunder', 'OK'];
+
 const SELECTORS = {
   row: '[data-testid^="recent-games-row-"]',
   modal: '[data-testid="game-detail-modal"]',
@@ -41,10 +43,9 @@ async function assertAnalysisSection(page) {
   const analysisSection = await page.waitForSelector(SELECTORS.analysis);
   const analysisText = await getTextContent(analysisSection);
   const hasEval = analysisText.includes('Eval');
-  const hasFlags =
-    analysisText.includes('Flags') ||
-    analysisText.includes('Blunder') ||
-    analysisText.includes('OK');
+  const hasFlags = ANALYSIS_FLAG_LABELS.some((label) =>
+    analysisText.includes(label),
+  );
   if (!hasEval || !hasFlags) {
     throw new Error('Expected analysis section to include eval and blunder checks');
   }

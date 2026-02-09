@@ -476,6 +476,34 @@ export default function DashboardFlow() {
     resetJobState();
   }, [source, lichessProfile, chesscomProfile]);
 
+  const pushJobProgress__payload = useCallback(
+    (payload: Record<string, unknown>) => {
+      setJobProgress((prev) => [...prev, payload as JobProgressItem]);
+    },
+    [],
+  );
+
+  const applyMetricsUpdate__payload = useCallback(
+    (payload: Record<string, unknown>) => {
+      setData((prev) => {
+        if (!prev) {
+          return payload as DashboardPayload;
+        }
+        return {
+          ...prev,
+          metrics:
+            (payload?.metrics as DashboardPayload['metrics']) ?? prev.metrics,
+          metrics_version:
+            (payload?.metrics_version as number | undefined) ??
+            prev.metrics_version,
+          source:
+            (payload?.source as DashboardPayload['source']) ?? prev.source,
+        };
+      });
+    },
+    [],
+  );
+
   const consumeEventStream = async (
     streamUrl: string,
     controller: AbortController,
@@ -568,27 +596,11 @@ export default function DashboardFlow() {
             eventName === 'error' ||
             eventName === 'complete'
           ) {
-            setJobProgress((prev) => [...prev, payload as JobProgressItem]);
+            pushJobProgress__payload(payload);
           }
 
           if (eventName === 'metrics_update') {
-            setData((prev) => {
-              if (!prev) {
-                return payload as DashboardPayload;
-              }
-              return {
-                ...prev,
-                metrics:
-                  (payload?.metrics as DashboardPayload['metrics']) ??
-                  prev.metrics,
-                metrics_version:
-                  (payload?.metrics_version as number | undefined) ??
-                  prev.metrics_version,
-                source:
-                  (payload?.source as DashboardPayload['source']) ??
-                  prev.source,
-              };
-            });
+            applyMetricsUpdate__payload(payload);
           }
 
           if (eventName === 'complete') {
@@ -653,27 +665,11 @@ export default function DashboardFlow() {
             eventName === 'error' ||
             eventName === 'complete'
           ) {
-            setJobProgress((prev) => [...prev, payload as JobProgressItem]);
+            pushJobProgress__payload(payload);
           }
 
           if (eventName === 'metrics_update') {
-            setData((prev) => {
-              if (!prev) {
-                return payload as DashboardPayload;
-              }
-              return {
-                ...prev,
-                metrics:
-                  (payload?.metrics as DashboardPayload['metrics']) ??
-                  prev.metrics,
-                metrics_version:
-                  (payload?.metrics_version as number | undefined) ??
-                  prev.metrics_version,
-                source:
-                  (payload?.source as DashboardPayload['source']) ??
-                  prev.source,
-              };
-            });
+            applyMetricsUpdate__payload(payload);
           }
 
           if (eventName === 'complete') {

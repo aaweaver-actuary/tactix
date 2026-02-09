@@ -11,13 +11,26 @@ from tactix.db.position_repository_provider import (
 )
 from tactix.extract_positions import extract_positions
 
+FIXTURE_PATH = (
+    Path(__file__).resolve().parent / "fixtures" / "user_move_positions_fixture.pgn"
+)
+
+
+def load_fixture__user_move_positions() -> str:
+    return FIXTURE_PATH.read_text()
+
+
+def extract_positions__fixture(game_id: str) -> list[dict[str, object]]:
+    return extract_positions(
+        load_fixture__user_move_positions(),
+        user="tester",
+        source="lichess",
+        game_id=game_id,
+    )
+
 
 class ExtractUserMovePositionsTests(unittest.TestCase):
     def setUp(self) -> None:
-        fixture_path = (
-            Path(__file__).resolve().parent / "fixtures" / "user_move_positions_fixture.pgn"
-        )
-        self.pgn = fixture_path.read_text()
         tmp_dir = Path(tempfile.mkdtemp())
         self.conn = get_connection(tmp_dir / "positions.duckdb")
         init_schema(self.conn)
@@ -27,12 +40,7 @@ class ExtractUserMovePositionsTests(unittest.TestCase):
 
     def test_positions_created_for_each_user_ply(self) -> None:
         game_id = "fixture-game-1"
-        positions = extract_positions(
-            self.pgn,
-            user="tester",
-            source="lichess",
-            game_id=game_id,
-        )
+        positions = extract_positions__fixture(game_id)
         self.assertEqual(len(positions), 3)
         self.assertEqual([pos["ply"] for pos in positions], [0, 2, 4])
 

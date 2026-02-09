@@ -11,6 +11,13 @@ const screenshotName =
   process.env.TACTIX_SCREENSHOT_NAME ||
   'issue-practice-progress-2026-02-08.png';
 const source = process.env.TACTIX_SOURCE || 'chesscom';
+const PRACTICE_CARD_SELECTOR = '[data-testid="dashboard-card-practice-attempt"]';
+const PRACTICE_FEEDBACK_LABELS = ['Correct', 'Missed'];
+const PRACTICE_ERROR_SNIPPETS = [
+  'Enter a move',
+  'Illegal move',
+  'Failed to submit practice attempt',
+];
 
 function parseProgress(summaryText) {
   const match = summaryText.match(/(\d+)\s+of\s+(\d+)\s+attempts/i);
@@ -21,12 +28,8 @@ function parseProgress(summaryText) {
 }
 
 async function getBestMoveFromPracticeCard(page) {
-  return page.evaluate(() => {
-    const headers = Array.from(document.querySelectorAll('h3'));
-    const header = headers.find(
-      (el) => el.textContent?.trim() === 'Practice attempt',
-    );
-    const card = header?.closest('.card');
+  return page.evaluate((selector) => {
+    const card = document.querySelector(selector);
     if (!card) return null;
     const uciPattern = /^[a-h][1-8][a-h][1-8][qrbn]?$/i;
     const spans = Array.from(card.querySelectorAll('span'));
@@ -37,16 +40,12 @@ async function getBestMoveFromPracticeCard(page) {
       if (uciPattern.test(move)) return move;
     }
     return null;
-  });
+  }, PRACTICE_CARD_SELECTOR);
 }
 
 async function getPracticeFenFromCard(page) {
-  return page.evaluate(() => {
-    const headers = Array.from(document.querySelectorAll('h3'));
-    const header = headers.find(
-      (el) => el.textContent?.trim() === 'Practice attempt',
-    );
-    const card = header?.closest('.card');
+  return page.evaluate((selector) => {
+    const card = document.querySelector(selector);
     if (!card) return null;
     const paragraphs = Array.from(card.querySelectorAll('p'));
     for (let i = 0; i < paragraphs.length; i += 1) {
@@ -56,7 +55,7 @@ async function getPracticeFenFromCard(page) {
       return fen || null;
     }
     return null;
-  });
+  }, PRACTICE_CARD_SELECTOR);
 }
 
 async function ensurePracticeCardExpanded(page) {
@@ -131,14 +130,17 @@ async function ensurePracticeCardExpanded(page) {
       timeout: 60000,
     });
     await page.waitForFunction(
-      () => {
+      (selector) => {
         const fenRegex =
           /^[prnbqkPRNBQK1-8\/]+ [wb] [KQkq-]+ [a-h1-8-]+ \d+ \d+$/;
-        return Array.from(document.querySelectorAll('p')).some((node) =>
+        const card = document.querySelector(selector);
+        if (!card) return false;
+        return Array.from(card.querySelectorAll('p')).some((node) =>
           fenRegex.test(node.textContent?.trim() || ''),
         );
       },
       { timeout: 60000 },
+      PRACTICE_CARD_SELECTOR,
     );
 
     const beforeSummary = await page.$eval(
@@ -173,52 +175,39 @@ async function ensurePracticeCardExpanded(page) {
     await page.keyboard.press('Enter');
 
     await page.waitForFunction(
-      () => {
-        const headers = Array.from(document.querySelectorAll('h3'));
-        const header = headers.find(
-          (el) => el.textContent?.trim() === 'Practice attempt',
-        );
-        const card = header?.closest('.card');
+      (selector, labels, errors) => {
+        const card = document.querySelector(selector);
         if (!card) return false;
         const spans = Array.from(card.querySelectorAll('span'));
         const feedback = spans.some((el) =>
-          ['Correct', 'Missed'].includes(el.textContent?.trim() || ''),
+          labels.includes(el.textContent?.trim() || ''),
         );
-        const error = Array.from(card.querySelectorAll('p')).some(
-          (el) =>
-            (el.textContent || '').includes('Enter a move') ||
-            (el.textContent || '').includes('Illegal move') ||
-            (el.textContent || '').includes(
-              'Failed to submit practice attempt',
-            ),
+        const error = Array.from(card.querySelectorAll('p')).some((el) =>
+          errors.some((snippet) => (el.textContent || '').includes(snippet)),
         );
         return feedback || error;
       },
       { timeout: 60000 },
+      PRACTICE_CARD_SELECTOR,
+      PRACTICE_FEEDBACK_LABELS,
+      PRACTICE_ERROR_SNIPPETS,
     );
 
-    const result = await page.evaluate(() => {
-      const headers = Array.from(document.querySelectorAll('h3'));
-      const header = headers.find(
-        (el) => el.textContent?.trim() === 'Practice attempt',
-      );
-      const card = header?.closest('.card');
+    const result = await page.evaluate((selector, labels, errors) => {
+      const card = document.querySelector(selector);
       if (!card) {
         return { feedback: null, error: 'Practice attempt card not found.' };
       }
       const spanText = Array.from(card.querySelectorAll('span'))
         .map((el) => el.textContent?.trim() || '')
-        .find((text) => ['Correct', 'Missed'].includes(text));
+        .find((text) => labels.includes(text));
       const errorText = Array.from(card.querySelectorAll('p'))
         .map((el) => el.textContent || '')
         .find(
-          (text) =>
-            text.includes('Enter a move') ||
-            text.includes('Illegal move') ||
-            text.includes('Failed to submit practice attempt'),
+          (text) => errors.some((snippet) => text.includes(snippet)),
         );
       return { feedback: spanText || null, error: errorText || null };
-    });
+    }, PRACTICE_CARD_SELECTOR, PRACTICE_FEEDBACK_LABELS, PRACTICE_ERROR_SNIPPETS);
 
     if (result.error) {
       throw new Error(`Practice submit error: ${result.error}`);

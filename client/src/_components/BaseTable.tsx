@@ -10,6 +10,8 @@ import {
 import { useMemo, useState } from 'react';
 
 const DEFAULT_PAGE_SIZES = [5, 10, 20];
+const joinClassNames = (...classes: Array<string | null | undefined>) =>
+  classes.filter(Boolean).join(' ');
 
 type BaseTableProps<TData> = {
   data: TData[] | null;
@@ -49,10 +51,7 @@ export default function BaseTable<TData>({
   });
 
   const safeData = useMemo(() => data ?? [], [data]);
-  let paginationHandler: typeof setPagination | undefined;
-  if (enablePagination) {
-    paginationHandler = setPagination;
-  }
+  const paginationHandler = enablePagination ? setPagination : undefined;
   const table = useReactTable({
     data: safeData,
     columns,
@@ -72,14 +71,13 @@ export default function BaseTable<TData>({
   const pageCount = table.getPageCount();
   const hasRows = visibleRows.length > 0;
   const showPagination = enablePagination && !isLoading && pageCount > 1;
-  const wrapperClassName = ['space-y-3', className].filter(Boolean).join(' ');
-  const tableClassNames = ['min-w-full text-sm', tableClassName]
-    .filter(Boolean)
-    .join(' ');
-  const headerClassNames = ['text-left py-2', headerCellClassName]
-    .filter(Boolean)
-    .join(' ');
-  const cellClassNames = ['py-2', cellClassName].filter(Boolean).join(' ');
+  const wrapperClassName = joinClassNames('space-y-3', className);
+  const tableClassNames = joinClassNames('min-w-full text-sm', tableClassName);
+  const headerClassNames = joinClassNames(
+    'text-left py-2',
+    headerCellClassName,
+  );
+  const cellClassNames = joinClassNames('py-2', cellClassName);
   const handleRowClick = (
     row: TData,
     event: React.MouseEvent<HTMLElement>,

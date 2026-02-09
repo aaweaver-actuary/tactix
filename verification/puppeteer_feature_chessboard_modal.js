@@ -14,6 +14,17 @@ const SCREENSHOT_CLOSED = 'feature-chessboard-modal-closed-2026-02-09.png';
 
 const FEN_PATTERN =
   /([prnbqkPRNBQK1-8\/]+ [wb] [KQkq-]+ [a-h1-8-]+ \d+ \d+)/;
+const selectors = {
+  row: '[data-testid^="positions-row-"]',
+  modal: '[data-testid="chessboard-modal"]',
+  board: '[data-testid="chessboard-modal-board"]',
+  close: '[data-testid="chessboard-modal-close"]',
+};
+
+const extractFen = (text) => {
+  const match = text.match(FEN_PATTERN);
+  return match ? match[1] : null;
+};
 
 (async () => {
   console.log('Launching browser...');
@@ -32,27 +43,21 @@ const FEN_PATTERN =
     );
     console.log(`Positions card state: ${cardState}`);
 
-    const rowSelector = '[data-testid^="positions-row-"]';
-    await page.waitForSelector(rowSelector, { timeout: 60000 });
-    const rowTag = await page.$eval(rowSelector, (row) => row.tagName);
+    await page.waitForSelector(selectors.row, { timeout: 60000 });
+    const rowTag = await page.$eval(selectors.row, (row) => row.tagName);
     console.log(`Found positions row tag: ${rowTag}`);
-    const rowText = await page.$eval(rowSelector, (row) => row.innerText);
-    const fenMatch = rowText.match(FEN_PATTERN);
-    if (!fenMatch) {
+    const rowText = await page.$eval(selectors.row, (row) => row.innerText);
+    const fen = extractFen(rowText);
+    if (!fen) {
       throw new Error(`Unable to read FEN from positions row: ${rowText}`);
     }
-    const fen = fenMatch[1];
 
-    await page.click(rowSelector, { delay: 25 });
-    await page.waitForSelector('[data-testid="chessboard-modal"]', {
-      timeout: 60000,
-    });
-    await page.waitForSelector('[data-testid="chessboard-modal-board"]', {
-      timeout: 60000,
-    });
+    await page.click(selectors.row, { delay: 25 });
+    await page.waitForSelector(selectors.modal, { timeout: 60000 });
+    await page.waitForSelector(selectors.board, { timeout: 60000 });
 
     const modalText = await page.$eval(
-      '[data-testid="chessboard-modal"]',
+      selectors.modal,
       (modal) => modal.innerText,
     );
     if (!modalText.includes(fen)) {
@@ -63,10 +68,11 @@ const FEN_PATTERN =
     const openPath = await captureScreenshot(page, outDir, SCREENSHOT_OPEN);
     console.log('Saved screenshot to', openPath);
 
-    await page.click('[data-testid="chessboard-modal-close"]');
+    await page.click(selectors.close);
     await page.waitForFunction(
-      () => !document.querySelector('[data-testid="chessboard-modal"]'),
+      (modalSelector) => !document.querySelector(modalSelector),
       { timeout: 60000 },
+      selectors.modal,
     );
 
     const closedPath = await captureScreenshot(

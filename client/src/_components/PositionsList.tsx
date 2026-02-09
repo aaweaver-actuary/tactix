@@ -1,16 +1,45 @@
+import type { ReactNode } from 'react';
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
 import BaseCard, { BaseCardDragProps } from './BaseCard';
 import Text from './Text';
 
+type PositionEntry = DashboardPayload['positions'][number];
+
 interface PositionsListProps extends BaseCardDragProps {
   positionsData: DashboardPayload['positions'];
-  onPositionClick?: (position: DashboardPayload['positions'][number]) => void;
-  rowTestId?: (
-    position: DashboardPayload['positions'][number],
-    index: number,
-  ) => string;
+  onPositionClick?: (position: PositionEntry) => void;
+  rowTestId?: (position: PositionEntry, index: number) => string;
 }
+
+type PositionRowProps = {
+  testId: string;
+  onClick?: () => void;
+  children: ReactNode;
+};
+
+const PositionRow = ({ testId, onClick, children }: PositionRowProps) => {
+  const baseClassName =
+    'flex items-center justify-between text-sm border-b border-white/10 pb-2';
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        data-testid={testId}
+        onClick={onClick}
+        className={`${baseClassName} w-full text-left`}
+      >
+        {children}
+      </button>
+    );
+  }
+
+  return (
+    <div data-testid={testId} className={baseClassName}>
+      {children}
+    </div>
+  );
+};
 
 /**
  * Renders a list of chess positions with their FEN strings, move numbers, SAN notation, and clock times.
@@ -32,6 +61,9 @@ export default function PositionsList({
   rowTestId,
   ...dragProps
 }: PositionsListProps) {
+  const resolveRowTestId =
+    rowTestId ?? ((pos: PositionEntry) => `positions-row-${pos.position_id}`);
+
   const header = (
     <div className="flex items-center justify-between">
       <h3 className="text-lg font-display text-sand">Latest positions</h3>
@@ -48,9 +80,7 @@ export default function PositionsList({
     >
       <div className="flex flex-col gap-3">
         {positionsData.map((pos, index) => {
-          const testId = rowTestId
-            ? rowTestId(pos, index)
-            : `positions-row-${pos.position_id}`;
+          const testId = resolveRowTestId(pos, index);
           const rowContent = (
             <>
               <div>
@@ -61,28 +91,14 @@ export default function PositionsList({
             </>
           );
 
-          if (onPositionClick) {
-            return (
-              <button
-                key={pos.position_id}
-                type="button"
-                data-testid={testId}
-                onClick={() => onPositionClick(pos)}
-                className="flex w-full items-center justify-between text-left text-sm border-b border-white/10 pb-2"
-              >
-                {rowContent}
-              </button>
-            );
-          }
-
           return (
-            <div
+            <PositionRow
               key={pos.position_id}
-              data-testid={testId}
-              className="flex items-center justify-between text-sm border-b border-white/10 pb-2"
+              testId={testId}
+              onClick={onPositionClick ? () => onPositionClick(pos) : undefined}
             >
               {rowContent}
-            </div>
+            </PositionRow>
           );
         })}
       </div>

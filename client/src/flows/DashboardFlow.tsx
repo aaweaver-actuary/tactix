@@ -187,6 +187,8 @@ type BaseCardEntry = {
   render: (props: BaseCardRenderProps) => JSX.Element | null;
 };
 
+type PositionEntry = DashboardPayload['positions'][number];
+
 export default function DashboardFlow() {
   const [data, setData] = useState<DashboardPayload | null>(null);
   const [source, setSource] = useState<ChessPlatform>('all');
@@ -273,9 +275,8 @@ export default function DashboardFlow() {
   const [gameDetailLoading, setGameDetailLoading] = useState(false);
   const [gameDetailError, setGameDetailError] = useState<string | null>(null);
   const [chessboardModalOpen, setChessboardModalOpen] = useState(false);
-  const [chessboardPosition, setChessboardPosition] = useState<
-    DashboardPayload['positions'][number] | null
-  >(null);
+  const [chessboardPosition, setChessboardPosition] =
+    useState<PositionEntry | null>(null);
 
   const normalizedFilters = useMemo<DashboardFilters>(
     () => ({
@@ -334,13 +335,10 @@ export default function DashboardFlow() {
     [source],
   );
 
-  const handleOpenChessboardModal = useCallback(
-    (position: DashboardPayload['positions'][number]) => {
-      setChessboardPosition(position);
-      setChessboardModalOpen(true);
-    },
-    [],
-  );
+  const handleOpenChessboardModal = useCallback((position: PositionEntry) => {
+    setChessboardPosition(position);
+    setChessboardModalOpen(true);
+  }, []);
 
   const handleCloseChessboardModal = useCallback(() => {
     setChessboardModalOpen(false);

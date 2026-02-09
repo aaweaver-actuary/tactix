@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import type { DashboardPayload } from '../api';
 import {
@@ -35,6 +36,14 @@ export default function ChessboardModal({
 
   const fen = position?.fen ?? '';
   const orientation = getOrientation(position?.fen ?? null);
+  const moveLabel = `Move ${position?.move_number ?? '--'}`;
+  const sanLabel = position?.san ? `SAN ${position.san}` : 'SAN --';
+  const clockLabel = `${position?.clock_seconds ?? '--'}s`;
+  const handleBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  };
 
   return createPortal(
     <div
@@ -42,11 +51,7 @@ export default function ChessboardModal({
       role="dialog"
       aria-modal="true"
       data-testid="chessboard-modal"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
-      }}
+      onClick={handleBackdropClick}
     >
       <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/95 p-5 shadow-2xl">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -96,11 +101,9 @@ export default function ChessboardModal({
                 <Text value={fen || '--'} mode="monospace" size="xs" />
               </div>
               <div className="flex flex-wrap gap-2 text-xs text-sand/70">
-                <Badge label={`Move ${position.move_number ?? '--'}`} />
-                <Badge
-                  label={position.san ? `SAN ${position.san}` : 'SAN --'}
-                />
-                <Badge label={`${position.clock_seconds ?? '--'}s`} />
+                <Badge label={moveLabel} />
+                <Badge label={sanLabel} />
+                <Badge label={clockLabel} />
               </div>
             </div>
           </div>

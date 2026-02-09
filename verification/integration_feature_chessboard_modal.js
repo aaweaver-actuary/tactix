@@ -6,6 +6,17 @@ const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 
 const FEN_PATTERN =
   /([prnbqkPRNBQK1-8\/]+ [wb] [KQkq-]+ [a-h1-8-]+ \d+ \d+)/;
+const selectors = {
+  row: '[data-testid^="positions-row-"]',
+  modal: '[data-testid="chessboard-modal"]',
+  board: '[data-testid="chessboard-modal-board"]',
+  close: '[data-testid="chessboard-modal-close"]',
+};
+
+const extractFenFromRow = (text) => {
+  const match = text.match(FEN_PATTERN);
+  return match ? match[1] : null;
+};
 
 (async () => {
   const browser = await puppeteer.launch({ headless: 'new' });
@@ -16,29 +27,24 @@ const FEN_PATTERN =
     await page.goto(targetUrl, { waitUntil: 'networkidle0' });
     await ensureCardExpanded(page, 'dashboard-card-positions-list');
 
-    const rowSelector = '[data-testid^="positions-row-"]';
-    await page.waitForSelector(rowSelector, { timeout: 60000 });
+    await page.waitForSelector(selectors.row, { timeout: 60000 });
 
-    const fen = await page.evaluate((selector, patternSource) => {
+    const fen = await page.evaluate((selector) => {
       const row = document.querySelector(selector);
       if (!row) return null;
-      const pattern = new RegExp(patternSource);
-      const match = row.textContent?.match(pattern);
-      return match ? match[1] : null;
-    }, rowSelector, FEN_PATTERN.source);
+      return row.textContent || '';
+    }, selectors.row);
 
-    if (!fen) {
+    const parsedFen = extractFenFromRow(fen);
+
+    if (!parsedFen) {
       throw new Error('Failed to extract a FEN string from the positions row.');
     }
 
-    await page.click(rowSelector, { delay: 25 });
+    await page.click(selectors.row, { delay: 25 });
     await new Promise((resolve) => setTimeout(resolve, 200));
-    await page.waitForSelector('[data-testid="chessboard-modal"]', {
-      timeout: 60000,
-    });
-    await page.waitForSelector('[data-testid="chessboard-modal-board"]', {
-      timeout: 60000,
-    });
+    await page.waitForSelector(selectors.modal, { timeout: 60000 });
+    await page.waitForSelector(selectors.board, { timeout: 60000 });
 
     const modalState = await page.evaluate(() => {
       const modal = document.querySelector('[data-testid="chessboard-modal"]');
@@ -66,14 +72,15 @@ const FEN_PATTERN =
       throw new Error('Chessboard modal did not render expected controls.');
     }
 
-    if (!modalState.modalText.includes(fen)) {
+    if (!modalState.modalText.includes(parsedFen)) {
       throw new Error('Chessboard modal did not include the expected FEN.');
     }
 
-    await page.click('[data-testid="chessboard-modal-close"]');
+    await page.click(selectors.close);
     await page.waitForFunction(
-      () => !document.querySelector('[data-testid="chessboard-modal"]'),
+      (modalSelector) => !document.querySelector(modalSelector),
       { timeout: 60000 },
+      selectors.modal,
     );
 
     if (consoleErrors.length) {

@@ -431,7 +431,7 @@ describe('DashboardFlow', () => {
     expect(screen.getByText('Loading…')).toBeInTheDocument();
   });
 
-  it('opens game detail as a bottom-aligned modal from recent games', async () => {
+  it('opens game detail as a modal overlay from recent games', async () => {
     render(<DashboardFlow />);
 
     await waitFor(() => {
@@ -443,7 +443,8 @@ describe('DashboardFlow', () => {
     const modal = await screen.findByTestId('game-detail-modal');
     expect(modal).toHaveAttribute('aria-modal', 'true');
     expect(modal.className).toContain('fixed');
-    expect(modal.className).toContain('items-end');
+    expect(modal.className).toContain('inset-0');
+    expect(modal.className).toContain('bg-black/60');
     expect(screen.getByTestId('game-detail-close')).toBeInTheDocument();
   });
 

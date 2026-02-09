@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class TacticDetails:
+class TacticDetails:  # pylint: disable=too-many-instance-attributes
     motif: str
     severity: float
     best_move: str | None

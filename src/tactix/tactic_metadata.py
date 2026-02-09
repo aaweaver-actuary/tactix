@@ -65,6 +65,7 @@ def resolve_tactic_metadata(
     }
 
 
+# pylint: disable=too-many-return-statements
 def _resolve_tactic_piece(  # noqa: PLR0911
     fen: str | None,
     best_uci: str,
@@ -112,6 +113,9 @@ def _resolve_mate_type(  # noqa: PLR0911
     return f"helper_{helper_piece}"
 
 
+# pylint: enable=too-many-return-statements
+
+
 def _build_mate_context(fen: str, best_uci: str) -> _MateContext | None:  # noqa: PLR0911
     try:
         board_before = chess.Board(str(fen))
@@ -126,8 +130,8 @@ def _build_mate_context(fen: str, best_uci: str) -> _MateContext | None:  # noqa
     mover_color = board_before.turn
     defender_color = not mover_color
     board_after = board_before.copy()
-    board_after.push(move)
-    if not board_after.is_checkmate():
+    board_after.push(move)  # pylint: disable=no-member
+    if not board_after.is_checkmate():  # pylint: disable=no-member
         return None
     king_square = board_after.king(defender_color)
     if king_square is None:

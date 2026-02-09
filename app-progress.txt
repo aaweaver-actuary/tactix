@@ -1,4 +1,10 @@
 Session summary (2026-02-08):
+- Aligned the recent games modal test to assert overlay/backdrop traits instead of bottom alignment.
+- Tests run: make check (before; task); make check (after; task, exit code 2 at prospector step).
+- Before→After map:
+	- client/src/flows/DashboardFlow.test.tsx game detail modal alignment assertion → overlay/backdrop assertions.
+
+Session summary (2026-02-08):
 - Refactored games table row construction to separate input coercion and row assembly, keeping PGN metadata parsing isolated from storage payload shape.
 - Tests run: make check (before; task); make check (after; task).
 - Before→After map:

@@ -23,8 +23,9 @@ const SELECTORS = {
 };
 
 async function openGameDetailModal(page) {
-  await page.waitForSelector(SELECTORS.row);
-  await page.click(SELECTORS.row);
+  const rowCellSelector = `${SELECTORS.row} td:first-child`;
+  await page.waitForSelector(rowCellSelector);
+  await page.click(rowCellSelector);
   await page.waitForSelector(SELECTORS.modal, { visible: true });
   await page.waitForSelector(SELECTORS.moves);
 }

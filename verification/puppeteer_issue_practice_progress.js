@@ -59,6 +59,27 @@ async function getPracticeFenFromCard(page) {
   });
 }
 
+async function ensurePracticeCardExpanded(page) {
+  const cardSelector = '[data-testid="dashboard-card-practice-attempt"]';
+  const headerSelector = `${cardSelector} [role="button"]`;
+  await page.waitForSelector(headerSelector, { timeout: 60000 });
+  const isCollapsed = await page.$eval(
+    headerSelector,
+    (header) => header.getAttribute('aria-expanded') === 'false',
+  );
+  if (isCollapsed) {
+    await page.click(headerSelector);
+  }
+  await page.waitForFunction(
+    (selector) => {
+      const node = document.querySelector(selector);
+      return node && node.getAttribute('data-state') === 'expanded';
+    },
+    { timeout: 60000 },
+    `${cardSelector} [data-state]`,
+  );
+}
+
 (async () => {
   const browser = await puppeteer.launch({ headless: 'new' });
   const page = await browser.newPage();
@@ -92,15 +113,7 @@ async function getPracticeFenFromCard(page) {
     await page.waitForSelector('h1', { timeout: 60000 });
     await selectSource(page, source);
 
-    await page.$$eval('h3', (headers) => {
-      const target = headers.find((header) =>
-        (header.textContent || '').includes('Practice attempt'),
-      );
-      const button = target?.closest('[role="button"]');
-      if (button) {
-        (button).click();
-      }
-    });
+    await ensurePracticeCardExpanded(page);
 
     await page.waitForSelector('[data-testid="practice-session-summary"]', {
       timeout: 60000,
@@ -157,20 +170,21 @@ async function getPracticeFenFromCard(page) {
       { timeout: 60000 },
       moveToPlay,
     );
-    await page.$$eval('button', (buttons) => {
-      const target = buttons.find(
-        (btn) => btn.textContent && btn.textContent.includes('Submit attempt'),
-      );
-      if (target) target.click();
-    });
+    await page.keyboard.press('Enter');
 
     await page.waitForFunction(
       () => {
-        const spans = Array.from(document.querySelectorAll('span'));
+        const headers = Array.from(document.querySelectorAll('h3'));
+        const header = headers.find(
+          (el) => el.textContent?.trim() === 'Practice attempt',
+        );
+        const card = header?.closest('.card');
+        if (!card) return false;
+        const spans = Array.from(card.querySelectorAll('span'));
         const feedback = spans.some((el) =>
           ['Correct', 'Missed'].includes(el.textContent?.trim() || ''),
         );
-        const error = Array.from(document.querySelectorAll('p')).some(
+        const error = Array.from(card.querySelectorAll('p')).some(
           (el) =>
             (el.textContent || '').includes('Enter a move') ||
             (el.textContent || '').includes('Illegal move') ||
@@ -184,10 +198,18 @@ async function getPracticeFenFromCard(page) {
     );
 
     const result = await page.evaluate(() => {
-      const spanText = Array.from(document.querySelectorAll('span'))
+      const headers = Array.from(document.querySelectorAll('h3'));
+      const header = headers.find(
+        (el) => el.textContent?.trim() === 'Practice attempt',
+      );
+      const card = header?.closest('.card');
+      if (!card) {
+        return { feedback: null, error: 'Practice attempt card not found.' };
+      }
+      const spanText = Array.from(card.querySelectorAll('span'))
         .map((el) => el.textContent?.trim() || '')
         .find((text) => ['Correct', 'Missed'].includes(text));
-      const errorText = Array.from(document.querySelectorAll('p'))
+      const errorText = Array.from(card.querySelectorAll('p'))
         .map((el) => el.textContent || '')
         .find(
           (text) =>

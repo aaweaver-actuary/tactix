@@ -1,4 +1,11 @@
 Session summary (2026-02-09):
+- Fixed regression coverage for game detail modal clicks by making BaseTable row clicks consistent and updated Puppeteer helpers to target non-action cells; stabilized practice progress automation to keep the session card expanded, submit via Enter, and scope feedback lookup; locked practice session totals to initial session scope to keep denominators fixed.
+- Added stored-position ply increment assertions for the user move positions fixture to verify ply increments by 2 and correct game_id linkage in DB.
+- Tests run: node verification/puppeteer_issue_enter_submit.js; node verification/puppeteer_feature_game_detail_modal.js; node verification/puppeteer_issue_practice_progress.js; make check (task).
+- Updated feature_list.json: re-verified game detail modal + practice progress regressions; marked "Positions store ply and game linkage for each user decision" as passing.
+- Current pass count: 42/128.
+
+Session summary (2026-02-09):
 - Refactored DuckDB position inserts and verification helpers to reduce duplication; extracted game detail modal assertions and centralized source response waits.
 - Stabilized pipeline helper fixture by avoiding duplicate position_id collisions.
 - Tests run: make check (before; task; exit code 2 at prospector step); /Users/andy/tactix/.venv/bin/python -m pytest tests/test_pipeline_helpers.py -q; make check (after; task; exit code 2 at prospector step).

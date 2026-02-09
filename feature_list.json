@@ -573,7 +573,7 @@
     "category": "functional",
     "description": "Positions store ply and game linkage for each user decision",
     "steps": ["Step 1: Query positions for a known game", "Step 2: Verify ply values increase by 2 for user turns", "Step 3: Verify each position is linked to the correct game_id"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

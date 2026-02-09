@@ -48,6 +48,11 @@ class ExtractUserMovePositionsTests(unittest.TestCase):
         stored_positions = fetch_positions_for_games(self.conn, [game_id])
         self.assertEqual(len(stored_positions), len(positions))
 
+        stored_plies = sorted(row.get("ply") for row in stored_positions)
+        self.assertEqual(stored_plies, [0, 2, 4])
+        for earlier, later in zip(stored_plies, stored_plies[1:]):
+            self.assertEqual(later - earlier, 2)
+
         fen_side_keys = {(row.get("fen"), row.get("side_to_move")) for row in stored_positions}
         self.assertEqual(len(fen_side_keys), len(stored_positions))
         self.assertEqual(

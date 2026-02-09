@@ -198,6 +198,7 @@ export default function DashboardFlow() {
     () => resetPracticeSessionStats(0),
   );
   const practiceSessionScopeRef = useRef(`${source}:${includeFailedAttempt}`);
+  const practiceSessionInitializedRef = useRef(false);
   const [jobProgress, setJobProgress] = useState<JobProgressItem[]>([]);
   const [jobStatus, setJobStatus] = useState<
     'idle' | 'running' | 'error' | 'complete'
@@ -372,24 +373,12 @@ export default function DashboardFlow() {
         if (resetSession) {
           const nextScope = `${nextSource}:${includeFailed}`;
           const shouldReset = practiceSessionScopeRef.current !== nextScope;
+          const shouldInitialize = !practiceSessionInitializedRef.current;
           practiceSessionScopeRef.current = nextScope;
-          if (shouldReset) {
+          if (shouldReset || shouldInitialize) {
+            practiceSessionInitializedRef.current = true;
             setPracticeSession(resetPracticeSessionStats(payload.items.length));
-          } else {
-            setPracticeSession((prev) => {
-              if (prev.total <= 0 && prev.completed === 0) {
-                return { ...prev, total: payload.items.length };
-              }
-              return prev;
-            });
           }
-        } else {
-          setPracticeSession((prev) => {
-            if (prev.total <= 0 && prev.completed === 0) {
-              return { ...prev, total: payload.items.length };
-            }
-            return prev;
-          });
         }
       } catch (err) {
         console.error(err);

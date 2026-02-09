@@ -10,12 +10,6 @@ import {
 import { useMemo, useState } from 'react';
 
 const DEFAULT_PAGE_SIZES = [5, 10, 20];
-const INTERACTIVE_SELECTOR = 'button, a, input, select, textarea, label';
-
-const isInteractiveTarget = (target: EventTarget | null) => {
-  if (!(target instanceof HTMLElement)) return false;
-  return Boolean(target.closest(INTERACTIVE_SELECTOR));
-};
 
 type BaseTableProps<TData> = {
   data: TData[] | null;
@@ -92,7 +86,6 @@ export default function BaseTable<TData>({
     stopPropagation = false,
   ) => {
     if (!onRowClick) return;
-    if (isInteractiveTarget(event.target)) return;
     if (stopPropagation) event.stopPropagation();
     onRowClick(row);
   };

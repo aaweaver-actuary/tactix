@@ -1,8 +1,8 @@
 import os
 import tempfile
 import unittest
-from unittest.mock import patch
 from pathlib import Path
+from unittest.mock import patch
 
 from tactix.db.duckdb_store import (
     _should_attempt_wal_recovery,
@@ -13,7 +13,7 @@ from tactix.db.duckdb_store import (
 
 
 class SchemaMigrationTests(unittest.TestCase):
-    def test_migration_preserves_legacy_data(self) -> None:
+    def test_migration_preserves_legacy_data(self) -> None:  # noqa: PLR0915
         tmp_dir = Path(tempfile.mkdtemp())
         conn = get_connection(tmp_dir / "tactix.duckdb")
 
@@ -35,7 +35,15 @@ class SchemaMigrationTests(unittest.TestCase):
             INSERT INTO raw_pgns
                 (game_id, user, source, fetched_at, pgn, last_timestamp_ms, cursor)
             VALUES
-                ('game-1', 'lichess_user', 'lichess', CURRENT_TIMESTAMP, 'PGN DATA', 123, 'cursor-1')
+                (
+                    'game-1',
+                    'lichess_user',
+                    'lichess',
+                    CURRENT_TIMESTAMP,
+                    'PGN DATA',
+                    123,
+                    'cursor-1'
+                )
             """
         )
 
@@ -67,7 +75,7 @@ class SchemaMigrationTests(unittest.TestCase):
 
         migrate_schema(conn)
 
-        self.assertEqual(get_schema_version(conn), 8)
+        self.assertEqual(get_schema_version(conn), 9)
 
         raw_rows = conn.execute(
             "SELECT raw_pgn_id, game_id, pgn, pgn_version, last_timestamp_ms, cursor FROM raw_pgns"
@@ -86,7 +94,10 @@ class SchemaMigrationTests(unittest.TestCase):
         }
         self.assertIn("side_to_move", positions_columns)
         positions_row = conn.execute(
-            "SELECT game_id, fen, ply, move_number, uci, san, clock_seconds, side_to_move FROM positions"
+            """
+            SELECT game_id, fen, ply, move_number, uci, san, clock_seconds, side_to_move
+            FROM positions
+            """
         ).fetchone()
         self.assertEqual(positions_row[0], "game-1")
         self.assertEqual(positions_row[1], "fen")
@@ -103,7 +114,7 @@ class SchemaMigrationTests(unittest.TestCase):
 
         migrate_schema(conn)
 
-        self.assertEqual(get_schema_version(conn), 8)
+        self.assertEqual(get_schema_version(conn), 9)
         columns = {row[1] for row in conn.execute("PRAGMA table_info('raw_pgns')").fetchall()}
         self.assertIn("raw_pgn_id", columns)
         self.assertIn("pgn_hash", columns)
@@ -113,6 +124,8 @@ class SchemaMigrationTests(unittest.TestCase):
         }
         self.assertIn("best_san", tactics_columns)
         self.assertIn("explanation", tactics_columns)
+        self.assertIn("tactic_piece", tactics_columns)
+        self.assertIn("mate_type", tactics_columns)
 
     def test_should_attempt_wal_recovery_gate(self) -> None:
         exc = Exception("WAL replay failed")

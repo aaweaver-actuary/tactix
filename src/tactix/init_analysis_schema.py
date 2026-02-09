@@ -49,12 +49,20 @@ def init_analysis_schema(conn: PgConnection) -> None:
                 motif TEXT,
                 severity DOUBLE PRECISION,
                 best_uci TEXT,
+                tactic_piece TEXT,
+                mate_type TEXT,
                 best_san TEXT,
                 explanation TEXT,
                 eval_cp INTEGER,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
             """
+        )
+        cur.execute(
+            f"ALTER TABLE {ANALYSIS_SCHEMA}.tactics ADD COLUMN IF NOT EXISTS tactic_piece TEXT"
+        )
+        cur.execute(
+            f"ALTER TABLE {ANALYSIS_SCHEMA}.tactics ADD COLUMN IF NOT EXISTS mate_type TEXT"
         )
         cur.execute(
             f"CREATE INDEX IF NOT EXISTS tactics_position_idx "

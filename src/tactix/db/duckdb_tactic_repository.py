@@ -66,10 +66,12 @@ class DuckDbTacticRepository:
                     motif,
                     severity,
                     best_uci,
+                    tactic_piece,
+                    mate_type,
                     best_san,
                     explanation,
                     eval_cp
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     next_id,
@@ -78,6 +80,8 @@ class DuckDbTacticRepository:
                     tactic.get("motif"),
                     tactic.get("severity"),
                     tactic.get("best_uci"),
+                    tactic.get("tactic_piece"),
+                    tactic.get("mate_type"),
                     tactic.get("best_san"),
                     tactic.get("explanation"),
                     tactic.get("eval_cp"),

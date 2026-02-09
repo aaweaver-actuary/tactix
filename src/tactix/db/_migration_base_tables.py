@@ -49,6 +49,8 @@ CREATE TABLE IF NOT EXISTS tactics (
     motif TEXT,
     severity DOUBLE,
     best_uci TEXT,
+    tactic_piece TEXT,
+    mate_type TEXT,
     best_san TEXT,
     explanation TEXT,
     eval_cp INTEGER,

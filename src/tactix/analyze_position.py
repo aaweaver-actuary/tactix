@@ -36,6 +36,7 @@ from tactix.format_tactics__explanation import format_tactic_explanation
 from tactix.outcome_context import BaseOutcomeContext, OutcomeOverridesContext
 from tactix.OutcomeDetails import OutcomeDetails
 from tactix.StockfishEngine import StockfishEngine
+from tactix.tactic_metadata import resolve_tactic_metadata
 from tactix.TacticDetails import TacticDetails
 from tactix.TacticRowInput import TacticRowInput
 from tactix.utils.logger import funclogger
@@ -391,6 +392,7 @@ def _prepare_tactic_row_input(
         best_move or "",
         motif,
     )
+    metadata = resolve_tactic_metadata(fen, best_move, motif)
     return TacticRowInput(
         position=position,
         details=TacticDetails(
@@ -399,6 +401,8 @@ def _prepare_tactic_row_input(
             best_move=best_move,
             base_cp=base_cp,
             mate_in=mate_in,
+            tactic_piece=metadata["tactic_piece"],
+            mate_type=metadata["mate_type"],
             best_san=best_san,
             explanation=explanation,
         ),

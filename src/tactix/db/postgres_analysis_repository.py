@@ -43,6 +43,8 @@ def fetch_analysis_tactics_with_conn(
                 t.motif,
                 t.severity,
                 t.best_uci,
+                t.tactic_piece,
+                t.mate_type,
                 t.best_san,
                 t.explanation,
                 t.eval_cp,
@@ -90,11 +92,13 @@ def _insert_analysis_tactic(cur, tactic_plan: TacticInsertPlan) -> int:
             motif,
             severity,
             best_uci,
+            tactic_piece,
+            mate_type,
             best_san,
             explanation,
             eval_cp
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING tactic_id
         """,
         (
@@ -103,6 +107,8 @@ def _insert_analysis_tactic(cur, tactic_plan: TacticInsertPlan) -> int:
             tactic_plan.motif,
             tactic_plan.severity,
             tactic_plan.best_uci,
+            tactic_plan.tactic_piece,
+            tactic_plan.mate_type,
             tactic_plan.best_san,
             tactic_plan.explanation,
             tactic_plan.eval_cp,

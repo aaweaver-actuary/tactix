@@ -12,6 +12,8 @@ class TacticRowDetails:
     best_san: str | None
     explanation: str | None
     mate_in: int | None
+    tactic_piece: str | None
+    mate_type: str | None
 
 
 @dataclass(frozen=True)
@@ -37,6 +39,8 @@ class TacticRow:
                 best_san=inputs.details.best_san,
                 explanation=inputs.details.explanation,
                 mate_in=inputs.details.mate_in,
+                tactic_piece=inputs.details.tactic_piece,
+                mate_type=inputs.details.mate_type,
             ),
         )
 
@@ -51,4 +55,6 @@ class TacticRow:
             "best_san": self.details.best_san,
             "explanation": self.details.explanation,
             "mate_in": self.details.mate_in,
+            "tactic_piece": self.details.tactic_piece,
+            "mate_type": self.details.mate_type,
         }

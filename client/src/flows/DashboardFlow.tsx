@@ -1476,6 +1476,7 @@ export default function DashboardFlow() {
             positions={totals.positions}
             tactics={totals.tactics}
             metricsVersion={data?.metrics_version ?? 0}
+            sourceSync={data?.source_sync}
             {...props}
           />
         ),

@@ -166,6 +166,8 @@ class BaseDbStore:
             motif=cast(str, tactic_row.get("motif", "unknown")),
             severity=tactic_row.get("severity", 0.0),
             best_uci=tactic_row.get("best_uci", ""),
+            tactic_piece=tactic_row.get("tactic_piece"),
+            mate_type=tactic_row.get("mate_type"),
             best_san=tactic_row.get("best_san"),
             explanation=tactic_row.get("explanation"),
             eval_cp=tactic_row.get("eval_cp", 0),

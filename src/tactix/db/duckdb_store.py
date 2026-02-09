@@ -19,6 +19,7 @@ from tactix.db._migration_add_games_table import _migration_add_games_table
 from tactix.db._migration_add_pipeline_views import _migration_add_pipeline_views
 from tactix.db._migration_add_position_legality import _migration_add_position_legality
 from tactix.db._migration_add_tactic_explanations import _migration_add_tactic_explanations
+from tactix.db._migration_add_tactic_metadata import _migration_add_tactic_metadata
 from tactix.db._migration_add_training_attempt_latency import (
     _migration_add_training_attempt_latency,
 )
@@ -81,6 +82,8 @@ CREATE TABLE IF NOT EXISTS tactics (
     motif TEXT,
     severity DOUBLE,
     best_uci TEXT,
+    tactic_piece TEXT,
+    mate_type TEXT,
     best_san TEXT,
     explanation TEXT,
     eval_cp INTEGER,
@@ -151,7 +154,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 );
 """
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 
 def _should_attempt_wal_recovery(exc: BaseException) -> bool:
@@ -320,6 +323,7 @@ _SCHEMA_MIGRATIONS = [
     (6, _migration_add_tactic_explanations),
     (7, _migration_add_pipeline_views),
     (8, _migration_add_games_table),
+    (9, _migration_add_tactic_metadata),
 ]
 
 

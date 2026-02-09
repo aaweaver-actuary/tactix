@@ -5,6 +5,7 @@ interface MetricCardProps {
   title: string;
   value: string;
   note?: string;
+  dataTestId?: string;
 }
 
 /**
@@ -16,7 +17,12 @@ interface MetricCardProps {
  *
  * @returns A styled card component showing the metric information.
  */
-export default function MetricCard({ title, value, note }: MetricCardProps) {
+export default function MetricCard({
+  title,
+  value,
+  note,
+  dataTestId,
+}: MetricCardProps) {
   const header = (
     <div className="flex flex-col gap-2">
       <Text mode="uppercase" value={title} />
@@ -27,6 +33,7 @@ export default function MetricCard({ title, value, note }: MetricCardProps) {
   return (
     <BaseCard
       className="p-4"
+      data-testid={dataTestId}
       header={header}
       contentClassName={note ? 'pt-2' : undefined}
     >

@@ -64,7 +64,20 @@ export type DashboardPayload = {
   recent_games: RecentGameRow[];
   positions: PositionRow[];
   tactics: TacticRow[];
+  source_sync?: SourceSyncSummary;
   metrics_version: number;
+};
+
+export type SourceSyncSourceRow = {
+  source: string;
+  games_played: number;
+  synced: boolean;
+  latest_played_at: string | null;
+};
+
+export type SourceSyncSummary = {
+  window_days: number;
+  sources: SourceSyncSourceRow[];
 };
 
 export type DashboardFilters = {

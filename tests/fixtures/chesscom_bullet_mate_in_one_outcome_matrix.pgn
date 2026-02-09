@@ -1,0 +1,38 @@
+[Event "Mate Matrix Found Win"]
+[Site "https://www.chess.com/game/live/990000001"]
+[Date "2026.02.01"]
+[Round "-"]
+[White "trainer"]
+[Black "groborger"]
+[Result "0-1"]
+[TimeControl "120+1"]
+[SetUp "1"]
+[FEN "r1n5/5k2/2b2p1B/4p3/p1p1P3/Q1P3Pn/6BP/1R4RK b - - 0 43"]
+
+43... Nf2# 0-1
+
+[Event "Mate Matrix Missed Loss"]
+[Site "https://www.chess.com/game/live/990000002"]
+[Date "2026.02.01"]
+[Round "-"]
+[White "trainer"]
+[Black "groborger"]
+[Result "1-0"]
+[TimeControl "120+1"]
+[SetUp "1"]
+[FEN "r1n5/5k2/2b2p1B/4p3/p1p1P3/Q1P3Pn/6BP/1R4RK b - - 0 43"]
+
+43... Ne7 1-0
+
+[Event "Mate Matrix Missed Win"]
+[Site "https://www.chess.com/game/live/990000003"]
+[Date "2026.02.01"]
+[Round "-"]
+[White "trainer"]
+[Black "groborger"]
+[Result "0-1"]
+[TimeControl "120+1"]
+[SetUp "1"]
+[FEN "r1n5/5k2/2b2p1B/4p3/p1p1P3/Q1P3Pn/6BP/1R4RK b - - 0 43"]
+
+43... Ne7 0-1

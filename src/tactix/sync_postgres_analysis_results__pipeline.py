@@ -33,6 +33,8 @@ def _sync_postgres_analysis_results(
             "motif": row.get("motif", "unknown"),
             "severity": row.get("severity", 0.0),
             "best_uci": row.get("best_uci", ""),
+            "tactic_piece": row.get("tactic_piece"),
+            "mate_type": row.get("mate_type"),
             "best_san": row.get("best_san"),
             "explanation": row.get("explanation"),
             "eval_cp": row.get("eval_cp", 0),

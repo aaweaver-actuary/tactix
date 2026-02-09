@@ -169,6 +169,27 @@ const baseDashboard: DashboardPayload = {
   ],
 };
 
+const sourceSyncDashboard = {
+  ...baseDashboard,
+  source_sync: {
+    window_days: 90,
+    sources: [
+      {
+        source: 'lichess',
+        games_played: 72,
+        synced: true,
+        latest_played_at: '2026-02-01T12:00:00Z',
+      },
+      {
+        source: 'chesscom',
+        games_played: 81,
+        synced: true,
+        latest_played_at: '2026-02-01T13:00:00Z',
+      },
+    ],
+  },
+};
+
 const basePracticeQueue: PracticeQueueResponse = {
   source: 'chesscom',
   include_failed_attempt: false,
@@ -358,6 +379,30 @@ describe('DashboardFlow', () => {
     const motifSelect = screen.getByTestId('filter-motif') as HTMLSelectElement;
     fireEvent.change(motifSelect, { target: { value: 'fork' } });
     expect(motifSelect.value).toBe('fork');
+  });
+
+  it('shows per-site 90-day sync counts from backend metrics on initial load', async () => {
+    (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      sourceSyncDashboard,
+    );
+
+    render(<DashboardFlow />);
+
+    await waitFor(() => {
+      expect(fetchDashboard).toHaveBeenCalled();
+    });
+
+    const lichessCard = screen.getByTestId('source-sync-lichess');
+    const chesscomCard = screen.getByTestId('source-sync-chesscom');
+
+    expect(lichessCard).toBeVisible();
+    expect(chesscomCard).toBeVisible();
+    expect(within(lichessCard).getByText('Lichess (90d)')).toBeInTheDocument();
+    expect(within(lichessCard).getByText('72')).toBeInTheDocument();
+    expect(
+      within(chesscomCard).getByText('Chess.com (90d)'),
+    ).toBeInTheDocument();
+    expect(within(chesscomCard).getByText('81')).toBeInTheDocument();
   });
 
   it('shows an error when the dashboard load fails', async () => {

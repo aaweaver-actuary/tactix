@@ -6,6 +6,7 @@ const {
 } = require('./helpers/puppeteer_capture');
 const {
   openFiltersModal,
+  closeFiltersModalWithEscape,
 } = require('./helpers/filters_modal_helpers');
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
@@ -30,11 +31,7 @@ const SCREENSHOT_CLOSED = 'feature-modal-escape-closed-2026-02-09.png';
     const openPath = await captureScreenshot(page, outDir, SCREENSHOT_OPEN);
     console.log('Saved screenshot to', openPath);
 
-    await page.keyboard.press('Escape');
-    await page.waitForFunction(
-      () => !document.querySelector('[data-testid="filters-modal"]'),
-      { timeout: 60000 },
-    );
+    await closeFiltersModalWithEscape(page);
 
     const closedPath = await captureScreenshot(page, outDir, SCREENSHOT_CLOSED);
     console.log('Saved screenshot to', closedPath);

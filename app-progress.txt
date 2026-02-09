@@ -1,4 +1,12 @@
 Session summary (2026-02-09):
+- Refactored filters modal Escape-close verification to reuse shared helpers while preserving modal behavior and test IDs.
+- Tests run: make check (before); make check (after).
+- Before→After map:
+	- verification/helpers/filters_modal_helpers.js inline Escape close wait -> waitForFiltersModalClosed + closeFiltersModalWithEscape helper.
+	- verification/puppeteer_feature_modal_escape.js inline Escape key close/wait -> closeFiltersModalWithEscape helper.
+	- verification/integration_feature_modal_escape.js inline Escape key close/wait -> closeFiltersModalWithEscape helper.
+
+Session summary (2026-02-09):
 - Added Escape key handling to shared modal shell so BaseModal-backed views close on Escape, plus a dashboard flow test to cover it.
 - Added manual Puppeteer verification + integration coverage for Escape-to-close behavior with new screenshots.
 - Tests run: node verification/puppeteer_feature_modal_escape.js; node verification/integration_feature_modal_escape.js; make check.

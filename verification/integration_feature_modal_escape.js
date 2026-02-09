@@ -2,6 +2,7 @@ const puppeteer = require('../client/node_modules/puppeteer');
 const { attachConsoleCapture } = require('./helpers/puppeteer_capture');
 const {
   openFiltersModal,
+  closeFiltersModalWithEscape,
 } = require('./helpers/filters_modal_helpers');
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
@@ -15,11 +16,7 @@ const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
     await page.goto(targetUrl, { waitUntil: 'networkidle0' });
     await openFiltersModal(page);
 
-    await page.keyboard.press('Escape');
-    await page.waitForFunction(
-      () => !document.querySelector('[data-testid="filters-modal"]'),
-      { timeout: 60000 },
-    );
+    await closeFiltersModalWithEscape(page);
 
     const modalExists = await page.evaluate(
       () => Boolean(document.querySelector('[data-testid="filters-modal"]')),

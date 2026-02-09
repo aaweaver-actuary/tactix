@@ -1,4 +1,12 @@
 Session summary (2026-02-09):
+- Refactored post-move position extraction to reuse a shared append helper while preserving schemas and IDs.
+- Tests run: make check (before; task; failed: test_api_chesscom_bullet_pipeline_regression, test_api_lichess_blitz_pipeline_regression, test_mate_in_one_outcome_matrix); make check (after; task; same failures).
+- Before→After map:
+	- src/tactix/build_post_move_positions__positions.py added append_positions_with_post_moves helper for extracted + post-move appends.
+	- src/tactix/extract_positions_from_games__pipeline.py inline extracted/post append → append_positions_with_post_moves helper.
+	- src/tactix/extract_positions_for_rows__pipeline.py inline extracted/post append → append_positions_with_post_moves helper.
+
+Session summary (2026-02-09):
 - Added post-move position derivation for user moves, persisted user_to_move flags, and kept analysis to user-to-move positions.
 - Added unit coverage for post-move position creation using the user move fixture.
 - Tests run: node verification/puppeteer_feature_107_positions.js; runTests tests/test_extract_user_move_positions.py (tool reported no tests found); make check.

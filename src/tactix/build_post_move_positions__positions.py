@@ -21,6 +21,21 @@ def build_post_move_positions__positions(
     return post_positions
 
 
+def append_positions_with_post_moves(
+    positions: list[dict[str, object]],
+    extracted: list[dict[str, object]],
+    *,
+    post_positions: list[dict[str, object]] | None = None,
+) -> None:
+    """Append extracted positions and their post-move counterparts."""
+    positions.extend(extracted)
+    built_post_positions = build_post_move_positions__positions(extracted)
+    if post_positions is None:
+        positions.extend(built_post_positions)
+        return
+    post_positions.extend(built_post_positions)
+
+
 def _build_post_move_position(
     position: dict[str, object],
 ) -> dict[str, object] | None:

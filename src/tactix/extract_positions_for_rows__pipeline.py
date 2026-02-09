@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from tactix.app.use_cases.pipeline_support import _resolve_side_to_move_filter
 from tactix.build_post_move_positions__positions import (
-    build_post_move_positions__positions,
+    append_positions_with_post_moves,
 )
 from tactix.config import Settings
 from tactix.extract_positions__pgn import extract_positions
@@ -25,6 +25,5 @@ def _extract_positions_for_rows(
             game_id=str(row.get("game_id", "")),
             side_to_move_filter=side_to_move_filter,
         )
-        positions.extend(extracted)
-        positions.extend(build_post_move_positions__positions(extracted))
+        append_positions_with_post_moves(positions, extracted)
     return positions

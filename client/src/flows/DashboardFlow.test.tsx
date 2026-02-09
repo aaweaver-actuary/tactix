@@ -365,6 +365,12 @@ const setupBaseMocks = () => {
   ).mockResolvedValue(basePostgresRawPgns);
 };
 
+const waitForDashboardLoad = async () => {
+  await waitFor(() => {
+    expect(fetchDashboard).toHaveBeenCalled();
+  });
+};
+
 describe('DashboardFlow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -374,14 +380,14 @@ describe('DashboardFlow', () => {
   it('renders dashboard rows and reflects filter changes', async () => {
     render(<DashboardFlow />);
 
-    await waitFor(() => {
-      expect(fetchDashboard).toHaveBeenCalled();
-    });
+    await waitForDashboardLoad();
 
     await waitFor(() => {
       expect(screen.getAllByTestId(/recent-games-row-/)).toHaveLength(2);
       expect(screen.getAllByTestId(/practice-queue-row-/)).toHaveLength(2);
     });
+
+    await openFiltersModal();
 
     const motifSelect = screen.getByTestId('filter-motif') as HTMLSelectElement;
     fireEvent.change(motifSelect, { target: { value: 'fork' } });
@@ -395,9 +401,7 @@ describe('DashboardFlow', () => {
 
     render(<DashboardFlow />);
 
-    await waitFor(() => {
-      expect(fetchDashboard).toHaveBeenCalled();
-    });
+    await waitForDashboardLoad();
 
     const lichessCard = screen.getByTestId('source-sync-lichess');
     const chesscomCard = screen.getByTestId('source-sync-chesscom');
@@ -643,9 +647,7 @@ describe('DashboardFlow', () => {
 
     render(<DashboardFlow />);
 
-    await waitFor(() => {
-      expect(fetchDashboard).toHaveBeenCalled();
-    });
+    await waitForDashboardLoad();
 
     await openFiltersModal();
 

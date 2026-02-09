@@ -1,5 +1,9 @@
 const path = require('path');
 const { spawn } = require('child_process');
+const {
+  closeFiltersModal,
+  openFiltersModal,
+} = require('./filters_modal_helpers');
 
 const RUN_DATE = '2026-02-01';
 
@@ -134,36 +138,6 @@ async function setDateInput(page, selector, value) {
 
 async function ensureFiltersExpanded(page) {
   await openFiltersModal(page);
-}
-
-async function openFiltersModal(page) {
-  const modalSelector = '[data-testid="filters-modal"]';
-  if (await page.$(modalSelector)) return;
-  await page.waitForSelector('[data-testid="filters-open"]', {
-    timeout: 60000,
-  });
-  await page.click('[data-testid="filters-open"]');
-  await page.waitForSelector(modalSelector, { timeout: 60000 });
-  await page.waitForFunction(
-    () => Boolean(document.querySelector('[data-testid="filter-source"]')),
-    { timeout: 60000 },
-  );
-}
-
-async function closeFiltersModal(page) {
-  const modalSelector = '[data-testid="filters-modal"]';
-  if (!(await page.$(modalSelector))) return;
-  const closeButton = await page.$('[data-testid="filters-modal-close"]');
-  if (closeButton) {
-    await closeButton.click();
-  } else {
-    await page.click(modalSelector);
-  }
-  await page.waitForFunction(
-    (selector) => !document.querySelector(selector),
-    { timeout: 60000 },
-    modalSelector,
-  );
 }
 
 async function ensureCardExpanded(page, cardTestId) {

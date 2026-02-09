@@ -1,5 +1,9 @@
 const puppeteer = require('../client/node_modules/puppeteer');
 const { attachConsoleCapture } = require('./helpers/puppeteer_capture');
+const {
+  closeFiltersModal,
+  openFiltersModal,
+} = require('./helpers/filters_modal_helpers');
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 
@@ -10,14 +14,8 @@ const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 
   try {
     await page.goto(targetUrl, { waitUntil: 'networkidle0' });
-    await page.waitForSelector('[data-testid="filters-open"]', {
-      timeout: 60000,
-    });
 
-    await page.click('[data-testid="filters-open"]');
-    await page.waitForSelector('[data-testid="filters-modal"]', {
-      timeout: 60000,
-    });
+    await openFiltersModal(page);
 
     const hasFilterInputs = await page.evaluate(() => {
       const modal = document.querySelector('[data-testid="filters-modal"]');
@@ -30,11 +28,7 @@ const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
       throw new Error('Filters modal did not render expected inputs.');
     }
 
-    await page.click('[data-testid="filters-modal-close"]');
-    await page.waitForFunction(
-      () => !document.querySelector('[data-testid="filters-modal"]'),
-      { timeout: 60000 },
-    );
+    await closeFiltersModal(page);
 
     if (consoleErrors.length) {
       throw new Error(`Console errors detected: ${consoleErrors.join('\n')}`);

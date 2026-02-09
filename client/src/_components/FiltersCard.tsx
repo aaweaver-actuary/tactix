@@ -49,6 +49,8 @@ export default function FiltersCard({
   ...dragProps
 }: FiltersCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
+  const updateFilter = (key: keyof FiltersState, value: string) =>
+    onFiltersChange({ ...filters, [key]: value });
 
   const filtersBody = (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
@@ -115,9 +117,7 @@ export default function FiltersCard({
         <select
           className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
           value={filters.motif}
-          onChange={(event) =>
-            onFiltersChange({ ...filters, motif: event.target.value })
-          }
+          onChange={(event) => updateFilter('motif', event.target.value)}
           disabled={loading}
           data-testid="filter-motif"
         >
@@ -133,12 +133,7 @@ export default function FiltersCard({
         <select
           className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
           value={filters.timeControl}
-          onChange={(event) =>
-            onFiltersChange({
-              ...filters,
-              timeControl: event.target.value,
-            })
-          }
+          onChange={(event) => updateFilter('timeControl', event.target.value)}
           disabled={loading}
           data-testid="filter-time-control"
         >
@@ -154,12 +149,7 @@ export default function FiltersCard({
         <select
           className="rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
           value={filters.ratingBucket}
-          onChange={(event) =>
-            onFiltersChange({
-              ...filters,
-              ratingBucket: event.target.value,
-            })
-          }
+          onChange={(event) => updateFilter('ratingBucket', event.target.value)}
           disabled={loading}
           data-testid="filter-rating"
         >
@@ -176,12 +166,7 @@ export default function FiltersCard({
           <input
             type="date"
             value={filters.startDate}
-            onChange={(event) =>
-              onFiltersChange({
-                ...filters,
-                startDate: event.target.value,
-              })
-            }
+            onChange={(event) => updateFilter('startDate', event.target.value)}
             className="flex-1 rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
             disabled={loading}
             data-testid="filter-start-date"
@@ -189,12 +174,7 @@ export default function FiltersCard({
           <input
             type="date"
             value={filters.endDate}
-            onChange={(event) =>
-              onFiltersChange({
-                ...filters,
-                endDate: event.target.value,
-              })
-            }
+            onChange={(event) => updateFilter('endDate', event.target.value)}
             className="flex-1 rounded-md border border-sand/30 bg-night px-3 py-2 text-sm text-sand"
             disabled={loading}
             data-testid="filter-end-date"

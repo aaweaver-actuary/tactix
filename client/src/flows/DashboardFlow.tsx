@@ -70,6 +70,15 @@ const MOTIF_CARD_STORAGE_KEY = 'tactix.dashboard.motifCardOrder';
 const DASHBOARD_CARD_DROPPABLE_ID = 'dashboard-main-cards';
 const MOTIF_CARD_DROPPABLE_ID = 'dashboard-motif-cards';
 const PRACTICE_FEEDBACK_DELAY_MS = 600;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const BACKFILL_WINDOW_DAYS = 900;
+const DEFAULT_FILTERS = {
+  motif: 'all',
+  timeControl: 'all',
+  ratingBucket: 'all',
+  startDate: '',
+  endDate: '',
+};
 const DASHBOARD_CARD_IDS = [
   'filters',
   'metrics-summary',
@@ -138,6 +147,31 @@ const openLichessAnalysisWindow = (url: string) => {
 const waitForPracticeFeedback = () =>
   new Promise((resolve) => setTimeout(resolve, PRACTICE_FEEDBACK_DELAY_MS));
 
+const parseBackfillDate = (value: string, fallbackMs: number) => {
+  const date = value ? new Date(`${value}T00:00:00`) : new Date(fallbackMs);
+  return date.getTime();
+};
+
+const resolveBackfillWindow = (
+  startDate: string,
+  endDate: string,
+  nowMs: number,
+) => {
+  const startMs = parseBackfillDate(
+    startDate,
+    nowMs - BACKFILL_WINDOW_DAYS * DAY_MS,
+  );
+  const endMs = parseBackfillDate(endDate, nowMs);
+  const cappedEnd = Math.min(endMs + DAY_MS, nowMs);
+  if (Number.isNaN(startMs) || Number.isNaN(cappedEnd)) {
+    throw new Error('Invalid backfill date range');
+  }
+  if (startMs >= cappedEnd) {
+    throw new Error('Backfill range must end after the start date');
+  }
+  return { startMs, endMs: cappedEnd };
+};
+
 type BaseCardDragHandleProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 type BaseCardRenderProps = {
   dragHandleProps?: BaseCardDragHandleProps;
@@ -158,13 +192,7 @@ export default function DashboardFlow() {
   const [lichessProfile, setLichessProfile] = useState<LichessProfile>('rapid');
   const [chesscomProfile, setChesscomProfile] =
     useState<ChesscomProfile>('blitz');
-  const [filters, setFilters] = useState({
-    motif: 'all',
-    timeControl: 'all',
-    ratingBucket: 'all',
-    startDate: '',
-    endDate: '',
-  });
+  const [filters, setFilters] = useState(() => ({ ...DEFAULT_FILTERS }));
   const [backfillStartDate, setBackfillStartDate] = useState(() => {
     const date = new Date(Date.now() - 900 * 24 * 60 * 60 * 1000);
     return date.toISOString().slice(0, 10);
@@ -261,6 +289,25 @@ export default function DashboardFlow() {
     setSource(next);
   };
 
+  const ensureSourceSelected = (message: string) => {
+    if (source !== 'all') return true;
+    setError(message);
+    return false;
+  };
+
+  const startJob = () => {
+    setLoading(true);
+    setError(null);
+    setJobProgress([]);
+    setJobStatus('running');
+  };
+
+  const handleJobError = (message: string, err: unknown) => {
+    console.error(err);
+    setError(message);
+    setJobStatus('error');
+  };
+
   const handleLichessProfileChange = (next: LichessProfile) => {
     setLichessProfile(next);
   };
@@ -314,13 +361,7 @@ export default function DashboardFlow() {
   );
 
   const handleResetFilters = useCallback(() => {
-    setFilters({
-      motif: 'all',
-      timeControl: 'all',
-      ratingBucket: 'all',
-      startDate: '',
-      endDate: '',
-    });
+    setFilters({ ...DEFAULT_FILTERS });
   }, [setFilters]);
 
   const handleBackfillStartChange = (value: string) => {
@@ -700,15 +741,11 @@ export default function DashboardFlow() {
   };
 
   const handleRun = async () => {
-    if (source === 'all') {
-      setError('Select a specific site to run the pipeline.');
+    if (!ensureSourceSelected('Select a specific site to run the pipeline.')) {
       return;
     }
-    setLoading(true);
-    setError(null);
+    startJob();
     try {
-      setJobProgress([]);
-      setJobStatus('running');
       const profile = source === 'lichess' ? lichessProfile : chesscomProfile;
       await streamJobEvents(
         'daily_game_sync',
@@ -718,41 +755,22 @@ export default function DashboardFlow() {
         profile,
       );
     } catch (err) {
-      console.error(err);
-      setError('Pipeline run failed');
-      setJobStatus('error');
+      handleJobError('Pipeline run failed', err);
       setLoading(false);
     }
   };
 
   const handleBackfill = async () => {
-    if (source === 'all') {
-      setError('Select a specific site to run a backfill.');
+    if (!ensureSourceSelected('Select a specific site to run a backfill.')) {
       return;
     }
-    setLoading(true);
-    setError(null);
+    startJob();
     try {
-      setJobProgress([]);
-      setJobStatus('running');
-      const nowMs = Date.now();
-      const startDate = backfillStartDate
-        ? new Date(`${backfillStartDate}T00:00:00`)
-        : new Date(nowMs - 900 * 24 * 60 * 60 * 1000);
-      const endDate = backfillEndDate
-        ? new Date(`${backfillEndDate}T00:00:00`)
-        : new Date(nowMs);
-      const windowStart = startDate.getTime();
-      let windowEnd = endDate.getTime() + 24 * 60 * 60 * 1000;
-      if (Number.isNaN(windowStart) || Number.isNaN(windowEnd)) {
-        throw new Error('Invalid backfill date range');
-      }
-      if (windowEnd > nowMs) {
-        windowEnd = nowMs;
-      }
-      if (windowStart >= windowEnd) {
-        throw new Error('Backfill range must end after the start date');
-      }
+      const { startMs, endMs } = resolveBackfillWindow(
+        backfillStartDate,
+        backfillEndDate,
+        Date.now(),
+      );
       const profile = source === 'lichess' ? lichessProfile : chesscomProfile;
       await streamJobEvents(
         'daily_game_sync',
@@ -760,28 +778,22 @@ export default function DashboardFlow() {
         'Backfill stream disconnected',
         normalizedFilters,
         profile,
-        windowStart,
-        windowEnd,
+        startMs,
+        endMs,
       );
     } catch (err) {
-      console.error(err);
-      setError('Backfill run failed');
-      setJobStatus('error');
+      handleJobError('Backfill run failed', err);
     } finally {
       setLoading(false);
     }
   };
 
   const handleMigrations = async () => {
-    if (source === 'all') {
-      setError('Select a specific site to run migrations.');
+    if (!ensureSourceSelected('Select a specific site to run migrations.')) {
       return;
     }
-    setLoading(true);
-    setError(null);
+    startJob();
     try {
-      setJobProgress([]);
-      setJobStatus('running');
       await streamJobEvents(
         'migrations',
         source,
@@ -789,31 +801,23 @@ export default function DashboardFlow() {
         normalizedFilters,
       );
     } catch (err) {
-      console.error(err);
-      setError('Migration run failed');
-      setJobStatus('error');
+      handleJobError('Migration run failed', err);
       setLoading(false);
     }
   };
 
   const handleRefreshMetrics = async () => {
-    if (source === 'all') {
-      setError('Select a specific site to refresh metrics.');
+    if (!ensureSourceSelected('Select a specific site to refresh metrics.')) {
       return;
     }
-    setLoading(true);
-    setError(null);
+    startJob();
     try {
-      setJobProgress([]);
-      setJobStatus('running');
       const ok = await streamMetricsEvents(source, normalizedFilters);
       if (ok) {
         await loadPracticeQueue(source, includeFailedAttempt);
       }
     } catch (err) {
-      console.error(err);
-      setError('Metrics refresh failed');
-      setJobStatus('error');
+      handleJobError('Metrics refresh failed', err);
     } finally {
       setLoading(false);
     }

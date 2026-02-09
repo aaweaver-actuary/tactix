@@ -1,4 +1,8 @@
 const { Chess } = require('../client/node_modules/chess.js');
+const {
+  closeFiltersModal,
+  openFiltersModal,
+} = require('./helpers/filters_modal_helpers');
 
 const SOURCE_LABELS = {
   chesscom: 'Chess.com',
@@ -26,7 +30,7 @@ async function waitForSourceResponse(page, targetSource, endpoint) {
 async function selectSource(page, source) {
   const targetSource = source || 'chesscom';
   try {
-    await ensureFiltersModalOpen(page);
+    await openFiltersModal(page);
     await page.waitForFunction(
       () => {
         const el = document.querySelector(
@@ -84,33 +88,7 @@ async function selectSource(page, source) {
   }
 }
 
-async function ensureFiltersModalOpen(page) {
-  const modalSelector = '[data-testid="filters-modal"]';
-  const openSelector = '[data-testid="filters-open"]';
-  const modal = await page.$(modalSelector);
-  if (modal) return;
-  await page.waitForSelector(openSelector, { timeout: 60000 });
-  await page.click(openSelector);
-  await page.waitForSelector(modalSelector, { timeout: 60000 });
-}
-
-async function closeFiltersModal(page) {
-  const modalSelector = '[data-testid="filters-modal"]';
-  const closeSelector = '[data-testid="filters-modal-close"]';
-  const modal = await page.$(modalSelector);
-  if (!modal) return;
-  const closeButton = await page.$(closeSelector);
-  if (closeButton) {
-    await closeButton.click();
-  } else {
-    await page.click(modalSelector);
-  }
-  await page.waitForFunction(
-    (selector) => !document.querySelector(selector),
-    { timeout: 60000 },
-    modalSelector,
-  );
-}
+const ensureFiltersModalOpen = (page) => openFiltersModal(page);
 
 async function getBestMoveFromPage(page) {
   const bestLabel = await page.$$eval('h3', (headers) => {

@@ -14,7 +14,9 @@ from tactix.extract_positions import extract_positions
 
 class ExtractUserMovePositionsTests(unittest.TestCase):
     def setUp(self) -> None:
-        fixture_path = Path(__file__).resolve().parent / "fixtures" / "user_move_positions_fixture.pgn"
+        fixture_path = (
+            Path(__file__).resolve().parent / "fixtures" / "user_move_positions_fixture.pgn"
+        )
         self.pgn = fixture_path.read_text()
         tmp_dir = Path(tempfile.mkdtemp())
         self.conn = get_connection(tmp_dir / "positions.duckdb")
@@ -46,9 +48,7 @@ class ExtractUserMovePositionsTests(unittest.TestCase):
         stored_positions = fetch_positions_for_games(self.conn, [game_id])
         self.assertEqual(len(stored_positions), len(positions))
 
-        fen_side_keys = {
-            (row.get("fen"), row.get("side_to_move")) for row in stored_positions
-        }
+        fen_side_keys = {(row.get("fen"), row.get("side_to_move")) for row in stored_positions}
         self.assertEqual(len(fen_side_keys), len(stored_positions))
         self.assertEqual(
             len({row.get("position_id") for row in stored_positions}),

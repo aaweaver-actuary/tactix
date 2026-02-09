@@ -27,6 +27,5 @@ def test_no_raw_button_tags_outside_basebutton() -> None:
             offenders.append(str(path.relative_to(CLIENT_SRC)))
 
     assert not offenders, (
-        "Raw <button> tags are only allowed in BaseButton."
-        f" Found in: {', '.join(offenders)}"
+        f"Raw <button> tags are only allowed in BaseButton. Found in: {', '.join(offenders)}"
     )

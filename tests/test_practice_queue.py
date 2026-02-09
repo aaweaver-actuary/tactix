@@ -62,7 +62,7 @@ class PracticeQueueTests(unittest.TestCase):
             {
                 "game_id": "game-1",
                 "position_id": position_ids[0],
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "severity": 1.5,
                 "best_uci": "a2a4",
                 "eval_cp": 200,
@@ -74,7 +74,7 @@ class PracticeQueueTests(unittest.TestCase):
             {
                 "game_id": "game-2",
                 "position_id": position_ids[1],
-                "motif": "pin",
+                "motif": "hanging_piece",
                 "severity": 0.8,
                 "best_uci": "b2b4",
                 "eval_cp": 120,
@@ -86,7 +86,7 @@ class PracticeQueueTests(unittest.TestCase):
             {
                 "game_id": "game-3",
                 "position_id": position_ids[2],
-                "motif": "skewer",
+                "motif": "hanging_piece",
                 "severity": 1.1,
                 "best_uci": "c2c4",
                 "eval_cp": 180,
@@ -139,7 +139,7 @@ class PracticeQueueTests(unittest.TestCase):
             {
                 "game_id": "game-4",
                 "position_id": position_ids[0],
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "severity": 1.2,
                 "best_uci": "d2d4",
                 "eval_cp": 210,
@@ -151,7 +151,7 @@ class PracticeQueueTests(unittest.TestCase):
             {
                 "game_id": "game-5",
                 "position_id": position_ids[1],
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "severity": 1.0,
                 "best_uci": "e2e4",
                 "eval_cp": 190,

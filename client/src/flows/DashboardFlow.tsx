@@ -74,6 +74,7 @@ const MOTIF_CARD_DROPPABLE_ID = 'dashboard-motif-cards';
 const PRACTICE_FEEDBACK_DELAY_MS = 600;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BACKFILL_WINDOW_DAYS = 900;
+const ALLOWED_MOTIFS = new Set(['hanging_piece', 'mate']);
 const DEFAULT_FILTERS = {
   motif: 'all',
   timeControl: 'all',
@@ -120,6 +121,21 @@ const formatCorrelation = (value: number | null) => {
 
 const formatRate = (value: number | null) =>
   value === null || Number.isNaN(value) ? '--' : `${(value * 100).toFixed(1)}%`;
+
+const isScopedMotif = (motif: string | null | undefined) =>
+  Boolean(motif && ALLOWED_MOTIFS.has(motif));
+
+const filterScopedMetrics = (metrics: DashboardPayload['metrics']) =>
+  metrics.filter((row) => {
+    if (!row.motif || row.motif === 'all') return true;
+    return ALLOWED_MOTIFS.has(row.motif);
+  });
+
+const filterScopedTactics = (tactics: DashboardPayload['tactics']) =>
+  tactics.filter((row) => isScopedMotif(row.motif));
+
+const filterScopedPracticeQueue = (items: PracticeQueueItem[]) =>
+  items.filter((item) => isScopedMotif(item.motif));
 
 const formatGameResult = (result: string | null, userColor: string | null) => {
   if (!result) return '--';
@@ -416,7 +432,11 @@ export default function DashboardFlow() {
     setError(null);
     try {
       const payload = await fetchDashboard(nextSource, nextFilters);
-      setData(payload);
+      setData({
+        ...payload,
+        metrics: filterScopedMetrics(payload.metrics),
+        tactics: filterScopedTactics(payload.tactics),
+      });
     } catch (err) {
       console.error(err);
       setError('Failed to load dashboard');
@@ -439,7 +459,8 @@ export default function DashboardFlow() {
         if (practiceScopeRef.current !== requestScope) {
           return;
         }
-        setPracticeQueue(payload.items);
+        const scopedItems = filterScopedPracticeQueue(payload.items);
+        setPracticeQueue(scopedItems);
         if (resetSession) {
           practiceSessionScopeRef.current = requestScope;
         }
@@ -447,8 +468,8 @@ export default function DashboardFlow() {
           if (prev.total > 0) return prev;
           practiceSessionInitializedRef.current = true;
           practiceSessionCompletedRef.current = 0;
-          practiceSessionTotalRef.current = payload.items.length;
-          return resetPracticeSessionStats(payload.items.length);
+          practiceSessionTotalRef.current = scopedItems.length;
+          return resetPracticeSessionStats(scopedItems.length);
         });
       } catch (err) {
         console.error(err);
@@ -479,7 +500,7 @@ export default function DashboardFlow() {
     setPostgresAnalysisError(null);
     try {
       const payload = await fetchPostgresAnalysis();
-      setPostgresAnalysis(payload.tactics || []);
+      setPostgresAnalysis(filterScopedTactics(payload.tactics || []));
     } catch (err) {
       console.error(err);
       setPostgresAnalysisError('Failed to load Postgres analysis results');

@@ -167,7 +167,7 @@ class DuckdbStoreHelperTests(unittest.TestCase):
             {
                 "game_id": "g2",
                 "position_id": position_ids[0],
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "severity": 1.2,
                 "best_uci": "e2e4",
                 "best_san": "e4",
@@ -238,7 +238,7 @@ class DuckdbStoreHelperTests(unittest.TestCase):
                 {
                     "game_id": "g5",
                     "position_id": position_ids[0],
-                    "motif": "fork",
+                    "motif": "hanging_piece",
                     "severity": 1.0,
                     "best_uci": "e2e4",
                     "best_san": "e4",
@@ -309,7 +309,7 @@ class DuckdbStoreHelperTests(unittest.TestCase):
                 {
                     "game_id": "g-dashboard",
                     "position_id": position_ids[0],
-                    "motif": "fork",
+                    "motif": "hanging_piece",
                     "severity": 1.2,
                     "best_uci": "e2e4",
                     "best_san": "e4",
@@ -388,7 +388,7 @@ class DuckdbStoreHelperTests(unittest.TestCase):
                 {
                     "game_id": game_id,
                     "position_id": position_ids[0],
-                    "motif": "fork",
+                    "motif": "hanging_piece",
                     "severity": 1.2,
                     "best_uci": "e2e4",
                     "best_san": "e4",
@@ -490,7 +490,7 @@ class DuckdbStoreHelperTests(unittest.TestCase):
             [
                 "lichess",
                 "trend",
-                "fork",
+                "hanging_piece",
                 7,
                 trend_date,
                 "1200-1399",
@@ -513,7 +513,7 @@ class DuckdbStoreHelperTests(unittest.TestCase):
         rows = fetch_metrics(
             self.conn,
             source="lichess",
-            motif="fork",
+            motif="hanging_piece",
             rating_bucket="1200-1399",
             time_control="300+0",
             start_date=start_date,
@@ -580,7 +580,7 @@ class DuckdbStoreHelperTests(unittest.TestCase):
             {
                 "game_id": "g3",
                 "position_id": position_ids[0],
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "severity": 1.0,
                 "best_uci": "e2e4",
                 "best_san": "e4",
@@ -622,14 +622,14 @@ class DuckdbStoreHelperTests(unittest.TestCase):
             self.conn,
             limit=10,
             source="lichess",
-            motif="fork",
+            motif="hanging_piece",
             rating_bucket="1200-1399",
             time_control="300+0",
             start_date=start_date,
             end_date=end_date,
         )
         self.assertEqual(len(recent_tactics), 1)
-        self.assertEqual(recent_tactics[0]["motif"], "fork")
+        self.assertEqual(recent_tactics[0]["motif"], "hanging_piece")
 
     def test_grade_practice_attempt_errors(self) -> None:
         with self.assertRaises(ValueError):
@@ -675,7 +675,7 @@ class DuckdbStoreHelperTests(unittest.TestCase):
             {
                 "game_id": "g6",
                 "position_id": position_ids[0],
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "severity": 1.0,
                 "best_uci": "e2e4",
                 "best_san": "e4",

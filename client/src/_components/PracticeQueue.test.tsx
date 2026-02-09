@@ -4,7 +4,7 @@ import PracticeQueue from './PracticeQueue';
 const baseItem = {
   tactic_id: 1,
   position_id: 10,
-  motif: 'fork',
+  motif: 'hanging_piece',
   result: 'missed',
   best_uci: 'e2e4',
   user_uci: 'e2e3',
@@ -38,7 +38,7 @@ describe('PracticeQueue', () => {
         ...baseItem,
         tactic_id: 2,
         position_id: 11,
-        motif: 'pin',
+        motif: 'mate',
         best_uci: '',
         user_uci: 'g1f3',
         move_number: 7,
@@ -57,8 +57,8 @@ describe('PracticeQueue', () => {
     expect(screen.getByText('Move')).toBeInTheDocument();
     expect(screen.getByText('Delta')).toBeInTheDocument();
 
-    expect(screen.getByText('fork')).toBeInTheDocument();
-    expect(screen.getByText('pin')).toBeInTheDocument();
+    expect(screen.getByText('hanging_piece')).toBeInTheDocument();
+    expect(screen.getByText('mate')).toBeInTheDocument();
     expect(screen.getByText('e2e4')).toBeInTheDocument();
     expect(screen.getByText('e2e3')).toBeInTheDocument();
     expect(screen.getByText('g1f3')).toBeInTheDocument();

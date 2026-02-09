@@ -151,7 +151,7 @@ class DuckDbDashboardReaderTests(unittest.TestCase):
             {
                 "game_id": f"game-{source}",
                 "position_id": position_ids[0],
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "severity": 1.2,
                 "best_uci": "e2e4",
                 "best_san": "e4",

@@ -5,14 +5,14 @@ import { extractTableHeaders, extractTableRowCells } from './testUtils';
 const sampleData = [
   {
     tactic_id: 't1',
-    motif: 'pin',
+    motif: 'hanging_piece',
     result: 'correct',
     user_uci: 'e2e4',
     eval_delta: 120,
   },
   {
     tactic_id: 't2',
-    motif: 'fork',
+    motif: 'mate',
     result: 'wrong',
     user_uci: 'g1f3',
     eval_delta: -85,
@@ -49,12 +49,12 @@ describe('TacticsTable', () => {
     expect(rows).toHaveLength(2);
 
     const firstRowCells = rows[0];
-    expect(firstRowCells).toContain('pin');
+    expect(firstRowCells).toContain('hanging_piece');
     expect(firstRowCells).toContain('e2e4');
     expect(firstRowCells).toContain('120');
 
     const secondRowCells = rows[1];
-    expect(secondRowCells).toContain('fork');
+    expect(secondRowCells).toContain('mate');
     expect(secondRowCells).toContain('g1f3');
     expect(secondRowCells).toContain('-85');
   });

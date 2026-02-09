@@ -10,8 +10,10 @@ from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
 from tactix.StockfishEngine import StockfishEngine
 from tactix.analyze_position import analyze_position
 from tests.fixture_helpers import skewer_fixture_position
+from tactix.tactic_scope import is_supported_motif
 
 
+@unittest.skipUnless(is_supported_motif("skewer"), "Skewer disabled in current scope")
 class SkewerBulletTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_bullet_skewer_is_low_severity(self) -> None:

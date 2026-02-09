@@ -15,6 +15,11 @@ from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
 from tactix.engine_result import EngineResult
 from tactix.pgn_utils import split_pgn_chunks
 from tactix.analyze_position import analyze_position
+from tactix.tactic_scope import is_supported_motif
+
+
+if not is_supported_motif("discovered_check"):
+    raise unittest.SkipTest("Discovered check disabled in current scope")
 
 
 def _first_move_position(chunk: str, game_id: str) -> dict[str, object] | None:

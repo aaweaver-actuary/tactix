@@ -14,9 +14,14 @@ from tactix.pgn_utils import split_pgn_chunks
 from tactix.extract_positions import extract_positions
 from tactix.StockfishEngine import StockfishEngine
 from tactix.analyze_position import analyze_position
+from tactix.tactic_scope import is_supported_motif
 from tests.fixture_helpers import find_failed_attempt_position, find_missed_position
 
 
+@unittest.skipUnless(
+    is_supported_motif("mate", mate_in=2),
+    "Mate in 2 disabled in current scope",
+)
 class MateInTwoBlitzTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_blitz_mate_in_two_is_high_severity(self) -> None:

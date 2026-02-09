@@ -3,6 +3,7 @@ import unittest
 import tactix._compute_severity__tactic
 from tactix.config import Settings
 from tactix import analyze_tactics__positions as impl
+from tactix.tactic_scope import is_supported_motif
 
 
 class TacticSeverityTests(unittest.TestCase):
@@ -39,6 +40,7 @@ class TacticSeverityTests(unittest.TestCase):
         )
         self.assertEqual(severity, impl._SEVERITY_MAX)
 
+    @unittest.skipUnless(is_supported_motif("fork"), "Fork disabled in current scope")
     def test_fork_severity_floor_applies(self) -> None:
         settings = Settings(fork_severity_floor=1.5)
         severity = tactix._compute_severity__tactic._compute_severity__tactic(

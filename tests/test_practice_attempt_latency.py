@@ -53,7 +53,7 @@ def test_practice_attempt_records_success_and_latency() -> None:
             {
                 "game_id": "game-30",
                 "position_id": position_ids[0],
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "severity": 1.2,
                 "best_uci": "a2a4",
                 "eval_cp": 120,

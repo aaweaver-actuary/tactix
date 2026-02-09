@@ -35,7 +35,7 @@ class PracticeAttemptGradingTests(unittest.TestCase):
             {
                 "game_id": "game-10",
                 "position_id": position_ids[0],
-                "motif": "pin",
+                "motif": "hanging_piece",
                 "severity": 1.3,
                 "best_uci": "a2a4",
                 "eval_cp": 180,
@@ -61,7 +61,7 @@ class PracticeAttemptGradingTests(unittest.TestCase):
         self.assertEqual(rows[0][0], "a2a4")
         self.assertTrue(rows[0][1])
         self.assertEqual(rows[0][2], "a2a4")
-        self.assertEqual(rows[0][3], "pin")
+        self.assertEqual(rows[0][3], "hanging_piece")
         self.assertAlmostEqual(rows[0][4], 1.3)
         self.assertEqual(rows[0][5], -240)
 

@@ -16,8 +16,13 @@ from tactix.pgn_utils import split_pgn_chunks
 from tactix.extract_positions import extract_positions
 from tactix.StockfishEngine import StockfishEngine
 from tactix.analyze_position import analyze_position
+from tactix.tactic_scope import is_supported_motif
 
 
+@unittest.skipUnless(
+    is_supported_motif("mate", mate_in=2),
+    "Mate in 2 disabled in current scope",
+)
 class MateInTwoRapidTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_rapid_mate_in_two_is_high_severity(self) -> None:
@@ -84,6 +89,10 @@ class MateInTwoRapidTests(unittest.TestCase):
         self.assertIn("f2", attempt["explanation"] or "")
 
 
+@unittest.skipUnless(
+    is_supported_motif("mate", mate_in=2),
+    "Mate in 2 disabled in current scope",
+)
 class MateInTwoClassicalTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_classical_mate_in_two_is_high_severity(self) -> None:

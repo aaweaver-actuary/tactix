@@ -15,8 +15,10 @@ from tests.fixture_helpers import (
     pin_fixture_position,
     pin_fixture_positions,
 )
+from tactix.tactic_scope import is_supported_motif
 
 
+@unittest.skipUnless(is_supported_motif("pin"), "Pin disabled in current scope")
 class PinCorrespondenceTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_correspondence_pin_is_high_severity(self) -> None:

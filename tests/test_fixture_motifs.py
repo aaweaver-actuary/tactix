@@ -10,6 +10,7 @@ from tactix.config import Settings
 from tactix.pgn_utils import extract_game_id, split_pgn_chunks
 from tactix.StockfishEngine import StockfishEngine
 from tactix.analyze_position import analyze_position
+from tactix.tactic_scope import is_supported_motif
 
 
 def _fixture_positions(fixture_path: Path) -> list[dict[str, object]]:
@@ -54,6 +55,10 @@ class FixtureMotifTests(unittest.TestCase):
     def test_fixture_mate_in_one(self) -> None:
         self._assert_fixture_motif("matein1.pgn", "mate", expected_mate_in=1)
 
+    @unittest.skipUnless(
+        is_supported_motif("mate", mate_in=2),
+        "Mate in 2 disabled in current scope",
+    )
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_fixture_mate_in_two(self) -> None:
         self._assert_fixture_motif("matein2.pgn", "mate", expected_mate_in=2)
@@ -62,18 +67,25 @@ class FixtureMotifTests(unittest.TestCase):
     def test_fixture_hanging_piece(self) -> None:
         self._assert_fixture_motif("hangingpiece.pgn", "hanging_piece")
 
+    @unittest.skipUnless(is_supported_motif("fork"), "Fork disabled in current scope")
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_fixture_fork(self) -> None:
         self._assert_fixture_motif("fork.pgn", "fork")
 
+    @unittest.skipUnless(is_supported_motif("pin"), "Pin disabled in current scope")
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_fixture_pin(self) -> None:
         self._assert_fixture_motif("pin.pgn", "pin")
 
+    @unittest.skipUnless(is_supported_motif("skewer"), "Skewer disabled in current scope")
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_fixture_skewer(self) -> None:
         self._assert_fixture_motif("skewer.pgn", "skewer")
 
+    @unittest.skipUnless(
+        is_supported_motif("discovered_attack"),
+        "Discovered attack disabled in current scope",
+    )
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_fixture_discovered_attack(self) -> None:
         self._assert_fixture_motif("discoveredattack.pgn", "discovered_attack")

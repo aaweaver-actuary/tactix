@@ -23,7 +23,7 @@ def test_evaluate_practice_attempt_prefers_stored_explanation() -> None:
 
     tactic = {
         "source": "lichess",
-        "motif": "pin",
+        "motif": "hanging_piece",
         "best_uci": "e2e4",
         "best_san": "e4",
         "explanation": "stored",
@@ -71,6 +71,6 @@ def test_evaluate_practice_attempt_falls_back_to_generated_explanation() -> None
 
 
 def test_build_practice_message() -> None:
-    tactic = {"motif": "fork"}
-    assert build_practice_message(True, tactic, "e2e4") == "Correct! fork found."
+    tactic = {"motif": "hanging_piece"}
+    assert build_practice_message(True, tactic, "e2e4") == "Correct! hanging_piece found."
     assert build_practice_message(False, tactic, "e2e4") == "Missed it. Best move was e2e4."

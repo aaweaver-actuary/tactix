@@ -19,6 +19,7 @@ from tests.fixture_helpers import (
     find_missed_position,
     skewer_fixture_position,
 )
+from tactix.tactic_scope import is_supported_motif
 
 
 def _skewer_high_fixture_position() -> dict[str, object]:
@@ -52,6 +53,7 @@ def _skewer_high_fixture_position() -> dict[str, object]:
     }
 
 
+@unittest.skipUnless(is_supported_motif("skewer"), "Skewer disabled in current scope")
 class SkewerCorrespondenceTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_correspondence_skewer_is_low_severity(self) -> None:

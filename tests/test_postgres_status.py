@@ -65,7 +65,7 @@ def test_postgres_analysis_endpoint_returns_rows() -> None:
     use_case = MagicMock()
     use_case.get_analysis.return_value = {
         "status": "ok",
-        "tactics": [{"tactic_id": 1, "motif": "fork"}],
+        "tactics": [{"tactic_id": 1, "motif": "hanging_piece"}],
     }
     app.dependency_overrides[get_postgres_use_case] = lambda: use_case
     try:

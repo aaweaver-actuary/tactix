@@ -68,7 +68,7 @@ def test_practice_next_excludes_seen_tactics() -> None:
             {
                 "game_id": "game-20",
                 "position_id": position_ids[0],
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "severity": 1.4,
                 "best_uci": "a2a4",
                 "eval_cp": 160,
@@ -80,7 +80,7 @@ def test_practice_next_excludes_seen_tactics() -> None:
             {
                 "game_id": "game-21",
                 "position_id": position_ids[1],
-                "motif": "pin",
+                "motif": "hanging_piece",
                 "severity": 0.9,
                 "best_uci": "b2b4",
                 "eval_cp": 140,
@@ -97,7 +97,7 @@ def test_practice_next_excludes_seen_tactics() -> None:
                 "attempted_uci": "a2a4",
                 "correct": True,
                 "best_uci": "a2a4",
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "severity": 1.4,
                 "eval_delta": -200,
             },

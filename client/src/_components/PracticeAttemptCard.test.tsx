@@ -19,7 +19,7 @@ const basePractice: PracticeQueueItem = {
   game_id: 'g1',
   position_id: 10,
   source: 'chesscom',
-  motif: 'fork',
+  motif: 'hanging_piece',
   result: 'missed',
   best_uci: 'e2e4',
   user_uci: 'e2e3',

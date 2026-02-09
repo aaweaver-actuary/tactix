@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 
 from tactix.api import app
 from tactix.config import get_settings
+from tactix.tactic_scope import allowed_motif_list
 
 
 def test_stats_motifs_requires_auth() -> None:
@@ -47,6 +48,7 @@ def test_stats_motifs_returns_schema() -> None:
     }
     assert required_keys.issubset(row.keys())
     assert row["metric_type"] == "motif_breakdown"
+    assert row["motif"] in allowed_motif_list()
     assert isinstance(row["total"], int)
     assert isinstance(row["found"], int)
     assert isinstance(row["missed"], int)
@@ -99,6 +101,7 @@ def test_stats_trends_returns_schema() -> None:
     }
     assert required_keys.issubset(row.keys())
     assert row["metric_type"] == "trend"
+    assert row["motif"] in allowed_motif_list()
     assert row["window_days"] in (7, 30)
     assert isinstance(row["total"], int)
     assert isinstance(row["found"], int)

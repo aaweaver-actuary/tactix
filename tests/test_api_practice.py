@@ -77,7 +77,7 @@ def test_practice_next_returns_schema() -> None:
             "game_id": "game-1",
             "position_id": 2,
             "source": "lichess",
-            "motif": "fork",
+            "motif": "hanging_piece",
             "result": "missed",
             "best_uci": "e2e4",
             "user_uci": "e2e3",
@@ -172,11 +172,11 @@ def test_practice_attempt_returns_schema() -> None:
         "best_san": "e4",
         "correct": True,
         "success": True,
-        "motif": "fork",
+        "motif": "hanging_piece",
         "severity": 1.4,
         "eval_delta": -120,
-        "message": "Correct! fork found.",
-        "explanation": "Fork on f7",
+        "message": "Correct! hanging_piece found.",
+        "explanation": "Hanging piece on f7",
         "latency_ms": 250,
     }
 

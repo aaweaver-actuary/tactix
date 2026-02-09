@@ -12,8 +12,10 @@ from tactix.pgn_utils import split_pgn_chunks
 from tactix.extract_positions import extract_positions
 from tactix.StockfishEngine import StockfishEngine
 from tactix.analyze_position import analyze_position
+from tactix.tactic_scope import is_supported_motif
 
 
+@unittest.skipUnless(is_supported_motif("fork"), "Fork disabled in current scope")
 class TestForkClassical(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_classical_fork_is_high_severity(self) -> None:

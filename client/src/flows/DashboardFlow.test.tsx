@@ -70,7 +70,7 @@ const baseDashboard: DashboardPayload = {
     {
       source: 'chesscom',
       metric_type: 'motif_breakdown',
-      motif: 'fork',
+      motif: 'hanging_piece',
       window_days: null,
       trend_date: null,
       rating_bucket: 'all',
@@ -87,7 +87,7 @@ const baseDashboard: DashboardPayload = {
     {
       source: 'chesscom',
       metric_type: 'trend',
-      motif: 'fork',
+      motif: 'hanging_piece',
       window_days: 7,
       trend_date: '2026-02-01T00:00:00Z',
       rating_bucket: 'all',
@@ -158,7 +158,7 @@ const baseDashboard: DashboardPayload = {
       game_id: 'g1',
       position_id: 1,
       source: 'chesscom',
-      motif: 'fork',
+      motif: 'hanging_piece',
       result: 'missed',
       user_uci: 'e2e4',
       eval_delta: -1.2,
@@ -199,7 +199,7 @@ const basePracticeQueue: PracticeQueueResponse = {
       game_id: 'g1',
       position_id: 1,
       source: 'chesscom',
-      motif: 'fork',
+      motif: 'hanging_piece',
       result: 'missed',
       best_uci: 'e2e4',
       user_uci: 'e2e3',
@@ -219,7 +219,7 @@ const basePracticeQueue: PracticeQueueResponse = {
       game_id: 'g2',
       position_id: 2,
       source: 'chesscom',
-      motif: 'pin',
+      motif: 'mate',
       result: 'missed',
       best_uci: 'g1f3',
       user_uci: 'g1h3',
@@ -261,7 +261,7 @@ const baseGameDetail: GameDetailResponse = {
       tactic_id: 1,
       position_id: 2,
       game_id: 'g1',
-      motif: 'fork',
+      motif: 'hanging_piece',
       severity: 1.5,
       best_uci: 'g1f3',
       best_san: 'Nf3',
@@ -314,7 +314,7 @@ const buildPracticeQueue = (count: number): PracticeQueueResponse => ({
     game_id: `g${index + 1}`,
     position_id: index + 1,
     source: 'chesscom',
-    motif: index % 2 === 0 ? 'fork' : 'pin',
+    motif: index % 2 === 0 ? 'hanging_piece' : 'mate',
     result: 'missed',
     best_uci: 'e2e4',
     user_uci: 'e2e3',
@@ -390,8 +390,8 @@ describe('DashboardFlow', () => {
     await openFiltersModal();
 
     const motifSelect = screen.getByTestId('filter-motif') as HTMLSelectElement;
-    fireEvent.change(motifSelect, { target: { value: 'fork' } });
-    expect(motifSelect.value).toBe('fork');
+    fireEvent.change(motifSelect, { target: { value: 'hanging_piece' } });
+    expect(motifSelect.value).toBe('hanging_piece');
   });
 
   it('closes the filters modal on Escape', async () => {
@@ -541,7 +541,7 @@ describe('DashboardFlow', () => {
       attempted_uci: 'e2e4',
       best_uci: 'e2e4',
       correct: true,
-      motif: 'fork',
+      motif: 'hanging_piece',
       severity: 2,
       eval_delta: -0.5,
       message: 'Correct move!',

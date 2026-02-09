@@ -14,6 +14,11 @@ from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
 from tactix.pgn_utils import extract_game_id, split_pgn_chunks
 from tactix.StockfishEngine import StockfishEngine
 from tactix.analyze_position import analyze_position
+from tactix.tactic_scope import is_supported_motif
+
+
+if not is_supported_motif("discovered_attack"):
+    raise unittest.SkipTest("Discovered attack disabled in current scope")
 
 
 def _discovered_attack_fixture_position() -> dict[str, object]:

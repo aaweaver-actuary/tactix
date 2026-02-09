@@ -27,7 +27,7 @@ const sampleGame: GameDetailResponse = {
       tactic_id: 1,
       position_id: 2,
       game_id: 'game-123',
-      motif: 'fork',
+      motif: 'hanging_piece',
       severity: 1.5,
       best_uci: 'g1f3',
       best_san: 'Nf3',

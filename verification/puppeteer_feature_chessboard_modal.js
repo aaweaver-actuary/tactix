@@ -52,7 +52,7 @@ const extractFen = (text) => {
       throw new Error(`Unable to read FEN from positions row: ${rowText}`);
     }
 
-    await page.click(selectors.row, { delay: 25 });
+    await page.$eval(selectors.row, (row) => row.click());
     await page.waitForSelector(selectors.modal, { timeout: 60000 });
     await page.waitForSelector(selectors.board, { timeout: 60000 });
 

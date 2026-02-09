@@ -277,7 +277,7 @@ class PipelineHelperTests(unittest.TestCase):
             {
                 "game_id": "game-1",
                 "position_id": position_ids[0],
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "severity": 1.0,
                 "best_uci": "e2e4",
                 "best_san": "e4",
@@ -379,7 +379,7 @@ class PipelineHelperTests(unittest.TestCase):
             {
                 "game_id": "g1",
                 "position_id": position_ids[0],
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "severity": 1.0,
                 "best_uci": "e2e4",
                 "best_san": "e4",
@@ -453,7 +453,7 @@ class PipelineHelperTests(unittest.TestCase):
                 {
                     "game_id": position["game_id"],
                     "position_id": position["position_id"],
-                    "motif": "fork",
+                    "motif": "hanging_piece",
                     "severity": 1.0,
                     "best_uci": "e2e4",
                     "best_san": "e4",

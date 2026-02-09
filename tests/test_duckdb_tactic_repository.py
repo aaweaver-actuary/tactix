@@ -57,7 +57,7 @@ class DuckDbTacticRepositoryTests(unittest.TestCase):
         tactic_row = {
             "game_id": position_row["game_id"],
             "position_id": position_id_repo,
-            "motif": "fork",
+            "motif": "hanging_piece",
             "severity": 1.2,
             "best_uci": "e2e4",
             "best_san": "e4",

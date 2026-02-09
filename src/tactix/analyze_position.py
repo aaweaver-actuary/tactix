@@ -42,6 +42,7 @@ from tactix.outcome_context import BaseOutcomeContext, OutcomeOverridesContext
 from tactix.OutcomeDetails import OutcomeDetails
 from tactix.StockfishEngine import StockfishEngine
 from tactix.tactic_metadata import resolve_tactic_metadata
+from tactix.tactic_scope import is_supported_motif
 from tactix.TacticDetails import TacticDetails
 from tactix.TacticRowInput import TacticRowInput
 from tactix.utils.logger import funclogger
@@ -353,7 +354,7 @@ def analyze_position(
     return _build_tactic_rows(tactic_input)
 
 
-def _prepare_tactic_row_input(
+def _prepare_tactic_row_input(  # noqa: PLR0915
     position: dict[str, object],
     engine: StockfishEngine,
     settings: Settings | None,
@@ -437,6 +438,8 @@ def _prepare_tactic_row_input(
             mover_color=mover_color,
         ),
     )
+    if not is_supported_motif(motif, mate_in):
+        return None
     target_piece, target_square = _resolve_hanging_piece_target(
         motif,
         HangingTargetContext(

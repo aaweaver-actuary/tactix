@@ -63,7 +63,7 @@ class MetricsRefreshTests(unittest.TestCase):
                 {
                     "game_id": pos["game_id"],
                     "position_id": position_id,
-                    "motif": "discovered_check",
+                    "motif": "hanging_piece",
                     "severity": 1.2,
                     "best_uci": "e2e4",
                     "eval_cp": 120,
@@ -148,7 +148,7 @@ class MetricsRefreshTests(unittest.TestCase):
                 {
                     "game_id": pos["game_id"],
                     "position_id": position_id,
-                    "motif": "skewer",
+                    "motif": "hanging_piece",
                     "severity": 1.0,
                     "best_uci": "e2e4",
                     "eval_cp": 120,
@@ -163,14 +163,14 @@ class MetricsRefreshTests(unittest.TestCase):
             row
             for row in metrics
             if row.get("metric_type") == "trend"
-            and row.get("motif") == "skewer"
+            and row.get("motif") == "hanging_piece"
             and row.get("window_days") == 7
         ]
         trends_30 = [
             row
             for row in metrics
             if row.get("metric_type") == "trend"
-            and row.get("motif") == "skewer"
+            and row.get("motif") == "hanging_piece"
             and row.get("window_days") == 30
         ]
         self.assertEqual(len(trends_7), len(results))
@@ -257,7 +257,7 @@ class MetricsRefreshTests(unittest.TestCase):
                 {
                     "game_id": pos["game_id"],
                     "position_id": position_id,
-                    "motif": "discovered_attack",
+                    "motif": "hanging_piece",
                     "severity": 1.0,
                     "best_uci": "e2e4",
                     "eval_cp": 120,
@@ -333,7 +333,7 @@ class MetricsRefreshTests(unittest.TestCase):
                 {
                     "game_id": pos["game_id"],
                     "position_id": position_id,
-                    "motif": "discovered_check",
+                    "motif": "hanging_piece",
                     "severity": 1.2,
                     "best_uci": "e2e4",
                     "eval_cp": 120,

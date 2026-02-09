@@ -40,14 +40,14 @@ describe('getMetricsStreamUrl', () => {
     const getMetricsStreamUrl = await loadWithApiBase('https://example.com');
     expect(
       getMetricsStreamUrl('lichess', {
-        motif: 'fork',
+        motif: 'hanging_piece',
         rating_bucket: '1200',
         time_control: 'blitz',
         start_date: '2024-01-01',
         end_date: '2024-02-01',
       }),
     ).toBe(
-      'https://example.com/api/metrics/stream?source=lichess&motif=fork&rating_bucket=1200&time_control=blitz&start_date=2024-01-01&end_date=2024-02-01',
+      'https://example.com/api/metrics/stream?source=lichess&motif=hanging_piece&rating_bucket=1200&time_control=blitz&start_date=2024-01-01&end_date=2024-02-01',
     );
   });
 

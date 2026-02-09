@@ -308,8 +308,8 @@ class AnalyzeTacticsHelperTests(unittest.TestCase):
             tactics_rows, outcomes_rows = tactix.analyze_positions.analyze_positions(
                 positions, Settings()
             )
-        self.assertEqual(len(tactics_rows), 1)
-        self.assertEqual(len(outcomes_rows), 1)
+        self.assertEqual(len(tactics_rows), 0)
+        self.assertEqual(len(outcomes_rows), 0)
 
 
 if __name__ == "__main__":

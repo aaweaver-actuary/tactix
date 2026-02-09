@@ -187,7 +187,7 @@ def test_mock_db_store_dashboard_payload() -> None:
     payload = {
         "source": "lichess",
         "user": "tester",
-        "metrics": [{"motif": "fork"}],
+        "metrics": [{"motif": "hanging_piece"}],
         "recent_games": [{"game_id": "g1"}],
         "positions": [{"position_id": 1}],
         "tactics": [{"tactic_id": 2}],
@@ -212,14 +212,14 @@ def test_mock_db_store_applies_filters() -> None:
         "user": "tester",
         "metrics": [
             {
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "time_control": "blitz",
                 "rating_bucket": "1200-1400",
                 "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
                 "source": "lichess",
             },
             {
-                "motif": "pin",
+                "motif": "mate",
                 "time_control": "rapid",
                 "rating_bucket": "1400-1600",
                 "created_at": datetime(2024, 1, 5, tzinfo=timezone.utc),
@@ -237,7 +237,7 @@ def test_mock_db_store_applies_filters() -> None:
         "tactics": [
             {
                 "tactic_id": 1,
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
                 "source": "lichess",
             }
@@ -251,7 +251,7 @@ def test_mock_db_store_applies_filters() -> None:
 
     result = store.get_dashboard_payload(
         source="lichess",
-        motif="fork",
+        motif="hanging_piece",
         rating_bucket="1200-1400",
         time_control="blitz",
         start_date=datetime(2024, 1, 1, tzinfo=timezone.utc),
@@ -261,7 +261,7 @@ def test_mock_db_store_applies_filters() -> None:
     assert result["source"] == "lichess"
     assert len(result["metrics"]) == 1
     assert len(result["tactics"]) == 1
-    assert result["metrics"][0]["motif"] == "fork"
+    assert result["metrics"][0]["motif"] == "hanging_piece"
 
 
 def test_mock_db_store_filters_date_ranges_and_non_dict_rows() -> None:
@@ -272,12 +272,12 @@ def test_mock_db_store_filters_date_ranges_and_non_dict_rows() -> None:
         "metrics": [
             "raw-row",
             {
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
                 "source": "lichess",
             },
             {
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "created_at": datetime(2023, 12, 31, tzinfo=timezone.utc),
                 "source": "lichess",
             },
@@ -309,14 +309,14 @@ def test_mock_db_store_filters_by_multiple_fields() -> None:
         "user": "tester",
         "metrics": [
             {
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "time_control": "blitz",
                 "rating_bucket": "1200-1400",
                 "trend_date": datetime(2024, 2, 1, tzinfo=timezone.utc).date(),
                 "source": "lichess",
             },
             {
-                "motif": "pin",
+                "motif": "mate",
                 "time_control": "rapid",
                 "rating_bucket": "1400-1600",
                 "trend_date": datetime(2024, 2, 2, tzinfo=timezone.utc).date(),
@@ -335,7 +335,7 @@ def test_mock_db_store_filters_by_multiple_fields() -> None:
 
     result = store.get_dashboard_payload(
         source="lichess",
-        motif="fork",
+        motif="hanging_piece",
         rating_bucket="1200-1400",
         time_control="blitz",
         start_date=datetime(2024, 2, 1, tzinfo=timezone.utc),
@@ -343,7 +343,7 @@ def test_mock_db_store_filters_by_multiple_fields() -> None:
     )
 
     assert len(result["metrics"]) == 1
-    assert result["metrics"][0]["motif"] == "fork"
+    assert result["metrics"][0]["motif"] == "hanging_piece"
 
 
 def test_mock_db_store_skips_mismatched_filters_and_allows_missing_dates() -> None:
@@ -353,19 +353,19 @@ def test_mock_db_store_skips_mismatched_filters_and_allows_missing_dates() -> No
         "user": "tester",
         "metrics": [
             {
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "rating_bucket": "1200-1400",
                 "time_control": "blitz",
                 "source": "lichess",
             },
             {
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "rating_bucket": "1400-1600",
                 "time_control": "blitz",
                 "source": "lichess",
             },
             {
-                "motif": "fork",
+                "motif": "hanging_piece",
                 "rating_bucket": "1200-1400",
                 "time_control": "rapid",
                 "source": "lichess",
@@ -383,7 +383,7 @@ def test_mock_db_store_skips_mismatched_filters_and_allows_missing_dates() -> No
 
     result = store.get_dashboard_payload(
         source="lichess",
-        motif="fork",
+        motif="hanging_piece",
         rating_bucket="1200-1400",
         time_control="blitz",
         start_date=datetime(2024, 2, 1, tzinfo=timezone.utc),

@@ -1,4 +1,5 @@
 import chess
+import pytest
 
 from tactix.CaptureDetector import CaptureDetector
 from tactix.DiscoveredAttackDetector import DiscoveredAttackDetector
@@ -10,12 +11,8 @@ from tactix.SkewerDetector import SkewerDetector
 from tactix.TacticContext import TacticContext
 from tactix.TacticDetectionService import TacticDetectionService
 from tactix.detect_tactics__motifs import CheckDetector, EscapeDetector, MateDetector
-from tests.fixture_helpers import (
-    discovered_attack_fixture_position,
-    hanging_piece_fixture_position,
-    pin_fixture_position,
-    skewer_fixture_position,
-)
+from tactix.tactic_scope import is_supported_motif
+from tests.fixture_helpers import hanging_piece_fixture_position
 
 
 def _context_from_move(board: chess.Board, move: chess.Move) -> TacticContext:
@@ -74,6 +71,8 @@ def test_mate_detector_returns_finding() -> None:
 
 
 def test_check_detector_returns_finding() -> None:
+    if not is_supported_motif("check"):
+        pytest.skip("Check motif disabled in current scope")
     board = chess.Board(None)
     board.clear()
     board.set_piece_at(chess.E8, chess.Piece(chess.KING, chess.BLACK))
@@ -88,6 +87,8 @@ def test_check_detector_returns_finding() -> None:
 
 
 def test_escape_detector_returns_finding() -> None:
+    if not is_supported_motif("escape"):
+        pytest.skip("Escape motif disabled in current scope")
     board = chess.Board(None)
     board.clear()
     board.set_piece_at(chess.E8, chess.Piece(chess.KING, chess.BLACK))
@@ -103,6 +104,8 @@ def test_escape_detector_returns_finding() -> None:
 
 
 def test_capture_detector_returns_finding() -> None:
+    if not is_supported_motif("capture"):
+        pytest.skip("Capture motif disabled in current scope")
     board = chess.Board(None)
     board.clear()
     board.set_piece_at(chess.E8, chess.Piece(chess.KING, chess.BLACK))
@@ -133,6 +136,8 @@ def test_hanging_piece_detector_returns_finding() -> None:
 
 
 def test_fork_detector_returns_finding() -> None:
+    if not is_supported_motif("fork"):
+        pytest.skip("Fork motif disabled in current scope")
     board = chess.Board(None)
     board.clear()
     board.set_piece_at(chess.F5, chess.Piece(chess.KNIGHT, chess.WHITE))
@@ -149,6 +154,8 @@ def test_fork_detector_returns_finding() -> None:
 
 
 def test_pin_detector_returns_finding() -> None:
+    if not is_supported_motif("pin"):
+        pytest.skip("Pin motif disabled in current scope")
     board = chess.Board(None)
     board.clear()
     board.set_piece_at(chess.E1, chess.Piece(chess.KING, chess.WHITE))
@@ -164,6 +171,8 @@ def test_pin_detector_returns_finding() -> None:
 
 
 def test_skewer_detector_returns_finding() -> None:
+    if not is_supported_motif("skewer"):
+        pytest.skip("Skewer motif disabled in current scope")
     board = chess.Board(None)
     board.clear()
     board.set_piece_at(chess.G1, chess.Piece(chess.KING, chess.WHITE))
@@ -179,6 +188,8 @@ def test_skewer_detector_returns_finding() -> None:
 
 
 def test_discovered_attack_detector_returns_finding() -> None:
+    if not is_supported_motif("discovered_attack"):
+        pytest.skip("Discovered attack disabled in current scope")
     board = chess.Board(None)
     board.clear()
     board.set_piece_at(chess.E1, chess.Piece(chess.KING, chess.WHITE))
@@ -195,6 +206,8 @@ def test_discovered_attack_detector_returns_finding() -> None:
 
 
 def test_discovered_check_detector_returns_finding() -> None:
+    if not is_supported_motif("discovered_check"):
+        pytest.skip("Discovered check disabled in current scope")
     board = chess.Board(None)
     board.clear()
     board.set_piece_at(chess.E1, chess.Piece(chess.KING, chess.WHITE))
@@ -210,12 +223,7 @@ def test_discovered_check_detector_returns_finding() -> None:
 
 
 def test_tactic_detection_service_matches_legacy_detection() -> None:
-    positions = [
-        pin_fixture_position(),
-        skewer_fixture_position(),
-        discovered_attack_fixture_position(),
-        hanging_piece_fixture_position(),
-    ]
+    positions = [hanging_piece_fixture_position()]
 
     detectors = [
         MateDetector(),

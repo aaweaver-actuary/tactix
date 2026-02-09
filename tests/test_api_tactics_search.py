@@ -22,7 +22,7 @@ def test_tactics_search_returns_schema() -> None:
             "game_id": "game-1",
             "position_id": 2,
             "source": "lichess",
-            "motif": "fork",
+            "motif": "hanging_piece",
             "result": "found",
             "user_uci": "e2e4",
             "eval_delta": -120,
@@ -44,7 +44,7 @@ def test_tactics_search_returns_schema() -> None:
     app.dependency_overrides[get_tactics_search_use_case] = lambda: use_case
     try:
         response = client.get(
-            "/api/tactics/search?source=all&limit=5&motif=fork",
+            "/api/tactics/search?source=all&limit=5&motif=hanging_piece",
             headers={"Authorization": f"Bearer {token}"},
         )
     finally:

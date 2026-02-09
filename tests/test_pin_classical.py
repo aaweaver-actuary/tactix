@@ -10,8 +10,10 @@ from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
 from tactix.StockfishEngine import StockfishEngine
 from tactix.analyze_position import analyze_position
 from tests.fixture_helpers import pin_fixture_position
+from tactix.tactic_scope import is_supported_motif
 
 
+@unittest.skipUnless(is_supported_motif("pin"), "Pin disabled in current scope")
 class PinClassicalTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_classical_pin_is_high_severity(self) -> None:

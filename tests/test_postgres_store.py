@@ -300,11 +300,11 @@ def test_upsert_analysis_tactic_with_outcome_inserts() -> None:
         {
             "position_id": 10,
             "game_id": "game-1",
-            "motif": "fork",
+            "motif": "hanging_piece",
             "severity": 1.2,
             "best_uci": "e2e4",
             "best_san": "e4",
-            "explanation": "Forks the queen and rook",
+            "explanation": "Hanging piece on f7",
             "eval_cp": 120,
         },
         {"result": "found", "user_uci": "e2e4", "eval_delta": 80},
@@ -320,12 +320,12 @@ def test_fetch_analysis_tactics_returns_rows() -> None:
     settings = _make_settings()
     cursor = MagicMock()
     cursor.__enter__.return_value = cursor
-    cursor.fetchall.return_value = [{"tactic_id": 1, "motif": "fork"}]
+    cursor.fetchall.return_value = [{"tactic_id": 1, "motif": "hanging_piece"}]
     conn = MagicMock()
     conn.cursor.return_value = cursor
     with patch("tactix.postgres_connection.psycopg2.connect", return_value=conn):
         rows = fetch_analysis_tactics(settings, limit=1)
-    assert rows == [{"tactic_id": 1, "motif": "fork"}]
+    assert rows == [{"tactic_id": 1, "motif": "hanging_piece"}]
 
 
 def test_record_ops_event_no_connection() -> None:

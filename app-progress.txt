@@ -1,4 +1,14 @@
 Session summary (2026-02-08):
+- Simplified pipeline migration setup by delegating user_moves view creation to the shared migration helper.
+- Extracted setup helpers for the user moves view test to keep the main test flow focused.
+- Reduced recent games helper duplication by centralizing row text retrieval.
+- Tests run: make check (before; task); make check (after; task; output truncated in tool).
+- Before→After map:
+	- src/tactix/db/_migration_add_pipeline_views.py inline user_moves view creation → reuse _migration_add_user_moves_view.
+	- tests/test_user_moves_view.py inline raw PGN/position setup → _insert_raw_pgn + _store_positions helpers.
+	- verification/helpers/game_detail_modal_helpers.js duplicated recent games row fetch/text → getRecentGamesRowText helper.
+
+Session summary (2026-02-08):
 - Re-ran regression UI automation (enter submit, game detail modal, practice progress) plus additional core checks; refreshed screenshots in verification/.
 - Hardened verification helpers to ensure recent games expansion and stable Open in Lichess filter selection during UI checks.
 - Added a DuckDB migration to refresh the user_moves view with played_at timestamps and user-to-move filtering.

@@ -16,6 +16,74 @@ from tactix.extract_last_timestamp_ms import extract_last_timestamp_ms
 from tactix.extract_positions import extract_positions
 
 
+def _normalize_played_at(value: object) -> datetime:
+    if isinstance(value, datetime):
+        return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+    parsed = datetime.fromisoformat(str(value))
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
+
+
+def _insert_raw_pgn(
+    conn,
+    *,
+    game_id: str,
+    user: str,
+    source: str,
+    pgn: str,
+    last_timestamp_ms: int,
+) -> None:
+    pgn_hash = BaseDbStore.hash_pgn(pgn)
+    conn.execute(
+        """
+        INSERT INTO raw_pgns (
+            raw_pgn_id,
+            game_id,
+            user,
+            source,
+            fetched_at,
+            pgn,
+            pgn_hash,
+            pgn_version,
+            user_rating,
+            time_control,
+            ingested_at,
+            last_timestamp_ms,
+            cursor
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        [
+            1,
+            game_id,
+            user,
+            source,
+            None,
+            pgn,
+            pgn_hash,
+            1,
+            None,
+            None,
+            None,
+            last_timestamp_ms,
+            None,
+        ],
+    )
+
+
+def _store_positions(conn, *, pgn: str, user: str, source: str, game_id: str):
+    positions = extract_positions(
+        pgn,
+        user=user,
+        source=source,
+        game_id=game_id,
+    )
+    insert_positions(conn, positions)
+    stored_positions = fetch_positions_for_games(conn, [game_id])
+    position_by_id = {
+        row.get("position_id"): row for row in stored_positions if row.get("position_id")
+    }
+    return stored_positions, position_by_id
+
+
 class UserMovesViewTests(unittest.TestCase):
     def setUp(self) -> None:
         fixture_path = (
@@ -34,53 +102,22 @@ class UserMovesViewTests(unittest.TestCase):
 
     def test_user_moves_view_matches_positions(self) -> None:
         last_timestamp_ms = extract_last_timestamp_ms(self.pgn)
-        pgn_hash = BaseDbStore.hash_pgn(self.pgn)
-        self.conn.execute(
-            """
-            INSERT INTO raw_pgns (
-                raw_pgn_id,
-                game_id,
-                user,
-                source,
-                fetched_at,
-                pgn,
-                pgn_hash,
-                pgn_version,
-                user_rating,
-                time_control,
-                ingested_at,
-                last_timestamp_ms,
-                cursor
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            [
-                1,
-                self.game_id,
-                self.user,
-                self.source,
-                None,
-                self.pgn,
-                pgn_hash,
-                1,
-                None,
-                None,
-                None,
-                last_timestamp_ms,
-                None,
-            ],
+        _insert_raw_pgn(
+            self.conn,
+            game_id=self.game_id,
+            user=self.user,
+            source=self.source,
+            pgn=self.pgn,
+            last_timestamp_ms=last_timestamp_ms,
         )
 
-        positions = extract_positions(
-            self.pgn,
+        stored_positions, position_by_id = _store_positions(
+            self.conn,
+            pgn=self.pgn,
             user=self.user,
             source=self.source,
             game_id=self.game_id,
         )
-        insert_positions(self.conn, positions)
-        stored_positions = fetch_positions_for_games(self.conn, [self.game_id])
-        position_by_id = {
-            row.get("position_id"): row for row in stored_positions if row.get("position_id")
-        }
 
         moves_result = self.conn.execute(
             "SELECT * FROM user_moves WHERE game_id = ? ORDER BY position_id",
@@ -109,15 +146,7 @@ class UserMovesViewTests(unittest.TestCase):
             self.assertIsNotNone(row.get("created_at"))
             played_at = row.get("played_at")
             self.assertIsNotNone(played_at)
-            if isinstance(played_at, datetime):
-                if played_at.tzinfo is None:
-                    played_at = played_at.replace(tzinfo=UTC)
-                self.assertEqual(played_at, expected_played_at)
-            else:
-                parsed = datetime.fromisoformat(str(played_at))
-                if parsed.tzinfo is None:
-                    parsed = parsed.replace(tzinfo=UTC)
-                self.assertEqual(parsed, expected_played_at)
+            self.assertEqual(_normalize_played_at(played_at), expected_played_at)
 
 
 if __name__ == "__main__":

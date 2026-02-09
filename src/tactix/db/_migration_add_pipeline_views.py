@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import duckdb
 
+from tactix.db._migration_add_user_moves_view import _migration_add_user_moves_view
 from tactix.db.raw_pgns_queries import latest_raw_pgns_query
 
 
-def _migration_add_pipeline_views(conn: duckdb.DuckDBPyConnection) -> None:
-    """Ensure pipeline compatibility views and columns exist."""
+def _ensure_positions_columns(conn: duckdb.DuckDBPyConnection) -> None:
     columns = {row[1] for row in conn.execute("PRAGMA table_info('positions')").fetchall()}
     if "side_to_move" not in columns:
         conn.execute("ALTER TABLE positions ADD COLUMN side_to_move TEXT")
@@ -16,6 +16,8 @@ def _migration_add_pipeline_views(conn: duckdb.DuckDBPyConnection) -> None:
         conn.execute("ALTER TABLE positions ADD COLUMN user_to_move BOOLEAN DEFAULT TRUE")
         conn.execute("UPDATE positions SET user_to_move = TRUE WHERE user_to_move IS NULL")
 
+
+def _create_games_view(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute(
         f"""
         CREATE OR REPLACE VIEW games AS
@@ -40,30 +42,8 @@ def _migration_add_pipeline_views(conn: duckdb.DuckDBPyConnection) -> None:
         """
     )
 
-    conn.execute(
-        f"""
-        CREATE OR REPLACE VIEW user_moves AS
-        WITH latest_pgns AS (
-            {latest_raw_pgns_query()}
-        )
-        SELECT
-            p.position_id AS user_move_id,
-            p.position_id,
-            p.game_id,
-            p.user,
-            p.source,
-            p.uci AS played_uci,
-            p.san AS played_san,
-            to_timestamp(latest_pgns.last_timestamp_ms / 1000) AS played_at,
-            p.created_at
-        FROM positions p
-        LEFT JOIN latest_pgns
-            ON latest_pgns.game_id = p.game_id
-            AND latest_pgns.source = p.source
-        WHERE COALESCE(p.user_to_move, TRUE) = TRUE
-        """
-    )
 
+def _create_opportunities_view(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute(
         """
         CREATE OR REPLACE VIEW opportunities AS
@@ -87,6 +67,8 @@ def _migration_add_pipeline_views(conn: duckdb.DuckDBPyConnection) -> None:
         """
     )
 
+
+def _create_conversions_view(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute(
         """
         CREATE OR REPLACE VIEW conversions AS
@@ -106,6 +88,8 @@ def _migration_add_pipeline_views(conn: duckdb.DuckDBPyConnection) -> None:
         """
     )
 
+
+def _create_practice_queue_view(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute(
         """
         CREATE OR REPLACE VIEW practice_queue AS
@@ -140,6 +124,16 @@ def _migration_add_pipeline_views(conn: duckdb.DuckDBPyConnection) -> None:
         WHERE conv.result = 'missed'
         """
     )
+
+
+def _migration_add_pipeline_views(conn: duckdb.DuckDBPyConnection) -> None:
+    """Ensure pipeline compatibility views and columns exist."""
+    _ensure_positions_columns(conn)
+    _create_games_view(conn)
+    _migration_add_user_moves_view(conn)
+    _create_opportunities_view(conn)
+    _create_conversions_view(conn)
+    _create_practice_queue_view(conn)
 
 
 __all__ = ["_migration_add_pipeline_views"]

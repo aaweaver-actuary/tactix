@@ -70,8 +70,10 @@ class DuckDbTacticRepository:
                     mate_type,
                     best_san,
                     explanation,
+                    target_piece,
+                    target_square,
                     eval_cp
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     next_id,
@@ -84,6 +86,8 @@ class DuckDbTacticRepository:
                     tactic.get("mate_type"),
                     tactic.get("best_san"),
                     tactic.get("explanation"),
+                    tactic.get("target_piece"),
+                    tactic.get("target_square"),
                     tactic.get("eval_cp"),
                 ],
             )

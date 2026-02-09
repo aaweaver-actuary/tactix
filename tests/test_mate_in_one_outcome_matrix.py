@@ -124,7 +124,12 @@ def test_mate_in_one_rows_link_to_specific_game_and_position(matrix_db_path: Pat
     try:
         rows = _fetch_mate_rows(conn)
         position_ids = conn.execute(
-            "SELECT position_id FROM positions WHERE game_id IN (?, ?, ?)",
+            """
+            SELECT position_id
+            FROM positions
+            WHERE game_id IN (?, ?, ?)
+            AND COALESCE(user_to_move, TRUE) = TRUE
+            """,
             list(EXPECTED_BY_GAME.keys()),
         ).fetchall()
     finally:

@@ -20,6 +20,10 @@ from tactix._compute_severity__tactic import (
     build_severity_context,
 )
 from tactix._evaluate_engine_position import _evaluate_engine_position
+from tactix._find_hanging_capture_target import (
+    HangingCaptureTarget,
+    _find_hanging_capture_target,
+)
 from tactix._infer_hanging_or_detected_motif import _infer_hanging_or_detected_motif
 from tactix._is_moved_piece_hanging_after_move import _is_moved_piece_hanging_after_move
 from tactix._override_motif_for_missed import _override_motif_for_missed
@@ -29,6 +33,7 @@ from tactix._reclassify_failed_attempt import _reclassify_failed_attempt
 from tactix._score_after_move import _score_after_move
 from tactix.analyze_tactics__positions import (
     _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS,
+    _OVERRIDEABLE_USER_MOTIFS,
 )
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.config import Settings
@@ -90,6 +95,24 @@ class MovedPieceHangingContext:
     mover_color: bool
 
 
+@dataclass(frozen=True)
+class OpponentHangingContext:
+    result: str
+    motif: str
+    mover_color: bool
+    user_to_move: bool
+    hanging_target: HangingCaptureTarget | None
+
+
+@dataclass(frozen=True)
+class HangingTargetContext:
+    board_before: chess.Board
+    board_after: chess.Board
+    user_move: chess.Move
+    mover_color: bool
+    hanging_target: HangingCaptureTarget | None
+
+
 def _capture_square_for_move(
     board: chess.Board,
     move: chess.Move,
@@ -128,6 +151,33 @@ def _apply_moved_piece_hanging_override(
     if not _should_override_hanging_motif(motif, context.board_after):
         return result, motif
     return "missed", "hanging_piece"
+
+
+def _apply_opponent_hanging_override(
+    context: OpponentHangingContext,
+) -> tuple[str, str]:
+    return _resolve_opponent_override_result(context)
+
+
+def _should_override_opponent_hanging(context: OpponentHangingContext) -> bool:
+    return all(
+        (
+            context.user_to_move,
+            context.hanging_target is not None,
+            context.result in {"missed", "failed_attempt"},
+            context.motif in _OVERRIDEABLE_USER_MOTIFS,
+        )
+    )
+
+
+def _resolve_opponent_override_result(
+    context: OpponentHangingContext,
+) -> tuple[str, str]:
+    return (
+        (context.result, "hanging_piece")
+        if _should_override_opponent_hanging(context)
+        else (context.result, context.motif)
+    )
 
 
 def _should_mark_missed_for_initiative(
@@ -337,6 +387,18 @@ def _prepare_tactic_row_input(
             mover_color=mover_color,
         )
     )
+    hanging_target = None
+    if position.get("user_to_move", True):
+        hanging_target = _find_hanging_capture_target(motif_board, mover_color)
+    result, motif = _apply_opponent_hanging_override(
+        OpponentHangingContext(
+            result=result,
+            motif=motif,
+            mover_color=mover_color,
+            user_to_move=bool(position.get("user_to_move", True)),
+            hanging_target=hanging_target,
+        )
+    )
     swing = _resolve_best_line_swing(
         BestLineContext(
             board=motif_board,
@@ -375,6 +437,16 @@ def _prepare_tactic_row_input(
             mover_color=mover_color,
         ),
     )
+    target_piece, target_square = _resolve_hanging_piece_target(
+        motif,
+        HangingTargetContext(
+            board_before=motif_board,
+            board_after=board,
+            user_move=user_move,
+            mover_color=mover_color,
+            hanging_target=hanging_target,
+        ),
+    )
     severity = _compute_severity_for_position(
         build_severity_context(
             SeverityInputs(
@@ -405,6 +477,8 @@ def _prepare_tactic_row_input(
             mate_type=metadata["mate_type"],
             best_san=best_san,
             explanation=explanation,
+            target_piece=target_piece,
+            target_square=target_square,
         ),
         outcome=OutcomeDetails(
             result=result,
@@ -485,3 +559,57 @@ def _finalize_hanging_piece_result(
 @funclogger
 def _compute_severity_for_position(context: SeverityContext) -> int:
     return _compute_severity__tactic(context)
+
+
+def _resolve_hanging_piece_target(
+    motif: str,
+    context: HangingTargetContext,
+) -> tuple[str | None, str | None]:
+    if motif != "hanging_piece":
+        return None, None
+    return _resolve_hanging_piece_target_for_context(context)
+
+
+def _resolve_hanging_piece_target_for_context(
+    context: HangingTargetContext,
+) -> tuple[str | None, str | None]:
+    moved_target = _resolve_moved_piece_target(context)
+    return moved_target if moved_target is not None else _resolve_opponent_hanging_target(context)
+
+
+def _resolve_moved_piece_target(
+    context: HangingTargetContext,
+) -> tuple[str | None, str | None] | None:
+    if not _is_moved_piece_hanging_after_move(
+        context.board_before,
+        context.board_after,
+        context.user_move,
+        context.mover_color,
+    ):
+        return None
+    moved_piece = context.board_after.piece_at(context.user_move.to_square)
+    if moved_piece is None:
+        moved_piece = context.board_before.piece_at(context.user_move.from_square)
+    if moved_piece is None:
+        return None
+    return _piece_label(moved_piece), chess.square_name(context.user_move.to_square)
+
+
+def _resolve_opponent_hanging_target(
+    context: HangingTargetContext,
+) -> tuple[str | None, str | None]:
+    if context.hanging_target is None:
+        return None, None
+    return context.hanging_target.target_piece, context.hanging_target.target_square
+
+
+def _piece_label(piece: chess.Piece) -> str:
+    labels = {
+        chess.PAWN: "pawn",
+        chess.KNIGHT: "knight",
+        chess.BISHOP: "bishop",
+        chess.ROOK: "rook",
+        chess.QUEEN: "queen",
+        chess.KING: "king",
+    }
+    return labels.get(piece.piece_type, "unknown")

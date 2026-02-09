@@ -170,6 +170,8 @@ class BaseDbStore:
             mate_type=tactic_row.get("mate_type"),
             best_san=tactic_row.get("best_san"),
             explanation=tactic_row.get("explanation"),
+            target_piece=tactic_row.get("target_piece"),
+            target_square=tactic_row.get("target_square"),
             eval_cp=tactic_row.get("eval_cp", 0),
         )
 

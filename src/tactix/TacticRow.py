@@ -14,6 +14,8 @@ class TacticRowDetails:
     mate_in: int | None
     tactic_piece: str | None
     mate_type: str | None
+    target_piece: str | None
+    target_square: str | None
 
 
 @dataclass(frozen=True)
@@ -41,6 +43,8 @@ class TacticRow:
                 mate_in=inputs.details.mate_in,
                 tactic_piece=inputs.details.tactic_piece,
                 mate_type=inputs.details.mate_type,
+                target_piece=inputs.details.target_piece,
+                target_square=inputs.details.target_square,
             ),
         )
 
@@ -57,4 +61,6 @@ class TacticRow:
             "mate_in": self.details.mate_in,
             "tactic_piece": self.details.tactic_piece,
             "mate_type": self.details.mate_type,
+            "target_piece": self.details.target_piece,
+            "target_square": self.details.target_square,
         }

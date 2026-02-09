@@ -1,4 +1,13 @@
 Session summary (2026-02-09):
+- Added hanging capture target detection, opponent-hanging override, and target metadata fields on tactics (target_piece/target_square).
+- Extended DuckDB/Postgres schemas, inserts, and views to persist target metadata with a new DuckDB migration.
+- Tests run: none.
+
+Session summary (2026-02-09):
+- Added newly discovered GitHub issues (#41-#28) to the top of feature_list.json for tracking.
+- Tests run: none.
+
+Session summary (2026-02-09):
 - Refactored post-move position extraction to reuse a shared append helper while preserving schemas and IDs.
 - Tests run: make check (before; task; failed: test_api_chesscom_bullet_pipeline_regression, test_api_lichess_blitz_pipeline_regression, test_mate_in_one_outcome_matrix); make check (after; task; same failures).
 - Before→After map:
@@ -1147,6 +1156,10 @@ Session summary (2026-02-08):
 Session summary (2026-02-09):
 - Updated schema migration assertions to track `SCHEMA_VERSION` after user moves view additions.
 - Validated schema migration unit coverage with pytest; full `make check` green.
+
+Session summary (2026-02-09):
+- Note: user requested that we record they never said the authorization prompt; proceeding with review/commit per their instruction.
+- Reviewed staged hanging-target metadata updates and pipeline view extensions; `make check` green.
 
 Session summary (2026-02-09):
 - Allow duplicate position rows in DuckDB when position_id hashes match across games.

@@ -1,6 +1,174 @@
 [
   {
     "category": "functional",
+    "description": "[Scope Update] Mark all tactics besides hanging piece and mate in 1 as future items.",
+    "steps": [
+      "Step 1: Identify all tactic motifs currently supported or listed",
+      "Step 2: Mark motifs other than hanging piece and mate in 1 as future/disabled",
+      "Step 3: Ensure pipeline and UI only surface hanging piece and mate in 1",
+      "Step 4: Update tests/fixtures to align with the scoped motifs",
+      "Step 5: Verify no other motifs are emitted in API responses"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[Fix] Remove all traces of the \"initiative\" motif",
+    "steps": [
+      "Step 1: Search codebase and fixtures for the initiative motif",
+      "Step 2: Remove motif constants/handling and update any mappings",
+      "Step 3: Update tests to exclude initiative",
+      "Step 4: Verify pipeline outputs no initiative entries",
+      "Step 5: Verify UI does not display initiative"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[Feature/UI] Implement BaseChessboard that is used by ChessboardModal",
+    "steps": [
+      "Step 1: Create a BaseChessboard component with shared board styling",
+      "Step 2: Update ChessboardModal to use BaseChessboard",
+      "Step 3: Ensure data-testid values remain stable",
+      "Step 4: Add or update unit tests for BaseChessboard",
+      "Step 5: Verify ChessboardModal behavior remains unchanged"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[UI] Create FloatingActionButton component, put settings modals inside",
+    "steps": [
+      "Step 1: Add a FloatingActionButton component with accessible labels",
+      "Step 2: Move settings modal entry points into the floating action button",
+      "Step 3: Ensure settings modals open/close as before",
+      "Step 4: Verify layout on desktop and mobile",
+      "Step 5: Add UI automation coverage for the FAB flow"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "[Testing] Re-enable mypy error types one-by-one",
+    "steps": [
+      "Step 1: Review mypy ignores in Makefile/pyproject",
+      "Step 2: Re-enable one error type at a time",
+      "Step 3: Fix newly surfaced type errors",
+      "Step 4: Keep mypy clean after each change",
+      "Step 5: Document remaining error types to re-enable"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "[Testing] MotifTrendsCard.test.tsx needed",
+    "steps": [
+      "Step 1: Add MotifTrendsCard unit test file",
+      "Step 2: Cover empty, loading, and populated states",
+      "Step 3: Assert key labels and values render",
+      "Step 4: Verify data-testid values",
+      "Step 5: Ensure tests pass in vitest"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "[Testing] MotifCard.test.tsx needed",
+    "steps": [
+      "Step 1: Add MotifCard unit test file",
+      "Step 2: Cover default and highlighted variants",
+      "Step 3: Assert labels and counts render",
+      "Step 4: Verify click/keyboard handling if present",
+      "Step 5: Ensure tests pass in vitest"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "[Testing] Need MetricsSummaryGrid.test.tsx",
+    "steps": [
+      "Step 1: Add MetricsSummaryGrid unit test file",
+      "Step 2: Cover empty/loading/populated states",
+      "Step 3: Assert metric labels and values render",
+      "Step 4: Verify layout does not crash",
+      "Step 5: Ensure tests pass in vitest"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "[Testing] Need MetricsSummaryCard.test.tsx",
+    "steps": [
+      "Step 1: Add MetricsSummaryCard unit test file",
+      "Step 2: Cover loading/empty/populated states",
+      "Step 3: Assert labels/values render",
+      "Step 4: Verify optional trends display",
+      "Step 5: Ensure tests pass in vitest"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "[Testing] JobProgressCard.test.tsx needed",
+    "steps": [
+      "Step 1: Add JobProgressCard unit test file",
+      "Step 2: Cover empty/loading/populated states",
+      "Step 3: Assert progress entries render",
+      "Step 4: Verify status labels",
+      "Step 5: Ensure tests pass in vitest"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "[Testing] Need FiltersCard.test.tsx",
+    "steps": [
+      "Step 1: Add FiltersCard unit test file",
+      "Step 2: Cover modal open/close behavior",
+      "Step 3: Assert filter inputs render",
+      "Step 4: Verify callbacks fire on change",
+      "Step 5: Ensure tests pass in vitest"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "[Testing] Need ErrorCard.test.tsx",
+    "steps": [
+      "Step 1: Add ErrorCard unit test file",
+      "Step 2: Assert title and message render",
+      "Step 3: Verify optional action renders",
+      "Step 4: Confirm data-testid values",
+      "Step 5: Ensure tests pass in vitest"
+    ],
+    "passes": false
+  },
+  {
+    "category": "testing",
+    "description": "[Testing] BaseTable.test.tsx file",
+    "steps": [
+      "Step 1: Add BaseTable unit test file",
+      "Step 2: Cover loading/empty/populated states",
+      "Step 3: Verify sorting/pagination controls",
+      "Step 4: Assert row click handling",
+      "Step 5: Ensure tests pass in vitest"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[Feature] BaseChart component",
+    "steps": [
+      "Step 1: Introduce BaseChart component with shared styling",
+      "Step 2: Wire existing charts to use BaseChart",
+      "Step 3: Ensure responsive layout",
+      "Step 4: Add unit tests for BaseChart",
+      "Step 5: Verify charts render correctly"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
     "description": "[UI] Settings-based cards should be remade into modals",
     "steps": [
       "Step 1: Identify the settings-based cards on the main dashboard",

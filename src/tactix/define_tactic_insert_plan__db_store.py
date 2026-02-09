@@ -18,4 +18,6 @@ class TacticInsertPlan:  # pylint: disable=too-many-instance-attributes
     mate_type: object
     best_san: object
     explanation: object
+    target_piece: object
+    target_square: object
     eval_cp: object

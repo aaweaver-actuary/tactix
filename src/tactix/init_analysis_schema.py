@@ -53,6 +53,8 @@ def init_analysis_schema(conn: PgConnection) -> None:
                 mate_type TEXT,
                 best_san TEXT,
                 explanation TEXT,
+                target_piece TEXT,
+                target_square TEXT,
                 eval_cp INTEGER,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
@@ -63,6 +65,12 @@ def init_analysis_schema(conn: PgConnection) -> None:
         )
         cur.execute(
             f"ALTER TABLE {ANALYSIS_SCHEMA}.tactics ADD COLUMN IF NOT EXISTS mate_type TEXT"
+        )
+        cur.execute(
+            f"ALTER TABLE {ANALYSIS_SCHEMA}.tactics ADD COLUMN IF NOT EXISTS target_piece TEXT"
+        )
+        cur.execute(
+            f"ALTER TABLE {ANALYSIS_SCHEMA}.tactics ADD COLUMN IF NOT EXISTS target_square TEXT"
         )
         cur.execute(
             f"CREATE INDEX IF NOT EXISTS tactics_position_idx "

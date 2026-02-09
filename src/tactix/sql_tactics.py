@@ -11,6 +11,8 @@ TACTIC_COLUMNS = """
     t.mate_type,
     t.best_san,
     t.explanation,
+    t.target_piece,
+    t.target_square,
     t.eval_cp
 """
 
@@ -25,6 +27,10 @@ TACTIC_ANALYSIS_COLUMNS = """
     t.mate_type,
     t.best_san,
     t.explanation,
+    t.target_piece,
+    t.target_square,
+    t.target_piece,
+    t.target_square,
     t.eval_cp,
     t.created_at
 """
@@ -45,6 +51,8 @@ TACTIC_QUEUE_COLUMNS = """
     t.tactic_piece,
     t.mate_type,
     t.eval_cp,
+    t.target_piece,
+    t.target_square,
     t.created_at
 """
 
@@ -58,6 +66,8 @@ TACTIC_INSERT_COLUMNS: tuple[str, ...] = (
     "mate_type",
     "best_san",
     "explanation",
+    "target_piece",
+    "target_square",
     "eval_cp",
 )
 

@@ -15,7 +15,7 @@
 
 minimum_pre_commit_version: "3.6.0"
 fail_fast: true
-default_stages: [commit]
+default_stages: [pre-commit]
 
 repos:
   # ----------------------------
@@ -28,11 +28,11 @@ repos:
         name: python -- ruff check (fix)
         args: [--fix]
         files: ^src/
-        stages: [commit]
+        stages: [pre-commit]
       - id: ruff-format
         name: python -- ruff format
         files: ^src/
-        stages: [commit]
+        stages: [pre-commit]
 
   # ----------------------------
   # JS/TS: fast lint/format (commit)
@@ -45,7 +45,7 @@ repos:
         language: system
         files: ^client/.*\.(js|jsx|ts|tsx)$
         pass_filenames: false
-        stages: [commit]
+        stages: [pre-commit]
 
       - id: prettier
         name: js- prettier (write)
@@ -53,7 +53,7 @@ repos:
         language: system
         files: ^client/.*\.(js|jsx|ts|tsx|json|css)$
         pass_filenames: false
-        stages: [commit]
+        stages: [pre-commit]
 
   # ============================================================
   # FULL QUALITY GATE (push) — matches `make check`
@@ -71,7 +71,7 @@ repos:
         language: system
         files: ^src/.*\.py$
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
       - id: mypy
         name: python- mypy
@@ -79,7 +79,7 @@ repos:
         language: system
         files: ^src/.*\.py$
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
       - id: pylint
         name: python- pylint
@@ -87,7 +87,7 @@ repos:
         language: system
         files: ^src/.*\.py$
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
       - id: flake8
         name: python- flake8
@@ -95,7 +95,7 @@ repos:
         language: system
         files: ^src/.*\.py$
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
       - id: pydocstyle
         name: python- pydocstyle
@@ -103,7 +103,7 @@ repos:
         language: system
         files: ^src/.*\.py$
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
       - id: prospector
         name: python -- prospector
@@ -111,7 +111,7 @@ repos:
         language: system
         files: ^src/.*\.py$
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
   # ----------------------------
   # Complexity + architecture (push)
@@ -125,7 +125,7 @@ repos:
         language: system
         files: ^src/.*\.py$
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
       - id: pycycle
         name: python -- pycycle (circular deps)
@@ -133,7 +133,7 @@ repos:
         language: system
         files: ^src/.*\.py$
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
   # ----------------------------
   # Dead code (push)
@@ -151,7 +151,7 @@ repos:
         language: system
         files: ^src/.*\.py$
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
       - id: knip
         name: js -- knip dead code
@@ -159,7 +159,7 @@ repos:
         language: system
         files: ^client/
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
   # ----------------------------
   # Duplicate code (push)
@@ -183,7 +183,7 @@ repos:
         language: system
         files: \.(py|js|jsx|ts|tsx)$
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
   # ----------------------------
   # Security / guardrails (push)
@@ -197,7 +197,7 @@ repos:
         language: system
         files: ^(pyproject\.toml|uv\.lock|requirements.*\.txt)$
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
       - id: bandit
         name: "sec: bandit"
@@ -205,7 +205,7 @@ repos:
         language: system
         files: ^src/.*\.py$
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
       - id: dodgy
         name: "sec: dodgy"
@@ -213,7 +213,7 @@ repos:
         language: system
         files: ^src/.*\.py$
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
   # ----------------------------
   # Tests + coverage (push)
@@ -232,7 +232,7 @@ repos:
         language: system
         files: ^(src/.*\.py|tests/.*\.py)$
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
       - id: vitest
         name: test -- vitest (coverage)
@@ -240,7 +240,7 @@ repos:
         language: system
         files: ^client/
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
       - id: cargo-test
         name: test -- cargo test
@@ -248,7 +248,7 @@ repos:
         language: system
         files: \.(rs|toml)$
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
       - id: cargo-test-release
         name: test -- cargo test --release
@@ -256,7 +256,7 @@ repos:
         language: system
         files: \.(rs|toml)$
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
   # ----------------------------
   # Builds (push)
@@ -270,7 +270,7 @@ repos:
         language: system
         files: \.(rs|toml)$
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
       - id: client-build
         name: "build: client"
@@ -278,4 +278,4 @@ repos:
         language: system
         files: ^client/
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]

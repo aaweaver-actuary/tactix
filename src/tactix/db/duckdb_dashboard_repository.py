@@ -230,6 +230,7 @@ def _fetch_pipeline_table_counts(
                 SELECT COUNT(*)
                 FROM positions p
                 {_games_filtered_join_clause("p")}
+                WHERE COALESCE(p.user_to_move, TRUE) = TRUE
             ) AS positions,
             (
                 SELECT COUNT(*)

@@ -60,6 +60,8 @@ def _create_opportunities_view(conn: duckdb.DuckDBPyConnection) -> None:
             t.mate_type,
             t.best_san,
             t.explanation,
+            t.target_piece,
+            t.target_square,
             t.eval_cp,
             t.created_at
         FROM tactics t
@@ -109,6 +111,8 @@ def _create_practice_queue_view(conn: duckdb.DuckDBPyConnection) -> None:
             opp.best_san,
             opp.explanation,
             opp.eval_cp,
+            opp.target_piece,
+            opp.target_square,
             p.fen,
             p.uci AS position_uci,
             p.san,

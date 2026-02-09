@@ -12,3 +12,7 @@ def _migration_add_tactic_metadata(conn: duckdb.DuckDBPyConnection) -> None:
         conn.execute("ALTER TABLE tactics ADD COLUMN tactic_piece TEXT")
     if "mate_type" not in columns:
         conn.execute("ALTER TABLE tactics ADD COLUMN mate_type TEXT")
+    if "target_piece" not in columns:
+        conn.execute("ALTER TABLE tactics ADD COLUMN target_piece TEXT")
+    if "target_square" not in columns:
+        conn.execute("ALTER TABLE tactics ADD COLUMN target_square TEXT")

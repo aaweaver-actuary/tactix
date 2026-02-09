@@ -12,3 +12,5 @@ class TacticDetails:  # pylint: disable=too-many-instance-attributes
     mate_type: str | None
     best_san: str | None
     explanation: str | None
+    target_piece: str | None
+    target_square: str | None

@@ -1,4 +1,9 @@
 Session summary (2026-02-10):
+- Extracted a shared button click helper in the practice attempt card removal integration script to reduce duplicated button lookup logic.
+- Before -> after map: integration_feature_remove_practice_attempt_card inline $$eval button text click blocks -> clickButtonByText helper.
+- Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
 - Added editable FEN controls with validation to the chessboard browser modal and covered update/error flows in unit tests.
 - Regression verification (requested): node verification/puppeteer_feature_practice_button.js; node verification/puppeteer_feature_database_modal.js; node verification/puppeteer_feature_chessboard_modal.js.
 - Manual verification: node verification/puppeteer_feature_browser_modal_edit_position.js (feature-browser-modal-edit-position-2026-02-10.png).

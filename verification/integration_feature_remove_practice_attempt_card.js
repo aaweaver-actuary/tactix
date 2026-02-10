@@ -18,6 +18,15 @@ const selectors = {
   practiceBestMove: '[data-testid="practice-best-move"]',
 };
 
+const clickButtonByText = async (page, text) => {
+  await page.$$eval('button', (buttons, targetText) => {
+    const target = buttons.find(
+      (btn) => btn.textContent && btn.textContent.includes(targetText),
+    );
+    if (target) target.click();
+  }, text);
+};
+
 (async () => {
   const browser = await puppeteer.launch({ headless: 'new' });
   const page = await browser.newPage();
@@ -38,12 +47,7 @@ const selectors = {
     }
 
     await page.waitForSelector(selectors.practiceButton, { timeout: 60000 });
-    await page.$$eval('button', (buttons) => {
-      const target = buttons.find(
-        (btn) => btn.textContent && btn.textContent.includes('Refresh metrics'),
-      );
-      if (target) target.click();
-    });
+    await clickButtonByText(page, 'Refresh metrics');
     const waitForPracticeReady = async (timeoutMs) => {
       await page.waitForFunction(
         (selector) => {
@@ -57,12 +61,7 @@ const selectors = {
     try {
       await waitForPracticeReady(20000);
     } catch (err) {
-      await page.$$eval('button', (buttons) => {
-        const target = buttons.find(
-          (btn) => btn.textContent && btn.textContent.includes('Run + Refresh'),
-        );
-        if (target) target.click();
-      });
+      await clickButtonByText(page, 'Run + Refresh');
       await waitForPracticeReady(60000);
     }
 
@@ -75,12 +74,7 @@ const selectors = {
 
     await page.click(selectors.practiceMoveInput, { clickCount: 3 });
     await page.keyboard.type(attemptMove);
-    await page.$$eval('button', (buttons) => {
-      const target = buttons.find(
-        (btn) => btn.textContent && btn.textContent.includes('Submit attempt'),
-      );
-      if (target) target.click();
-    });
+    await clickButtonByText(page, 'Submit attempt');
 
     await page.waitForSelector(selectors.practiceBestMove, { timeout: 60000 });
 

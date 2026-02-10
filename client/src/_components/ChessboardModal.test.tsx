@@ -43,7 +43,7 @@ describe('ChessboardModal', () => {
         open
         position={
           {
-            fen: '8/8/8/8/8/8/8/8 b - - 0 1',
+            fen: '8/8/8/8/8/8/4K3/7k b - - 0 1',
             move_number: 12,
             san: 'Qh5',
             clock_seconds: 42,
@@ -56,12 +56,69 @@ describe('ChessboardModal', () => {
     expect(screen.getByTestId('chessboard-modal-board')).toBeInTheDocument();
     expect(screen.getByTestId('base-chessboard')).toBeInTheDocument();
     expect(lastProps).toMatchObject({
-      position: '8/8/8/8/8/8/8/8 b - - 0 1',
+      position: '8/8/8/8/8/8/4K3/7k b - - 0 1',
       boardOrientation: 'black',
     });
 
     fireEvent.click(screen.getByTestId('chessboard-modal-close'));
     expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('applies edited FEN values to the board', () => {
+    render(
+      <ChessboardModal
+        open
+        position={
+          {
+            fen: '8/8/8/8/8/8/8/8 b - - 0 1',
+            move_number: 12,
+            san: 'Qh5',
+            clock_seconds: 42,
+          } as any
+        }
+        onClose={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByTestId('browser-fen-input');
+    const updatedFen = '8/8/8/8/8/8/4K3/7k w - - 0 1';
+    fireEvent.change(input, { target: { value: updatedFen } });
+    fireEvent.click(screen.getByTestId('browser-fen-apply'));
+
+    expect(screen.queryByTestId('browser-fen-error')).not.toBeInTheDocument();
+    expect(lastProps).toMatchObject({
+      position: updatedFen,
+      boardOrientation: 'white',
+    });
+  });
+
+  it('surfaces validation errors when the FEN is invalid', () => {
+    render(
+      <ChessboardModal
+        open
+        position={
+          {
+            fen: '8/8/8/8/8/8/4K3/7k w - - 0 1',
+            move_number: 12,
+            san: 'Qh5',
+            clock_seconds: 42,
+          } as any
+        }
+        onClose={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByTestId('browser-fen-input');
+    fireEvent.change(input, { target: { value: 'not a fen' } });
+    fireEvent.click(screen.getByTestId('browser-fen-apply'));
+
+    expect(screen.getByTestId('browser-fen-error')).toHaveTextContent(
+      'Invalid FEN.',
+    );
+    expect(lastProps).toMatchObject({
+      position: '8/8/8/8/8/8/4K3/7k w - - 0 1',
+      boardOrientation: 'white',
+    });
   });
 
   it('renders practice mode content when provided', () => {

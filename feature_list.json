@@ -117,7 +117,7 @@
       "Step 4: Verify existing browser modal flows still work",
       "Step 5: Add or update UI automation coverage for editing positions"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

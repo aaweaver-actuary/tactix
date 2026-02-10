@@ -8,6 +8,7 @@ import type {
 import BaseChessboard from './BaseChessboard';
 import Badge from './Badge';
 import BaseButton from './BaseButton';
+import ChessboardPanel from './ChessboardPanel';
 import ModalHeader from './ModalHeader';
 import ModalShell from './ModalShell';
 import Text from './Text';
@@ -113,10 +114,7 @@ export default function ChessboardModal({
         </div>
       ) : (
         <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-[360px_1fr]">
-          <div
-            className="rounded-lg border border-white/10 bg-white/5 p-3"
-            data-testid="chessboard-modal-board"
-          >
+          <ChessboardPanel data-testid="chessboard-modal-board">
             <BaseChessboard
               id="chessboard-modal-board"
               position={fen}
@@ -124,7 +122,7 @@ export default function ChessboardModal({
               boardWidth={340}
               showBoardNotation
             />
-          </div>
+          </ChessboardPanel>
           <div className="space-y-4">
             <div>
               <Text value="FEN" />

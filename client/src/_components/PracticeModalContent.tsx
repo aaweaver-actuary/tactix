@@ -4,6 +4,7 @@ import { PracticeAttemptResponse, PracticeQueueItem } from '../api';
 import isPiecePlayable from '../utils/isPiecePlayable';
 import buildPracticeFeedback from '../utils/buildPracticeFeedback';
 import Badge from './Badge';
+import ChessboardPanel from './ChessboardPanel';
 import ModalHeader from './ModalHeader';
 import PracticeAttemptButton from './PracticeAttemptButton';
 import PracticeMoveInput from './PracticeMoveInput';
@@ -63,7 +64,7 @@ export default function PracticeModalContent({
       <PracticeSessionProgress stats={practiceSession} />
       {currentPractice ? (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_1fr]">
-          <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+          <ChessboardPanel>
             <BaseChessboard
               id="practice-board"
               position={practiceFen || currentPractice.fen}
@@ -76,7 +77,7 @@ export default function PracticeModalContent({
               customSquareStyles={practiceHighlightStyles}
             />
             <Text mt="2" value="Legal moves only. Drag a piece to submit." />
-          </div>
+          </ChessboardPanel>
           <div className="space-y-3">
             <div className="space-y-1">
               <Text value="FEN" />

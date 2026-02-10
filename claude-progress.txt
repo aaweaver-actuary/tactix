@@ -408,3 +408,8 @@ Session summary (2026-02-10):
 - Regression verification (requested): node verification/puppeteer_feature_practice_button.js; node verification/puppeteer_feature_database_modal.js; node verification/puppeteer_feature_chessboard_modal.js.
 - Screenshots: feature-practice-button-2026-02-10.png; feature-fab-database-modal-2026-02-10.png; feature-chessboard-modal-open-2026-02-09.png; feature-chessboard-modal-closed-2026-02-09.png; feature-unclear-tactical-puzzle-2026-02-10.png.
 - Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
+- Addressed make check failures by removing BaseChart from shared exports, closing TestClient in stats tests to release DuckDB locks, and adding unit tests for config/profile helpers.
+- Added coverage for split_pgn_chunks and Settings helper behavior to reach the 95% coverage gate.
+- Tests run: make check (green).

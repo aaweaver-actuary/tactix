@@ -68,6 +68,7 @@ import {
   writeCardOrder,
 } from '../utils/cardOrder';
 import { isAllowedMotifFilter, isScopedMotif } from '../utils/motifScope';
+import type { FloatingAction } from '../_components/FloatingActionButton';
 
 const DASHBOARD_CARD_STORAGE_KEY = 'tactix.dashboard.mainCardOrder';
 const MOTIF_CARD_STORAGE_KEY = 'tactix.dashboard.motifCardOrder';
@@ -292,6 +293,19 @@ export default function DashboardFlow() {
   const [chessboardPosition, setChessboardPosition] =
     useState<PositionEntry | null>(null);
   const [filtersModalOpen, setFiltersModalOpen] = useState(false);
+
+  const floatingActions = useMemo<FloatingAction[]>(
+    () => [
+      {
+        id: 'filters',
+        label: 'Filters',
+        ariaLabel: 'Open filters',
+        testId: 'filters-open',
+        onClick: () => setFiltersModalOpen(true),
+      },
+    ],
+    [setFiltersModalOpen],
+  );
 
   const normalizedFilters = useMemo<DashboardFilters>(
     () => ({
@@ -1965,18 +1979,7 @@ export default function DashboardFlow() {
         </Droppable>
       </DragDropContext>
       {practiceError ? <ErrorCard message={practiceError} /> : null}
-      <FloatingActionButton
-        label="Open settings"
-        actions={[
-          {
-            id: 'filters',
-            label: 'Filters',
-            ariaLabel: 'Open filters',
-            testId: 'filters-open',
-            onClick: () => setFiltersModalOpen(true),
-          },
-        ]}
-      />
+      <FloatingActionButton label="Open settings" actions={floatingActions} />
       <ChessboardModal
         open={chessboardModalOpen}
         position={chessboardPosition}

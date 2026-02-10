@@ -31,6 +31,9 @@ Session summary (2026-02-09):
 - Before -> after map: DashboardFlow ALLOWED_MOTIFS/isScopedMotif -> client utils/motifScope isScopedMotif/isAllowedMotifFilter; DashboardFlow scoped filters now use helper.
 - Tests run: make check.
 
+Session summary (2026-02-09):
+- Note: user requested that we record they never said the authorization prompt; proceeding with review/commit per their instruction.
+
 Session summary (2026-02-10):
 - Added BaseChessboard with shared listudy styling, wired ChessboardModal and PracticeAttemptCard to use it, and added unit test coverage.
 - Updated chessboard modal integration script to assert listudy board styling; removed unused motif export to satisfy dead-code checks.

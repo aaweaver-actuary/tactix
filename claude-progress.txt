@@ -57,4 +57,4 @@ Session summary (2026-02-09):
 - Re-enabled mypy override errors by typing BaseTacticDetector.detect with TacticContext and fixed resulting override violations.
 - Evidence: .venv/bin/mypy src/ clean after change; make check green.
 - Remaining mypy error types to re-enable: arg-type, attr-defined, call-overload, import-untyped, operator, typeddict-item, valid-type.
-- Tests run: .venv/bin/mypy src/; make check.
+- Tests run: .venv/bin/mypy src/; make check; node verification/puppeteer_feature_modal_escape.js; node verification/puppeteer_feature_settings_modal.js; node verification/puppeteer_feature_chessboard_modal.js; node verification/puppeteer_feature_open_lichess_link.js; node verification/puppeteer_feature_dashboard_cards_collapsible_move.js; node verification/puppeteer_feature_listudy_assets.js; node verification/puppeteer_motif_filters.js; node verification/puppeteer_practice_attempt.js; node verification/puppeteer_issue_enter_submit.js; node verification/puppeteer_issue_practice_progress.js.

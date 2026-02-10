@@ -1,6 +1,18 @@
 [
   {
     "category": "functional",
+    "description": "[MVP] MVP step by step",
+    "steps": [
+      "Step 1: Verify Airflow periodically fetches new games across sources/time controls",
+      "Step 2: Analyze hanging pieces and mate in 1 with conversion rates plus clock-left metrics",
+      "Step 3: Compute 7-day/30-day rolling averages across time controls and sources",
+      "Step 4: Insert missed hanging pieces/mate in 1 into the daily practice queue with spaced repetition",
+      "Step 5: Train daily tactics via ChessboardModal with correct/incorrect handling and end-of-day completion"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
     "description": "[Scope Update] Mark all tactics besides hanging piece and mate in 1 as future items.",
     "steps": [
       "Step 1: Identify all tactic motifs currently supported or listed",

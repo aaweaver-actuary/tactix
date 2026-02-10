@@ -1,4 +1,5 @@
 const { selectSource } = require('../enter_submit_helpers');
+const { closeFiltersModal } = require('./filters_modal_helpers');
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -9,43 +10,34 @@ async function getTextContent(handle) {
   return value ? String(value) : '';
 }
 
+const SELECTORS = {
+  dashboardReady: 'h1',
+  fabToggle: '[data-testid="fab-toggle"]',
+  recentGamesOpen: '[data-testid="recent-games-open"]',
+  recentGamesModal: '[data-testid="recent-games-modal"]',
+  recentGamesRow: '[data-testid^="recent-games-row-"]',
+};
+
 async function waitForDashboard(page, targetUrl, source) {
   await page.goto(targetUrl, { waitUntil: 'networkidle0' });
+  await page.waitForSelector(SELECTORS.dashboardReady, { timeout: 60000 });
   await selectSource(page, source);
-  await page.waitForSelector('[data-testid="dashboard-card-tactics-table"]');
-}
-
-async function waitForCardExpanded(page, cardSelector) {
-  await page.waitForFunction(
-    (selector) => {
-      const node = document.querySelector(selector);
-      return node && node.getAttribute('data-state') === 'expanded';
-    },
-    { timeout: 60000 },
-    `${cardSelector} [data-state]`,
-  );
-  await page.waitForSelector(`${cardSelector} table`);
+  await page.waitForSelector(SELECTORS.fabToggle, { timeout: 60000 });
 }
 
 async function getRecentGamesRowText(page) {
-  const row = await page.waitForSelector(
-    '[data-testid="recent-games-card"] table tbody tr',
-  );
+  const row = await page.waitForSelector(SELECTORS.recentGamesRow);
   return getTextContent(row);
 }
 
 async function openRecentGamesTable(page) {
-  const cardSelector = '[data-testid="recent-games-card"]';
-  const headerSelector = `${cardSelector} [role="button"]`;
-  await page.waitForSelector(headerSelector);
-  const isCollapsed = await page.$eval(
-    headerSelector,
-    (header) => header.getAttribute('aria-expanded') === 'false',
-  );
-  if (isCollapsed) {
-    await page.click(headerSelector);
-  }
-  await waitForCardExpanded(page, cardSelector);
+  await closeFiltersModal(page);
+  await page.waitForSelector(SELECTORS.fabToggle, { timeout: 60000 });
+  await page.click(SELECTORS.fabToggle);
+  await page.waitForSelector(SELECTORS.recentGamesOpen, { timeout: 60000 });
+  await page.click(SELECTORS.recentGamesOpen);
+  await page.waitForSelector(SELECTORS.recentGamesModal, { timeout: 60000 });
+  await page.waitForSelector(SELECTORS.recentGamesRow, { timeout: 60000 });
 }
 
 async function ensureRecentGamesHasRows(page) {

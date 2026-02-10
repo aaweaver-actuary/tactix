@@ -21,6 +21,8 @@ const SCREENSHOT_NAME =
   'feature-open-lichess-link-2026-02-08.png';
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const RECENT_GAMES_MODAL = '[data-testid="recent-games-modal"]';
+const RECENT_GAMES_CLOSE = '[data-testid="recent-games-modal-close"]';
 
 const waitWithTimeout = async (promise, timeoutMs, label) => {
   let timeoutId;
@@ -145,6 +147,13 @@ async function verifyOpenLichessForSource(page, sourceLabel) {
   console.log(`window.open call count after click: ${openCountAfterClick}`);
   const url = await captureLichessUrl(page, sourceLabel);
   assertLichessAnalysisUrl(url, `Lichess URL for ${sourceLabel}`);
+
+  await page.click(RECENT_GAMES_CLOSE);
+  await page.waitForFunction(
+    (selector) => !document.querySelector(selector),
+    { timeout: 60000 },
+    RECENT_GAMES_MODAL,
+  );
 
 }
 

@@ -704,6 +704,43 @@ describe('DashboardFlow', () => {
     openSpy.mockRestore();
   });
 
+  it('opens the game detail modal from the recent games Go to Game button', async () => {
+    render(<DashboardFlow />);
+
+    await openRecentGamesModal();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('go-to-game-g1')).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByTestId('go-to-game-g1'));
+
+    await waitFor(() => {
+      expect(fetchGameDetail).toHaveBeenCalledWith('g1', 'chesscom');
+    });
+
+    expect(await screen.findByTestId('game-detail-modal')).toBeInTheDocument();
+  });
+
+  it('disables recent games Go to Game when the game id is missing', async () => {
+    (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ...baseDashboard,
+      recent_games: [
+        baseDashboard.recent_games[0],
+        { ...baseDashboard.recent_games[1], game_id: '' },
+      ],
+    });
+
+    render(<DashboardFlow />);
+
+    await openRecentGamesModal();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('go-to-game-g1')).toBeEnabled();
+      expect(screen.getByTestId('go-to-game-unknown')).toBeDisabled();
+    });
+  });
+
   it('opens the game detail modal from recent tactics actions', async () => {
     render(<DashboardFlow />);
 

@@ -19,7 +19,12 @@ const source = process.env.TACTIX_SOURCE || 'lichess';
     await openRecentGamesTable(page);
     await ensureRecentGamesHasRows(page);
 
-    await page.click('[data-testid="recent-games-card"] table tbody tr');
+    await page.waitForSelector('[data-testid^="go-to-game-"]');
+    const buttons = await page.$$('[data-testid^="go-to-game-"]');
+    if (!buttons.length) {
+      throw new Error('Go to Game button not found in recent games modal');
+    }
+    await buttons[0].click();
     await page.waitForSelector('[data-testid="game-detail-modal"]', {
       visible: true,
     });

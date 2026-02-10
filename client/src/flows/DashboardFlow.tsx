@@ -1599,25 +1599,43 @@ export default function DashboardFlow() {
         header: 'Actions',
         id: 'lichess-actions',
         cell: ({ row }) => {
-          if (!row.original.game_id) {
-            return <span className="text-sand/40">--</span>;
-          }
+          const hasGameId = Boolean(row.original.game_id);
+          const actionClassName =
+            'rounded border border-white/10 px-2 py-1 text-xs text-sand/80 hover:border-white/30 disabled:cursor-not-allowed disabled:border-white/5 disabled:text-sand/40';
           return (
-            <ActionButton
-              className="rounded border border-white/10 px-2 py-1 text-xs text-sand/80 hover:border-white/30"
-              data-testid={`open-lichess-${row.original.game_id}`}
-              onClick={(event) => {
-                event.stopPropagation();
-                void handleOpenLichess(row.original);
-              }}
-            >
-              Open in Lichess
-            </ActionButton>
+            <div className="flex flex-wrap items-center gap-2">
+              <ActionButton
+                className={actionClassName}
+                data-testid={`go-to-game-${row.original.game_id || 'unknown'}`}
+                aria-label="Go to game detail"
+                disabled={!hasGameId}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (!hasGameId) return;
+                  void handleOpenGameDetail(row.original);
+                }}
+              >
+                Go to Game
+              </ActionButton>
+              <ActionButton
+                className={actionClassName}
+                data-testid={`open-lichess-${row.original.game_id || 'unknown'}`}
+                aria-label="Open game in Lichess"
+                disabled={!hasGameId}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (!hasGameId) return;
+                  void handleOpenLichess(row.original);
+                }}
+              >
+                Open in Lichess
+              </ActionButton>
+            </div>
           );
         },
       },
     ],
-    [handleOpenLichess],
+    [handleOpenGameDetail, handleOpenLichess],
   );
 
   const practiceOrientation = useMemo(() => {

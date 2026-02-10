@@ -1,6 +1,54 @@
 [
   {
     "category": "functional",
+    "description": "[UI] Practice modal board should be flipped so that the side to move is at the bottom",
+    "steps": [
+      "Step 1: Identify the practice modal board orientation",
+      "Step 2: Ensure the board flips so side to move is at the bottom",
+      "Step 3: Verify move input and highlights still align with the board",
+      "Step 4: Confirm no regressions in ChessboardModal usage",
+      "Step 5: Add or update UI automation coverage for the flipped orientation"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[Bug] UI shows the correct move right next to the board before playing it in the practice modal",
+    "steps": [
+      "Step 1: Identify where the correct move is shown in the practice modal",
+      "Step 2: Hide or defer the correct move display until after an attempt",
+      "Step 3: Ensure feedback still shows after submitting a move",
+      "Step 4: Verify the practice flow still records attempts correctly",
+      "Step 5: Add or update UI automation coverage for the corrected behavior"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[Bug] Chess.com shows available practice positions, but all sites does not",
+    "steps": [
+      "Step 1: Compare practice availability for chess.com vs all sources",
+      "Step 2: Fix the filtering so all sources reflect available positions",
+      "Step 3: Verify practice queue counts match dashboard filters",
+      "Step 4: Ensure practice button state matches availability for all",
+      "Step 5: Add or update UI automation coverage for the all-sources state"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[UI] Chess.com / Lichess selection should be moved to the filters",
+    "steps": [
+      "Step 1: Identify the current source selector in the dashboard",
+      "Step 2: Move the selector into the filters modal",
+      "Step 3: Ensure source changes still re-fetch data",
+      "Step 4: Verify the dashboard header no longer shows the selector",
+      "Step 5: Add or update UI automation coverage for the source filter"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
     "description": "[UI] Filter card is no longer needed",
     "steps": [
       "Step 1: Identify the filter card entry on the dashboard",

@@ -100,6 +100,9 @@ Session summary (2026-02-10):
 - Tests run: make check.
 
 Session summary (2026-02-10):
+- Added GitHub issues #46-#49 to feature_list.json as new top-priority work items.
+
+Session summary (2026-02-10):
 - Added a dedicated practice action button in the dashboard header with availability messaging and accessibility hints; wired it to the practice modal.
 - Added dashboard flow tests for the practice button enabled/disabled states and modal launch behavior.
 - Manual verification: node verification/puppeteer_feature_practice_button.js (feature-practice-button-2026-02-10.png).

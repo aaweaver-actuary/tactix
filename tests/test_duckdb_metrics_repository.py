@@ -9,6 +9,7 @@ from tactix.db.dashboard_repository_provider import fetch_metrics
 from tactix.db.duckdb_metrics_repository import (
     DuckDbMetricsRepository,
     default_metrics_dependencies,
+    _time_trouble_found_rate,
 )
 from tactix.db.duckdb_store import get_connection, init_schema
 from tactix.db.position_repository_provider import insert_positions
@@ -51,6 +52,17 @@ class DuckDbMetricsRepositoryTests(unittest.TestCase):
         repo_rows = self._sorted_rows(fetch_metrics(self.conn, DashboardQuery(source="all")))
 
         self.assertEqual(legacy_rows, repo_rows)
+
+    def test_time_trouble_found_rate_compares_safe_vs_trouble(self) -> None:
+        items = [
+            {"clock_seconds": 10, "result": "found"},
+            {"clock_seconds": 10, "result": "missed"},
+            {"clock_seconds": 50, "result": "found"},
+        ]
+
+        found_rate = _time_trouble_found_rate(items, threshold=30)
+
+        self.assertEqual(found_rate, 0.5)
 
     def _insert_dashboard_rows(self) -> None:
         scenarios = [

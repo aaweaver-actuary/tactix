@@ -310,6 +310,17 @@ def _count_found(items: list[dict[str, object]]) -> int:
     return sum(1 for item in items if item.get("result") == "found")
 
 
+def _rate_found(items: list[dict[str, object]]) -> float:
+    if not items:
+        return 0.0
+    return _count_found(items) / len(items)
+
+
+def _time_trouble_found_rate(items: list[dict[str, object]], threshold: int) -> float:
+    trouble_items, safe_items = _split_time_trouble_items(items, threshold)
+    return _rate_found(safe_items) - _rate_found(trouble_items)
+
+
 def _group_metric_rows(
     rows: list[dict[str, object]],
 ) -> dict[tuple[object, object, object, object], list[dict[str, object]]]:
@@ -395,13 +406,7 @@ def _build_time_trouble_row(
     total = len(items)
     counts = _count_result_types(items)
     miss_rate = _coerce_metric_rate(None, counts["missed"], total)
-    trouble_threshold = 30
-    trouble_items, safe_items = _split_time_trouble_items(items, trouble_threshold)
-    trouble_found = _count_found(trouble_items)
-    safe_found = _count_found(safe_items)
-    trouble_rate = trouble_found / len(trouble_items) if trouble_items else 0.0
-    safe_rate = safe_found / len(safe_items) if safe_items else 0.0
-    found_rate = safe_rate - trouble_rate
+    found_rate = _time_trouble_found_rate(items, threshold=30)
     return (
         source,
         "time_trouble_correlation",

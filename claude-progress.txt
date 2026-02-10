@@ -1,4 +1,10 @@
 Session summary (2026-02-10):
+- Extracted time-trouble found-rate calculation into helpers for metrics summary rows to separate rate logic from row formatting and keep functions focused.
+- Added unit coverage for the time-trouble found-rate helper.
+- Before -> after map: duckdb_metrics_repository._build_time_trouble_row inline trouble/safe rate math -> _rate_found + _time_trouble_found_rate helper.
+- Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
 - Shifted trend metrics to compute rolling 7/30-day windows (not per-game windows) and updated the motif trends badge to match.
 - Ensured dashboard time control filter always lists standard controls and allowed motif/trend/time-trouble metrics to render when filters are set to all.
 - Added MVP step-by-step manual + integration verification scripts; captured new screenshots for dashboard metrics and practice modal.

@@ -414,6 +414,23 @@ export default function DashboardFlow() {
     [practiceQueue],
   );
 
+  const browserPosition = useMemo(
+    () => (data?.positions?.length ? data.positions[0] : null),
+    [data?.positions],
+  );
+
+  const handleOpenChessboardModal = useCallback((position: PositionEntry) => {
+    setChessboardPosition(position);
+    setChessboardModalOpen(true);
+    setPracticeModalOpen(false);
+  }, []);
+
+  const handleOpenBrowserModal = useCallback(() => {
+    setChessboardPosition(browserPosition);
+    setChessboardModalOpen(true);
+    setPracticeModalOpen(false);
+  }, [browserPosition]);
+
   const practiceButtonState = useMemo(
     () =>
       buildPracticeButtonState({
@@ -451,6 +468,13 @@ export default function DashboardFlow() {
         onClick: () => setDatabaseModalOpen(true),
       },
       {
+        id: 'browser',
+        label: 'Browser',
+        ariaLabel: 'Open browser board',
+        testId: 'browser-open',
+        onClick: handleOpenBrowserModal,
+      },
+      {
         id: 'recent-games',
         label: 'Recent games',
         ariaLabel: 'Open recent games',
@@ -466,6 +490,7 @@ export default function DashboardFlow() {
       },
     ],
     [
+      handleOpenBrowserModal,
       setDatabaseModalOpen,
       setFiltersModalOpen,
       setRecentGamesModalOpen,
@@ -533,12 +558,6 @@ export default function DashboardFlow() {
       rowSource ?? (source === 'all' ? undefined : source),
     [source],
   );
-
-  const handleOpenChessboardModal = useCallback((position: PositionEntry) => {
-    setChessboardPosition(position);
-    setChessboardModalOpen(true);
-    setPracticeModalOpen(false);
-  }, []);
 
   const handleCloseChessboardModal = useCallback(() => {
     setChessboardModalOpen(false);

@@ -238,18 +238,15 @@ const filterScopedTactics = (tactics: DashboardPayload['tactics']) =>
 const filterScopedPracticeQueue = (items: PracticeQueueItem[]) =>
   items.filter((item) => isScopedMotif(item.motif));
 
+const GAME_RESULT_LABELS_BY_COLOR: Record<string, Record<string, string>> = {
+  '1-0': { white: 'Win', black: 'Loss' },
+  '0-1': { white: 'Loss', black: 'Win' },
+};
+
 const formatGameResult = (result: string | null, userColor: string | null) => {
   if (!result) return '--';
   if (result === '1/2-1/2') return 'Draw';
-  if (result === '1-0') {
-    if (userColor === 'white') return 'Win';
-    if (userColor === 'black') return 'Loss';
-  }
-  if (result === '0-1') {
-    if (userColor === 'black') return 'Win';
-    if (userColor === 'white') return 'Loss';
-  }
-  return result;
+  return GAME_RESULT_LABELS_BY_COLOR[result]?.[userColor ?? ''] ?? result;
 };
 
 const formatGameDate = (value: string | null) => {

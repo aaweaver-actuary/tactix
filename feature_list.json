@@ -33,7 +33,7 @@
       "Step 4: Verify layout on desktop and mobile",
       "Step 5: Add or update UI automation coverage for the redesigned hero"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

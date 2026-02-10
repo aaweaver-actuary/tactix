@@ -45,3 +45,223 @@ body {
   transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(27, 179, 169, 0.35);
 }
+
+.hero-card {
+  --hero-surface: rgba(9, 24, 34, 0.92);
+  --hero-accent: #1bb3a9;
+  --hero-warm: #d35b3f;
+  --hero-text: #f3e6d3;
+  --hero-border: rgba(243, 230, 211, 0.18);
+  background:
+    radial-gradient(
+      circle at 15% 15%,
+      rgba(27, 179, 169, 0.24),
+      transparent 45%
+    ),
+    radial-gradient(circle at 85% 10%, rgba(211, 91, 63, 0.2), transparent 38%),
+    linear-gradient(135deg, rgba(7, 22, 32, 0.98), rgba(14, 38, 52, 0.94));
+  border: 1px solid var(--hero-border);
+  box-shadow: 0 26px 44px rgba(0, 0, 0, 0.38);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-card::before,
+.hero-card::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.hero-card::before {
+  top: -90px;
+  right: -140px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(
+    circle,
+    rgba(27, 179, 169, 0.38),
+    transparent 70%
+  );
+  opacity: 0.85;
+}
+
+.hero-card::after {
+  bottom: -140px;
+  left: -150px;
+  width: 330px;
+  height: 330px;
+  background: radial-gradient(circle, rgba(211, 91, 63, 0.32), transparent 70%);
+  opacity: 0.75;
+}
+
+.hero-grid {
+  display: grid;
+  gap: 1.75rem;
+  position: relative;
+  z-index: 1;
+}
+
+@media (min-width: 768px) {
+  .hero-grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    align-items: center;
+  }
+}
+
+.hero-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(243, 230, 211, 0.68);
+}
+
+.hero-chip {
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(27, 179, 169, 0.18);
+  color: rgba(227, 252, 249, 0.95);
+  border: 1px solid rgba(27, 179, 169, 0.35);
+}
+
+.hero-title {
+  text-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+}
+
+.hero-summary {
+  color: rgba(243, 230, 211, 0.82);
+  max-width: 36rem;
+  line-height: 1.5;
+}
+
+.hero-panel {
+  background: rgba(7, 22, 32, 0.7);
+  border: 1px solid rgba(243, 230, 211, 0.12);
+  border-radius: 18px;
+  padding: 1.25rem;
+  box-shadow:
+    inset 0 0 0 1px rgba(27, 179, 169, 0.08),
+    0 18px 30px rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.hero-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.hero-panel-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(243, 230, 211, 0.92);
+}
+
+.hero-panel-subtitle {
+  font-size: 0.75rem;
+  color: rgba(243, 230, 211, 0.6);
+}
+
+.hero-panel-badge {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(243, 230, 211, 0.1);
+  color: rgba(243, 230, 211, 0.72);
+  border: 1px solid rgba(243, 230, 211, 0.2);
+}
+
+.hero-backfill {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: rgba(243, 230, 211, 0.7);
+}
+
+.hero-backfill-label {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.hero-backfill-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hero-backfill-input {
+  border-radius: 10px;
+  border: 1px solid rgba(243, 230, 211, 0.2);
+  background: rgba(11, 31, 42, 0.8);
+  padding: 0.35rem 0.6rem;
+  color: rgba(243, 230, 211, 0.9);
+}
+
+.hero-backfill-input:focus {
+  outline: 2px solid rgba(27, 179, 169, 0.55);
+  outline-offset: 1px;
+}
+
+.hero-backfill-separator {
+  color: rgba(243, 230, 211, 0.5);
+}
+
+.hero-button-primary {
+  background: linear-gradient(
+    135deg,
+    rgba(27, 179, 169, 0.98),
+    rgba(27, 179, 169, 0.7)
+  );
+  color: rgba(6, 35, 43, 0.95);
+  border: 1px solid rgba(27, 179, 169, 0.6);
+  font-weight: 600;
+}
+
+.hero-button-accent {
+  background: rgba(27, 179, 169, 0.14);
+  border: 1px solid rgba(27, 179, 169, 0.35);
+  color: rgba(186, 245, 240, 0.95);
+}
+
+.hero-button-ghost {
+  background: rgba(11, 31, 42, 0.35);
+  border: 1px solid rgba(243, 230, 211, 0.22);
+  color: rgba(243, 230, 211, 0.9);
+}
+
+@keyframes heroRise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-entrance {
+  animation: heroRise 700ms ease both;
+}
+
+.hero-entrance-delay {
+  animation: heroRise 700ms ease both;
+  animation-delay: 120ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-entrance,
+  .hero-entrance-delay {
+    animation: none;
+  }
+}

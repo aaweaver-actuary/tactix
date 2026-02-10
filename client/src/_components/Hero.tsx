@@ -60,7 +60,7 @@ const HeroActions = ({
 }: HeroActionsProps) => (
   <div className="flex flex-wrap gap-3">
     <BaseButton
-      className="button bg-teal text-night px-4 py-3 rounded-lg font-display"
+      className="button hero-button-primary px-4 py-3 rounded-lg font-display"
       onClick={onRun}
       disabled={disabled}
       data-testid="action-run"
@@ -68,7 +68,7 @@ const HeroActions = ({
       {loading ? 'Running…' : 'Run + Refresh'}
     </BaseButton>
     <BaseButton
-      className="button border border-teal/50 text-teal px-4 py-3 rounded-lg"
+      className="button hero-button-accent px-4 py-3 rounded-lg"
       onClick={onBackfill}
       disabled={disabled}
       data-testid="action-backfill"
@@ -76,7 +76,7 @@ const HeroActions = ({
       Backfill history
     </BaseButton>
     <BaseButton
-      className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
+      className="button hero-button-ghost px-4 py-3 rounded-lg"
       onClick={onMigrate}
       disabled={disabled}
       data-testid="action-migrate"
@@ -84,7 +84,7 @@ const HeroActions = ({
       Run migrations
     </BaseButton>
     <BaseButton
-      className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
+      className="button hero-button-ghost px-4 py-3 rounded-lg"
       onClick={onRefresh}
       disabled={disabled}
       data-testid="action-refresh"
@@ -101,31 +101,33 @@ const BackfillRange = ({
   onEndChange,
   disabled,
 }: BackfillRangeProps) => (
-  <div className="flex flex-wrap items-center gap-2 text-xs text-sand/70">
-    <span className="uppercase tracking-wide">Backfill range</span>
-    <label className="flex items-center gap-2">
-      <span className="sr-only">Backfill start date</span>
-      <input
-        type="date"
-        value={startDate}
-        onChange={(event) => onStartChange(event.target.value)}
-        className="rounded border border-sand/20 bg-night px-2 py-1 text-sand"
-        data-testid="backfill-start"
-        disabled={disabled}
-      />
-    </label>
-    <span>to</span>
-    <label className="flex items-center gap-2">
-      <span className="sr-only">Backfill end date</span>
-      <input
-        type="date"
-        value={endDate}
-        onChange={(event) => onEndChange(event.target.value)}
-        className="rounded border border-sand/20 bg-night px-2 py-1 text-sand"
-        data-testid="backfill-end"
-        disabled={disabled}
-      />
-    </label>
+  <div className="hero-backfill">
+    <span className="hero-backfill-label">Backfill range</span>
+    <div className="hero-backfill-inputs">
+      <label className="flex items-center gap-2">
+        <span className="sr-only">Backfill start date</span>
+        <input
+          type="date"
+          value={startDate}
+          onChange={(event) => onStartChange(event.target.value)}
+          className="hero-backfill-input"
+          data-testid="backfill-start"
+          disabled={disabled}
+        />
+      </label>
+      <span className="hero-backfill-separator">to</span>
+      <label className="flex items-center gap-2">
+        <span className="sr-only">Backfill end date</span>
+        <input
+          type="date"
+          value={endDate}
+          onChange={(event) => onEndChange(event.target.value)}
+          className="hero-backfill-input"
+          data-testid="backfill-end"
+          disabled={disabled}
+        />
+      </label>
+    </div>
   </div>
 );
 
@@ -168,37 +170,57 @@ export default function Hero({
 
   return (
     <div
-      className="card p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+      className="card hero-card px-6 py-7 md:px-8 md:py-8"
       data-testid="dashboard-hero"
     >
-      <div>
-        <Text mode="normal" size="sm" value="Airflow DAG · daily_game_sync" />
-        <h1 className="text-3xl md:text-4xl font-display text-sand mt-2">
-          {title}
-        </h1>
-        <Text
-          mode="normal"
-          size="sm"
-          mt="2"
-          value={`Execution stamped via metrics version ${version} · user ${user}`}
-        />
-      </div>
-      <div className="flex flex-col gap-3">
-        <HeroActions
-          onRun={onRun}
-          onBackfill={onBackfill}
-          onRefresh={onRefresh}
-          onMigrate={onMigrate}
-          loading={loading}
-          disabled={actionsDisabled}
-        />
-        <BackfillRange
-          startDate={backfillStartDate}
-          endDate={backfillEndDate}
-          onStartChange={onBackfillStartChange}
-          onEndChange={onBackfillEndChange}
-          disabled={actionsDisabled}
-        />
+      <div className="hero-grid">
+        <div className="hero-copy hero-entrance">
+          <div className="hero-kicker">
+            <span className="hero-chip">Pipeline control</span>
+            <span className="hero-kicker-text">
+              Airflow DAG · daily_game_sync
+            </span>
+          </div>
+          <h1 className="hero-title text-3xl md:text-4xl font-display text-sand mt-3">
+            {title}
+          </h1>
+          <p className="hero-summary mt-3">
+            Orchestrate daily sync, backfills, and metrics refreshes while
+            keeping tactics practice up to date.
+          </p>
+          <Text
+            mode="normal"
+            size="sm"
+            mt="2"
+            value={`Execution stamped via metrics version ${version} · user ${user}`}
+          />
+        </div>
+        <div className="hero-panel hero-entrance-delay">
+          <div className="hero-panel-heading">
+            <div>
+              <p className="hero-panel-title">Pipeline actions</p>
+              <p className="hero-panel-subtitle">Run actions per source.</p>
+            </div>
+            <span className="hero-panel-badge">
+              {actionsDisabled ? 'Scoped to all sites' : 'Ready'}
+            </span>
+          </div>
+          <HeroActions
+            onRun={onRun}
+            onBackfill={onBackfill}
+            onRefresh={onRefresh}
+            onMigrate={onMigrate}
+            loading={loading}
+            disabled={actionsDisabled}
+          />
+          <BackfillRange
+            startDate={backfillStartDate}
+            endDate={backfillEndDate}
+            onStartChange={onBackfillStartChange}
+            onEndChange={onBackfillEndChange}
+            disabled={actionsDisabled}
+          />
+        </div>
       </div>
     </div>
   );

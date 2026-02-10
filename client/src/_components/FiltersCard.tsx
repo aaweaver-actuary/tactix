@@ -7,6 +7,7 @@ import { ChessPlatform, ChesscomProfile, LichessProfile } from '../types';
 import Badge from './Badge';
 import BaseButton from './BaseButton';
 import BaseCard, { BaseCardDragProps } from './BaseCard';
+import ModalHeader from './ModalHeader';
 import ModalShell from './ModalShell';
 import Text from './Text';
 
@@ -272,22 +273,21 @@ export default function FiltersCard({
               onClose={() => setModalOpen(false)}
               panelClassName="max-w-5xl"
             >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <Text mode="uppercase" value="Filters" />
-                  <div className="text-xs text-sand/60">
-                    Adjust sources, motifs, and time windows
-                  </div>
-                </div>
-                <BaseButton
-                  onClick={() => setModalOpen(false)}
-                  className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
-                  aria-label="Close filters"
-                  data-testid="filters-modal-close"
-                >
-                  Close
-                </BaseButton>
-              </div>
+              <ModalHeader
+                title="Filters"
+                description="Adjust sources, motifs, and time windows"
+                className="flex-wrap"
+                rightSlot={
+                  <BaseButton
+                    onClick={() => setModalOpen(false)}
+                    className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
+                    aria-label="Close filters"
+                    data-testid="filters-modal-close"
+                  >
+                    Close
+                  </BaseButton>
+                }
+              />
               <div className="mt-4">
                 <FiltersForm
                   source={source}

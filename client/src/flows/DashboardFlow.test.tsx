@@ -662,6 +662,82 @@ describe('DashboardFlow', () => {
     openSpy.mockRestore();
   });
 
+  it('opens the game detail modal from recent tactics actions', async () => {
+    render(<DashboardFlow />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('tactics-go-to-game-g1')).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByTestId('tactics-go-to-game-g1'));
+
+    await waitFor(() => {
+      expect(fetchGameDetail).toHaveBeenCalledWith('g1', 'chesscom');
+    });
+
+    expect(await screen.findByTestId('game-detail-modal')).toBeInTheDocument();
+  });
+
+  it('opens the Lichess analysis URL from the recent tactics table', async () => {
+    const popup = {
+      location: { href: '' },
+      opener: 'active',
+      close: vi.fn(),
+    };
+    const openSpy = vi
+      .spyOn(window, 'open')
+      .mockImplementation(() => popup as unknown as Window);
+
+    render(<DashboardFlow />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('tactics-open-lichess-g1')).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByTestId('tactics-open-lichess-g1'));
+
+    await waitFor(() => {
+      expect(fetchGameDetail).toHaveBeenCalledWith('g1', 'chesscom');
+    });
+
+    const expectedUrl = buildLichessAnalysisUrl(baseGameDetail.pgn);
+    if (!expectedUrl) {
+      throw new Error('Expected Lichess analysis URL to be generated.');
+    }
+
+    expect(openSpy).toHaveBeenCalledWith('about:blank', '_blank');
+    expect(popup.location.href).toBe(expectedUrl);
+    expect(popup.opener).toBeNull();
+
+    openSpy.mockRestore();
+  });
+
+  it('disables tactics actions when the tactic row has no game id', async () => {
+    const missingGameIdDashboard: DashboardPayload = {
+      ...baseDashboard,
+      tactics: [
+        {
+          ...baseDashboard.tactics[0],
+          game_id: null,
+          source: null,
+        },
+      ],
+      recent_games: [],
+      positions: [],
+    };
+
+    (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      missingGameIdDashboard,
+    );
+
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+
+    expect(screen.getByTestId('tactics-go-to-game-unknown')).toBeDisabled();
+    expect(screen.getByTestId('tactics-open-lichess-unknown')).toBeDisabled();
+  });
+
   it('keeps practice session total fixed after a successful attempt', async () => {
     const queue = buildPracticeQueue(5);
     (fetchPracticeQueue as unknown as ReturnType<typeof vi.fn>)

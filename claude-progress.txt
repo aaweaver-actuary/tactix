@@ -268,3 +268,11 @@ Session summary (2026-02-10):
 - Manual verification: node verification/puppeteer_feature_hero_redesign.js (feature-hero-redesign-desktop-2026-02-10.png, feature-hero-redesign-mobile-2026-02-10.png).
 - Integration verification: node verification/integration_feature_hero_redesign.js.
 - Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
+- Added Recent tactics action buttons for Go to Game and Open in Lichess, with disabled states when game ids are missing.
+- Added unit coverage for recent tactics actions (Go to Game, Open in Lichess, disabled state).
+- Regression verification (requested features): node verification/puppeteer_feature_practice_button.js (regression-practice-button-2026-02-10.png); node verification/puppeteer_feature_database_modal.js (regression-fab-database-modal-2026-02-10.png); node verification/puppeteer_feature_chessboard_modal.js (regression-chessboard-modal-open-2026-02-10.png, feature-chessboard-modal-closed-2026-02-09.png).
+- Manual verification: node verification/puppeteer_feature_recent_tactics_actions.js (feature-recent-tactics-actions-2026-02-10.png).
+- Integration verification: node verification/integration_feature_recent_tactics_actions.js.
+- Tests run: make check.

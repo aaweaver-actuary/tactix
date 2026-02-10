@@ -569,6 +569,33 @@ export default function DashboardFlow() {
     [resolveGameSource],
   );
 
+  const handleOpenGameDetail = useCallback(
+    async (row: { game_id?: string | null; source?: string | null }) => {
+      if (!row.game_id) {
+        setGameDetailError('Selected game is missing a game id.');
+        setGameDetailOpen(true);
+        return;
+      }
+      setGameDetailOpen(true);
+      setGameDetailLoading(true);
+      setGameDetailError(null);
+      setGameDetail(null);
+      try {
+        const detail = await fetchGameDetail(
+          row.game_id,
+          resolveGameSource(row.source),
+        );
+        setGameDetail(detail);
+      } catch (err) {
+        console.error(err);
+        setGameDetailError('Failed to load game details.');
+      } finally {
+        setGameDetailLoading(false);
+      }
+    },
+    [resolveGameSource],
+  );
+
   const handleResetFilters = useCallback(() => {
     setFilters({ ...DEFAULT_FILTERS });
   }, [setFilters]);
@@ -1350,8 +1377,48 @@ export default function DashboardFlow() {
           </span>
         ),
       },
+      {
+        header: 'Actions',
+        id: 'tactics-actions',
+        cell: ({ row }) => {
+          const hasGameId = Boolean(row.original.game_id);
+          const gameId = row.original.game_id ?? 'unknown';
+          const buttonClasses =
+            'rounded border border-white/10 px-2 py-1 text-xs text-sand/80 hover:border-white/30 disabled:cursor-not-allowed disabled:border-white/5 disabled:text-sand/40';
+          return (
+            <div className="flex flex-wrap gap-2">
+              <ActionButton
+                className={buttonClasses}
+                data-testid={`tactics-go-to-game-${gameId}`}
+                aria-label="Go to game"
+                disabled={!hasGameId}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (!hasGameId) return;
+                  void handleOpenGameDetail(row.original);
+                }}
+              >
+                Go to Game
+              </ActionButton>
+              <ActionButton
+                className={buttonClasses}
+                data-testid={`tactics-open-lichess-${gameId}`}
+                aria-label="Open in Lichess"
+                disabled={!hasGameId}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (!hasGameId) return;
+                  void handleOpenLichess(row.original);
+                }}
+              >
+                Open in Lichess
+              </ActionButton>
+            </div>
+          );
+        },
+      },
     ],
-    [],
+    [handleOpenGameDetail, handleOpenLichess],
   );
 
   const practiceQueueColumns = useMemo<ColumnDef<PracticeQueueItem>[]>(
@@ -1646,33 +1713,6 @@ export default function DashboardFlow() {
   }, [motifBreakdown, motifCardOrder]);
 
   const dashboardCardEntries: BaseCardEntry[] = useMemo(() => {
-    const handleGameDetail = async (row: {
-      game_id?: string | null;
-      source?: string | null;
-    }): Promise<void> => {
-      if (!row.game_id) {
-        setGameDetailError('Selected game is missing a game id.');
-        setGameDetailOpen(true);
-        return;
-      }
-      setGameDetailOpen(true);
-      setGameDetailLoading(true);
-      setGameDetailError(null);
-      setGameDetail(null);
-      try {
-        const detail = await fetchGameDetail(
-          row.game_id,
-          resolveGameSource(row.source),
-        );
-        setGameDetail(detail);
-      } catch (err) {
-        console.error(err);
-        setGameDetailError('Failed to load game details.');
-      } finally {
-        setGameDetailLoading(false);
-      }
-    };
-
     return [
       {
         id: 'metrics-summary',
@@ -1748,7 +1788,7 @@ export default function DashboardFlow() {
             includeFailedAttempt={includeFailedAttempt}
             loading={practiceLoading}
             onIncludeFailedAttemptChange={handleIncludeFailedAttemptChange}
-            onRowClick={handleGameDetail}
+            onRowClick={handleOpenGameDetail}
             rowTestId={(row, index) =>
               `practice-queue-row-${row.source ?? 'unknown'}-${index}`
             }
@@ -1765,7 +1805,7 @@ export default function DashboardFlow() {
             <RecentGamesCard
               data={data.recent_games}
               columns={recentGamesColumns}
-              onRowClick={handleGameDetail}
+              onRowClick={handleOpenGameDetail}
               rowTestId={(row, index) =>
                 `recent-games-row-${row.source ?? 'unknown'}-${index}`
               }
@@ -1782,7 +1822,7 @@ export default function DashboardFlow() {
             <RecentTacticsCard
               data={data.tactics}
               columns={tacticsColumns}
-              onRowClick={handleGameDetail}
+              onRowClick={handleOpenGameDetail}
               rowTestId={(row) =>
                 row.game_id
                   ? `dashboard-game-row-${row.game_id}`
@@ -1827,6 +1867,7 @@ export default function DashboardFlow() {
     data,
     handleIncludeFailedAttemptChange,
     handleOpenChessboardModal,
+    handleOpenGameDetail,
     includeFailedAttempt,
     jobProgress,
     jobStatus,

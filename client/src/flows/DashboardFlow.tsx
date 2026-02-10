@@ -125,6 +125,66 @@ const formatCorrelation = (value: number | null) => {
 const formatRate = (value: number | null) =>
   value === null || Number.isNaN(value) ? '--' : `${(value * 100).toFixed(1)}%`;
 
+type PracticeButtonState = {
+  label: string;
+  helper: string;
+  disabled: boolean;
+};
+
+type PracticeButtonStateInput = {
+  loading: boolean;
+  error: string | null;
+  hasPractice: boolean;
+  queueLength: number;
+  modalOpen: boolean;
+  sessionTotal: number;
+};
+
+const PRACTICE_LOADING_STATE: PracticeButtonState = {
+  label: 'Loading practice...',
+  helper: 'Fetching the daily practice queue.',
+  disabled: true,
+};
+
+const PRACTICE_COMPLETE_STATE: PracticeButtonState = {
+  label: 'Practice complete',
+  helper: 'Daily set complete. Great work.',
+  disabled: true,
+};
+
+const PRACTICE_EMPTY_STATE: PracticeButtonState = {
+  label: 'No practice items',
+  helper: 'Refresh metrics to find new tactics.',
+  disabled: true,
+};
+
+const createPracticeErrorState = (message: string): PracticeButtonState => ({
+  label: 'Practice unavailable',
+  helper: message,
+  disabled: true,
+});
+
+const createPracticeReadyState = (
+  count: number,
+  modalOpen: boolean,
+): PracticeButtonState => {
+  const label = modalOpen ? 'Continue practice' : 'Start practice';
+  const helper = `${count} tactic${count === 1 ? '' : 's'} ready.`;
+  return { label, helper, disabled: false };
+};
+
+const buildPracticeButtonState = (
+  input: PracticeButtonStateInput,
+): PracticeButtonState => {
+  if (input.loading) return PRACTICE_LOADING_STATE;
+  if (input.error) return createPracticeErrorState(input.error);
+  if (input.hasPractice) {
+    return createPracticeReadyState(input.queueLength, input.modalOpen);
+  }
+  if (input.sessionTotal > 0) return PRACTICE_COMPLETE_STATE;
+  return PRACTICE_EMPTY_STATE;
+};
+
 const filterScopedMetrics = (metrics: DashboardPayload['metrics']) =>
   metrics.filter((row) => isAllowedMotifFilter(row.motif));
 
@@ -303,51 +363,25 @@ export default function DashboardFlow() {
     [practiceQueue],
   );
 
-  const practiceButtonState = useMemo(() => {
-    if (practiceLoading) {
-      return {
-        label: 'Loading practice...',
-        helper: 'Fetching the daily practice queue.',
-        disabled: true,
-      };
-    }
-
-    if (practiceError) {
-      return {
-        label: 'Practice unavailable',
-        helper: practiceError,
-        disabled: true,
-      };
-    }
-
-    if (currentPractice) {
-      const count = practiceQueue.length;
-      const label = practiceModalOpen ? 'Continue practice' : 'Start practice';
-      const helper = `${count} tactic${count === 1 ? '' : 's'} ready.`;
-      return { label, helper, disabled: false };
-    }
-
-    if (practiceSession.total > 0) {
-      return {
-        label: 'Practice complete',
-        helper: 'Daily set complete. Great work.',
-        disabled: true,
-      };
-    }
-
-    return {
-      label: 'No practice items',
-      helper: 'Refresh metrics to find new tactics.',
-      disabled: true,
-    };
-  }, [
-    currentPractice,
-    practiceError,
-    practiceLoading,
-    practiceModalOpen,
-    practiceQueue.length,
-    practiceSession.total,
-  ]);
+  const practiceButtonState = useMemo(
+    () =>
+      buildPracticeButtonState({
+        loading: practiceLoading,
+        error: practiceError,
+        hasPractice: Boolean(currentPractice),
+        queueLength: practiceQueue.length,
+        modalOpen: practiceModalOpen,
+        sessionTotal: practiceSession.total,
+      }),
+    [
+      currentPractice,
+      practiceError,
+      practiceLoading,
+      practiceModalOpen,
+      practiceQueue.length,
+      practiceSession.total,
+    ],
+  );
 
   const floatingActions = useMemo<FloatingAction[]>(
     () => [

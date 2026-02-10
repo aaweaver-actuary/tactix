@@ -106,3 +106,8 @@ Session summary (2026-02-10):
 - Integration verification: node verification/integration_feature_practice_button.js.
 - Regression verification: node verification/puppeteer_feature_settings_modal.js, node verification/puppeteer_feature_database_modal.js, node verification/puppeteer_feature_chessboard_modal.js, node verification/puppeteer_feature_modal_escape.js, node verification/puppeteer_feature_game_detail_modal.js, node verification/puppeteer_feature_open_lichess_link.js, node verification/puppeteer_feature_dashboard_cards_collapsible_move.js, node verification/puppeteer_feature_listudy_assets.js, node verification/puppeteer_motif_filters.js, node verification/puppeteer_practice_attempt.js, node verification/puppeteer_issue_enter_submit.js, node verification/puppeteer_issue_practice_progress.js.
 - Tests run: make lint; cd client && ./node_modules/.bin/vitest run src/flows/DashboardFlow.test.tsx; make check (fails: pytest coverage 94.55% and tests/test_api_stats_motifs.py::test_stats_motifs_returns_schema).
+
+Session summary (2026-02-10):
+- Extracted practice button status resolution into dedicated helpers to simplify DashboardFlow state derivation.
+- Before -> after map: DashboardFlow inline practiceButtonState useMemo -> buildPracticeButtonState helpers (PRACTICE_* constants + createPractice* helpers).
+- Tests run: make check (before and after changes).

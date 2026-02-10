@@ -1,4 +1,8 @@
 Session summary (2026-02-10):
+- Removed unused RecentGamesCard/RecentTacticsCard components after FAB modal move to satisfy knip deadcode checks.
+- Tests run: make check.
+
+Session summary (2026-02-10):
 - Reused ModalHeader for recent games/tactics modals to keep modal chrome consistent and reduce duplicated header layout.
 - Before -> after map: RecentGamesModal/RecentTacticsModal inline header rows -> ModalHeader with badge/close rightSlot.
 - Adjusted DashboardFlow scoped motif test to open the recent tactics modal before asserting tactic row test ids.

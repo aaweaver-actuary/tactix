@@ -21,7 +21,7 @@
       "Step 4: Confirm orientation remains correct on the next position",
       "Step 5: Add or update UI automation coverage for orientation stability"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

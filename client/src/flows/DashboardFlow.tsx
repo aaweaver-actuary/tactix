@@ -1561,10 +1561,9 @@ export default function DashboardFlow() {
   );
 
   const practiceOrientation = useMemo(() => {
-    const fen = practiceFen || currentPractice?.fen || null;
-    const side = fen?.split(' ')[1];
+    const side = currentPractice?.fen?.split(' ')[1];
     return side === 'b' ? 'black' : 'white';
-  }, [currentPractice, practiceFen]);
+  }, [currentPractice]);
 
   const practiceHighlightStyles = useMemo(() => {
     if (!practiceLastMove) return {};

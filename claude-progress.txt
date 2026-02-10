@@ -200,6 +200,14 @@ Session summary (2026-02-10):
 - Tests run: make lint; cd client && ./node_modules/.bin/vitest run src/flows/DashboardFlow.test.tsx; make check (fails: pytest coverage 94.55% and tests/test_api_stats_motifs.py::test_stats_motifs_returns_schema).
 
 Session summary (2026-02-10):
+- Fixed practice board orientation stability by locking practice orientation to the current practice FEN (avoids post-move flip).
+- Updated practice orientation manual + integration automation to submit a correct move, confirm orientation stability, and verify move highlights.
+- Regression verification (requested features): node verification/puppeteer_feature_practice_button.js (feature-practice-button-2026-02-10.png); node verification/puppeteer_feature_database_modal.js (feature-fab-database-modal-2026-02-10.png); node verification/puppeteer_feature_chessboard_modal.js (feature-chessboard-modal-open-2026-02-09.png, feature-chessboard-modal-closed-2026-02-09.png).
+- Manual verification: node verification/puppeteer_feature_practice_orientation.js (feature-practice-orientation-2026-02-10.png).
+- Integration verification: node verification/integration_feature_practice_orientation.js.
+- Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
 - Extracted practice button status resolution into dedicated helpers to simplify DashboardFlow state derivation.
 - Before -> after map: DashboardFlow inline practiceButtonState useMemo -> buildPracticeButtonState helpers (PRACTICE_* constants + createPractice* helpers).
 - Tests run: make check (before and after changes).

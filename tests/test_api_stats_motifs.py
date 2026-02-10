@@ -6,18 +6,18 @@ from tactix.tactic_scope import allowed_motif_list
 
 
 def test_stats_motifs_requires_auth() -> None:
-    client = TestClient(app)
-    response = client.get("/api/stats/motifs")
+    with TestClient(app) as client:
+        response = client.get("/api/stats/motifs")
     assert response.status_code == 401
 
 
 def test_stats_motifs_returns_schema() -> None:
-    client = TestClient(app)
     token = get_settings().api_token
-    response = client.get(
-        "/api/stats/motifs?source=all",
-        headers={"Authorization": f"Bearer {token}"},
-    )
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/stats/motifs?source=all",
+            headers={"Authorization": f"Bearer {token}"},
+        )
     assert response.status_code == 200
     payload = response.json()
     assert set(payload.keys()) == {"source", "metrics_version", "motifs"}
@@ -59,18 +59,18 @@ def test_stats_motifs_returns_schema() -> None:
 
 
 def test_stats_trends_requires_auth() -> None:
-    client = TestClient(app)
-    response = client.get("/api/stats/trends")
+    with TestClient(app) as client:
+        response = client.get("/api/stats/trends")
     assert response.status_code == 401
 
 
 def test_stats_trends_returns_schema() -> None:
-    client = TestClient(app)
     token = get_settings().api_token
-    response = client.get(
-        "/api/stats/trends?source=all",
-        headers={"Authorization": f"Bearer {token}"},
-    )
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/stats/trends?source=all",
+            headers={"Authorization": f"Bearer {token}"},
+        )
     assert response.status_code == 200
     payload = response.json()
     assert set(payload.keys()) == {"source", "metrics_version", "trends"}

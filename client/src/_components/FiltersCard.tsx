@@ -55,6 +55,32 @@ interface FiltersFormProps {
   onResetFilters: () => void;
 }
 
+interface FiltersActionButtonProps {
+  label: string;
+  onClick: () => void;
+  testId: string;
+  ariaLabel: string;
+  disabled: boolean;
+}
+
+const FiltersActionButton = ({
+  label,
+  onClick,
+  testId,
+  ariaLabel,
+  disabled,
+}: FiltersActionButtonProps) => (
+  <BaseButton
+    className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
+    onClick={onClick}
+    data-testid={testId}
+    aria-label={ariaLabel}
+    disabled={disabled}
+  >
+    {label}
+  </BaseButton>
+);
+
 function FiltersForm({
   source,
   loading,
@@ -249,14 +275,13 @@ export default function FiltersCard({
                 <Badge label="Live" />
               </div>
               {showOpenButton ? (
-                <BaseButton
-                  className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
+                <FiltersActionButton
+                  label="Open filters"
                   onClick={() => setModalOpen(true)}
-                  data-testid="filters-open"
+                  testId="filters-open"
+                  ariaLabel="Open filters"
                   disabled={loading}
-                >
-                  Open filters
-                </BaseButton>
+                />
               ) : null}
             </div>
           }
@@ -278,14 +303,13 @@ export default function FiltersCard({
                 description="Adjust sources, motifs, and time windows"
                 className="flex-wrap"
                 rightSlot={
-                  <BaseButton
+                  <FiltersActionButton
+                    label="Close"
                     onClick={() => setModalOpen(false)}
-                    className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
-                    aria-label="Close filters"
-                    data-testid="filters-modal-close"
-                  >
-                    Close
-                  </BaseButton>
+                    testId="filters-modal-close"
+                    ariaLabel="Close filters"
+                    disabled={false}
+                  />
                 }
               />
               <div className="mt-4">

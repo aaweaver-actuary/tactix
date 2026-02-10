@@ -1,4 +1,9 @@
 Session summary (2026-02-10):
+- Extracted shared FiltersActionButton to keep FiltersCard modal open/close buttons consistent and reduce duplicated styling logic.
+- Before -> after map: FiltersCard inline BaseButton for modal open/close -> FiltersActionButton component.
+- Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
 - Reused ModalHeader for the Filters modal header to keep modal chrome consistent and reduce duplicated header markup.
 - Before -> after map: FiltersCard inline filters modal header markup -> ModalHeader with rightSlot close button.
 - Tests run: make check (before and after changes).

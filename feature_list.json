@@ -21,7 +21,7 @@
       "Step 4: Verify the database modal preserves existing behavior and content",
       "Step 5: Add or update UI automation coverage for the database option"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

@@ -90,3 +90,11 @@ Session summary (2026-02-10):
 - Extracted the filters form UI from FiltersCard into a dedicated FiltersForm component to separate modal/card chrome from filter field logic.
 - Before -> after map: FiltersCard inline filtersBody -> FiltersForm component rendered inside FiltersCard modal.
 - Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
+- Consolidated Postgres dashboard cards into a new Database modal accessed from the FAB; removed Postgres cards/error banners from the dashboard layout.
+- Added DatabaseModal and updated Postgres card components to support non-collapsible modal rendering.
+- Stabilized verification helpers to close filters when no source change and to open practice modal for Enter-submit checks.
+- Manual verification: node verification/puppeteer_feature_database_modal.js (feature-fab-database-modal-2026-02-10.png). Regression re-runs: puppeteer_feature_settings_modal.js, puppeteer_feature_modal_escape.js, puppeteer_feature_chessboard_modal.js, puppeteer_feature_game_detail_modal.js, puppeteer_feature_open_lichess_link.js, puppeteer_feature_dashboard_cards_collapsible_move.js, puppeteer_feature_listudy_assets.js, puppeteer_motif_filters.js, puppeteer_practice_attempt.js, puppeteer_issue_enter_submit.js.
+- Integration verification: node verification/integration_feature_database_modal.js.
+- Tests run: make check.

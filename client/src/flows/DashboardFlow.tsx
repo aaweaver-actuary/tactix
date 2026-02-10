@@ -44,15 +44,13 @@ import {
   PracticeQueueCard,
   RecentGamesCard,
   RecentTacticsCard,
-  PostgresStatusCard,
-  PostgresRawPgnsCard,
-  PostgresAnalysisCard,
   JobProgressCard,
   PracticeAttemptCard,
   PositionsList,
   Hero,
   GameDetailModal,
   ChessboardModal,
+  DatabaseModal,
   ActionButton,
   FloatingActionButton,
 } from '../components';
@@ -86,9 +84,6 @@ const DEFAULT_FILTERS = {
 };
 const DASHBOARD_CARD_IDS = [
   'metrics-summary',
-  'postgres-status',
-  'postgres-raw-pgns',
-  'postgres-analysis',
   'job-progress',
   'metrics-grid',
   'metrics-trends',
@@ -292,6 +287,7 @@ export default function DashboardFlow() {
   const [chessboardPosition, setChessboardPosition] =
     useState<PositionEntry | null>(null);
   const [filtersModalOpen, setFiltersModalOpen] = useState(false);
+  const [databaseModalOpen, setDatabaseModalOpen] = useState(false);
   const [practiceModalOpen, setPracticeModalOpen] = useState(false);
 
   const currentPractice = useMemo(
@@ -308,8 +304,15 @@ export default function DashboardFlow() {
         testId: 'filters-open',
         onClick: () => setFiltersModalOpen(true),
       },
+      {
+        id: 'database',
+        label: 'Database',
+        ariaLabel: 'Open database details',
+        testId: 'database-open',
+        onClick: () => setDatabaseModalOpen(true),
+      },
     ],
-    [setFiltersModalOpen],
+    [setDatabaseModalOpen, setFiltersModalOpen],
   );
 
   const normalizedFilters = useMemo<DashboardFilters>(
@@ -1545,46 +1548,6 @@ export default function DashboardFlow() {
         ),
       },
       {
-        id: 'postgres-status',
-        label: 'Postgres status',
-        visible: Boolean(postgresStatus) || postgresLoading,
-        render: (props) => (
-          <PostgresStatusCard
-            status={postgresStatus}
-            loading={postgresLoading}
-            {...props}
-          />
-        ),
-      },
-      {
-        id: 'postgres-raw-pgns',
-        label: 'Postgres raw PGNs',
-        visible:
-          Boolean(postgresRawPgns) ||
-          postgresRawPgnsLoading ||
-          Boolean(postgresRawPgnsError),
-        render: (props) => (
-          <PostgresRawPgnsCard
-            data={postgresRawPgns}
-            loading={postgresRawPgnsLoading}
-            error={postgresRawPgnsError}
-            {...props}
-          />
-        ),
-      },
-      {
-        id: 'postgres-analysis',
-        label: 'Postgres analysis',
-        visible: postgresAnalysis.length > 0 || postgresAnalysisLoading,
-        render: (props) => (
-          <PostgresAnalysisCard
-            rows={postgresAnalysis}
-            loading={postgresAnalysisLoading}
-            {...props}
-          />
-        ),
-      },
-      {
         id: 'job-progress',
         label: 'Job progress',
         visible: jobProgress.length > 0,
@@ -1813,16 +1776,6 @@ export default function DashboardFlow() {
 
       {error ? <ErrorCard message={error} /> : null}
 
-      {postgresError ? <ErrorCard message={postgresError} /> : null}
-
-      {postgresAnalysisError ? (
-        <ErrorCard message={postgresAnalysisError} />
-      ) : null}
-
-      {postgresRawPgnsError ? (
-        <ErrorCard message={postgresRawPgnsError} />
-      ) : null}
-
       <DragDropContext
         onDragUpdate={(result) => {
           if (result.destination?.droppableId === DASHBOARD_CARD_DROPPABLE_ID) {
@@ -1981,6 +1934,19 @@ export default function DashboardFlow() {
         onModalOpenChange={setFiltersModalOpen}
         showOpenButton={false}
         showCard={false}
+      />
+      <DatabaseModal
+        open={databaseModalOpen}
+        onClose={() => setDatabaseModalOpen(false)}
+        status={postgresStatus}
+        statusLoading={postgresLoading}
+        statusError={postgresError}
+        rawPgns={postgresRawPgns}
+        rawPgnsLoading={postgresRawPgnsLoading}
+        rawPgnsError={postgresRawPgnsError}
+        analysisRows={postgresAnalysis}
+        analysisLoading={postgresAnalysisLoading}
+        analysisError={postgresAnalysisError}
       />
       <FloatingActionButton label="Open settings" actions={floatingActions} />
       <ChessboardModal

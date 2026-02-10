@@ -7,12 +7,16 @@ interface PostgresRawPgnsCardProps extends BaseCardDragProps {
   data: PostgresRawPgnsSummary | null;
   loading: boolean;
   error?: string | null;
+  collapsible?: boolean;
+  defaultCollapsed?: boolean;
 }
 
 export default function PostgresRawPgnsCard({
   data,
   loading,
   error,
+  collapsible,
+  defaultCollapsed,
   ...dragProps
 }: PostgresRawPgnsCardProps) {
   if (!data && !loading && !error) return null;
@@ -28,6 +32,8 @@ export default function PostgresRawPgnsCard({
       }
       contentClassName="pt-3"
       data-testid="postgres-raw-pgns"
+      collapsible={collapsible}
+      defaultCollapsed={defaultCollapsed}
       {...dragProps}
     >
       {error ? <Text mode="error" value={error} mt="2" /> : null}

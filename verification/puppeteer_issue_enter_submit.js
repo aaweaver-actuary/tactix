@@ -74,6 +74,11 @@ function ensureDir(filePath) {
       'Refresh metrics',
     );
 
+    await page.waitForSelector('[data-testid="practice-start"]', {
+      timeout: 60000,
+    });
+    await page.click('[data-testid="practice-start"]');
+
     await page.waitForSelector('h3', { timeout: 60000 });
     await new Promise((resolve) => setTimeout(resolve, 2000));
     const inputSelector = 'input[placeholder*="UCI"]';

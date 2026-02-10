@@ -6,11 +6,15 @@ import Text from './Text';
 interface PostgresAnalysisCardProps extends BaseCardDragProps {
   rows: PostgresAnalysisRow[];
   loading: boolean;
+  collapsible?: boolean;
+  defaultCollapsed?: boolean;
 }
 
 export default function PostgresAnalysisCard({
   rows,
   loading,
+  collapsible,
+  defaultCollapsed,
   ...dragProps
 }: PostgresAnalysisCardProps) {
   if (!rows.length && !loading) return null;
@@ -28,6 +32,8 @@ export default function PostgresAnalysisCard({
       }
       contentClassName="pt-3"
       data-testid="postgres-analysis"
+      collapsible={collapsible}
+      defaultCollapsed={defaultCollapsed}
       {...dragProps}
     >
       {rows.length ? (

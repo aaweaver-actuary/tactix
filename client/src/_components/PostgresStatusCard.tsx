@@ -6,11 +6,15 @@ import Text from './Text';
 interface PostgresStatusCardProps extends BaseCardDragProps {
   status: PostgresStatus | null;
   loading: boolean;
+  collapsible?: boolean;
+  defaultCollapsed?: boolean;
 }
 
 export default function PostgresStatusCard({
   status,
   loading,
+  collapsible,
+  defaultCollapsed,
   ...dragProps
 }: PostgresStatusCardProps) {
   if (!status && !loading) return null;
@@ -20,6 +24,8 @@ export default function PostgresStatusCard({
       <BaseCard
         className="p-4"
         header={<span className="sr-only">Postgres status</span>}
+        collapsible={collapsible}
+        defaultCollapsed={defaultCollapsed}
         {...dragProps}
       >
         <div className="text-sand/70">Loading Postgres status...</div>
@@ -46,6 +52,8 @@ export default function PostgresStatusCard({
       }
       contentClassName="pt-3"
       data-testid="postgres-status"
+      collapsible={collapsible}
+      defaultCollapsed={defaultCollapsed}
       {...dragProps}
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

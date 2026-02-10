@@ -14,6 +14,7 @@ import MetricsSummaryCard from './_components/MetricsSummaryCard';
 import PostgresStatusCard from './_components/PostgresStatusCard';
 import PostgresRawPgnsCard from './_components/PostgresRawPgnsCard';
 import PostgresAnalysisCard from './_components/PostgresAnalysisCard';
+import DatabaseModal from './_components/DatabaseModal';
 import JobProgressCard from './_components/JobProgressCard';
 import PracticeAttemptCard from './_components/PracticeAttemptCard';
 import GameDetailModal from './_components/GameDetailModal';
@@ -37,6 +38,7 @@ export {
   PostgresStatusCard,
   PostgresRawPgnsCard,
   PostgresAnalysisCard,
+  DatabaseModal,
   JobProgressCard,
   PracticeAttemptCard,
   GameDetailModal,

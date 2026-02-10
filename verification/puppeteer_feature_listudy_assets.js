@@ -1,6 +1,7 @@
 const puppeteer = require('../client/node_modules/puppeteer');
 const { selectSource } = require('./enter_submit_helpers');
 const { waitForListudyAssets } = require('./listudy_assets_helpers');
+const { ensureCardExpanded } = require('./helpers/client_e2e_helpers');
 const {
   attachConsoleCapture,
   captureScreenshot,
@@ -11,6 +12,10 @@ const screenshotName =
   process.env.TACTIX_SCREENSHOT_NAME ||
   'feature-listudy-assets-2026-02-08.png';
 const source = process.env.TACTIX_SOURCE || 'chesscom';
+const selectors = {
+  positionsRow: '[data-testid^="positions-row-"]',
+  chessboardModal: '[data-testid="chessboard-modal"]',
+};
 
 (async () => {
   const browser = await puppeteer.launch({ headless: 'new' });
@@ -24,17 +29,11 @@ const source = process.env.TACTIX_SOURCE || 'chesscom';
 
     await selectSource(page, source);
 
-    console.log('Refreshing metrics to load practice data...');
-    await page.$$eval(
-      'button',
-      (buttons, label) => {
-        const target = buttons.find(
-          (btn) => btn.textContent && btn.textContent.includes(label),
-        );
-        if (target) target.click();
-      },
-      'Refresh metrics',
-    );
+    console.log('Opening a chessboard view to load listudy assets...');
+    await ensureCardExpanded(page, 'dashboard-card-positions-list');
+    await page.waitForSelector(selectors.positionsRow, { timeout: 60000 });
+    await page.$eval(selectors.positionsRow, (row) => row.click());
+    await page.waitForSelector(selectors.chessboardModal, { timeout: 60000 });
 
     await waitForListudyAssets(page, 60000);
 

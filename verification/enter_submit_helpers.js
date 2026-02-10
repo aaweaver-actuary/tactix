@@ -45,6 +45,7 @@ async function selectSource(page, source) {
       (el) => (el instanceof HTMLSelectElement ? el.value : ''),
     );
     if (currentValue === targetSource) {
+      await closeFiltersModal(page);
       return;
     }
     const dashboardPromise = waitForSourceResponse(
@@ -91,9 +92,9 @@ async function selectSource(page, source) {
 const ensureFiltersModalOpen = (page) => openFiltersModal(page);
 
 async function getBestMoveFromPage(page) {
-  const bestLabel = await page.$$eval('body', (body) => {
-    const modal = body.querySelector('[data-testid="chessboard-modal"]');
-    const scope = modal || body;
+  const bestLabel = await page.evaluate(() => {
+    const modal = document.querySelector('[data-testid="chessboard-modal"]');
+    const scope = modal || document.body;
     const spans = Array.from(scope.querySelectorAll('span'));
     const best = spans.find((span) => {
       const text = span.textContent?.trim() || '';

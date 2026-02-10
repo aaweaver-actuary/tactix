@@ -5,6 +5,16 @@ export type PracticeSessionStats = {
   bestStreak: number;
 };
 
+export type PracticeAttemptOutcome = {
+  correct: boolean;
+  rescheduled?: boolean | null;
+};
+
+export type PracticeAttemptSessionUpdate = {
+  stats: PracticeSessionStats;
+  shouldReschedule: boolean;
+};
+
 export function resetPracticeSessionStats(total: number): PracticeSessionStats {
   return {
     completed: 0,
@@ -25,6 +35,16 @@ export function updatePracticeSessionStats(
     streak: nextStreak,
     bestStreak: Math.max(stats.bestStreak, nextStreak),
   };
+}
+
+export function applyPracticeAttemptResult(
+  stats: PracticeSessionStats,
+  outcome: PracticeAttemptOutcome,
+): PracticeAttemptSessionUpdate {
+  const nextStats = updatePracticeSessionStats(stats, outcome.correct);
+  const shouldReschedule = outcome.rescheduled ?? !outcome.correct;
+  const total = shouldReschedule ? nextStats.total + 1 : nextStats.total;
+  return { stats: { ...nextStats, total }, shouldReschedule };
 }
 
 export function getPracticeProgressPercent(

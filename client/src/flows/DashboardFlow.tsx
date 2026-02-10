@@ -63,8 +63,8 @@ import {
 } from '../components';
 import {
   PracticeSessionStats,
+  applyPracticeAttemptResult,
   resetPracticeSessionStats,
-  updatePracticeSessionStats,
 } from '../utils/practiceSession';
 import {
   normalizeOrder,
@@ -1045,18 +1045,15 @@ export default function DashboardFlow() {
         });
         setPracticeFeedback(response);
         setPracticeSession((prev) => {
-          const nextStats = updatePracticeSessionStats(prev, response.correct);
-          const shouldReschedule =
-            response.rescheduled ?? response.correct === false;
-          const nextTotal = shouldReschedule
-            ? nextStats.total + 1
-            : nextStats.total;
-          const adjusted = { ...nextStats, total: nextTotal };
-          practiceSessionCompletedRef.current = adjusted.completed;
+          const { stats, shouldReschedule } = applyPracticeAttemptResult(prev, {
+            correct: response.correct,
+            rescheduled: response.rescheduled,
+          });
+          practiceSessionCompletedRef.current = stats.completed;
           if (shouldReschedule) {
-            practiceSessionTotalRef.current = nextTotal;
+            practiceSessionTotalRef.current = stats.total;
           }
-          return adjusted;
+          return stats;
         });
         // Allow feedback to render before queue refresh resets practice state.
         await waitForPracticeFeedback();
@@ -1103,7 +1100,6 @@ export default function DashboardFlow() {
       await submitPracticeMove(moveResult);
     },
     [
-      buildPracticeMove,
       currentPractice,
       getPracticeBaseFen,
       practiceMove,
@@ -1128,7 +1124,6 @@ export default function DashboardFlow() {
       return true;
     },
     [
-      buildPracticeMove,
       currentPractice,
       getPracticeBaseFen,
       practiceSubmitting,

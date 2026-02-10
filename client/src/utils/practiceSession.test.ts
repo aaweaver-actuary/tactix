@@ -1,4 +1,5 @@
 import {
+  applyPracticeAttemptResult,
   getPracticeProgressPercent,
   getPracticeStreakPercent,
   resetPracticeSessionStats,
@@ -41,6 +42,20 @@ describe('practiceSession', () => {
       streak: 0,
       bestStreak: 2,
     });
+  });
+
+  it('applies reschedule logic for practice attempts', () => {
+    const start = resetPracticeSessionStats(3);
+    const correctResult = applyPracticeAttemptResult(start, { correct: true });
+    expect(correctResult.stats.total).toBe(3);
+    expect(correctResult.shouldReschedule).toBe(false);
+
+    const rescheduled = applyPracticeAttemptResult(correctResult.stats, {
+      correct: true,
+      rescheduled: true,
+    });
+    expect(rescheduled.stats.total).toBe(4);
+    expect(rescheduled.shouldReschedule).toBe(true);
   });
 
   it('calculates bounded progress percent', () => {

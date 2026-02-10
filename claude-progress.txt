@@ -147,3 +147,8 @@ Session summary (2026-02-10):
 - Extracted modal header layout into a shared ModalHeader component to reduce duplication between ChessboardModal and PracticeModalContent.
 - Before -> after map: ChessboardModal/PracticeModalContent inline header rows -> ModalHeader component with title/description/rightSlot wiring.
 - Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
+- Extracted practice session reschedule updates into a shared helper for practice feedback handling.
+- Before -> after map: DashboardFlow inline practice session reschedule logic -> utils/practiceSession applyPracticeAttemptResult; DashboardFlow now uses helper during practice feedback submission.
+- Tests run: make check (before changes); make check (after changes; initial jslint warnings fixed and reran).

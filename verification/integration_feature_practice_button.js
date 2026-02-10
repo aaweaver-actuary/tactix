@@ -9,6 +9,7 @@ const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const source = process.env.TACTIX_SOURCE || 'chesscom';
 
 const selectors = {
+  hero: '[data-testid="dashboard-hero"]',
   practiceButton: '[data-testid="practice-button"]',
   practiceQueueRow: '[data-testid^="practice-queue-row-"]',
   practiceModal: '[data-testid="chessboard-modal"]',
@@ -27,6 +28,16 @@ const selectors = {
     await ensurePracticeCardExpanded(page);
 
     await page.waitForSelector(selectors.practiceButton, { timeout: 60000 });
+
+    const buttonInHero = await page.$eval(
+      selectors.hero,
+      (hero, buttonSelector) => Boolean(hero.querySelector(buttonSelector)),
+      selectors.practiceButton,
+    );
+
+    if (!buttonInHero) {
+      throw new Error('Practice button should be rendered in the hero header.');
+    }
 
     const hasQueueRows = await page.$$eval(
       selectors.practiceQueueRow,

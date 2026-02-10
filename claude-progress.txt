@@ -1,4 +1,12 @@
 Session summary (2026-02-10):
+- Moved the practice entry point into the hero header panel and removed the standalone practice card from the dashboard.
+- Updated practice button automation to assert the hero placement.
+- Regression verification (requested): node verification/puppeteer_feature_practice_button.js; node verification/puppeteer_feature_database_modal.js; node verification/puppeteer_feature_chessboard_modal.js.
+- Manual verification: node verification/puppeteer_feature_practice_button.js (feature-practice-button-2026-02-10.png).
+- Integration verification: node verification/integration_feature_practice_button.js.
+- Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
 - Simplified game result formatting with a lookup map to keep the helper focused and reduce branching in DashboardFlow.
 - Before -> after map: DashboardFlow formatGameResult nested result/userColor branching -> GAME_RESULT_LABELS_BY_COLOR lookup with fallback.
 - Tests run: make check (before and after changes).

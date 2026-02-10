@@ -9,6 +9,7 @@ interface HeroProps {
   onBackfill: () => void;
   onRefresh: () => void;
   onMigrate: () => void;
+  onPractice: () => void;
   loading: boolean;
   version: number;
   source: ChessPlatform;
@@ -19,6 +20,13 @@ interface HeroProps {
   backfillEndDate: string;
   onBackfillStartChange: (value: string) => void;
   onBackfillEndChange: (value: string) => void;
+  practiceButtonLabel: string;
+  practiceButtonHelper: string;
+  practiceButtonDisabled: boolean;
+  practiceStatusId: string;
+  includeFailedAttempt: boolean;
+  onIncludeFailedAttemptChange: (value: boolean) => void;
+  practiceLoading: boolean;
 }
 
 interface HeroActionsProps {
@@ -150,6 +158,7 @@ export default function Hero({
   onBackfill,
   onRefresh,
   onMigrate,
+  onPractice,
   loading,
   version,
   source,
@@ -160,6 +169,13 @@ export default function Hero({
   backfillEndDate,
   onBackfillStartChange,
   onBackfillEndChange,
+  practiceButtonLabel,
+  practiceButtonHelper,
+  practiceButtonDisabled,
+  practiceStatusId,
+  includeFailedAttempt,
+  onIncludeFailedAttemptChange,
+  practiceLoading,
 }: HeroProps) {
   const lichessLabel = profile ? LICHESS_PROFILE_LABELS[profile] : 'Rapid';
   const chesscomLabel = chesscomProfile
@@ -195,31 +211,77 @@ export default function Hero({
             value={`Execution stamped via metrics version ${version} · user ${user}`}
           />
         </div>
-        <div className="hero-panel hero-entrance-delay">
-          <div className="hero-panel-heading">
-            <div>
-              <p className="hero-panel-title">Pipeline actions</p>
-              <p className="hero-panel-subtitle">Run actions per source.</p>
+        <div className="hero-panels hero-entrance-delay">
+          <div className="hero-panel">
+            <div className="hero-panel-heading">
+              <div>
+                <p className="hero-panel-title">Pipeline actions</p>
+                <p className="hero-panel-subtitle">Run actions per source.</p>
+              </div>
+              <span className="hero-panel-badge">
+                {actionsDisabled ? 'Scoped to all sites' : 'Ready'}
+              </span>
             </div>
-            <span className="hero-panel-badge">
-              {actionsDisabled ? 'Scoped to all sites' : 'Ready'}
-            </span>
+            <HeroActions
+              onRun={onRun}
+              onBackfill={onBackfill}
+              onRefresh={onRefresh}
+              onMigrate={onMigrate}
+              loading={loading}
+              disabled={actionsDisabled}
+            />
+            <BackfillRange
+              startDate={backfillStartDate}
+              endDate={backfillEndDate}
+              onStartChange={onBackfillStartChange}
+              onEndChange={onBackfillEndChange}
+              disabled={actionsDisabled}
+            />
           </div>
-          <HeroActions
-            onRun={onRun}
-            onBackfill={onBackfill}
-            onRefresh={onRefresh}
-            onMigrate={onMigrate}
-            loading={loading}
-            disabled={actionsDisabled}
-          />
-          <BackfillRange
-            startDate={backfillStartDate}
-            endDate={backfillEndDate}
-            onStartChange={onBackfillStartChange}
-            onEndChange={onBackfillEndChange}
-            disabled={actionsDisabled}
-          />
+          <div className="hero-panel hero-practice-panel">
+            <div className="hero-panel-heading">
+              <div>
+                <p className="hero-panel-title">Practice</p>
+                <p className="hero-panel-subtitle">
+                  Queue the next daily tactics set.
+                </p>
+              </div>
+              <span className="hero-panel-badge">Trainer</span>
+            </div>
+            <div className="hero-practice-status">
+              <p
+                id={practiceStatusId}
+                className="text-xs text-sand/70"
+                role="status"
+                aria-live="polite"
+                data-testid="practice-button-status"
+              >
+                {practiceButtonHelper}
+              </p>
+              <label className="flex items-center gap-2 text-xs text-sand/70">
+                <input
+                  type="checkbox"
+                  className="accent-teal"
+                  checked={includeFailedAttempt}
+                  onChange={(event) =>
+                    onIncludeFailedAttemptChange(event.target.checked)
+                  }
+                  disabled={practiceLoading}
+                  data-testid="practice-include-failed"
+                />
+                Include failed attempts
+              </label>
+            </div>
+            <BaseButton
+              className="button hero-button-practice px-4 py-3 rounded-lg"
+              onClick={onPractice}
+              disabled={practiceButtonDisabled}
+              aria-describedby={practiceStatusId}
+              data-testid="practice-button"
+            >
+              {practiceButtonLabel}
+            </BaseButton>
+          </div>
         </div>
       </div>
     </div>

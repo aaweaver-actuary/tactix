@@ -1825,6 +1825,7 @@ export default function DashboardFlow() {
         onBackfill={handleBackfill}
         onMigrate={handleMigrations}
         onRefresh={handleRefreshMetrics}
+        onPractice={handleOpenPracticeModal}
         loading={loading}
         version={data?.metrics_version ?? 0}
         source={source}
@@ -1835,47 +1836,14 @@ export default function DashboardFlow() {
         backfillEndDate={backfillEndDate}
         onBackfillStartChange={handleBackfillStartChange}
         onBackfillEndChange={handleBackfillEndChange}
+        practiceButtonLabel={practiceButtonState.label}
+        practiceButtonHelper={practiceButtonState.helper}
+        practiceButtonDisabled={practiceButtonState.disabled}
+        practiceStatusId={practiceStatusId}
+        includeFailedAttempt={includeFailedAttempt}
+        onIncludeFailedAttemptChange={handleIncludeFailedAttemptChange}
+        practiceLoading={practiceLoading}
       />
-
-      <div className="card p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-2">
-          <div>
-            <h2 className="text-lg font-display text-sand">Practice</h2>
-            <p
-              id={practiceStatusId}
-              className="text-xs text-sand/60"
-              role="status"
-              aria-live="polite"
-              data-testid="practice-button-status"
-            >
-              {practiceButtonState.helper}
-            </p>
-          </div>
-          <label className="flex items-center gap-2 text-xs text-sand/70">
-            <input
-              type="checkbox"
-              className="accent-teal"
-              checked={includeFailedAttempt}
-              onChange={(event) =>
-                handleIncludeFailedAttemptChange(event.target.checked)
-              }
-              disabled={practiceLoading}
-              data-testid="practice-include-failed"
-            />
-            Include failed attempts
-          </label>
-        </div>
-        <ActionButton
-          type="button"
-          className="rounded-lg border border-white/10 px-4 py-3 text-sm text-sand hover:border-white/30 disabled:cursor-not-allowed disabled:opacity-60"
-          onClick={handleOpenPracticeModal}
-          disabled={practiceButtonState.disabled}
-          aria-describedby={practiceStatusId}
-          data-testid="practice-button"
-        >
-          {practiceButtonState.label}
-        </ActionButton>
-      </div>
 
       {error ? <ErrorCard message={error} /> : null}
 

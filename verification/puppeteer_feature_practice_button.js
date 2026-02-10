@@ -15,6 +15,7 @@ const screenshotName =
 const source = process.env.TACTIX_SOURCE || 'chesscom';
 
 const selectors = {
+  hero: '[data-testid="dashboard-hero"]',
   practiceButton: '[data-testid="practice-button"]',
   practiceStatus: '[data-testid="practice-button-status"]',
   practiceQueueRow: '[data-testid^="practice-queue-row-"]',
@@ -41,6 +42,16 @@ const allowedDisabledLabels = [
     await ensurePracticeCardExpanded(page);
 
     await page.waitForSelector(selectors.practiceButton, { timeout: 60000 });
+
+    const buttonInHero = await page.$eval(
+      selectors.hero,
+      (hero, buttonSelector) => Boolean(hero.querySelector(buttonSelector)),
+      selectors.practiceButton,
+    );
+
+    if (!buttonInHero) {
+      throw new Error('Practice button should be rendered in the hero header.');
+    }
 
     const hasQueueRows = await page.$$eval(
       selectors.practiceQueueRow,

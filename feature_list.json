@@ -1,6 +1,42 @@
 [
   {
     "category": "functional",
+    "description": "[UI] Filter card is no longer needed",
+    "steps": [
+      "Step 1: Identify the filter card entry on the dashboard",
+      "Step 2: Remove the filter card UI while keeping filter functionality",
+      "Step 3: Ensure filter access remains available via the FAB settings entry",
+      "Step 4: Verify layout spacing and dashboard cards still align",
+      "Step 5: Add or update UI automation coverage for the updated filter access"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[UI] Consolidate Postgres cards into a database option on the FAB",
+    "steps": [
+      "Step 1: Identify Postgres-related cards currently on the dashboard",
+      "Step 2: Create a database option within the FAB that opens the same content",
+      "Step 3: Remove the Postgres cards from the dashboard layout",
+      "Step 4: Verify the database modal preserves existing behavior and content",
+      "Step 5: Add or update UI automation coverage for the database option"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[UI] Practice Button",
+    "steps": [
+      "Step 1: Add a dedicated practice button entry point in the UI",
+      "Step 2: Wire the button to open the practice flow/modal",
+      "Step 3: Ensure keyboard and screen reader accessibility",
+      "Step 4: Verify the button state reflects availability of practice items",
+      "Step 5: Add or update UI automation coverage for the practice button"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
     "description": "[MVP] MVP step by step",
     "steps": [
       "Step 1: Verify Airflow periodically fetches new games across sources/time controls",

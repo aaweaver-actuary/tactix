@@ -60,6 +60,7 @@ import {
   DatabaseModal,
   ActionButton,
   FloatingActionButton,
+  TacticsActionButtons,
 } from '../components';
 import {
   PracticeSessionStats,
@@ -1381,39 +1382,12 @@ export default function DashboardFlow() {
         header: 'Actions',
         id: 'tactics-actions',
         cell: ({ row }) => {
-          const hasGameId = Boolean(row.original.game_id);
-          const gameId = row.original.game_id ?? 'unknown';
-          const buttonClasses =
-            'rounded border border-white/10 px-2 py-1 text-xs text-sand/80 hover:border-white/30 disabled:cursor-not-allowed disabled:border-white/5 disabled:text-sand/40';
           return (
-            <div className="flex flex-wrap gap-2">
-              <ActionButton
-                className={buttonClasses}
-                data-testid={`tactics-go-to-game-${gameId}`}
-                aria-label="Go to game"
-                disabled={!hasGameId}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  if (!hasGameId) return;
-                  void handleOpenGameDetail(row.original);
-                }}
-              >
-                Go to Game
-              </ActionButton>
-              <ActionButton
-                className={buttonClasses}
-                data-testid={`tactics-open-lichess-${gameId}`}
-                aria-label="Open in Lichess"
-                disabled={!hasGameId}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  if (!hasGameId) return;
-                  void handleOpenLichess(row.original);
-                }}
-              >
-                Open in Lichess
-              </ActionButton>
-            </div>
+            <TacticsActionButtons
+              tactic={row.original}
+              onOpenGameDetail={(tactic) => void handleOpenGameDetail(tactic)}
+              onOpenLichess={(tactic) => void handleOpenLichess(tactic)}
+            />
           );
         },
       },

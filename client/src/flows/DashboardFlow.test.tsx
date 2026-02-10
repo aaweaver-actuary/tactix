@@ -641,7 +641,7 @@ describe('DashboardFlow', () => {
     render(<DashboardFlow />);
 
     await waitFor(() => {
-      expect(screen.getAllByTestId(/open-lichess-/)).toHaveLength(2);
+      expect(screen.getAllByTestId(/^open-lichess-/)).toHaveLength(2);
     });
 
     fireEvent.click(screen.getByTestId('open-lichess-g1'));

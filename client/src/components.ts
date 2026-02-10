@@ -18,6 +18,7 @@ import GameDetailModal from './_components/GameDetailModal';
 import ChessboardModal from './_components/ChessboardModal';
 import ActionButton from './_components/ActionButton';
 import FloatingActionButton from './_components/FloatingActionButton';
+import TacticsActionButtons from './_components/TacticsActionButtons';
 
 export {
   Hero,
@@ -39,4 +40,5 @@ export {
   ChessboardModal,
   ActionButton,
   FloatingActionButton,
+  TacticsActionButtons,
 };

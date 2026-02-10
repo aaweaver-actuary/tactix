@@ -93,11 +93,24 @@ class PracticeQueueTests(unittest.TestCase):
             },
             {"result": "missed", "user_uci": "c2c3", "eval_delta": -320},
         )
+        upsert_tactic_with_outcome(
+            conn,
+            {
+                "game_id": "game-3",
+                "position_id": position_ids[2],
+                "motif": "hanging_piece",
+                "severity": 0.6,
+                "best_uci": "",
+                "eval_cp": 90,
+            },
+            {"result": "missed", "user_uci": "c2c3", "eval_delta": -180},
+        )
 
         queue = repo.fetch_practice_queue(source="lichess")
         self.assertTrue(queue)
         self.assertTrue(all(item["result"] == "missed" for item in queue))
         self.assertTrue(all(item["source"] == "lichess" for item in queue))
+        self.assertTrue(all((item.get("best_uci") or "").strip() for item in queue))
 
     def test_practice_queue_includes_failed_attempt_when_enabled(self) -> None:
         tmp_dir = Path(tempfile.mkdtemp())

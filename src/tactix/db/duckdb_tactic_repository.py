@@ -235,6 +235,7 @@ class DuckDbTacticRepository:
             WHERE s.result IN ({placeholders})
                 AND t.motif IN ({motif_placeholders})
                 AND (t.motif != 'mate' OR t.mate_type IS NOT NULL)
+                AND COALESCE(t.best_uci, '') != ''
                 AND s.due_at <= ?
         """
         params: list[object] = [*results, *allowed, due_before]

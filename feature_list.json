@@ -153,7 +153,7 @@
       "Step 4: Ensure practice feedback remains accurate",
       "Step 5: Add or update regression coverage for the corrected puzzle"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

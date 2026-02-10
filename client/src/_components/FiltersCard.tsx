@@ -35,6 +35,7 @@ interface FiltersCardProps extends BaseCardDragProps {
   modalOpen?: boolean;
   onModalOpenChange?: (open: boolean) => void;
   showOpenButton?: boolean;
+  showCard?: boolean;
 }
 
 export default function FiltersCard({
@@ -54,6 +55,7 @@ export default function FiltersCard({
   modalOpen,
   onModalOpenChange,
   showOpenButton = true,
+  showCard = true,
   ...dragProps
 }: FiltersCardProps) {
   const [internalModalOpen, setInternalModalOpen] = useState(false);
@@ -203,31 +205,33 @@ export default function FiltersCard({
 
   return (
     <>
-      <BaseCard
-        className="p-4"
-        header={
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-display text-sand">Filters</h3>
-              <Badge label="Live" />
+      {showCard ? (
+        <BaseCard
+          className="p-4"
+          header={
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-display text-sand">Filters</h3>
+                <Badge label="Live" />
+              </div>
+              {showOpenButton ? (
+                <BaseButton
+                  className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
+                  onClick={() => setModalOpen(true)}
+                  data-testid="filters-open"
+                  disabled={loading}
+                >
+                  Open filters
+                </BaseButton>
+              ) : null}
             </div>
-            {showOpenButton ? (
-              <BaseButton
-                className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
-                onClick={() => setModalOpen(true)}
-                data-testid="filters-open"
-                disabled={loading}
-              >
-                Open filters
-              </BaseButton>
-            ) : null}
-          </div>
-        }
-        contentClassName="pt-3"
-        {...dragProps}
-      >
-        <Text value="Refine the dashboard using source and motif filters." />
-      </BaseCard>
+          }
+          contentClassName="pt-3"
+          {...dragProps}
+        >
+          <Text value="Refine the dashboard using source and motif filters." />
+        </BaseCard>
+      ) : null}
       {resolvedModalOpen
         ? createPortal(
             <ModalShell

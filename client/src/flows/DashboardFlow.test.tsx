@@ -386,6 +386,10 @@ describe('DashboardFlow', () => {
 
     await waitForDashboardLoad();
 
+    expect(
+      screen.queryByTestId('dashboard-card-filters'),
+    ).not.toBeInTheDocument();
+
     await waitFor(() => {
       expect(screen.getAllByTestId(/recent-games-row-/)).toHaveLength(2);
       expect(screen.getAllByTestId(/practice-queue-row-/)).toHaveLength(2);

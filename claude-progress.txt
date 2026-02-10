@@ -26,6 +26,13 @@ Session summary (2026-02-09):
 
 Session summary (2026-02-09):
 - Note: user requested that we record they never said the authorization prompt; proceeding with review/commit per their instruction.
+
+Session summary (2026-02-10):
+- Removed the dashboard filters card while keeping filter access via the FAB settings entry; rendered filters modal standalone.
+- Updated settings modal automation to assert the filters card is gone and refreshed screenshots.
+- Manual verification: node verification/puppeteer_feature_settings_modal.js (feature-fab-filters-open-desktop-2026-02-10.png, feature-fab-filters-closed-desktop-2026-02-10.png, feature-fab-filters-open-mobile-2026-02-10.png, feature-fab-filters-closed-mobile-2026-02-10.png).
+- Integration verification: node verification/integration_feature_settings_modal.js.
+- Tests run: make check (before and after changes).
 - Reviewed staged hanging-target metadata and pipeline view updates; `make check` green.
 
 Session summary (2026-02-09):

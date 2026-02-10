@@ -12,13 +12,13 @@ const {
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const SCREENSHOT_OPEN_DESKTOP =
   process.env.TACTIX_SCREENSHOT_NAME ||
-  'feature-fab-filters-open-desktop-2026-02-09.png';
+  'feature-fab-filters-open-desktop-2026-02-10.png';
 const SCREENSHOT_CLOSED_DESKTOP =
-  'feature-fab-filters-closed-desktop-2026-02-09.png';
+  'feature-fab-filters-closed-desktop-2026-02-10.png';
 const SCREENSHOT_OPEN_MOBILE =
-  'feature-fab-filters-open-mobile-2026-02-09.png';
+  'feature-fab-filters-open-mobile-2026-02-10.png';
 const SCREENSHOT_CLOSED_MOBILE =
-  'feature-fab-filters-closed-mobile-2026-02-09.png';
+  'feature-fab-filters-closed-mobile-2026-02-10.png';
 
 (async () => {
   console.log('Launching browser...');
@@ -29,6 +29,13 @@ const SCREENSHOT_CLOSED_MOBILE =
   try {
     console.log('Navigating to dashboard...');
     await page.goto(targetUrl, { waitUntil: 'networkidle0' });
+
+    const hasFiltersCard = await page.$(
+      '[data-testid="dashboard-card-filters"]',
+    );
+    if (hasFiltersCard) {
+      throw new Error('Filters card should not render on the dashboard.');
+    }
 
     const outDir = path.resolve(__dirname);
 

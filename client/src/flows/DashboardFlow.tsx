@@ -85,7 +85,6 @@ const DEFAULT_FILTERS = {
   endDate: '',
 };
 const DASHBOARD_CARD_IDS = [
-  'filters',
   'metrics-summary',
   'postgres-status',
   'postgres-raw-pgns',
@@ -1532,32 +1531,6 @@ export default function DashboardFlow() {
 
     return [
       {
-        id: 'filters',
-        label: 'Filters',
-        visible: true,
-        render: (props) => (
-          <FiltersCard
-            source={source}
-            loading={loading}
-            lichessProfile={lichessProfile}
-            chesscomProfile={chesscomProfile}
-            filters={filters}
-            motifOptions={motifOptions}
-            timeControlOptions={timeControlOptions}
-            ratingOptions={ratingOptions}
-            onSourceChange={handleSourceChange}
-            onLichessProfileChange={handleLichessProfileChange}
-            onChesscomProfileChange={handleChesscomProfileChange}
-            onFiltersChange={handleFiltersChange}
-            onResetFilters={handleResetFilters}
-            modalOpen={filtersModalOpen}
-            onModalOpenChange={setFiltersModalOpen}
-            showOpenButton={false}
-            {...props}
-          />
-        ),
-      },
-      {
         id: 'metrics-summary',
         label: 'Metrics summary',
         visible: true,
@@ -1990,6 +1963,25 @@ export default function DashboardFlow() {
         </Droppable>
       </DragDropContext>
       {practiceError ? <ErrorCard message={practiceError} /> : null}
+      <FiltersCard
+        source={source}
+        loading={loading}
+        lichessProfile={lichessProfile}
+        chesscomProfile={chesscomProfile}
+        filters={filters}
+        motifOptions={motifOptions}
+        timeControlOptions={timeControlOptions}
+        ratingOptions={ratingOptions}
+        onSourceChange={handleSourceChange}
+        onLichessProfileChange={handleLichessProfileChange}
+        onChesscomProfileChange={handleChesscomProfileChange}
+        onFiltersChange={handleFiltersChange}
+        onResetFilters={handleResetFilters}
+        modalOpen={filtersModalOpen}
+        onModalOpenChange={setFiltersModalOpen}
+        showOpenButton={false}
+        showCard={false}
+      />
       <FloatingActionButton label="Open settings" actions={floatingActions} />
       <ChessboardModal
         open={chessboardModalOpen}

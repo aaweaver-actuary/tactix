@@ -1,4 +1,3 @@
-import { SOURCE_OPTIONS } from '../utils/SOURCE_OPTIONS';
 import { LICHESS_PROFILE_LABELS } from '../utils/LICHESS_PROFILE_OPTIONS';
 import { CHESSCOM_PROFILE_LABELS } from '../utils/CHESSCOM_PROFILE_OPTIONS';
 import { ChessPlatform, ChesscomProfile, LichessProfile } from '../types';
@@ -16,7 +15,6 @@ interface HeroProps {
   profile?: LichessProfile;
   chesscomProfile?: ChesscomProfile;
   user: string;
-  onSourceChange: (next: ChessPlatform) => void;
   backfillStartDate: string;
   backfillEndDate: string;
   onBackfillStartChange: (value: string) => void;
@@ -34,9 +32,8 @@ interface HeroProps {
  * @param version - Metrics version string displayed in the component.
  * @param source - Current data source identifier (e.g., 'lichess', 'chesscom', or 'all').
  * @param user - User identifier displayed in the component.
- * @param onSourceChange - Callback invoked when the data source selection changes.
  *
- * The component renders pipeline information, source selection buttons, and action buttons for running, backfilling, migrating, and refreshing metrics.
+ * The component renders pipeline information and action buttons for running, backfilling, migrating, and refreshing metrics.
  */
 export default function Hero({
   onRun,
@@ -49,7 +46,6 @@ export default function Hero({
   profile,
   chesscomProfile,
   user,
-  onSourceChange,
   backfillStartDate,
   backfillEndDate,
   onBackfillStartChange,
@@ -62,7 +58,10 @@ export default function Hero({
   const actionsDisabled = loading || source === 'all';
 
   return (
-    <div className="card p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div
+      className="card p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+      data-testid="dashboard-hero"
+    >
       <div>
         <Text mode="normal" size="sm" value="Airflow DAG · daily_game_sync" />
         <h1 className="text-3xl md:text-4xl font-display text-sand mt-2">
@@ -78,22 +77,6 @@ export default function Hero({
           mt="2"
           value={`Execution stamped via metrics version ${version} · user ${user}`}
         />
-        <div className="flex gap-2 mt-3 flex-wrap">
-          {SOURCE_OPTIONS.map((opt) => (
-            <BaseButton
-              key={opt.id}
-              className={`button px-3 py-2 rounded-md border text-sm ${
-                source === opt.id
-                  ? 'bg-teal text-night border-teal'
-                  : 'border-sand/30 text-sand'
-              }`}
-              onClick={() => onSourceChange(opt.id)}
-              disabled={loading}
-            >
-              {opt.label}
-            </BaseButton>
-          ))}
-        </div>
       </div>
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap gap-3">

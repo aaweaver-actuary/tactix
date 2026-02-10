@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const puppeteer = require('../client/node_modules/puppeteer');
+const { openFiltersModal } = require('./helpers/filters_modal_helpers');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const CLIENT_DIR = path.resolve(ROOT_DIR, 'client');
@@ -72,13 +73,11 @@ function startPreview() {
 }
 
 async function waitForDashboard(page) {
-  await page.waitForSelector('[data-testid="filter-source"]:not([disabled])', {
-    timeout: 60000,
-  });
   await page.waitForSelector('table', { timeout: 60000 });
 }
 
 async function selectDashboardSource(page, value) {
+  await openFiltersModal(page);
   await page.waitForSelector('[data-testid="filter-source"]:not([disabled])', {
     timeout: 60000,
   });
@@ -86,6 +85,7 @@ async function selectDashboardSource(page, value) {
 }
 
 async function selectTimeControl(page) {
+  await openFiltersModal(page);
   await page.waitForSelector(
     '[data-testid="filter-time-control"]:not([disabled])',
     { timeout: 60000 },

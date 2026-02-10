@@ -2,7 +2,6 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { vi } from 'vitest';
 import Hero from './Hero';
-import { SOURCE_OPTIONS } from '../utils/SOURCE_OPTIONS';
 
 describe('Hero', () => {
   const baseProps = {
@@ -15,7 +14,6 @@ describe('Hero', () => {
     source: 'lichess' as const,
     profile: 'rapid' as const,
     user: 'andy',
-    onSourceChange: vi.fn(),
     backfillStartDate: '2024-01-01',
     backfillEndDate: '2024-02-01',
     onBackfillStartChange: vi.fn(),
@@ -56,18 +54,6 @@ describe('Hero', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders source options and triggers change', () => {
-    render(<Hero {...baseProps} />);
-    SOURCE_OPTIONS.forEach((opt) => {
-      const btn = screen.getByRole('button', { name: opt.label });
-      expect(btn).toBeInTheDocument();
-    });
-
-    const target = SOURCE_OPTIONS[0];
-    fireEvent.click(screen.getByRole('button', { name: target.label }));
-    expect(baseProps.onSourceChange).toHaveBeenCalledWith(target.id);
-  });
-
   it('fires action callbacks', () => {
     render(<Hero {...baseProps} />);
     fireEvent.click(screen.getByRole('button', { name: 'Run + Refresh' }));
@@ -99,10 +85,6 @@ describe('Hero', () => {
     render(<Hero {...baseProps} loading={true} />);
     expect(screen.getByRole('button', { name: 'Running…' })).toBeDisabled();
     expectActionsDisabled();
-
-    SOURCE_OPTIONS.forEach((opt) => {
-      expect(screen.getByRole('button', { name: opt.label })).toBeDisabled();
-    });
   });
 
   it('renders chess.com title when source is not lichess', () => {

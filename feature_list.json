@@ -45,7 +45,7 @@
       "Step 4: Verify the dashboard header no longer shows the selector",
       "Step 5: Add or update UI automation coverage for the source filter"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

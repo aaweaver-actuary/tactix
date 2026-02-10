@@ -1807,7 +1807,6 @@ export default function DashboardFlow() {
         profile={source === 'lichess' ? lichessProfile : undefined}
         chesscomProfile={source === 'chesscom' ? chesscomProfile : undefined}
         user={data?.user ?? 'unknown'}
-        onSourceChange={handleSourceChange}
         backfillStartDate={backfillStartDate}
         backfillEndDate={backfillEndDate}
         onBackfillStartChange={handleBackfillStartChange}

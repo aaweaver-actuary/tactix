@@ -102,12 +102,22 @@ describe('App job stream', () => {
     vi.unstubAllGlobals();
   });
 
-  const selectLichessRapid = async () => {
-    const lichessButton = screen.getByRole('button', {
-      name: 'Lichess · Rapid',
+  const openFiltersModal = async () => {
+    const fabToggle = await screen.findByTestId('fab-toggle');
+    if (fabToggle.getAttribute('aria-expanded') !== 'true') {
+      fireEvent.click(fabToggle);
+    }
+    fireEvent.click(screen.getByTestId('filters-open'));
+    await waitFor(() => {
+      expect(screen.getByTestId('filters-modal')).toBeInTheDocument();
     });
-    await waitFor(() => expect(lichessButton).toBeEnabled());
-    fireEvent.click(lichessButton);
+  };
+
+  const selectLichessRapid = async () => {
+    await openFiltersModal();
+    const sourceSelect = screen.getByTestId('filter-source');
+    await waitFor(() => expect(sourceSelect).toBeEnabled());
+    fireEvent.change(sourceSelect, { target: { value: 'lichess' } });
   };
 
   it('renders progress entries from the job SSE stream', async () => {

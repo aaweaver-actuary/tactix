@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import duckdb
 
@@ -551,9 +551,12 @@ class DuckDbTacticRepository:
         correct: bool,
         now: datetime,
     ) -> tuple[datetime, bool]:
-        if correct:
-            return due_at, False
-        return end_of_day(now), True
+        if not correct:
+            return end_of_day(now), True
+        day_end = end_of_day(now)
+        if due_at <= day_end:
+            return day_end + timedelta(seconds=1), False
+        return due_at, False
 
     def _build_practice_schedule_update(
         self,

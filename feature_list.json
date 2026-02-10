@@ -9,7 +9,7 @@
       "Step 4: Verify practice session counts advance correctly",
       "Step 5: Add or update UI automation coverage for advancing after correct moves"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

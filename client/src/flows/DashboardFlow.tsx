@@ -621,6 +621,7 @@ export default function DashboardFlow() {
       nextSource: ChessPlatform = source,
       includeFailed = includeFailedAttempt,
       resetSession = false,
+      excludeTacticIds?: Set<number>,
     ): Promise<void> => {
       setPracticeLoading(true);
       setPracticeError(null);
@@ -631,7 +632,10 @@ export default function DashboardFlow() {
           return;
         }
         const scopedItems = filterScopedPracticeQueue(payload.items);
-        setPracticeQueue(scopedItems);
+        const filteredItems = excludeTacticIds?.size
+          ? scopedItems.filter((item) => !excludeTacticIds.has(item.tactic_id))
+          : scopedItems;
+        setPracticeQueue(filteredItems);
         if (resetSession) {
           practiceSessionScopeRef.current = requestScope;
         }
@@ -639,8 +643,8 @@ export default function DashboardFlow() {
           if (prev.total > 0) return prev;
           practiceSessionInitializedRef.current = true;
           practiceSessionCompletedRef.current = 0;
-          practiceSessionTotalRef.current = scopedItems.length;
-          return resetPracticeSessionStats(scopedItems.length);
+          practiceSessionTotalRef.current = filteredItems.length;
+          return resetPracticeSessionStats(filteredItems.length);
         });
       } catch (err) {
         console.error(err);
@@ -1101,9 +1105,22 @@ export default function DashboardFlow() {
           }
           return stats;
         });
+        const excludeTacticIds = response.correct
+          ? new Set([currentPractice.tactic_id])
+          : undefined;
+        if (excludeTacticIds) {
+          setPracticeQueue((prev) =>
+            prev.filter((item) => !excludeTacticIds.has(item.tactic_id)),
+          );
+        }
         // Allow feedback to render before queue refresh resets practice state.
         await waitForPracticeFeedback();
-        await loadPracticeQueue(source, includeFailedAttempt);
+        await loadPracticeQueue(
+          source,
+          includeFailedAttempt,
+          false,
+          excludeTacticIds,
+        );
       } catch (err) {
         console.error(err);
         setPracticeSubmitError('Failed to submit practice attempt');

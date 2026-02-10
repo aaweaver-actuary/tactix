@@ -43,13 +43,19 @@ class PracticeAttemptGradingTests(unittest.TestCase):
             {"result": "missed", "user_uci": "a2a3", "eval_delta": -240},
         )
 
-        result = tactic_repository(conn).grade_practice_attempt(
+        repo = tactic_repository(conn)
+        queue = repo.fetch_practice_queue(source="lichess")
+        self.assertEqual(len(queue), 1)
+
+        result = repo.grade_practice_attempt(
             tactic_id,
             position_ids[0],
             "a2a4",
         )
         self.assertTrue(result["correct"])
         self.assertIn("a2a4", result["explanation"])
+        queue_after = repo.fetch_practice_queue(source="lichess")
+        self.assertEqual(len(queue_after), 0)
         rows = conn.execute(
             """
             SELECT attempted_uci, correct, best_uci, motif, severity, eval_delta
@@ -65,7 +71,7 @@ class PracticeAttemptGradingTests(unittest.TestCase):
         self.assertAlmostEqual(rows[0][4], 1.3)
         self.assertEqual(rows[0][5], -240)
 
-        result = tactic_repository(conn).grade_practice_attempt(
+        result = repo.grade_practice_attempt(
             tactic_id,
             position_ids[0],
             "a2a3",

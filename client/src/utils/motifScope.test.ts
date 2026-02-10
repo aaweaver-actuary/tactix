@@ -10,6 +10,7 @@ describe('motifScope utilities', () => {
   it('rejects non-scoped motifs', () => {
     expect(isScopedMotif('all')).toBe(false);
     expect(isScopedMotif('pin')).toBe(false);
+    expect(isScopedMotif('initiative')).toBe(false);
     expect(isScopedMotif(null)).toBe(false);
     expect(isScopedMotif(undefined)).toBe(false);
   });
@@ -24,5 +25,6 @@ describe('motifScope utilities', () => {
     expect(isAllowedMotifFilter('hanging_piece')).toBe(true);
     expect(isAllowedMotifFilter('mate')).toBe(true);
     expect(isAllowedMotifFilter('pin')).toBe(false);
+    expect(isAllowedMotifFilter('initiative')).toBe(false);
   });
 });

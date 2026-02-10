@@ -398,6 +398,74 @@ describe('DashboardFlow', () => {
     expect(motifSelect.value).toBe('hanging_piece');
   });
 
+  it('filters non-scoped motifs from metrics, tactics, and practice queue', async () => {
+    const scopedDashboard: DashboardPayload = {
+      ...baseDashboard,
+      metrics: [
+        { ...baseDashboard.metrics[0], motif: 'hanging_piece' },
+        {
+          ...baseDashboard.metrics[0],
+          motif: 'pin',
+          updated_at: '2026-02-02T00:00:00Z',
+        },
+        {
+          ...baseDashboard.metrics[0],
+          motif: 'initiative',
+          updated_at: '2026-02-03T00:00:00Z',
+        },
+      ],
+      tactics: [
+        { ...baseDashboard.tactics[0], game_id: 'g-allowed' },
+        { ...baseDashboard.tactics[0], game_id: 'g-pin', motif: 'pin' },
+      ],
+      recent_games: [],
+      positions: [],
+    };
+    const scopedPracticeQueue: PracticeQueueResponse = {
+      ...basePracticeQueue,
+      items: [
+        { ...basePracticeQueue.items[0], motif: 'hanging_piece' },
+        {
+          ...basePracticeQueue.items[0],
+          tactic_id: 2,
+          game_id: 'g-pin',
+          position_id: 2,
+          motif: 'pin',
+        },
+      ],
+    };
+
+    (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      scopedDashboard,
+    );
+    (
+      fetchPracticeQueue as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValue(scopedPracticeQueue);
+
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+    await openFiltersModal();
+
+    const motifSelect = screen.getByTestId('filter-motif') as HTMLSelectElement;
+    const motifOptions = Array.from(motifSelect.options).map(
+      (option) => option.value,
+    );
+    expect(motifOptions).toContain('hanging_piece');
+    expect(motifOptions).not.toContain('pin');
+    expect(motifOptions).not.toContain('initiative');
+
+    expect(
+      await screen.findByTestId('dashboard-game-row-g-allowed'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('dashboard-game-row-g-pin'),
+    ).not.toBeInTheDocument();
+
+    const practiceRows = await screen.findAllByTestId(/practice-queue-row-/);
+    expect(practiceRows).toHaveLength(1);
+  });
+
   it('closes the filters modal on Escape', async () => {
     render(<DashboardFlow />);
 

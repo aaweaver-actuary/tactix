@@ -389,3 +389,8 @@ Session summary (2026-02-10):
 - Extracted a shared clickButtonByText helper for verification scripts to keep button targeting consistent and reduce duplication.
 - Before -> after map: inline clickButtonByText functions in puppeteer_feature_021_chesscom_pagination, puppeteer_feature_045_chesscom_blitz_backfill, puppeteer_feature_052_chesscom_correspondence_backfill, integration_feature_remove_practice_attempt_card -> helpers/button_helpers clickButtonByText with shared imports.
 - Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
+- Extracted a shared practice-ready wait helper to reduce duplication in verification scripts and keep orchestration focused.
+- Before -> after map: inline waitForPracticeReady in puppeteer_feature_remove_practice_attempt_card and integration_feature_remove_practice_attempt_card -> enter_submit_helpers waitForPracticeReady + updated call sites.
+- Tests run: make check (before and after changes).

@@ -4,6 +4,7 @@ const { clickButtonByText } = require('./helpers/button_helpers');
 const {
   selectSource,
   ensurePracticeCardExpanded,
+  waitForPracticeReady,
   getFenFromPage,
   buildFallbackMove,
 } = require('./enter_submit_helpers');
@@ -40,21 +41,11 @@ const selectors = {
 
     await page.waitForSelector(selectors.practiceButton, { timeout: 60000 });
     await clickButtonByText(page, 'Refresh metrics');
-    const waitForPracticeReady = async (timeoutMs) => {
-      await page.waitForFunction(
-        (selector) => {
-          const button = document.querySelector(selector);
-          return button instanceof HTMLButtonElement && !button.disabled;
-        },
-        { timeout: timeoutMs },
-        selectors.practiceButton,
-      );
-    };
     try {
-      await waitForPracticeReady(20000);
+      await waitForPracticeReady(page, selectors.practiceButton, 20000);
     } catch (err) {
       await clickButtonByText(page, 'Run + Refresh');
-      await waitForPracticeReady(60000);
+      await waitForPracticeReady(page, selectors.practiceButton, 60000);
     }
 
     await page.click(selectors.practiceButton);

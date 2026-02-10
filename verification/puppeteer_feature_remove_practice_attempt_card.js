@@ -7,6 +7,7 @@ const {
 const {
   selectSource,
   ensurePracticeCardExpanded,
+  waitForPracticeReady,
   getFenFromPage,
   buildFallbackMove,
 } = require('./enter_submit_helpers');
@@ -48,18 +49,8 @@ const selectors = {
       );
       if (target) target.click();
     });
-    const waitForPracticeReady = async (timeoutMs) => {
-      await page.waitForFunction(
-        (selector) => {
-          const button = document.querySelector(selector);
-          return button instanceof HTMLButtonElement && !button.disabled;
-        },
-        { timeout: timeoutMs },
-        selectors.practiceButton,
-      );
-    };
     try {
-      await waitForPracticeReady(30000);
+      await waitForPracticeReady(page, selectors.practiceButton, 30000);
     } catch (err) {
       await page.$$eval('button', (buttons) => {
         const target = buttons.find(
@@ -67,7 +58,7 @@ const selectors = {
         );
         if (target) target.click();
       });
-      await waitForPracticeReady(120000);
+      await waitForPracticeReady(page, selectors.practiceButton, 120000);
     }
 
     await page.click(selectors.practiceButton);

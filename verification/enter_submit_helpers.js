@@ -142,6 +142,17 @@ async function ensurePracticeCardExpanded(page) {
   );
 }
 
+async function waitForPracticeReady(page, selector, timeoutMs) {
+  await page.waitForFunction(
+    (selector) => {
+      const button = document.querySelector(selector);
+      return button instanceof HTMLButtonElement && !button.disabled;
+    },
+    { timeout: timeoutMs },
+    selector,
+  );
+}
+
 function buildFallbackMove(fen) {
   const board = new Chess(fen);
   const moves = board.moves({ verbose: true });
@@ -160,4 +171,5 @@ module.exports = {
   ensureFiltersModalOpen,
   closeFiltersModal,
   ensurePracticeCardExpanded,
+  waitForPracticeReady,
 };

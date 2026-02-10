@@ -1092,7 +1092,7 @@
       "Step 9: Verify created_at is set",
       "Step 10: Verify no illegal captures are recorded"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

@@ -426,3 +426,11 @@ Session summary (2026-02-10):
 - Extracted the tactic upsert workflow into single-responsibility helpers and added an idempotent upsert unit test for position cleanup.
 - Before -> after map: DuckDbTacticRepository.upsert_tactic_with_outcome inline delete/insert/outcome -> _require_position_id/_delete_existing_for_position_if_needed/_insert_single_tactic/_insert_outcome_for_tactic.
 - Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
+- Added simple exchange evaluation for hanging piece detection and applied a hanging piece severity floor for medium confidence.
+- Added integration-style unittest coverage for exchange-based OPP_HANGING_PIECE targets.
+- Manual verification: tmp-logs/opp_hanging_exchange_manual.py -> tmp-logs/opp_hanging_exchange_manual.json.
+- Tests attempted: runTests (multiple files) returned "No tests found"; no CI tests executed.
+- Screenshots: n/a (backend-only feature).
+- Next steps: investigate runTests discovery for unittest suites; consider UI-level verification entry point if needed.

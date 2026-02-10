@@ -165,7 +165,7 @@ def _should_override_opponent_hanging(context: OpponentHangingContext) -> bool:
         (
             context.user_to_move,
             context.hanging_target is not None,
-            context.result in {"missed", "failed_attempt"},
+            context.result in {"missed", "failed_attempt", "unclear"},
             context.motif in _OVERRIDEABLE_USER_MOTIFS,
         )
     )

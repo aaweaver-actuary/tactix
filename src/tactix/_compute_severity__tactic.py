@@ -5,7 +5,7 @@ from typing import cast
 
 from tactix._apply_fork_severity_floor import _apply_fork_severity_floor
 from tactix._severity_for_result import _severity_for_result
-from tactix.analyze_tactics__positions import _SEVERITY_MAX
+from tactix.analyze_tactics__positions import _SEVERITY_MAX, _SEVERITY_MIN
 from tactix.config import Settings
 from tactix.legacy_args import apply_legacy_args, apply_legacy_kwargs, init_legacy_values
 from tactix.utils.logger import funclogger
@@ -136,5 +136,7 @@ def _compute_severity__tactic(
         resolved.mate_in,
         resolved.result,
     )
+    if resolved.motif == "hanging_piece":
+        severity = max(severity, _SEVERITY_MIN)
     severity = min(severity, _SEVERITY_MAX)
     return _apply_fork_severity_floor(severity, resolved.motif, resolved.settings)

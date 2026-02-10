@@ -184,6 +184,56 @@ def _is_favorable_trade(captured_piece: chess.Piece, mover_piece: chess.Piece) -
     )
 
 
+def _legal_capture_attacker_values(
+    board: chess.Board,
+    target_square: chess.Square,
+) -> list[int]:
+    values: list[int] = []
+    for response in board.legal_moves:
+        if not board.is_capture(response):
+            continue
+        capture_square = _capture_square_for_move(board, response, board.turn)
+        if capture_square != target_square:
+            continue
+        attacker = board.piece_at(response.from_square)
+        if attacker is None:
+            continue
+        values.append(PIECE_VALUES.get(attacker.piece_type, 0))
+    return sorted(values)
+
+
+def _simple_exchange_wins(
+    board_before: chess.Board,
+    board_after: chess.Board,
+    move: chess.Move,
+    mover_color: bool,
+) -> bool:
+    capture_square = _capture_square_for_move(board_before, move, mover_color)
+    captured_piece = board_before.piece_at(capture_square)
+    if captured_piece is None:
+        return False
+    target_square = move.to_square
+    opponent_attackers = _legal_capture_attacker_values(board_after, target_square)
+    if not opponent_attackers:
+        return False
+    mover_board = board_after.copy()
+    mover_board.turn = mover_color
+    mover_attackers = _legal_capture_attacker_values(mover_board, target_square)
+    gains = [PIECE_VALUES.get(captured_piece.piece_type, 0)]
+    side_attackers = {
+        mover_color: mover_attackers,
+        not mover_color: opponent_attackers,
+    }
+    side = not mover_color
+    while side_attackers[side]:
+        attacker_value = side_attackers[side].pop(0)
+        gains.append(attacker_value - gains[-1])
+        side = not side
+    for idx in range(len(gains) - 2, -1, -1):
+        gains[idx] = max(-gains[idx + 1], gains[idx])
+    return gains[0] > 0
+
+
 class PieceInfo(BaseModel):
     """Describe a piece on the board."""
 
@@ -266,7 +316,12 @@ class BaseTacticDetector:
         mover_piece = board_before.piece_at(move.from_square)
         if not _can_compare_capture(mover_piece, board_after):
             return False
-        return _is_favorable_trade(captured_piece, mover_piece)
+        return _is_favorable_trade(captured_piece, mover_piece) or _simple_exchange_wins(
+            board_before,
+            board_after,
+            move,
+            mover_color,
+        )
 
     @classmethod
     def count_high_value_targets(

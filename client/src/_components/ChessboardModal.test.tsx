@@ -109,5 +109,6 @@ describe('ChessboardModal', () => {
 
     expect(screen.getByText('Daily practice')).toBeInTheDocument();
     expect(screen.getByTestId('chessboard-modal')).toBeInTheDocument();
+    expect(screen.queryByTestId('practice-best-move')).not.toBeInTheDocument();
   });
 });

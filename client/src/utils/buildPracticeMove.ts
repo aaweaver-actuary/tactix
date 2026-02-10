@@ -6,7 +6,7 @@ type ParsedUciMove = {
   promotion?: string;
 };
 
-export type PracticeMoveResult = {
+type PracticeMoveResult = {
   uci: string;
   nextFen: string;
   from: Square;

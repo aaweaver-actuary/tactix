@@ -86,7 +86,11 @@ export default function PracticeModalContent({
               <Badge
                 label={`Move ${currentPractice.move_number}.${currentPractice.ply}`}
               />
-              <Badge label={`Best ${currentPractice.best_uci || '--'}`} />
+              {practiceFeedback ? (
+                <span data-testid="practice-best-move">
+                  <Badge label={`Best ${practiceFeedback.best_uci || '--'}`} />
+                </span>
+              ) : null}
               {currentPractice.clock_seconds !== null ? (
                 <Badge label={`${currentPractice.clock_seconds}s`} />
               ) : null}

@@ -98,18 +98,12 @@ const source = process.env.TACTIX_SOURCE || 'chesscom';
       throw new Error('Practice attempt input not found (queue may be empty).');
     }
 
-    const bestLabel = await page.$eval(
-      '[data-testid="chessboard-modal"]',
-      (modal) => {
-        const spans = Array.from(modal.querySelectorAll('span'));
-        const best = spans.find((span) =>
-          span.textContent?.startsWith('Best '),
-        );
-        return best?.textContent || '';
-      },
+    const preAttemptBestBadge = await page.$(
+      '[data-testid="chessboard-modal"] [data-testid="practice-best-move"]',
     );
-    const rawBestMove = bestLabel.replace('Best ', '').trim();
-    const bestMove = rawBestMove && rawBestMove !== '--' ? rawBestMove : 'e2e4';
+    if (preAttemptBestBadge) {
+      throw new Error('Best move badge should be hidden before attempting.');
+    }
 
     const beforeSummary = await page.$eval(
       '[data-testid="practice-session-summary"]',
@@ -121,14 +115,11 @@ const source = process.env.TACTIX_SOURCE || 'chesscom';
     const fen = await getFenFromPage(page);
     const board = new Chess(fen);
     const moves = board.moves({ verbose: true });
-    const bestUci = bestMove.toLowerCase();
-    const altMove = moves
+    const attemptMove = moves
       .map((move) => `${move.from}${move.to}${move.promotion || ''}`)
-      .find((uci) => uci !== bestUci);
-    if (!altMove) {
-      throw new Error(
-        'Unable to find a legal non-best move for reschedule test.',
-      );
+      .find(Boolean);
+    if (!attemptMove) {
+      throw new Error('Unable to find a legal move for practice attempt.');
     }
 
     const inputSelector =
@@ -136,7 +127,7 @@ const source = process.env.TACTIX_SOURCE || 'chesscom';
     const submitSelector = 'button';
 
     await page.click(inputSelector, { clickCount: 3 });
-    await page.keyboard.type(altMove);
+    await page.keyboard.type(attemptMove);
     await page.$$eval(submitSelector, (buttons) => {
       const target = buttons.find(
         (btn) => btn.textContent && btn.textContent.includes('Submit attempt'),
@@ -146,10 +137,33 @@ const source = process.env.TACTIX_SOURCE || 'chesscom';
     await page.waitForFunction(
       () =>
         Array.from(document.querySelectorAll('span')).some((el) =>
-          el.textContent?.includes('Missed'),
+          ['Correct', 'Missed'].some((label) =>
+            el.textContent?.includes(label),
+          ),
         ),
       { timeout: 60000 },
     );
+
+    await page.waitForFunction(
+      () =>
+        Array.from(document.querySelectorAll('[data-testid="practice-best-move"]'))
+          .length > 0,
+      { timeout: 60000 },
+    );
+
+    await page.waitForFunction(
+      () =>
+        Array.from(document.querySelectorAll('span')).some((el) =>
+          el.textContent?.includes('best'),
+        ),
+      { timeout: 60000 },
+    );
+
+    const practiceResult = practiceResponses[0];
+    if (!practiceResult) {
+      throw new Error('Practice attempt response was not captured.');
+    }
+
     if (beforeTotal !== null) {
       await page.waitForFunction(
         (selector, prevTotal) => {
@@ -160,7 +174,7 @@ const source = process.env.TACTIX_SOURCE || 'chesscom';
           );
           if (!match) return false;
           const total = Number(match[2]);
-          return Number.isFinite(total) && total > prevTotal;
+          return Number.isFinite(total) && total >= prevTotal;
         },
         { timeout: 60000 },
         '[data-testid="practice-session-summary"]',
@@ -172,22 +186,15 @@ const source = process.env.TACTIX_SOURCE || 'chesscom';
       );
       const afterMatch = afterSummary.match(/(\d+)\s+of\s+(\d+)\s+attempts/i);
       const afterTotal = afterMatch ? Number(afterMatch[2]) : null;
-      if (afterTotal !== null && afterTotal <= beforeTotal) {
-        throw new Error('Expected practice total to increase after a miss.');
+      if (afterTotal !== null) {
+        if (!practiceResult.correct && afterTotal <= beforeTotal) {
+          throw new Error('Expected practice total to increase after a miss.');
+        }
+        if (practiceResult.correct && afterTotal !== beforeTotal) {
+          throw new Error('Expected practice total to remain after a correct move.');
+        }
       }
     }
-
-    await page.click(inputSelector, { clickCount: 3 });
-    await page.keyboard.type(bestMove);
-    await page.$$eval(submitSelector, (buttons) => {
-      const target = buttons.find(
-        (btn) => btn.textContent && btn.textContent.includes('Submit attempt'),
-      );
-      if (target) target.click();
-    });
-
-    await page.waitForSelector('span', { timeout: 60000 });
-    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     const outDir = path.resolve(__dirname);
     fs.mkdirSync(outDir, { recursive: true });

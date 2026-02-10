@@ -154,10 +154,12 @@ class DuckDbTacticRepository:
     ) -> int:
         """Insert a tactic with its outcome and return the tactic id."""
         deps = self._dependencies
-        deps.require_position_id(
+        position_id = deps.require_position_id(
             tactic_row,
             "position_id is required when inserting tactics",
         )
+        if isinstance(position_id, int):
+            self._delete_existing_for_position(position_id)
         tactic_ids = self.insert_tactics([tactic_row])
         tactic_id = tactic_ids[0]
         self.insert_tactic_outcomes(
@@ -169,6 +171,21 @@ class DuckDbTacticRepository:
             ]
         )
         return tactic_id
+
+    def _delete_existing_for_position(self, position_id: int) -> None:
+        self._conn.execute(
+            """
+            DELETE FROM tactic_outcomes
+            WHERE tactic_id IN (
+                SELECT tactic_id FROM tactics WHERE position_id = ?
+            )
+            """,
+            [position_id],
+        )
+        self._conn.execute(
+            "DELETE FROM tactics WHERE position_id = ?",
+            [position_id],
+        )
 
     def fetch_practice_tactic(self, tactic_id: int) -> dict[str, object] | None:
         """Fetch a single tactic for practice flows."""

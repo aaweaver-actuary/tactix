@@ -1075,7 +1075,7 @@
       "Step 9: Verify created_at is set",
       "Step 10: Verify no duplicate opportunity is created on re-run"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

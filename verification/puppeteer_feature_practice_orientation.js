@@ -12,12 +12,13 @@ const source = process.env.TACTIX_SOURCE || 'chesscom';
 const screenshotName =
   process.env.TACTIX_SCREENSHOT_NAME ||
   'feature-practice-orientation-2026-02-10.png';
+const apiBase = process.env.TACTIX_API_BASE || 'http://localhost:8000';
+const apiToken = process.env.TACTIX_API_TOKEN || 'local-dev-token';
 
 const selectors = {
   practiceStart: '[data-testid="practice-button"]',
   practiceModal: '[data-testid="chessboard-modal"]',
   practiceInput: '[data-testid="chessboard-modal"] input[placeholder*="UCI"]',
-  practiceQueueRow: '[data-testid^="practice-queue-row-"]',
   board: '[data-boardid="practice-board"]',
 };
 
@@ -26,21 +27,16 @@ const getExpectedBottomLeft = (fen) => {
   return side === 'b' ? 'h8' : 'a1';
 };
 
-const UCI_PATTERN = /[a-h][1-8][a-h][1-8][qrbn]?/i;
-
-async function getBestMoveFromQueue(page) {
-  const bestText = await page.evaluate((rowSelector) => {
-    const row = document.querySelector(rowSelector);
-    if (!row) return null;
-    const cells = Array.from(row.querySelectorAll('td')).map(
-      (cell) => cell.textContent?.trim() || '',
-    );
-    return cells[2] || null;
-  }, selectors.practiceQueueRow);
-
-  if (!bestText) return null;
-  const match = bestText.match(UCI_PATTERN);
-  return match ? match[0] : null;
+async function fetchPracticeQueue() {
+  const url = new URL('/api/practice/queue', apiBase);
+  url.searchParams.set('source', source);
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${apiToken}` },
+  });
+  if (!res.ok) {
+    throw new Error(`Practice queue fetch failed: ${res.status}`);
+  }
+  return res.json();
 }
 
 async function getBottomLeftSquare(page) {
@@ -79,22 +75,15 @@ async function getBottomLeftSquare(page) {
     await ensurePracticeCardExpanded(page);
     console.log('Practice card ready.');
 
-    await page.waitForSelector(selectors.practiceQueueRow, { timeout: 60000 });
-    const rowCount = await page.$$eval(
-      selectors.practiceQueueRow,
-      (rows) => rows.length,
-    );
-    if (rowCount < 2) {
+    const practiceQueue = await fetchPracticeQueue();
+    const queueItems = Array.isArray(practiceQueue.items)
+      ? practiceQueue.items
+      : [];
+    if (queueItems.length < 2) {
       throw new Error(
-        `Need at least 2 practice items to verify orientation advance, found ${rowCount}.`,
+        `Need at least 2 practice items to verify orientation advance, found ${queueItems.length}.`,
       );
     }
-
-    const bestMove = await getBestMoveFromQueue(page);
-    if (!bestMove) {
-      throw new Error('Unable to read a best move from the practice queue.');
-    }
-    console.log('Best move loaded from queue:', bestMove);
 
     await page.waitForSelector(selectors.practiceStart, { timeout: 60000 });
     await page.click(selectors.practiceStart);
@@ -106,6 +95,12 @@ async function getBottomLeftSquare(page) {
     console.log('Practice modal ready.');
 
     const fen = await getFenFromPage(page);
+    const matchingItem = queueItems.find((item) => item.fen === fen);
+    const bestMove = matchingItem?.best_uci;
+    if (!bestMove) {
+      throw new Error('Unable to match practice queue item to the modal FEN.');
+    }
+    console.log('Best move loaded from queue:', bestMove);
     const expectedBottomLeft = getExpectedBottomLeft(fen);
     console.log('Initial FEN', fen);
 

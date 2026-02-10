@@ -6,6 +6,7 @@ const {
   selectSource,
   getFenFromPage,
   ensurePracticeCardExpanded,
+  waitForPracticeReady,
 } = require('./enter_submit_helpers');
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
@@ -53,6 +54,7 @@ const afterScreenshot =
     await page.waitForSelector('[data-testid="practice-button"]', {
       timeout: 60000,
     });
+    await waitForPracticeReady(page, '[data-testid="practice-button"]', 60000);
     await page.click('[data-testid="practice-button"]');
     await page.waitForSelector('[data-testid="chessboard-modal"]', {
       timeout: 60000,

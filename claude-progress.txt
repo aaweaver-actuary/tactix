@@ -1,4 +1,12 @@
 Session summary (2026-02-09):
+- Re-verified ChessboardModal, settings FAB modal, and scoped motif filters; refreshed verification screenshots.
+- Tests run: make check.
+
+Session summary (2026-02-09):
+- Added ChessboardModal unit tests to cover closed state, empty state, and BaseChessboard wiring.
+- Tests run: make check (before and after changes).
+
+Session summary (2026-02-09):
 - Added Escape key handling to ModalShell so BaseModal-backed views close on Escape, plus a dashboard flow test to cover it.
 - Added manual Puppeteer verification + integration coverage for Escape-to-close behavior with new screenshots.
 - Tests run: node verification/puppeteer_feature_modal_escape.js; node verification/integration_feature_modal_escape.js; make check.

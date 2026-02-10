@@ -1,4 +1,8 @@
 Session summary (2026-02-10):
+- Added new GitHub issues (#65-#51) to feature_list.json as top-priority items.
+- Refreshed verification screenshots after regression batch and committed updated artifacts.
+
+Session summary (2026-02-10):
 - Extracted base metrics cards and source sync cards into dedicated components to keep MetricsSummaryGrid focused on layout.
 - Before -> after map: MetricsSummaryGrid inline MetricCard blocks -> BaseMetricsCards + SourceSyncCards components in client/src/_components.
 - Tests run: make check (before and after changes).

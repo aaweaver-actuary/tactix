@@ -1,6 +1,162 @@
 [
   {
     "category": "functional",
+    "description": "[Bug] When I practice a move and get it correct, the board resets in the same position as before -- I don't think it is possible to move to the next one",
+    "steps": [
+      "Step 1: Reproduce the practice flow when a correct move is submitted",
+      "Step 2: Ensure the queue advances to the next position after a correct attempt",
+      "Step 3: Keep feedback visible while the next position loads",
+      "Step 4: Verify practice session counts advance correctly",
+      "Step 5: Add or update UI automation coverage for advancing after correct moves"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[Bug] When I practice a move and get it correct, the board flips before flipping back and showing me my move",
+    "steps": [
+      "Step 1: Reproduce the board flip behavior after a correct practice move",
+      "Step 2: Ensure board orientation remains stable during feedback",
+      "Step 3: Verify move highlights and annotations remain correct",
+      "Step 4: Confirm orientation remains correct on the next position",
+      "Step 5: Add or update UI automation coverage for orientation stability"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[UI] Header/hero card should be redesigned to be more modern and reflective of how this project is developing.",
+    "steps": [
+      "Step 1: Review the current header/hero card layout and content",
+      "Step 2: Redesign the hero to match the evolving product direction",
+      "Step 3: Preserve existing controls and data-testid values",
+      "Step 4: Verify layout on desktop and mobile",
+      "Step 5: Add or update UI automation coverage for the redesigned hero"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[Feature] Recent tactics table has buttons to \"Go to Game\" and \"Open in Lichess\"",
+    "steps": [
+      "Step 1: Add a Go to Game button to recent tactics rows",
+      "Step 2: Add an Open in Lichess button to recent tactics rows",
+      "Step 3: Ensure buttons are disabled when links are unavailable",
+      "Step 4: Verify button layout and accessibility",
+      "Step 5: Add or update UI automation coverage for both actions"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[UI] Recent games/recent tactics cards should be removed, and their content put in the FAB",
+    "steps": [
+      "Step 1: Identify recent games and recent tactics cards on the dashboard",
+      "Step 2: Add FAB entries to open their content in modals",
+      "Step 3: Remove the cards from the dashboard layout",
+      "Step 4: Verify modal content matches the removed cards",
+      "Step 5: Add or update UI automation coverage for the FAB modals"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[Feature] Recent Games card has a \"Go to Game\" button next to the \"Open in Lichess\" button",
+    "steps": [
+      "Step 1: Add a Go to Game button on each recent game row",
+      "Step 2: Ensure the button routes to the game detail view",
+      "Step 3: Disable the button when the game link is unavailable",
+      "Step 4: Verify button layout and accessibility",
+      "Step 5: Add or update UI automation coverage for the Go to Game button"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[UI] Remove Practice Queue card",
+    "steps": [
+      "Step 1: Identify the practice queue card on the dashboard",
+      "Step 2: Remove the practice queue card from the layout",
+      "Step 3: Ensure practice data remains accessible via other UI entry points",
+      "Step 4: Verify dashboard spacing and layout consistency",
+      "Step 5: Add or update UI automation coverage for the updated layout"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[UI] Remove Practice card and place the button in the header",
+    "steps": [
+      "Step 1: Identify the practice card on the dashboard",
+      "Step 2: Move the practice button entry point into the header",
+      "Step 3: Remove the practice card from the dashboard",
+      "Step 4: Verify the header button opens the practice modal",
+      "Step 5: Add or update UI automation coverage for the header practice button"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[UI] Practice attempt card no longer needed",
+    "steps": [
+      "Step 1: Identify the practice attempt card on the dashboard",
+      "Step 2: Remove the practice attempt card from the layout",
+      "Step 3: Ensure practice feedback still appears in the modal",
+      "Step 4: Verify dashboard spacing and card order",
+      "Step 5: Add or update UI automation coverage for the updated layout"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[Feature] Browser Modal allows user to edit a position",
+    "steps": [
+      "Step 1: Add editing controls to the Browser modal",
+      "Step 2: Allow users to update the position and refresh the board",
+      "Step 3: Ensure validation errors are surfaced clearly",
+      "Step 4: Verify existing browser modal flows still work",
+      "Step 5: Add or update UI automation coverage for editing positions"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[UI] Add Browser modal to FAB",
+    "steps": [
+      "Step 1: Identify the Browser modal entry point",
+      "Step 2: Add a FAB action to open the Browser modal",
+      "Step 3: Verify the modal opens and closes correctly",
+      "Step 4: Remove any redundant entry points if needed",
+      "Step 5: Add or update UI automation coverage for the FAB Browser modal"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[UI] Provide context animation when opening the practice board",
+    "steps": [
+      "Step 1: Identify the practice board open transition",
+      "Step 2: Add a context animation that orients the user",
+      "Step 3: Ensure animation respects reduced-motion preferences",
+      "Step 4: Verify practice interactions still work during animation",
+      "Step 5: Add or update UI automation coverage for the animation"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "[Bug] Unclear tactical puzzle",
+    "steps": [
+      "Step 1: Capture the unclear puzzle scenario",
+      "Step 2: Verify tactic metadata and expected best line",
+      "Step 3: Adjust puzzle labeling or filtering as needed",
+      "Step 4: Ensure practice feedback remains accurate",
+      "Step 5: Add or update regression coverage for the corrected puzzle"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
     "description": "[UI] Practice modal board should be flipped so that the side to move is at the bottom",
     "steps": [
       "Step 1: Identify the practice modal board orientation",

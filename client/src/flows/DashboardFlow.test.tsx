@@ -348,6 +348,23 @@ const openFiltersModal = async () => {
   });
 };
 
+const openFabModal = async (actionTestId: string, modalTestId: string) => {
+  const fabToggle = screen.getByTestId('fab-toggle');
+  if (fabToggle.getAttribute('aria-expanded') !== 'true') {
+    fireEvent.click(fabToggle);
+  }
+  fireEvent.click(screen.getByTestId(actionTestId));
+  await waitFor(() => {
+    expect(screen.getByTestId(modalTestId)).toBeInTheDocument();
+  });
+};
+
+const openRecentGamesModal = async () =>
+  openFabModal('recent-games-open', 'recent-games-modal');
+
+const openRecentTacticsModal = async () =>
+  openFabModal('recent-tactics-open', 'recent-tactics-modal');
+
 const setupBaseMocks = () => {
   (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
     baseDashboard,
@@ -389,10 +406,25 @@ describe('DashboardFlow', () => {
     expect(
       screen.queryByTestId('dashboard-card-filters'),
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('dashboard-card-recent-games'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('dashboard-card-tactics-table'),
+    ).not.toBeInTheDocument();
+
+    await openRecentGamesModal();
 
     await waitFor(() => {
       expect(screen.getAllByTestId(/recent-games-row-/)).toHaveLength(2);
       expect(screen.getAllByTestId(/practice-queue-row-/)).toHaveLength(2);
+    });
+
+    fireEvent.click(screen.getByTestId('recent-games-modal-close'));
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('recent-games-modal'),
+      ).not.toBeInTheDocument();
     });
 
     await openFiltersModal();
@@ -595,6 +627,12 @@ describe('DashboardFlow', () => {
     render(<DashboardFlow />);
 
     await waitFor(() => {
+      expect(fetchDashboard).toHaveBeenCalled();
+    });
+
+    await openRecentGamesModal();
+
+    await waitFor(() => {
       expect(screen.getAllByTestId(/recent-games-row-/)).toHaveLength(2);
     });
 
@@ -640,6 +678,8 @@ describe('DashboardFlow', () => {
 
     render(<DashboardFlow />);
 
+    await openRecentGamesModal();
+
     await waitFor(() => {
       expect(screen.getAllByTestId(/^open-lichess-/)).toHaveLength(2);
     });
@@ -665,6 +705,8 @@ describe('DashboardFlow', () => {
   it('opens the game detail modal from recent tactics actions', async () => {
     render(<DashboardFlow />);
 
+    await openRecentTacticsModal();
+
     await waitFor(() => {
       expect(screen.getByTestId('tactics-go-to-game-g1')).toBeEnabled();
     });
@@ -689,6 +731,8 @@ describe('DashboardFlow', () => {
       .mockImplementation(() => popup as unknown as Window);
 
     render(<DashboardFlow />);
+
+    await openRecentTacticsModal();
 
     await waitFor(() => {
       expect(screen.getByTestId('tactics-open-lichess-g1')).toBeEnabled();
@@ -733,6 +777,8 @@ describe('DashboardFlow', () => {
     render(<DashboardFlow />);
 
     await waitForDashboardLoad();
+
+    await openRecentTacticsModal();
 
     expect(screen.getByTestId('tactics-go-to-game-unknown')).toBeDisabled();
     expect(screen.getByTestId('tactics-open-lichess-unknown')).toBeDisabled();
@@ -913,6 +959,8 @@ describe('DashboardFlow', () => {
         end_date: '2026-02-01',
       });
     });
+
+    await openRecentGamesModal();
 
     const gameRows = await screen.findAllByTestId(/recent-games-row-/);
     expect(gameRows).toHaveLength(2);

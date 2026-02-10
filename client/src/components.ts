@@ -6,8 +6,8 @@ import PositionsList from './_components/PositionsList';
 import MotifTrendsCard from './_components/MotifTrendsCard';
 import TimeTroubleCorrelationCard from './_components/TimeTroubleCorrelationCard';
 import PracticeQueueCard from './_components/PracticeQueueCard';
-import RecentGamesCard from './_components/RecentGamesCard';
-import RecentTacticsCard from './_components/RecentTacticsCard';
+import RecentGamesModal from './_components/RecentGamesModal';
+import RecentTacticsModal from './_components/RecentTacticsModal';
 import ErrorCard from './_components/ErrorCard';
 import FiltersCard from './_components/FiltersCard';
 import MetricsSummaryCard from './_components/MetricsSummaryCard';
@@ -28,8 +28,8 @@ export {
   MotifTrendsCard,
   TimeTroubleCorrelationCard,
   PracticeQueueCard,
-  RecentGamesCard,
-  RecentTacticsCard,
+  RecentGamesModal,
+  RecentTacticsModal,
   ErrorCard,
   FiltersCard,
   MetricsSummaryCard,

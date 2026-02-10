@@ -49,8 +49,8 @@ import {
   MotifTrendsCard,
   TimeTroubleCorrelationCard,
   PracticeQueueCard,
-  RecentGamesCard,
-  RecentTacticsCard,
+  RecentGamesModal,
+  RecentTacticsModal,
   JobProgressCard,
   PracticeAttemptCard,
   PositionsList,
@@ -108,8 +108,6 @@ const DASHBOARD_CARD_IDS = [
   'metrics-trends',
   'time-trouble-correlation',
   'practice-queue',
-  'recent-games',
-  'tactics-table',
   'positions-list',
   'practice-attempt',
 ];
@@ -398,6 +396,8 @@ export default function DashboardFlow() {
     useState<PositionEntry | null>(null);
   const [filtersModalOpen, setFiltersModalOpen] = useState(false);
   const [databaseModalOpen, setDatabaseModalOpen] = useState(false);
+  const [recentGamesModalOpen, setRecentGamesModalOpen] = useState(false);
+  const [recentTacticsModalOpen, setRecentTacticsModalOpen] = useState(false);
   const [practiceModalOpen, setPracticeModalOpen] = useState(false);
   const practiceStatusId = useId();
 
@@ -451,8 +451,27 @@ export default function DashboardFlow() {
         testId: 'database-open',
         onClick: () => setDatabaseModalOpen(true),
       },
+      {
+        id: 'recent-games',
+        label: 'Recent games',
+        ariaLabel: 'Open recent games',
+        testId: 'recent-games-open',
+        onClick: () => setRecentGamesModalOpen(true),
+      },
+      {
+        id: 'recent-tactics',
+        label: 'Recent tactics',
+        ariaLabel: 'Open recent tactics',
+        testId: 'recent-tactics-open',
+        onClick: () => setRecentTacticsModalOpen(true),
+      },
     ],
-    [setDatabaseModalOpen, setFiltersModalOpen],
+    [
+      setDatabaseModalOpen,
+      setFiltersModalOpen,
+      setRecentGamesModalOpen,
+      setRecentTacticsModalOpen,
+    ],
   );
 
   const normalizedFilters = useMemo<DashboardFilters>(
@@ -1771,42 +1790,6 @@ export default function DashboardFlow() {
         ),
       },
       {
-        id: 'recent-games',
-        label: 'Recent games',
-        visible: Boolean(data),
-        render: (props) =>
-          data ? (
-            <RecentGamesCard
-              data={data.recent_games}
-              columns={recentGamesColumns}
-              onRowClick={handleOpenGameDetail}
-              rowTestId={(row, index) =>
-                `recent-games-row-${row.source ?? 'unknown'}-${index}`
-              }
-              {...props}
-            />
-          ) : null,
-      },
-      {
-        id: 'tactics-table',
-        label: 'Recent tactics',
-        visible: Boolean(data),
-        render: (props) =>
-          data ? (
-            <RecentTacticsCard
-              data={data.tactics}
-              columns={tacticsColumns}
-              onRowClick={handleOpenGameDetail}
-              rowTestId={(row) =>
-                row.game_id
-                  ? `dashboard-game-row-${row.game_id}`
-                  : 'dashboard-game-row-unknown'
-              }
-              {...props}
-            />
-          ) : null,
-      },
-      {
         id: 'positions-list',
         label: 'Latest positions',
         visible: Boolean(data),
@@ -1854,9 +1837,6 @@ export default function DashboardFlow() {
     practiceQueueColumns,
     practiceSession,
     handleOpenPracticeModal,
-    recentGamesColumns,
-    resolveGameSource,
-    tacticsColumns,
     timeTroubleColumns,
     timeTroubleSortedRows,
     totals.positions,
@@ -2102,6 +2082,28 @@ export default function DashboardFlow() {
         analysisRows={postgresAnalysis}
         analysisLoading={postgresAnalysisLoading}
         analysisError={postgresAnalysisError}
+      />
+      <RecentGamesModal
+        open={recentGamesModalOpen}
+        onClose={() => setRecentGamesModalOpen(false)}
+        data={data?.recent_games ?? []}
+        columns={recentGamesColumns}
+        onRowClick={handleOpenGameDetail}
+        rowTestId={(row, index) =>
+          `recent-games-row-${row.source ?? 'unknown'}-${index}`
+        }
+      />
+      <RecentTacticsModal
+        open={recentTacticsModalOpen}
+        onClose={() => setRecentTacticsModalOpen(false)}
+        data={data?.tactics ?? []}
+        columns={tacticsColumns}
+        onRowClick={handleOpenGameDetail}
+        rowTestId={(row) =>
+          row.game_id
+            ? `dashboard-game-row-${row.game_id}`
+            : 'dashboard-game-row-unknown'
+        }
       />
       <FloatingActionButton label="Open settings" actions={floatingActions} />
       <ChessboardModal

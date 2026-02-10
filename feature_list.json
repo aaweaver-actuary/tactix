@@ -57,7 +57,7 @@
       "Step 4: Verify modal content matches the removed cards",
       "Step 5: Add or update UI automation coverage for the FAB modals"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

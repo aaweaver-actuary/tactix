@@ -281,3 +281,11 @@ Session summary (2026-02-10):
 - Extracted recent tactics action rendering into TacticsActionButtons to keep DashboardFlow focused on orchestration.
 - Before -> after map: DashboardFlow tactics-actions cell inline buttons -> TacticsActionButtons component with intent callbacks.
 - Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
+- Moved recent games/tactics cards into FAB-driven modals with new modal components and removed their dashboard cards.
+- Updated dashboard tests to open FAB modals and confirm cards are removed.
+- Regression verification (requested features): node verification/puppeteer_feature_practice_button.js (regression-practice-button-2026-02-10.png); node verification/puppeteer_feature_database_modal.js (regression-fab-database-modal-2026-02-10.png); node verification/puppeteer_feature_chessboard_modal.js (regression-chessboard-modal-open-2026-02-10.png, feature-chessboard-modal-closed-2026-02-09.png).
+- Manual verification: node verification/puppeteer_feature_recent_cards_fab.js (feature-fab-recent-games-2026-02-10.png, feature-fab-recent-tactics-2026-02-10.png).
+- Integration verification: node verification/integration_feature_recent_cards_fab.js.
+- Tests run: make check (before and after changes).

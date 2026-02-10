@@ -9,7 +9,7 @@
       "Step 4: Confirm no regressions in ChessboardModal usage",
       "Step 5: Add or update UI automation coverage for the flipped orientation"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

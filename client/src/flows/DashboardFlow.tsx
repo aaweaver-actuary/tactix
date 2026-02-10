@@ -1516,8 +1516,11 @@ export default function DashboardFlow() {
     [handleOpenLichess],
   );
 
-  const practiceOrientation =
-    currentPractice?.side_to_move === 'b' ? 'black' : 'white';
+  const practiceOrientation = useMemo(() => {
+    const fen = practiceFen || currentPractice?.fen || null;
+    const side = fen?.split(' ')[1];
+    return side === 'b' ? 'black' : 'white';
+  }, [currentPractice, practiceFen]);
 
   const practiceHighlightStyles = useMemo(() => {
     if (!practiceLastMove) return {};

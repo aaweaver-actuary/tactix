@@ -25,9 +25,11 @@ const SELECTORS = {
 };
 
 async function openGameDetailModal(page) {
-  const rowCellSelector = `${SELECTORS.row} td:first-child`;
-  await page.waitForSelector(rowCellSelector);
-  await page.click(rowCellSelector);
+  await page.waitForSelector(SELECTORS.row);
+  await page.$eval(SELECTORS.row, (row) => {
+    row.scrollIntoView({ block: 'center', inline: 'center' });
+  });
+  await page.click(SELECTORS.row);
   await page.waitForSelector(SELECTORS.modal, { visible: true });
   await page.waitForSelector(SELECTORS.moves);
 }

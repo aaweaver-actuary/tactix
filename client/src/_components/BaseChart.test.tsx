@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import BaseButton from './BaseButton';
 import BaseChart from './BaseChart';
 
 describe('BaseChart', () => {
@@ -8,7 +9,7 @@ describe('BaseChart', () => {
       <BaseChart
         title="Tactics trend"
         description="Last 7 days"
-        actions={<button type="button">Export</button>}
+        actions={<BaseButton type="button">Export</BaseButton>}
       >
         <div>Chart content</div>
       </BaseChart>,

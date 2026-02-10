@@ -637,7 +637,9 @@ describe('DashboardFlow', () => {
 
     render(<DashboardFlow />);
 
-    expect(screen.getByText('Loading…')).toBeInTheDocument();
+    expect(screen.getByTestId('practice-button')).toHaveTextContent(
+      'Loading practice...',
+    );
   });
 
   it('opens game detail as a modal overlay from recent games', async () => {

@@ -323,3 +323,5 @@ Session summary (2026-02-10):
 - Manual verification: node verification/puppeteer_feature_recent_cards_fab.js (feature-fab-recent-games-2026-02-10.png, feature-fab-recent-tactics-2026-02-10.png).
 - Integration verification: node verification/integration_feature_recent_cards_fab.js.
 - Tests run: make check (before and after changes).
+Session summary (2026-02-10):
+- Extracted motif breakdown default row construction into a helper to keep DashboardFlow orchestration focused.                              - Before -> after map: DashboardFlow ensureMotifBreakdownDefaults inline defaults -> buildMotifBreakdownDefaults helper.                     - Updated the practice loading test to assert the practice button label.                                                                      - Removed unused PracticeQueueCard component flagged by knip.                                                                               - Tests run: make check (before changes failed: DashboardFlow practice loading test); make check (after changes exits 2 with safety check reporting ignored vulnerabilities; otherwise green).

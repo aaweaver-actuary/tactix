@@ -190,6 +190,35 @@ const buildPracticeButtonState = (
 const filterScopedMetrics = (metrics: DashboardPayload['metrics']) =>
   metrics.filter((row) => isAllowedMotifFilter(row.motif));
 
+const buildMotifBreakdownDefaults = (
+  motifs: string[],
+  template: DashboardPayload['metrics'][number] | undefined,
+  source: ChessPlatform,
+) => {
+  const ratingBucket = template?.rating_bucket ?? 'all';
+  const timeControl = template?.time_control ?? 'all';
+  const updatedAt = template?.updated_at ?? new Date().toISOString();
+  const baseSource = template?.source ?? source;
+
+  return motifs.map((motif) => ({
+    source: baseSource,
+    metric_type: 'motif_breakdown',
+    motif,
+    window_days: null,
+    trend_date: null,
+    rating_bucket: ratingBucket,
+    time_control: timeControl,
+    total: 0,
+    found: 0,
+    missed: 0,
+    failed_attempt: 0,
+    unclear: 0,
+    found_rate: 0,
+    miss_rate: 0,
+    updated_at: updatedAt,
+  }));
+};
+
 const ensureMotifBreakdownDefaults = (
   metrics: DashboardPayload['metrics'],
   source: ChessPlatform,
@@ -198,36 +227,13 @@ const ensureMotifBreakdownDefaults = (
     (row) => row.metric_type === 'motif_breakdown',
   );
   const existing = new Set(motifRows.map((row) => row.motif));
-  if (ALLOWED_MOTIFS.every((motif) => existing.has(motif))) {
-    return metrics;
-  }
-  const template = motifRows[0];
-  const ratingBucket = template?.rating_bucket ?? 'all';
-  const timeControl = template?.time_control ?? 'all';
-  const updatedAt = template?.updated_at ?? new Date().toISOString();
-  const baseSource = template?.source ?? source;
+  const missingMotifs = ALLOWED_MOTIFS.filter((motif) => !existing.has(motif));
+  if (!missingMotifs.length) return metrics;
 
-  const defaults = ALLOWED_MOTIFS.filter((motif) => !existing.has(motif)).map(
-    (motif) => ({
-      source: baseSource,
-      metric_type: 'motif_breakdown',
-      motif,
-      window_days: null,
-      trend_date: null,
-      rating_bucket: ratingBucket,
-      time_control: timeControl,
-      total: 0,
-      found: 0,
-      missed: 0,
-      failed_attempt: 0,
-      unclear: 0,
-      found_rate: 0,
-      miss_rate: 0,
-      updated_at: updatedAt,
-    }),
-  );
-
-  return [...metrics, ...defaults];
+  return [
+    ...metrics,
+    ...buildMotifBreakdownDefaults(missingMotifs, motifRows[0], source),
+  ];
 };
 
 const filterScopedTactics = (tactics: DashboardPayload['tactics']) =>

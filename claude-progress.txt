@@ -1,4 +1,10 @@
 Session summary (2026-02-10):
+- Reused ModalHeader for recent games/tactics modals to keep modal chrome consistent and reduce duplicated header layout.
+- Before -> after map: RecentGamesModal/RecentTacticsModal inline header rows -> ModalHeader with badge/close rightSlot.
+- Adjusted DashboardFlow scoped motif test to open the recent tactics modal before asserting tactic row test ids.
+- Tests run: make check (before and after changes; failing: pytest coverage 94.52% < 95); make test (failing: pytest coverage 94.52% < 95).
+
+Session summary (2026-02-10):
 - Extracted shared FiltersActionButton to keep FiltersCard modal open/close buttons consistent and reduce duplicated styling logic.
 - Before -> after map: FiltersCard inline BaseButton for modal open/close -> FiltersActionButton component.
 - Tests run: make check (before and after changes).

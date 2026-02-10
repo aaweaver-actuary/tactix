@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom';
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
 import BaseButton from './BaseButton';
+import ModalHeader from './ModalHeader';
 import ModalShell from './ModalShell';
 import RecentGamesTable from './RecentGamesTable';
-import Text from './Text';
 
 interface RecentGamesModalProps {
   open: boolean;
@@ -35,25 +35,24 @@ export default function RecentGamesModal({
       onClose={onClose}
       panelClassName="max-w-5xl"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Text mode="uppercase" value="Recent games" />
-          <div className="text-xs text-sand/60">
-            Latest games across all sources
+      <ModalHeader
+        title="Recent games"
+        description="Latest games across all sources"
+        className="flex-wrap"
+        rightSlot={
+          <div className="flex items-center gap-2">
+            <Badge label="All sources" />
+            <BaseButton
+              onClick={onClose}
+              className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
+              aria-label="Close recent games"
+              data-testid="recent-games-modal-close"
+            >
+              Close
+            </BaseButton>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge label="All sources" />
-          <BaseButton
-            onClick={onClose}
-            className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
-            aria-label="Close recent games"
-            data-testid="recent-games-modal-close"
-          >
-            Close
-          </BaseButton>
-        </div>
-      </div>
+        }
+      />
       <div className="mt-4">
         <RecentGamesTable
           data={data}

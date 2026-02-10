@@ -551,6 +551,8 @@ describe('DashboardFlow', () => {
     expect(motifOptions).not.toContain('pin');
     expect(motifOptions).not.toContain('initiative');
 
+    await openRecentTacticsModal();
+
     expect(
       await screen.findByTestId('dashboard-game-row-g-allowed'),
     ).toBeInTheDocument();

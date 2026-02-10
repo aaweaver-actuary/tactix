@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom';
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
 import BaseButton from './BaseButton';
+import ModalHeader from './ModalHeader';
 import ModalShell from './ModalShell';
 import TacticsTable from './TacticsTable';
-import Text from './Text';
 
 interface RecentTacticsModalProps {
   open: boolean;
@@ -32,25 +32,24 @@ export default function RecentTacticsModal({
       onClose={onClose}
       panelClassName="max-w-5xl"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Text mode="uppercase" value="Recent tactics" />
-          <div className="text-xs text-sand/60">
-            Latest tactics from the current metrics window
+      <ModalHeader
+        title="Recent tactics"
+        description="Latest tactics from the current metrics window"
+        className="flex-wrap"
+        rightSlot={
+          <div className="flex items-center gap-2">
+            <Badge label="Live" />
+            <BaseButton
+              onClick={onClose}
+              className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
+              aria-label="Close recent tactics"
+              data-testid="recent-tactics-modal-close"
+            >
+              Close
+            </BaseButton>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge label="Live" />
-          <BaseButton
-            onClick={onClose}
-            className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
-            aria-label="Close recent tactics"
-            data-testid="recent-tactics-modal-close"
-          >
-            Close
-          </BaseButton>
-        </div>
-      </div>
+        }
+      />
       <div className="mt-4">
         <TacticsTable
           data={data}

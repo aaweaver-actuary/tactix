@@ -54,6 +54,7 @@ import {
   GameDetailModal,
   ChessboardModal,
   ActionButton,
+  FloatingActionButton,
 } from '../components';
 import {
   PracticeSessionStats,
@@ -290,6 +291,7 @@ export default function DashboardFlow() {
   const [chessboardModalOpen, setChessboardModalOpen] = useState(false);
   const [chessboardPosition, setChessboardPosition] =
     useState<PositionEntry | null>(null);
+  const [filtersModalOpen, setFiltersModalOpen] = useState(false);
 
   const normalizedFilters = useMemo<DashboardFilters>(
     () => ({
@@ -1506,6 +1508,9 @@ export default function DashboardFlow() {
             onChesscomProfileChange={handleChesscomProfileChange}
             onFiltersChange={handleFiltersChange}
             onResetFilters={handleResetFilters}
+            modalOpen={filtersModalOpen}
+            onModalOpenChange={setFiltersModalOpen}
+            showOpenButton={false}
             {...props}
           />
         ),
@@ -1758,6 +1763,7 @@ export default function DashboardFlow() {
     totals.positions,
     totals.tactics,
     trendLatestRows,
+    filtersModalOpen,
   ]);
 
   const dashboardCardIds = useMemo(
@@ -1959,6 +1965,18 @@ export default function DashboardFlow() {
         </Droppable>
       </DragDropContext>
       {practiceError ? <ErrorCard message={practiceError} /> : null}
+      <FloatingActionButton
+        label="Open settings"
+        actions={[
+          {
+            id: 'filters',
+            label: 'Filters',
+            ariaLabel: 'Open filters',
+            testId: 'filters-open',
+            onClick: () => setFiltersModalOpen(true),
+          },
+        ]}
+      />
       <ChessboardModal
         open={chessboardModalOpen}
         position={chessboardPosition}

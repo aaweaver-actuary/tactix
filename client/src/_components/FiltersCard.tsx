@@ -32,6 +32,9 @@ interface FiltersCardProps extends BaseCardDragProps {
   onChesscomProfileChange: (next: ChesscomProfile) => void;
   onFiltersChange: (next: FiltersState) => void;
   onResetFilters: () => void;
+  modalOpen?: boolean;
+  onModalOpenChange?: (open: boolean) => void;
+  showOpenButton?: boolean;
 }
 
 export default function FiltersCard({
@@ -48,9 +51,14 @@ export default function FiltersCard({
   onChesscomProfileChange,
   onFiltersChange,
   onResetFilters,
+  modalOpen,
+  onModalOpenChange,
+  showOpenButton = true,
   ...dragProps
 }: FiltersCardProps) {
-  const [modalOpen, setModalOpen] = useState(false);
+  const [internalModalOpen, setInternalModalOpen] = useState(false);
+  const resolvedModalOpen = modalOpen ?? internalModalOpen;
+  const setModalOpen = onModalOpenChange ?? setInternalModalOpen;
   const updateFilter = (key: keyof FiltersState, value: string) =>
     onFiltersChange({ ...filters, [key]: value });
 
@@ -203,14 +211,16 @@ export default function FiltersCard({
               <h3 className="text-lg font-display text-sand">Filters</h3>
               <Badge label="Live" />
             </div>
-            <BaseButton
-              className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
-              onClick={() => setModalOpen(true)}
-              data-testid="filters-open"
-              disabled={loading}
-            >
-              Open filters
-            </BaseButton>
+            {showOpenButton ? (
+              <BaseButton
+                className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
+                onClick={() => setModalOpen(true)}
+                data-testid="filters-open"
+                disabled={loading}
+              >
+                Open filters
+              </BaseButton>
+            ) : null}
           </div>
         }
         contentClassName="pt-3"
@@ -218,7 +228,7 @@ export default function FiltersCard({
       >
         <Text value="Refine the dashboard using source and motif filters." />
       </BaseCard>
-      {modalOpen
+      {resolvedModalOpen
         ? createPortal(
             <ModalShell
               testId="filters-modal"

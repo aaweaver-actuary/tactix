@@ -19,6 +19,7 @@ import PracticeAttemptCard from './_components/PracticeAttemptCard';
 import GameDetailModal from './_components/GameDetailModal';
 import ChessboardModal from './_components/ChessboardModal';
 import ActionButton from './_components/ActionButton';
+import FloatingActionButton from './_components/FloatingActionButton';
 
 export {
   Hero,
@@ -41,4 +42,5 @@ export {
   GameDetailModal,
   ChessboardModal,
   ActionButton,
+  FloatingActionButton,
 };

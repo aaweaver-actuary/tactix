@@ -338,6 +338,10 @@ const changeFilter = (testId: string, value: string) => {
 };
 
 const openFiltersModal = async () => {
+  const fabToggle = screen.getByTestId('fab-toggle');
+  if (fabToggle.getAttribute('aria-expanded') !== 'true') {
+    fireEvent.click(fabToggle);
+  }
   fireEvent.click(screen.getByTestId('filters-open'));
   await waitFor(() => {
     expect(screen.getByTestId('filters-modal')).toBeInTheDocument();

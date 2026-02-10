@@ -42,3 +42,10 @@ Session summary (2026-02-09):
 - Manual verification: node verification/puppeteer_feature_chessboard_modal.js (feature-chessboard-modal-open-2026-02-09.png, feature-chessboard-modal-closed-2026-02-09.png).
 - Integration verification: node verification/integration_feature_chessboard_modal.js.
 - Tests run: runTests (132 tests); make check (pre-change failed on eslint hook warnings; post-change passed).
+
+Session summary (2026-02-09):
+- Added FloatingActionButton component and moved filters modal entry into the FAB while keeping modal behavior intact; updated dashboard tests and helpers.
+- Manual verification: node verification/puppeteer_feature_settings_modal.js (feature-fab-filters-open-desktop-2026-02-09.png, feature-fab-filters-closed-desktop-2026-02-09.png, feature-fab-filters-open-mobile-2026-02-09.png, feature-fab-filters-closed-mobile-2026-02-09.png).
+- Integration verification: node verification/integration_feature_settings_modal.js.
+- Tests run: make check (before and after changes).
+- Completion status: 51/146 tests passing.

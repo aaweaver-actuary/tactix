@@ -33,6 +33,15 @@ const captureScreenshot = async (page, screenshotName) => {
 const openFiltersModal = async (page) => {
   const modalSelector = '[data-testid="filters-modal"]';
   if (await page.$(modalSelector)) return;
+  await page.waitForSelector('[data-testid="fab-toggle"]', {
+    timeout: SELECT_TIMEOUT_MS,
+  });
+  const isExpanded = await page.$eval('[data-testid="fab-toggle"]', (el) =>
+    el.getAttribute('aria-expanded') === 'true',
+  );
+  if (!isExpanded) {
+    await page.click('[data-testid="fab-toggle"]');
+  }
   await page.waitForSelector('[data-testid="filters-open"]', {
     timeout: SELECT_TIMEOUT_MS,
   });

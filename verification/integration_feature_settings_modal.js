@@ -15,6 +15,18 @@ const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
   try {
     await page.goto(targetUrl, { waitUntil: 'networkidle0' });
 
+    const fabReady = await page.evaluate(() => {
+      const toggle = document.querySelector('[data-testid="fab-toggle"]');
+      const action = document.querySelector('[data-testid="filters-open"]');
+      return Boolean(
+        toggle && toggle.getAttribute('aria-expanded') === 'false' && !action,
+      );
+    });
+
+    if (!fabReady) {
+      throw new Error('Floating action button did not render as expected.');
+    }
+
     await openFiltersModal(page);
 
     const hasFilterInputs = await page.evaluate(() => {

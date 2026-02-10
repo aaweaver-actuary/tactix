@@ -369,7 +369,7 @@
       "Step 4: Verify status labels",
       "Step 5: Ensure tests pass in vitest"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",
@@ -381,7 +381,7 @@
       "Step 4: Verify callbacks fire on change",
       "Step 5: Ensure tests pass in vitest"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",
@@ -393,7 +393,7 @@
       "Step 4: Confirm data-testid values",
       "Step 5: Ensure tests pass in vitest"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",
@@ -405,7 +405,7 @@
       "Step 4: Assert row click handling",
       "Step 5: Ensure tests pass in vitest"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -417,7 +417,7 @@
       "Step 4: Add unit tests for BaseChart",
       "Step 5: Verify charts render correctly"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

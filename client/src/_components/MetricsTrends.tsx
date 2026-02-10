@@ -1,5 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { DashboardPayload } from '../api';
+import BaseChart from './BaseChart';
 import BaseTable from './BaseTable';
 
 export type MetricsTrendsRow = {
@@ -21,8 +22,11 @@ interface MetricsTrendsProps {
  */
 export default function MetricsTrends({ data, columns }: MetricsTrendsProps) {
   return (
-    <div data-testid="motif-trends-table">
+    <BaseChart
+      testId="motif-trends-table"
+      className="border-0 bg-transparent p-0"
+    >
       <BaseTable data={data} columns={columns} />
-    </div>
+    </BaseChart>
   );
 }

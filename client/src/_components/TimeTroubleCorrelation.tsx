@@ -1,5 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { DashboardPayload } from '../api';
+import BaseChart from './BaseChart';
 import BaseTable from './BaseTable';
 
 interface TimeTroubleCorrelationProps {
@@ -12,5 +13,9 @@ export default function TimeTroubleCorrelation({
   columns,
 }: TimeTroubleCorrelationProps) {
   if (!data.length) return null;
-  return <BaseTable data={data} columns={columns} />;
+  return (
+    <BaseChart className="border-0 bg-transparent p-0">
+      <BaseTable data={data} columns={columns} />
+    </BaseChart>
+  );
 }

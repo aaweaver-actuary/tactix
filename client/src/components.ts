@@ -1,6 +1,7 @@
 //* Re-exports of all components for easier imports elsewhere *//
 import Hero from './_components/Hero';
 import Badge from './_components/Badge';
+import BaseChart from './_components/BaseChart';
 import MetricsGrid from './_components/MetricsGrid';
 import PositionsList from './_components/PositionsList';
 import MotifTrendsCard from './_components/MotifTrendsCard';
@@ -21,6 +22,7 @@ import TacticsActionButtons from './_components/TacticsActionButtons';
 export {
   Hero,
   Badge,
+  BaseChart,
   MetricsGrid,
   PositionsList,
   MotifTrendsCard,

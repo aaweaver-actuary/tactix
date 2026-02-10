@@ -133,3 +133,8 @@ Session summary (2026-02-10):
 - Manual verification: node verification/puppeteer_feature_practice_best_move_hidden.js (feature-practice-best-move-hidden-before-2026-02-10.png, feature-practice-best-move-hidden-after-2026-02-10.png).
 - Integration verification: node verification/integration_feature_practice_best_move_hidden.js.
 - Tests run: make check (initially failed js-deadcode, fixed and reran).
+
+Session summary (2026-02-10):
+- Extracted modal header layout into a shared ModalHeader component to reduce duplication between ChessboardModal and PracticeModalContent.
+- Before -> after map: ChessboardModal/PracticeModalContent inline header rows -> ModalHeader component with title/description/rightSlot wiring.
+- Tests run: make check (before and after changes).

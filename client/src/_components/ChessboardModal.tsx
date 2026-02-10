@@ -8,6 +8,7 @@ import type {
 import BaseChessboard from './BaseChessboard';
 import Badge from './Badge';
 import BaseButton from './BaseButton';
+import ModalHeader from './ModalHeader';
 import ModalShell from './ModalShell';
 import Text from './Text';
 import type { PracticeSessionStats } from '../utils/practiceSession';
@@ -60,16 +61,18 @@ export default function ChessboardModal({
         onClose={onClose}
         panelClassName="max-w-5xl"
       >
-        <div className="flex items-center justify-between gap-3">
-          <Text mode="uppercase" value="Practice board" />
-          <BaseButton
-            className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
-            onClick={onClose}
-            data-testid="chessboard-modal-close"
-          >
-            Close
-          </BaseButton>
-        </div>
+        <ModalHeader
+          title="Practice board"
+          rightSlot={
+            <BaseButton
+              className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
+              onClick={onClose}
+              data-testid="chessboard-modal-close"
+            >
+              Close
+            </BaseButton>
+          }
+        />
         <div className="mt-4">
           <PracticeModalContent {...practice} />
         </div>
@@ -89,21 +92,20 @@ export default function ChessboardModal({
       onClose={onClose}
       panelClassName="max-w-4xl"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Text mode="uppercase" value="Position board" />
-          <div className="text-xs text-sand/60">
-            Review the selected position in context
-          </div>
-        </div>
-        <BaseButton
-          className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
-          onClick={onClose}
-          data-testid="chessboard-modal-close"
-        >
-          Close
-        </BaseButton>
-      </div>
+      <ModalHeader
+        title="Position board"
+        description="Review the selected position in context"
+        className="flex-wrap"
+        rightSlot={
+          <BaseButton
+            className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
+            onClick={onClose}
+            data-testid="chessboard-modal-close"
+          >
+            Close
+          </BaseButton>
+        }
+      />
 
       {!position ? (
         <div className="mt-4 text-sm text-sand/70">

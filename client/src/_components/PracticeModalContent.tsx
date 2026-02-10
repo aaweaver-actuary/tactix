@@ -4,6 +4,7 @@ import { PracticeAttemptResponse, PracticeQueueItem } from '../api';
 import isPiecePlayable from '../utils/isPiecePlayable';
 import buildPracticeFeedback from '../utils/buildPracticeFeedback';
 import Badge from './Badge';
+import ModalHeader from './ModalHeader';
 import PracticeAttemptButton from './PracticeAttemptButton';
 import PracticeMoveInput from './PracticeMoveInput';
 import PracticeSessionProgress from './PracticeSessionProgress';
@@ -51,15 +52,14 @@ export default function PracticeModalContent({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Text mode="uppercase" value="Daily practice" />
-          <div className="text-xs text-sand/60">
-            Play the best move for each tactic.
-          </div>
-        </div>
-        {currentPractice ? <Badge label={currentPractice.motif} /> : null}
-      </div>
+      <ModalHeader
+        title="Daily practice"
+        description="Play the best move for each tactic."
+        className="flex-wrap"
+        rightSlot={
+          currentPractice ? <Badge label={currentPractice.motif} /> : null
+        }
+      />
       <PracticeSessionProgress stats={practiceSession} />
       {currentPractice ? (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_1fr]">

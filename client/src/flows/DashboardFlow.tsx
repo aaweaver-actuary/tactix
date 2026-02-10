@@ -400,6 +400,15 @@ export default function DashboardFlow() {
   const [practiceModalOpen, setPracticeModalOpen] = useState(false);
   const practiceStatusId = useId();
 
+  const resetPracticeSessionScope = useCallback(
+    (nextSource: ChessPlatform, nextIncludeFailed: boolean) => {
+      practiceScopeRef.current = `${nextSource}:${nextIncludeFailed}`;
+      practiceSessionTotalRef.current = null;
+      practiceSessionCompletedRef.current = 0;
+    },
+    [],
+  );
+
   const currentPractice = useMemo(
     () => (practiceQueue.length ? practiceQueue[0] : null),
     [practiceQueue],
@@ -460,12 +469,10 @@ export default function DashboardFlow() {
 
   const handleSourceChange = useCallback(
     (next: ChessPlatform) => {
-      practiceScopeRef.current = `${next}:${includeFailedAttempt}`;
-      practiceSessionTotalRef.current = null;
-      practiceSessionCompletedRef.current = 0;
+      resetPracticeSessionScope(next, includeFailedAttempt);
       setSource(next);
     },
-    [includeFailedAttempt],
+    [includeFailedAttempt, resetPracticeSessionScope],
   );
 
   const ensureSourceSelected = (message: string) => {
@@ -576,12 +583,10 @@ export default function DashboardFlow() {
 
   const handleIncludeFailedAttemptChange = useCallback(
     (next: boolean) => {
-      practiceScopeRef.current = `${source}:${next}`;
-      practiceSessionTotalRef.current = null;
-      practiceSessionCompletedRef.current = 0;
+      resetPracticeSessionScope(source, next);
       setIncludeFailedAttempt(next);
     },
-    [source],
+    [resetPracticeSessionScope, source],
   );
 
   const handlePracticeMoveChange = useCallback(

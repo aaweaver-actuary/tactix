@@ -1,4 +1,9 @@
 Session summary (2026-02-10):
+- Extracted practice scope reset into a shared helper to reduce duplicated session reset logic in DashboardFlow.
+- Before -> after map: DashboardFlow handleSourceChange/handleIncludeFailedAttemptChange inline scope reset -> resetPracticeSessionScope helper.
+- Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
 - Added new GitHub issues (#65-#51) to feature_list.json as top-priority items.
 - Refreshed verification screenshots after regression batch and committed updated artifacts.
 

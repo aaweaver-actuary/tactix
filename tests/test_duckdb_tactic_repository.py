@@ -128,6 +128,16 @@ class DuckDbTacticRepositoryTests(unittest.TestCase):
         )
         self.assertEqual(detail_repo, detail_fn)
 
+    def test_upsert_tactic_with_outcome_replaces_position_tactics(self) -> None:
+        position_row = self._build_position()
+        position_id = insert_positions(self.repo_conn, [position_row])[0]
+        tactic_row = self._build_basic_tactic(position_id, position_row["game_id"])
+        outcome_row = self._build_basic_outcome()
+        upsert_tactic_with_outcome(self.repo_conn, tactic_row, outcome_row)
+        upsert_tactic_with_outcome(self.repo_conn, tactic_row, outcome_row)
+        count = self._fetch_tactic_count(position_id)
+        self.assertEqual(count, 1)
+
     def _seed_raw_pgns(self) -> None:
         payload = {
             "game_id": "game-lichess",
@@ -153,6 +163,29 @@ class DuckDbTacticRepositoryTests(unittest.TestCase):
             "clock_seconds": 300,
             "is_legal": True,
         }
+
+    def _build_basic_tactic(self, position_id: int, game_id: str) -> dict[str, object]:
+        return {
+            "game_id": game_id,
+            "position_id": position_id,
+            "motif": "hanging_piece",
+            "severity": 1.0,
+            "best_uci": "e2e4",
+        }
+
+    def _build_basic_outcome(self) -> dict[str, object]:
+        return {
+            "result": "missed",
+            "user_uci": "e2e4",
+            "eval_delta": -5,
+        }
+
+    def _fetch_tactic_count(self, position_id: int) -> int:
+        row = self.repo_conn.execute(
+            "SELECT COUNT(*) FROM tactics WHERE position_id = ?",
+            [position_id],
+        ).fetchone()
+        return int(row[0])
 
     def _strip_created_at(self, rows: list[dict[str, object]]) -> list[dict[str, object]]:
         return [{key: value for key, value in row.items() if key != "created_at"} for row in rows]

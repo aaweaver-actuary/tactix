@@ -153,15 +153,30 @@ class DuckDbTacticRepository:
         outcome_row: Mapping[str, object],
     ) -> int:
         """Insert a tactic with its outcome and return the tactic id."""
-        deps = self._dependencies
-        position_id = deps.require_position_id(
+        position_id = self._require_position_id(tactic_row)
+        self._delete_existing_for_position_if_needed(position_id)
+        tactic_id = self._insert_single_tactic(tactic_row)
+        self._insert_outcome_for_tactic(tactic_id, outcome_row)
+        return tactic_id
+
+    def _require_position_id(self, tactic_row: Mapping[str, object]) -> object:
+        return self._dependencies.require_position_id(
             tactic_row,
             "position_id is required when inserting tactics",
         )
+
+    def _delete_existing_for_position_if_needed(self, position_id: object) -> None:
         if isinstance(position_id, int):
             self._delete_existing_for_position(position_id)
-        tactic_ids = self.insert_tactics([tactic_row])
-        tactic_id = tactic_ids[0]
+
+    def _insert_single_tactic(self, tactic_row: Mapping[str, object]) -> int:
+        return self.insert_tactics([tactic_row])[0]
+
+    def _insert_outcome_for_tactic(
+        self,
+        tactic_id: int,
+        outcome_row: Mapping[str, object],
+    ) -> None:
         self.insert_tactic_outcomes(
             [
                 {
@@ -170,7 +185,6 @@ class DuckDbTacticRepository:
                 }
             ]
         )
-        return tactic_id
 
     def _delete_existing_for_position(self, position_id: int) -> None:
         self._conn.execute(

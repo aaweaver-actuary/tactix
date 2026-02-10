@@ -422,3 +422,7 @@ Session summary (2026-02-10):
 - Addressed make check failures by removing BaseChart from shared exports, closing TestClient in stats tests to release DuckDB locks, and adding unit tests for config/profile helpers.
 - Added coverage for split_pgn_chunks and Settings helper behavior to reach the 95% coverage gate.
 - Tests run: make check (green).
+Session summary (2026-02-10):
+- Extracted the tactic upsert workflow into single-responsibility helpers and added an idempotent upsert unit test for position cleanup.
+- Before -> after map: DuckDbTacticRepository.upsert_tactic_with_outcome inline delete/insert/outcome -> _require_position_id/_delete_existing_for_position_if_needed/_insert_single_tactic/_insert_outcome_for_tactic.
+- Tests run: make check (before and after changes).

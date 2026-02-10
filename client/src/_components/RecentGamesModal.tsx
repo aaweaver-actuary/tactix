@@ -2,7 +2,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { createPortal } from 'react-dom';
 import { DashboardPayload } from '../api';
 import Badge from './Badge';
-import BaseButton from './BaseButton';
+import ModalCloseButton from './ModalCloseButton';
 import ModalHeader from './ModalHeader';
 import ModalShell from './ModalShell';
 import RecentGamesTable from './RecentGamesTable';
@@ -42,14 +42,11 @@ export default function RecentGamesModal({
         rightSlot={
           <div className="flex items-center gap-2">
             <Badge label="All sources" />
-            <BaseButton
+            <ModalCloseButton
               onClick={onClose}
-              className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
-              aria-label="Close recent games"
-              data-testid="recent-games-modal-close"
-            >
-              Close
-            </BaseButton>
+              ariaLabel="Close recent games"
+              testId="recent-games-modal-close"
+            />
           </div>
         }
       />

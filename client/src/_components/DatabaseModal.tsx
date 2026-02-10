@@ -5,8 +5,8 @@ import type {
   PostgresRawPgnsSummary,
   PostgresStatus,
 } from '../api';
-import BaseButton from './BaseButton';
 import ErrorCard from './ErrorCard';
+import ModalCloseButton from './ModalCloseButton';
 import ModalShell from './ModalShell';
 import PostgresAnalysisCard from './PostgresAnalysisCard';
 import PostgresRawPgnsCard from './PostgresRawPgnsCard';
@@ -59,14 +59,11 @@ export default function DatabaseModal({
             Postgres status, raw PGNs, and analysis results
           </div>
         </div>
-        <BaseButton
+        <ModalCloseButton
           onClick={onClose}
-          className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
-          aria-label="Close database"
-          data-testid="database-modal-close"
-        >
-          Close
-        </BaseButton>
+          ariaLabel="Close database"
+          testId="database-modal-close"
+        />
       </div>
       {errors.length ? (
         <div className="mt-4 space-y-3">

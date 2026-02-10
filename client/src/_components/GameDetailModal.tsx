@@ -5,6 +5,7 @@ import { GameDetailResponse } from '../api';
 import BaseButton from './BaseButton';
 import BaseTable from './BaseTable';
 import Badge from './Badge';
+import ModalCloseButton from './ModalCloseButton';
 import ModalShell from './ModalShell';
 import Text from './Text';
 
@@ -218,14 +219,11 @@ export default function GameDetailModal({
             Review moves, metadata, and analysis
           </div>
         </div>
-        <BaseButton
+        <ModalCloseButton
           onClick={onClose}
-          className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
-          aria-label="Close game details"
-          data-testid="game-detail-close"
-        >
-          Close
-        </BaseButton>
+          ariaLabel="Close game details"
+          testId="game-detail-close"
+        />
       </div>
 
       <div className="mt-4">

@@ -11,6 +11,7 @@ import BaseChessboard from './BaseChessboard';
 import Badge from './Badge';
 import BaseButton from './BaseButton';
 import ChessboardPanel from './ChessboardPanel';
+import ModalCloseButton from './ModalCloseButton';
 import ModalHeader from './ModalHeader';
 import ModalShell from './ModalShell';
 import Text from './Text';
@@ -88,13 +89,10 @@ export default function ChessboardModal({
         <ModalHeader
           title="Practice board"
           rightSlot={
-            <BaseButton
-              className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
+            <ModalCloseButton
               onClick={onClose}
-              data-testid="chessboard-modal-close"
-            >
-              Close
-            </BaseButton>
+              testId="chessboard-modal-close"
+            />
           }
         />
         <div className="mt-4">
@@ -145,13 +143,7 @@ export default function ChessboardModal({
         description="Review the selected position in context"
         className="flex-wrap"
         rightSlot={
-          <BaseButton
-            className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
-            onClick={onClose}
-            data-testid="chessboard-modal-close"
-          >
-            Close
-          </BaseButton>
+          <ModalCloseButton onClick={onClose} testId="chessboard-modal-close" />
         }
       />
 

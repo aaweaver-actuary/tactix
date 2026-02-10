@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { ColumnDef } from '@tanstack/react-table';
 import { Chess, Square } from 'chess.js';
@@ -289,11 +296,58 @@ export default function DashboardFlow() {
   const [filtersModalOpen, setFiltersModalOpen] = useState(false);
   const [databaseModalOpen, setDatabaseModalOpen] = useState(false);
   const [practiceModalOpen, setPracticeModalOpen] = useState(false);
+  const practiceStatusId = useId();
 
   const currentPractice = useMemo(
     () => (practiceQueue.length ? practiceQueue[0] : null),
     [practiceQueue],
   );
+
+  const practiceButtonState = useMemo(() => {
+    if (practiceLoading) {
+      return {
+        label: 'Loading practice...',
+        helper: 'Fetching the daily practice queue.',
+        disabled: true,
+      };
+    }
+
+    if (practiceError) {
+      return {
+        label: 'Practice unavailable',
+        helper: practiceError,
+        disabled: true,
+      };
+    }
+
+    if (currentPractice) {
+      const count = practiceQueue.length;
+      const label = practiceModalOpen ? 'Continue practice' : 'Start practice';
+      const helper = `${count} tactic${count === 1 ? '' : 's'} ready.`;
+      return { label, helper, disabled: false };
+    }
+
+    if (practiceSession.total > 0) {
+      return {
+        label: 'Practice complete',
+        helper: 'Daily set complete. Great work.',
+        disabled: true,
+      };
+    }
+
+    return {
+      label: 'No practice items',
+      helper: 'Refresh metrics to find new tactics.',
+      disabled: true,
+    };
+  }, [
+    currentPractice,
+    practiceError,
+    practiceLoading,
+    practiceModalOpen,
+    practiceQueue.length,
+    practiceSession.total,
+  ]);
 
   const floatingActions = useMemo<FloatingAction[]>(
     () => [
@@ -1682,49 +1736,30 @@ export default function DashboardFlow() {
       },
     ];
   }, [
-    chesscomProfile,
     currentPractice,
     data,
-    filters,
     handleIncludeFailedAttemptChange,
-    handleFiltersChange,
     handleOpenChessboardModal,
-    handleResetFilters,
-    handleSourceChange,
     includeFailedAttempt,
     jobProgress,
     jobStatus,
-    lichessProfile,
-    loading,
     metricsTrendsColumns,
     motifDropIndicatorIndex,
-    motifOptions,
     orderedMotifBreakdown,
-    postgresAnalysis,
-    postgresAnalysisLoading,
-    postgresLoading,
-    postgresRawPgns,
-    postgresRawPgnsError,
-    postgresRawPgnsLoading,
-    postgresStatus,
     practiceLoading,
     practiceModalOpen,
     practiceQueue,
     practiceQueueColumns,
     practiceSession,
     handleOpenPracticeModal,
-    ratingOptions,
     recentGamesColumns,
     resolveGameSource,
-    source,
     tacticsColumns,
-    timeControlOptions,
     timeTroubleColumns,
     timeTroubleSortedRows,
     totals.positions,
     totals.tactics,
     trendLatestRows,
-    filtersModalOpen,
   ]);
 
   const dashboardCardIds = useMemo(
@@ -1773,6 +1808,31 @@ export default function DashboardFlow() {
         onBackfillStartChange={handleBackfillStartChange}
         onBackfillEndChange={handleBackfillEndChange}
       />
+
+      <div className="card p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-lg font-display text-sand">Practice</h2>
+          <p
+            id={practiceStatusId}
+            className="text-xs text-sand/60"
+            role="status"
+            aria-live="polite"
+            data-testid="practice-button-status"
+          >
+            {practiceButtonState.helper}
+          </p>
+        </div>
+        <ActionButton
+          type="button"
+          className="rounded-lg border border-white/10 px-4 py-3 text-sm text-sand hover:border-white/30 disabled:cursor-not-allowed disabled:opacity-60"
+          onClick={handleOpenPracticeModal}
+          disabled={practiceButtonState.disabled}
+          aria-describedby={practiceStatusId}
+          data-testid="practice-button"
+        >
+          {practiceButtonState.label}
+        </ActionButton>
+      </div>
 
       {error ? <ErrorCard message={error} /> : null}
 

@@ -402,6 +402,54 @@ describe('DashboardFlow', () => {
     expect(motifSelect.value).toBe('hanging_piece');
   });
 
+  it('enables the practice button when queue items are available', async () => {
+    render(<DashboardFlow />);
+
+    await waitFor(() => {
+      expect(fetchPracticeQueue).toHaveBeenCalled();
+    });
+
+    const practiceButton = screen.getByTestId('practice-button');
+
+    await waitFor(() => {
+      expect(practiceButton).toBeEnabled();
+    });
+
+    expect(practiceButton).toHaveTextContent('Start practice');
+
+    fireEvent.click(practiceButton);
+
+    const modal = await screen.findByTestId('chessboard-modal');
+    expect(modal).toBeInTheDocument();
+  });
+
+  it('disables the practice button when no queue items are available', async () => {
+    (
+      fetchPracticeQueue as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValue({
+      source: 'chesscom',
+      include_failed_attempt: false,
+      items: [],
+    });
+
+    render(<DashboardFlow />);
+
+    await waitFor(() => {
+      expect(fetchPracticeQueue).toHaveBeenCalled();
+    });
+
+    const practiceButton = screen.getByTestId('practice-button');
+
+    await waitFor(() => {
+      expect(practiceButton).toBeDisabled();
+    });
+
+    expect(practiceButton).toHaveTextContent('No practice items');
+    expect(screen.getByTestId('practice-button-status')).toHaveTextContent(
+      'Refresh metrics to find new tactics.',
+    );
+  });
+
   it('filters non-scoped motifs from metrics, tactics, and practice queue', async () => {
     const scopedDashboard: DashboardPayload = {
       ...baseDashboard,

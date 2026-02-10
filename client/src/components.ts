@@ -11,9 +11,6 @@ import RecentTacticsCard from './_components/RecentTacticsCard';
 import ErrorCard from './_components/ErrorCard';
 import FiltersCard from './_components/FiltersCard';
 import MetricsSummaryCard from './_components/MetricsSummaryCard';
-import PostgresStatusCard from './_components/PostgresStatusCard';
-import PostgresRawPgnsCard from './_components/PostgresRawPgnsCard';
-import PostgresAnalysisCard from './_components/PostgresAnalysisCard';
 import DatabaseModal from './_components/DatabaseModal';
 import JobProgressCard from './_components/JobProgressCard';
 import PracticeAttemptCard from './_components/PracticeAttemptCard';
@@ -35,9 +32,6 @@ export {
   ErrorCard,
   FiltersCard,
   MetricsSummaryCard,
-  PostgresStatusCard,
-  PostgresRawPgnsCard,
-  PostgresAnalysisCard,
   DatabaseModal,
   JobProgressCard,
   PracticeAttemptCard,

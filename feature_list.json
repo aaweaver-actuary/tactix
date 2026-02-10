@@ -33,7 +33,7 @@
       "Step 4: Verify the button state reflects availability of practice items",
       "Step 5: Add or update UI automation coverage for the practice button"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

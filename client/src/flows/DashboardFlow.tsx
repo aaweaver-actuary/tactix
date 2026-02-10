@@ -8,7 +8,6 @@ import {
 } from 'react';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { ColumnDef } from '@tanstack/react-table';
-import { Chess, Square } from 'chess.js';
 import {
   DashboardPayload,
   DashboardFilters,
@@ -33,6 +32,7 @@ import {
 } from '../client';
 import formatPgnMoveList from '../utils/formatPgnMoveList';
 import buildLichessAnalysisUrl from '../utils/buildLichessAnalysisUrl';
+import buildPracticeMove from '../utils/buildPracticeMove';
 import {
   ChessPlatform,
   ChesscomProfile,
@@ -1005,39 +1005,6 @@ export default function DashboardFlow() {
     setJobProgress([]);
     setJobStatus('idle');
   }
-
-  const buildPracticeMove = useCallback(
-    (
-      fen: string,
-      rawMove: string,
-    ): { uci: string; nextFen: string; from: string; to: string } | null => {
-      const trimmed = rawMove.trim().toLowerCase();
-      if (trimmed.length < 4) return null;
-      const from = trimmed.slice(0, 2) as Square;
-      const to = trimmed.slice(2, 4) as Square;
-      const board = new Chess(fen);
-      const piece = board.get(from);
-      const needsPromotion =
-        piece?.type === 'p' && (to.endsWith('8') || to.endsWith('1'));
-      const promotion =
-        trimmed.length > 4 ? trimmed[4] : needsPromotion ? 'q' : undefined;
-      let move = null;
-      try {
-        move = board.move({ from, to, promotion });
-      } catch (err) {
-        console.warn('Invalid move attempt', err);
-        return null;
-      }
-      if (!move) return null;
-      return {
-        uci: `${from}${to}${promotion ?? ''}`,
-        nextFen: board.fen(),
-        from,
-        to,
-      };
-    },
-    [],
-  );
 
   const getPracticeBaseFen = useCallback(
     () => practiceFen || currentPractice?.fen || '',

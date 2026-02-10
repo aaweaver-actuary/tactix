@@ -121,3 +121,8 @@ Session summary (2026-02-10):
 - Manual verification: node verification/puppeteer_feature_practice_orientation.js (feature-practice-orientation-2026-02-10.png); node verification/puppeteer_practice_attempt.js (dashboard-practice-attempt-grading.png); node verification/puppeteer_feature_chessboard_modal.js (feature-chessboard-modal-open-2026-02-09.png, feature-chessboard-modal-closed-2026-02-09.png); node verification/puppeteer_feature_game_detail_modal.js (feature-game-detail-modal-2026-02-08.png); regression re-runs for puppeteer_feature_listudy_assets.js, puppeteer_feature_dashboard_cards_collapsible_move.js, puppeteer_feature_settings_modal.js, puppeteer_feature_database_modal.js, puppeteer_feature_modal_escape.js, puppeteer_feature_open_lichess_link.js, puppeteer_feature_practice_button.js, puppeteer_feature_remove_initiative.js.
 - Integration verification: node verification/integration_feature_practice_orientation.js.
 - Tests run: make check.
+
+Session summary (2026-02-10):
+- Extracted practice move parsing/building into a shared utility for reuse across practice handlers.
+- Before -> after map: DashboardFlow inline buildPracticeMove helper -> utils/buildPracticeMove helper + unit tests.
+- Tests run: make check (before and after changes).

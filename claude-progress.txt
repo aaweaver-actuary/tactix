@@ -198,3 +198,8 @@ Session summary (2026-02-10):
 - Extracted BaseCard drag handle rendering into a focused helper to separate drag UI from card collapse logic.
 - Before -> after map: BaseCard inline drag handle button/class logic -> BaseCardDragHandle + buildDragHandleClasses helper.
 - Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
+- Extracted MotifCard header markup into MotifCardHeader to keep card wiring separate from header presentation.
+- Before -> after map: MotifCard inline header JSX -> MotifCardHeader component used by MotifCard.
+- Tests run: make check (before and after changes).

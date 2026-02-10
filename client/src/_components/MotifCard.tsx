@@ -1,5 +1,5 @@
 import BaseCard, { BaseCardDragProps } from './BaseCard';
-import Text from './Text';
+import MotifCardHeader from './MotifCardHeader';
 
 interface MotifCardProps extends BaseCardDragProps {
   motif: string;
@@ -17,20 +17,20 @@ export default function MotifCard({
   failedAttempt,
   ...dragProps
 }: MotifCardProps) {
-  const header = (
-    <div className="flex flex-col gap-1">
-      <Text mode="uppercase" value={motif} />
-      <Text mode="teal" size="2xl" value={`${found}/${total}`} />
-      <Text
-        size="xs"
-        mode="normal"
-        value={`${missed} missed, ${failedAttempt} failed`}
-      />
-    </div>
-  );
-
   return (
-    <BaseCard className="p-4" header={header} {...dragProps}>
+    <BaseCard
+      className="p-4"
+      header={
+        <MotifCardHeader
+          motif={motif}
+          found={found}
+          total={total}
+          missed={missed}
+          failedAttempt={failedAttempt}
+        />
+      }
+      {...dragProps}
+    >
       {null}
     </BaseCard>
   );

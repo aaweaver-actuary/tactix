@@ -1,4 +1,9 @@
 Session summary (2026-02-10):
+- Extracted hero page setup and console error assertion helpers to keep hero screenshot verification focused and reduce mixed concerns.
+- Before -> after map: puppeteer_feature_hero_redesign captureHeroScreenshot inline viewport/navigation/console checks -> openHeroPage + assertConsoleClean helpers.
+- Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
 - Extracted a shared HeroPanelHeader to remove duplicated panel heading markup and keep Hero focused on panel wiring.
 - Before -> after map: Hero inline hero-panel-heading blocks -> HeroPanelHeader component used for pipeline/practice panels.
 - Tests run: make check (before: exit 2); make check (after).
@@ -127,6 +132,10 @@ Session summary (2026-02-09):
 - Manual verification: node verification/puppeteer_practice_attempt.js (dashboard-practice-attempt-grading.png).
 - Integration verification: node verification/integration_issue_practice_progress.js.
 - Tests run: make check.
+Session summary (2026-02-10):
+- Extracted hero redesign selectors/status evaluation into a shared helper for verification scripts.
+- Before -> after map: inline hero selector/test-id checks in hero puppeteer scripts -> hero_redesign_helpers.js with waitForHero/getHeroStatus.
+- Tests run: make check (before changes); make check (after changes).
 
 Session summary (2026-02-09):
 - Re-verified ChessboardModal, settings FAB modal, and scoped motif filters; refreshed verification screenshots.

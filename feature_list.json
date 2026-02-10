@@ -141,7 +141,7 @@
       "Step 4: Verify practice interactions still work during animation",
       "Step 5: Add or update UI automation coverage for the animation"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

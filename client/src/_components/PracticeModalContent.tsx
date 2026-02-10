@@ -63,8 +63,8 @@ export default function PracticeModalContent({
       />
       <PracticeSessionProgress stats={practiceSession} />
       {currentPractice ? (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_1fr]">
-          <ChessboardPanel>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_1fr] practice-context-grid">
+          <ChessboardPanel className="practice-context-board">
             <BaseChessboard
               id="practice-board"
               position={practiceFen || currentPractice.fen}
@@ -78,7 +78,7 @@ export default function PracticeModalContent({
             />
             <Text mt="2" value="Legal moves only. Drag a piece to submit." />
           </ChessboardPanel>
-          <div className="space-y-3">
+          <div className="space-y-3 practice-context-details">
             <div className="space-y-1">
               <Text value="FEN" />
               <Text value={currentPractice.fen} mode="monospace" />

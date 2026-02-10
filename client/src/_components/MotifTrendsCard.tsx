@@ -5,7 +5,7 @@ import BaseCard, { BaseCardDragProps } from './BaseCard';
 import MetricsTrends from './MetricsTrends';
 
 interface MotifTrendsCardProps extends BaseCardDragProps {
-  data: MetricsTrendsRow[];
+  data: MetricsTrendsRow[] | null;
   columns: ColumnDef<MetricsTrendsRow>[];
 }
 
@@ -17,6 +17,7 @@ export default function MotifTrendsCard({
   return (
     <BaseCard
       className="p-4"
+      data-testid="motif-trends-card"
       header={
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-display text-sand">Motif trends</h3>

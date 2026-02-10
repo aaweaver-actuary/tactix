@@ -38,6 +38,13 @@ Session summary (2026-02-09):
 - Re-verified ChessboardModal, settings FAB modal, and scoped motif filters; refreshed verification screenshots.
 - Tests run: make check.
 
+Session summary (2026-02-10):
+- Fixed regression coverage: ensured motif breakdown always includes scoped motifs (mate) and made drag handles consistently visible for dashboard card reordering.
+- Added MotifTrendsCard unit tests (loading/empty/populated) and updated MetricsTrends to render BaseTable for empty/loading states with a stable data-testid wrapper.
+- Regression verification (random 10): node verification/puppeteer_feature_mvp_step_by_step.js; node verification/puppeteer_feature_practice_button.js; node verification/puppeteer_feature_practice_all_sources.js; node verification/puppeteer_feature_practice_orientation.js; node verification/puppeteer_feature_source_filter.js; node verification/puppeteer_feature_settings_modal.js; node verification/puppeteer_feature_game_detail_modal.js; node verification/puppeteer_feature_chessboard_modal.js; node verification/puppeteer_feature_dashboard_cards_collapsible_move.js; node verification/puppeteer_feature_listudy_assets.js.
+- Screenshots: regression-mvp-step-dashboard-2026-02-10T06-37-38.png; regression-mvp-step-practice-2026-02-10T06-37-38.png; regression-puppeteer_feature_practice_button-2026-02-10T06-37-58.png; regression-puppeteer_feature_practice_all_sources-2026-02-10T06-37-58.png; regression-puppeteer_feature_practice_orientation-2026-02-10T06-37-58.png; regression-puppeteer_feature_settings_modal-2026-02-10T06-37-58.png; regression-puppeteer_feature_game_detail_modal-2026-02-10T06-37-58.png; regression-puppeteer_feature_chessboard_modal-2026-02-10T06-37-58.png; regression-puppeteer_feature_dashboard_cards_collapsible_move-2026-02-10T06-41-39.png; regression-puppeteer_feature_listudy_assets-2026-02-10T06-37-58.png; feature-source-filter-header-2026-02-10.png; feature-source-filter-modal-2026-02-10.png.
+- Tests run: vitest run client/src/_components/MotifTrendsCard.test.tsx client/src/_components/MetricsTrends.test.tsx client/src/flows/DashboardFlow.test.tsx; make check.
+
 Session summary (2026-02-09):
 - Added ChessboardModal unit tests to cover closed state, empty state, and BaseChessboard wiring.
 - Tests run: make check (before and after changes).

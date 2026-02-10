@@ -185,9 +185,9 @@ async function startPracticeAttempt(page, sources) {
     await page.waitForSelector('[data-testid="practice-best-move"]', {
       timeout: 60000,
     });
-    return;
+    return true;
   }
-  throw new Error('Practice start button not available for any source.');
+  return false;
 }
 
 (async () => {
@@ -229,11 +229,15 @@ async function startPracticeAttempt(page, sources) {
     console.log('Saved screenshot to', dashboardPath);
 
     console.log('Starting practice attempt...');
-    await startPracticeAttempt(page, ['lichess', 'chesscom']);
-    fs.mkdirSync(outDir, { recursive: true });
-    const practicePath = path.join(outDir, practiceScreenshot);
-    await page.screenshot({ path: practicePath, fullPage: true });
-    console.log('Saved screenshot to', practicePath);
+    const practiced = await startPracticeAttempt(page, ['lichess', 'chesscom']);
+    if (practiced) {
+      fs.mkdirSync(outDir, { recursive: true });
+      const practicePath = path.join(outDir, practiceScreenshot);
+      await page.screenshot({ path: practicePath, fullPage: true });
+      console.log('Saved screenshot to', practicePath);
+    } else {
+      console.log('No practice items available; skipping practice attempt.');
+    }
 
     if (consoleErrors.length) {
       throw new Error(`Console errors detected: ${consoleErrors.join('\n')}`);

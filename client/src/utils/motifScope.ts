@@ -1,4 +1,4 @@
-const ALLOWED_MOTIFS = ['hanging_piece', 'mate'] as const;
+export const ALLOWED_MOTIFS = ['hanging_piece', 'mate'] as const;
 const ALLOWED_MOTIFS_SET = new Set(ALLOWED_MOTIFS);
 
 type MotifValue = (typeof ALLOWED_MOTIFS)[number];

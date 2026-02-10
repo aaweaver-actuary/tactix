@@ -72,7 +72,11 @@ import {
   reorderList,
   writeCardOrder,
 } from '../utils/cardOrder';
-import { isAllowedMotifFilter, isScopedMotif } from '../utils/motifScope';
+import {
+  ALLOWED_MOTIFS,
+  isAllowedMotifFilter,
+  isScopedMotif,
+} from '../utils/motifScope';
 import type { FloatingAction } from '../_components/FloatingActionButton';
 
 const DASHBOARD_CARD_STORAGE_KEY = 'tactix.dashboard.mainCardOrder';
@@ -108,12 +112,6 @@ const DASHBOARD_CARD_IDS = [
   'positions-list',
   'practice-attempt',
 ];
-
-const buildCollapsedMap = (ids: string[]) =>
-  ids.reduce<Record<string, boolean>>((acc, id) => {
-    acc[id] = true;
-    return acc;
-  }, {});
 
 const areArraysEqual = (left: string[], right: string[]) => {
   if (left.length !== right.length) return false;
@@ -194,6 +192,46 @@ const buildPracticeButtonState = (
 
 const filterScopedMetrics = (metrics: DashboardPayload['metrics']) =>
   metrics.filter((row) => isAllowedMotifFilter(row.motif));
+
+const ensureMotifBreakdownDefaults = (
+  metrics: DashboardPayload['metrics'],
+  source: ChessPlatform,
+) => {
+  const motifRows = metrics.filter(
+    (row) => row.metric_type === 'motif_breakdown',
+  );
+  const existing = new Set(motifRows.map((row) => row.motif));
+  if (ALLOWED_MOTIFS.every((motif) => existing.has(motif))) {
+    return metrics;
+  }
+  const template = motifRows[0];
+  const ratingBucket = template?.rating_bucket ?? 'all';
+  const timeControl = template?.time_control ?? 'all';
+  const updatedAt = template?.updated_at ?? new Date().toISOString();
+  const baseSource = template?.source ?? source;
+
+  const defaults = ALLOWED_MOTIFS.filter((motif) => !existing.has(motif)).map(
+    (motif) => ({
+      source: baseSource,
+      metric_type: 'motif_breakdown',
+      motif,
+      window_days: null,
+      trend_date: null,
+      rating_bucket: ratingBucket,
+      time_control: timeControl,
+      total: 0,
+      found: 0,
+      missed: 0,
+      failed_attempt: 0,
+      unclear: 0,
+      found_rate: 0,
+      miss_rate: 0,
+      updated_at: updatedAt,
+    }),
+  );
+
+  return [...metrics, ...defaults];
+};
 
 const filterScopedTactics = (tactics: DashboardPayload['tactics']) =>
   tactics.filter((row) => isScopedMotif(row.motif));
@@ -324,9 +362,6 @@ export default function DashboardFlow() {
     );
     return normalizeOrder(stored, DASHBOARD_CARD_IDS);
   });
-  const [dashboardCardCollapsed, setDashboardCardCollapsed] = useState(() =>
-    buildCollapsedMap(DASHBOARD_CARD_IDS),
-  );
   const [dropIndicatorIndex, setDropIndicatorIndex] = useState<number | null>(
     null,
   );
@@ -564,9 +599,13 @@ export default function DashboardFlow() {
     setError(null);
     try {
       const payload = await fetchDashboard(nextSource, nextFilters);
+      const scopedMetrics = ensureMotifBreakdownDefaults(
+        filterScopedMetrics(payload.metrics),
+        nextSource,
+      );
       setData({
         ...payload,
-        metrics: filterScopedMetrics(payload.metrics),
+        metrics: scopedMetrics,
         tactics: filterScopedTactics(payload.tactics),
       });
     } catch (err) {
@@ -1940,7 +1979,6 @@ export default function DashboardFlow() {
               className="space-y-3"
             >
               {orderedDashboardCards.map((card, index) => {
-                const isCollapsed = dashboardCardCollapsed[card.id] ?? true;
                 const dragLabel = `Reorder ${card.label}`;
                 return (
                   <div key={card.id}>
@@ -1953,7 +1991,7 @@ export default function DashboardFlow() {
                     <Draggable
                       draggableId={card.id}
                       index={index}
-                      isDragDisabled={!isCollapsed}
+                      isDragDisabled={false}
                       disableInteractiveElementBlocking
                     >
                       {(dragProvided, dragSnapshot) => (
@@ -1972,11 +2010,6 @@ export default function DashboardFlow() {
                           {(() => {
                             const renderProps: BaseCardRenderProps = {
                               dragHandleLabel: dragLabel,
-                              onCollapsedChange: (collapsed) =>
-                                setDashboardCardCollapsed((prev) => ({
-                                  ...prev,
-                                  [card.id]: collapsed,
-                                })),
                             };
                             if (dragProvided.dragHandleProps) {
                               renderProps.dragHandleProps =

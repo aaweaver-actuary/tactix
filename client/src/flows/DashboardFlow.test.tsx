@@ -402,6 +402,18 @@ describe('DashboardFlow', () => {
     expect(motifSelect.value).toBe('hanging_piece');
   });
 
+  it('adds missing allowed motifs to the motif breakdown', async () => {
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+
+    const breakdown = screen.getByTestId('motif-breakdown');
+
+    await waitFor(() => {
+      expect(breakdown.querySelector('[data-motif-id="mate"]')).not.toBeNull();
+    });
+  });
+
   it('enables the practice button when queue items are available', async () => {
     render(<DashboardFlow />);
 

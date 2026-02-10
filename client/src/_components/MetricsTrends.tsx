@@ -9,7 +9,7 @@ export type MetricsTrendsRow = {
 };
 
 interface MetricsTrendsProps {
-  data: MetricsTrendsRow[];
+  data: MetricsTrendsRow[] | null;
   columns: ColumnDef<MetricsTrendsRow>[];
 }
 
@@ -20,6 +20,9 @@ interface MetricsTrendsProps {
  * @param columns - Column definitions for the BaseTable.
  */
 export default function MetricsTrends({ data, columns }: MetricsTrendsProps) {
-  if (!data.length) return null;
-  return <BaseTable data={data} columns={columns} />;
+  return (
+    <div data-testid="motif-trends-table">
+      <BaseTable data={data} columns={columns} />
+    </div>
+  );
 }

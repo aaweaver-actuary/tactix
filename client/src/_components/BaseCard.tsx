@@ -99,7 +99,7 @@ export default function BaseCard({
       ? 'max-h-0 opacity-0 pointer-events-none'
       : 'max-h-[2000px] opacity-100 pointer-events-auto',
   ].join(' ');
-  const dragHandleVisible = Boolean(dragHandleProps) && isCollapsed;
+  const dragHandleVisible = Boolean(dragHandleProps);
   const dragHandleClasses = [
     'ml-2 inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white/5 text-sand/70 transition',
     'hover:border-white/30 hover:text-sand',

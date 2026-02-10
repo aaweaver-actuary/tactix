@@ -5,10 +5,11 @@ const formatPercent = (value: number | null) =>
   value === null || Number.isNaN(value) ? '--' : `${(value * 100).toFixed(1)}%`;
 
 describe('MetricsTrends', () => {
-  it('returns empty markup when no valid trend data exists', () => {
+  it('renders empty-state markup when no trend data exists', () => {
     const html = renderToStaticMarkup(<MetricsTrends data={[]} columns={[]} />);
 
-    expect(html).toBe('');
+    expect(html).toContain('motif-trends-table');
+    expect(html).toContain('No rows to display.');
   });
 
   it('renders trend rows and formats percentages', () => {

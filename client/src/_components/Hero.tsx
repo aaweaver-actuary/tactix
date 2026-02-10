@@ -46,6 +46,12 @@ interface BackfillRangeProps {
   disabled: boolean;
 }
 
+interface HeroPanelHeaderProps {
+  title: string;
+  subtitle: string;
+  badge: string;
+}
+
 const buildHeroTitle = (
   source: ChessPlatform,
   lichessLabel: string,
@@ -139,6 +145,16 @@ const BackfillRange = ({
   </div>
 );
 
+const HeroPanelHeader = ({ title, subtitle, badge }: HeroPanelHeaderProps) => (
+  <div className="hero-panel-heading">
+    <div>
+      <p className="hero-panel-title">{title}</p>
+      <p className="hero-panel-subtitle">{subtitle}</p>
+    </div>
+    <span className="hero-panel-badge">{badge}</span>
+  </div>
+);
+
 /**
  * Hero component displays the main controls and information for managing an Airflow DAG pipeline.
  *
@@ -213,15 +229,11 @@ export default function Hero({
         </div>
         <div className="hero-panels hero-entrance-delay">
           <div className="hero-panel">
-            <div className="hero-panel-heading">
-              <div>
-                <p className="hero-panel-title">Pipeline actions</p>
-                <p className="hero-panel-subtitle">Run actions per source.</p>
-              </div>
-              <span className="hero-panel-badge">
-                {actionsDisabled ? 'Scoped to all sites' : 'Ready'}
-              </span>
-            </div>
+            <HeroPanelHeader
+              title="Pipeline actions"
+              subtitle="Run actions per source."
+              badge={actionsDisabled ? 'Scoped to all sites' : 'Ready'}
+            />
             <HeroActions
               onRun={onRun}
               onBackfill={onBackfill}
@@ -239,15 +251,11 @@ export default function Hero({
             />
           </div>
           <div className="hero-panel hero-practice-panel">
-            <div className="hero-panel-heading">
-              <div>
-                <p className="hero-panel-title">Practice</p>
-                <p className="hero-panel-subtitle">
-                  Queue the next daily tactics set.
-                </p>
-              </div>
-              <span className="hero-panel-badge">Trainer</span>
-            </div>
+            <HeroPanelHeader
+              title="Practice"
+              subtitle="Queue the next daily tactics set."
+              badge="Trainer"
+            />
             <div className="hero-practice-status">
               <p
                 id={practiceStatusId}

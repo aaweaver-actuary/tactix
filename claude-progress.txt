@@ -1,4 +1,9 @@
 Session summary (2026-02-10):
+- Extracted a shared HeroPanelHeader to remove duplicated panel heading markup and keep Hero focused on panel wiring.
+- Before -> after map: Hero inline hero-panel-heading blocks -> HeroPanelHeader component used for pipeline/practice panels.
+- Tests run: make check (before: exit 2); make check (after).
+
+Session summary (2026-02-10):
 - Moved the practice entry point into the hero header panel and removed the standalone practice card from the dashboard.
 - Updated practice button automation to assert the hero placement.
 - Regression verification (requested): node verification/puppeteer_feature_practice_button.js; node verification/puppeteer_feature_database_modal.js; node verification/puppeteer_feature_chessboard_modal.js.

@@ -51,7 +51,6 @@ import {
   RecentGamesModal,
   RecentTacticsModal,
   JobProgressCard,
-  PracticeAttemptCard,
   PositionsList,
   Hero,
   GameDetailModal,
@@ -107,7 +106,6 @@ const DASHBOARD_CARD_IDS = [
   'metrics-trends',
   'time-trouble-correlation',
   'positions-list',
-  'practice-attempt',
 ];
 
 const areArraysEqual = (left: string[], right: string[]) => {
@@ -1751,21 +1749,6 @@ export default function DashboardFlow() {
             />
           ) : null,
       },
-      {
-        id: 'practice-attempt',
-        label: 'Practice attempt',
-        visible: true,
-        render: (props) => (
-          <PracticeAttemptCard
-            currentPractice={currentPractice ?? null}
-            practiceSession={practiceSession}
-            practiceLoading={practiceLoading}
-            practiceModalOpen={practiceModalOpen}
-            onStartPractice={handleOpenPracticeModal}
-            {...props}
-          />
-        ),
-      },
     ];
   }, [
     currentPractice,
@@ -1779,7 +1762,6 @@ export default function DashboardFlow() {
     metricsTrendsColumns,
     motifDropIndicatorIndex,
     orderedMotifBreakdown,
-    practiceLoading,
     practiceModalOpen,
     practiceQueue,
     practiceSession,

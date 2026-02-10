@@ -338,3 +338,11 @@ Session summary (2026-02-10):
 - Tests run: make check (before and after changes).
 Session summary (2026-02-10):
 - Extracted motif breakdown default row construction into a helper to keep DashboardFlow orchestration focused.                              - Before -> after map: DashboardFlow ensureMotifBreakdownDefaults inline defaults -> buildMotifBreakdownDefaults helper.                     - Updated the practice loading test to assert the practice button label.                                                                      - Removed unused PracticeQueueCard component flagged by knip.                                                                               - Tests run: make check (before changes failed: DashboardFlow practice loading test); make check (after changes exits 2 with safety check reporting ignored vulnerabilities; otherwise green).
+
+Session summary (2026-02-10):
+- Removed the practice attempt card from the dashboard card stack and kept spacing/order consistent.
+- Updated practice automation helpers and scripts to open the practice modal from the hero button.
+- Regression verification (requested features): node verification/puppeteer_feature_practice_button.js (regression-practice-button-2026-02-10.png); node verification/puppeteer_feature_database_modal.js (regression-fab-database-modal-2026-02-10.png); node verification/puppeteer_feature_chessboard_modal.js (regression-chessboard-modal-open-2026-02-10.png, feature-chessboard-modal-closed-2026-02-09.png).
+- Manual verification: node verification/puppeteer_feature_remove_practice_attempt_card.js (feature-remove-practice-attempt-card-2026-02-10.png).
+- Integration verification: node verification/integration_feature_remove_practice_attempt_card.js.
+- Tests run: make check (before and after changes).

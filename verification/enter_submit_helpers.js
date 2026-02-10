@@ -116,12 +116,7 @@ async function getFenFromPage(page) {
     const fenRegex =
       /^[prnbqkPRNBQK1-8\/]+ [wb] [KQkq-]+ [a-h1-8-]+ \d+ \d+$/;
     const modal = document.querySelector('[data-testid="chessboard-modal"]');
-    const scope =
-      modal ||
-      headers
-        .find((node) => (node.textContent || '').includes('Practice attempt'))
-        ?.closest('.card');
-    if (!scope) return '';
+    const scope = modal || document.body;
     const nodes = Array.from(scope.querySelectorAll('p'));
     const match = nodes
       .map((node) => node.textContent?.trim() || '')
@@ -135,23 +130,15 @@ async function getFenFromPage(page) {
 }
 
 async function ensurePracticeCardExpanded(page) {
-  const cardSelector = '[data-testid="dashboard-card-practice-attempt"]';
-  const headerSelector = `${cardSelector} [role="button"]`;
-  await page.waitForSelector(headerSelector, { timeout: 60000 });
-  const isCollapsed = await page.$eval(
-    headerSelector,
-    (header) => header.getAttribute('aria-expanded') === 'false',
-  );
-  if (isCollapsed) {
-    await page.click(headerSelector);
-  }
+  const practiceButton = '[data-testid="practice-button"]';
+  await page.waitForSelector(practiceButton, { timeout: 60000 });
   await page.waitForFunction(
     (selector) => {
-      const node = document.querySelector(selector);
-      return node && node.getAttribute('data-state') === 'expanded';
+      const button = document.querySelector(selector);
+      return button instanceof HTMLButtonElement;
     },
     { timeout: 60000 },
-    `${cardSelector} [data-state]`,
+    practiceButton,
   );
 }
 

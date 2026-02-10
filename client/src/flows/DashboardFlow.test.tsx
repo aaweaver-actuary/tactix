@@ -863,14 +863,19 @@ describe('DashboardFlow', () => {
 
     render(<DashboardFlow />);
 
+    const practiceButton = await screen.findByTestId('practice-button');
     await waitFor(() => {
-      expect(screen.getByText('0 of 5 attempts')).toBeInTheDocument();
+      expect(practiceButton).toBeEnabled();
     });
 
-    fireEvent.click(screen.getByTestId('practice-start'));
+    fireEvent.click(practiceButton);
 
     const modal = await screen.findByTestId('chessboard-modal');
     const modalScope = within(modal);
+
+    await waitFor(() => {
+      expect(modalScope.getByText('0 of 5 attempts')).toBeInTheDocument();
+    });
 
     fireEvent.change(
       modalScope.getByPlaceholderText('Enter your move (UCI e.g., e2e4)'),

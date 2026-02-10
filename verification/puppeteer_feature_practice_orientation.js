@@ -14,7 +14,7 @@ const screenshotName =
   'feature-practice-orientation-2026-02-10.png';
 
 const selectors = {
-  practiceStart: '[data-testid="practice-start"]',
+  practiceStart: '[data-testid="practice-button"]',
   practiceModal: '[data-testid="chessboard-modal"]',
   practiceInput: '[data-testid="chessboard-modal"] input[placeholder*="UCI"]',
   practiceQueueRow: '[data-testid^="practice-queue-row-"]',

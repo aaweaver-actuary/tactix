@@ -12,7 +12,6 @@ import FiltersCard from './_components/FiltersCard';
 import MetricsSummaryCard from './_components/MetricsSummaryCard';
 import DatabaseModal from './_components/DatabaseModal';
 import JobProgressCard from './_components/JobProgressCard';
-import PracticeAttemptCard from './_components/PracticeAttemptCard';
 import GameDetailModal from './_components/GameDetailModal';
 import ChessboardModal from './_components/ChessboardModal';
 import ActionButton from './_components/ActionButton';
@@ -33,7 +32,6 @@ export {
   MetricsSummaryCard,
   DatabaseModal,
   JobProgressCard,
-  PracticeAttemptCard,
   GameDetailModal,
   ChessboardModal,
   ActionButton,

@@ -16,7 +16,7 @@ const screenshotName =
 const source = process.env.TACTIX_SOURCE || 'chesscom';
 
 const selectors = {
-  practiceStart: '[data-testid="practice-start"]',
+  practiceStart: '[data-testid="practice-button"]',
   practiceModal: '[data-testid="chessboard-modal"]',
   practiceInput: '[data-testid="chessboard-modal"] input[placeholder*="UCI"]',
   practiceSummary: '[data-testid="practice-session-summary"]',

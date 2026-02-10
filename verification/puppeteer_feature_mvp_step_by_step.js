@@ -30,7 +30,7 @@ const selectors = {
   timeControl: '[data-testid="filter-time-control"]',
   motifBreakdown: '[data-testid="motif-breakdown"]',
   timeTrouble: '[data-testid="time-trouble-correlation"]',
-  practiceStart: '[data-testid="practice-start"]',
+  practiceStart: '[data-testid="practice-button"]',
   practiceRow: '[data-testid^="practice-queue-row-"]',
   chessboardModal: '[data-testid="chessboard-modal"]',
 };

@@ -60,10 +60,10 @@ const source = process.env.TACTIX_SOURCE || 'chesscom';
 
     await page.waitForSelector('h3', { timeout: 60000 });
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    await page.waitForSelector('[data-testid="practice-start"]', {
+    await page.waitForSelector('[data-testid="practice-button"]', {
       timeout: 60000,
     });
-    await page.click('[data-testid="practice-start"]');
+    await page.click('[data-testid="practice-button"]');
     await page.waitForSelector('[data-testid="chessboard-modal"]', {
       timeout: 60000,
     });

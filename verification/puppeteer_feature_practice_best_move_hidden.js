@@ -50,10 +50,10 @@ const afterScreenshot =
       'Refresh metrics',
     );
 
-    await page.waitForSelector('[data-testid="practice-start"]', {
+    await page.waitForSelector('[data-testid="practice-button"]', {
       timeout: 60000,
     });
-    await page.click('[data-testid="practice-start"]');
+    await page.click('[data-testid="practice-button"]');
     await page.waitForSelector('[data-testid="chessboard-modal"]', {
       timeout: 60000,
     });

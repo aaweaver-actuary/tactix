@@ -376,3 +376,8 @@ Session summary (2026-02-10):
 - Manual verification: node verification/puppeteer_feature_remove_practice_attempt_card.js (feature-remove-practice-attempt-card-2026-02-10.png).
 - Integration verification: node verification/integration_feature_remove_practice_attempt_card.js.
 - Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
+- Extracted a shared clickButtonByText helper for verification scripts to keep button targeting consistent and reduce duplication.
+- Before -> after map: inline clickButtonByText functions in puppeteer_feature_021_chesscom_pagination, puppeteer_feature_045_chesscom_blitz_backfill, puppeteer_feature_052_chesscom_correspondence_backfill, integration_feature_remove_practice_attempt_card -> helpers/button_helpers clickButtonByText with shared imports.
+- Tests run: make check (before and after changes).

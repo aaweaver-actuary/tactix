@@ -1,5 +1,6 @@
 const puppeteer = require('../client/node_modules/puppeteer');
 const { attachConsoleCapture } = require('./helpers/puppeteer_capture');
+const { clickButtonByText } = require('./helpers/button_helpers');
 const {
   selectSource,
   ensurePracticeCardExpanded,
@@ -16,15 +17,6 @@ const selectors = {
   practiceModal: '[data-testid="chessboard-modal"]',
   practiceMoveInput: '[data-testid="chessboard-modal"] input[placeholder*="UCI"]',
   practiceBestMove: '[data-testid="practice-best-move"]',
-};
-
-const clickButtonByText = async (page, text) => {
-  await page.$$eval('button', (buttons, targetText) => {
-    const target = buttons.find(
-      (btn) => btn.textContent && btn.textContent.includes(targetText),
-    );
-    if (target) target.click();
-  }, text);
 };
 
 (async () => {

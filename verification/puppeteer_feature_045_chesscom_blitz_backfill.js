@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const puppeteer = require('../client/node_modules/puppeteer');
+const { clickButtonByText } = require('./helpers/button_helpers');
 
 const CLIENT_DIR = path.resolve(__dirname, '..', 'client');
 const ROOT_DIR = path.resolve(__dirname, '..');
@@ -25,19 +26,6 @@ const getMetricValue = async (page, title) => {
       return valueEl ? valueEl.textContent?.trim() : null;
     },
     title,
-  );
-};
-
-const clickButtonByText = async (page, label) => {
-  await page.$$eval(
-    'button',
-    (buttons, targetLabel) => {
-      const target = buttons.find(
-        (btn) => btn.textContent && btn.textContent.includes(targetLabel),
-      );
-      if (target) target.click();
-    },
-    label,
   );
 };
 

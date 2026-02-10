@@ -4,20 +4,12 @@ const {
   attachConsoleCapture,
   captureScreenshot,
 } = require('./helpers/puppeteer_capture');
+const { clickButtonByText } = require('./helpers/button_helpers');
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
 const screenshotName =
   process.env.TACTIX_SCREENSHOT_NAME ||
   'feature-021-chesscom-pagination.png';
-
-async function clickButtonByText(page, text) {
-  if (typeof page.locator === 'function') {
-    const button = page.locator('button', { hasText: text });
-    await button.click();
-    return;
-  }
-  throw new Error('Puppeteer locator API is unavailable.');
-}
 
 (async () => {
   const browser = await puppeteer.launch({ headless: 'new' });

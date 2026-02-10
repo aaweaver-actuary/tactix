@@ -38,7 +38,23 @@ interface FiltersCardProps extends BaseCardDragProps {
   showCard?: boolean;
 }
 
-export default function FiltersCard({
+interface FiltersFormProps {
+  source: ChessPlatform;
+  loading: boolean;
+  lichessProfile: LichessProfile;
+  chesscomProfile: ChesscomProfile;
+  filters: FiltersState;
+  motifOptions: string[];
+  timeControlOptions: string[];
+  ratingOptions: string[];
+  onSourceChange: (next: ChessPlatform) => void;
+  onLichessProfileChange: (next: LichessProfile) => void;
+  onChesscomProfileChange: (next: ChesscomProfile) => void;
+  onFiltersChange: (next: FiltersState) => void;
+  onResetFilters: () => void;
+}
+
+function FiltersForm({
   source,
   loading,
   lichessProfile,
@@ -52,19 +68,11 @@ export default function FiltersCard({
   onChesscomProfileChange,
   onFiltersChange,
   onResetFilters,
-  modalOpen,
-  onModalOpenChange,
-  showOpenButton = true,
-  showCard = true,
-  ...dragProps
-}: FiltersCardProps) {
-  const [internalModalOpen, setInternalModalOpen] = useState(false);
-  const resolvedModalOpen = modalOpen ?? internalModalOpen;
-  const setModalOpen = onModalOpenChange ?? setInternalModalOpen;
+}: FiltersFormProps) {
   const updateFilter = (key: keyof FiltersState, value: string) =>
     onFiltersChange({ ...filters, [key]: value });
 
-  const filtersBody = (
+  return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
       <label className="text-xs text-sand/60 flex flex-col gap-2">
         Site / source
@@ -202,6 +210,31 @@ export default function FiltersCard({
       </div>
     </div>
   );
+}
+
+export default function FiltersCard({
+  source,
+  loading,
+  lichessProfile,
+  chesscomProfile,
+  filters,
+  motifOptions,
+  timeControlOptions,
+  ratingOptions,
+  onSourceChange,
+  onLichessProfileChange,
+  onChesscomProfileChange,
+  onFiltersChange,
+  onResetFilters,
+  modalOpen,
+  onModalOpenChange,
+  showOpenButton = true,
+  showCard = true,
+  ...dragProps
+}: FiltersCardProps) {
+  const [internalModalOpen, setInternalModalOpen] = useState(false);
+  const resolvedModalOpen = modalOpen ?? internalModalOpen;
+  const setModalOpen = onModalOpenChange ?? setInternalModalOpen;
 
   return (
     <>
@@ -255,7 +288,23 @@ export default function FiltersCard({
                   Close
                 </BaseButton>
               </div>
-              <div className="mt-4">{filtersBody}</div>
+              <div className="mt-4">
+                <FiltersForm
+                  source={source}
+                  loading={loading}
+                  lichessProfile={lichessProfile}
+                  chesscomProfile={chesscomProfile}
+                  filters={filters}
+                  motifOptions={motifOptions}
+                  timeControlOptions={timeControlOptions}
+                  ratingOptions={ratingOptions}
+                  onSourceChange={onSourceChange}
+                  onLichessProfileChange={onLichessProfileChange}
+                  onChesscomProfileChange={onChesscomProfileChange}
+                  onFiltersChange={onFiltersChange}
+                  onResetFilters={onResetFilters}
+                />
+              </div>
             </ModalShell>,
             document.body,
           )

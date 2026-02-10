@@ -1,15 +1,8 @@
 import { createPortal } from 'react-dom';
 import type { DashboardPayload } from '../api';
-import {
-  listudyBoardStyle,
-  listudyDarkSquareStyle,
-  listudyLightSquareStyle,
-  listudyNotationStyle,
-  listudyPieces,
-} from '../utils/listudyAssets';
+import BaseChessboard from './BaseChessboard';
 import Badge from './Badge';
 import BaseButton from './BaseButton';
-import Chessboard from './Chessboard';
 import ModalShell from './ModalShell';
 import Text from './Text';
 
@@ -72,17 +65,12 @@ export default function ChessboardModal({
             className="rounded-lg border border-white/10 bg-white/5 p-3"
             data-testid="chessboard-modal-board"
           >
-            <Chessboard
+            <BaseChessboard
               id="chessboard-modal-board"
               position={fen}
               boardOrientation={orientation}
               boardWidth={340}
               showBoardNotation
-              customNotationStyle={listudyNotationStyle}
-              customBoardStyle={listudyBoardStyle}
-              customLightSquareStyle={listudyLightSquareStyle}
-              customDarkSquareStyle={listudyDarkSquareStyle}
-              customPieces={listudyPieces}
             />
           </div>
           <div className="space-y-4">

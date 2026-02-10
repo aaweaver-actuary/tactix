@@ -1,13 +1,13 @@
 import type { CSSProperties } from 'react';
 import { Chessboard as ReactChessboard } from 'react-chessboard';
 
-type ChessboardPieceRenderer = ({
+export type ChessboardPieceRenderer = ({
   squareWidth,
 }: {
   squareWidth: number;
 }) => JSX.Element;
 
-type ChessboardProps = {
+export type ChessboardProps = {
   id?: string;
   position?: string;
   boardOrientation?: 'white' | 'black';

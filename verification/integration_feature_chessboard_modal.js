@@ -41,26 +41,37 @@ const extractFenFromRow = (text) => {
       throw new Error('Failed to extract a FEN string from the positions row.');
     }
 
-    await page.click(selectors.row, { delay: 25 });
+    await page.$eval(selectors.row, (row) => row.click());
     await new Promise((resolve) => setTimeout(resolve, 200));
     await page.waitForSelector(selectors.modal, { timeout: 60000 });
     await page.waitForSelector(selectors.board, { timeout: 60000 });
 
     const modalState = await page.evaluate(() => {
       const modal = document.querySelector('[data-testid="chessboard-modal"]');
-      const board = document.querySelector(
+      const boardContainer = document.querySelector(
         '[data-testid="chessboard-modal-board"]',
       );
       const fenNode = modal?.querySelector('p');
       const closeButton = modal?.querySelector(
         '[data-testid="chessboard-modal-close"]',
       );
+      const boardHasTexture = Boolean(
+        boardContainer &&
+          Array.from(boardContainer.querySelectorAll('div')).some((node) =>
+            (node instanceof HTMLElement
+              ? node.style.backgroundImage
+              : ''
+            ).includes('listudy-board-texture'),
+          ),
+      );
+
       return {
         modalVisible: Boolean(modal),
-        boardVisible: Boolean(board),
+        boardVisible: Boolean(boardContainer),
         closeVisible: Boolean(closeButton),
         modalText: modal?.textContent || '',
         fenText: fenNode?.textContent || '',
+        boardHasTexture,
       };
     });
 
@@ -70,6 +81,10 @@ const extractFenFromRow = (text) => {
       !modalState.closeVisible
     ) {
       throw new Error('Chessboard modal did not render expected controls.');
+    }
+
+    if (!modalState.boardHasTexture) {
+      throw new Error('Chessboard modal board did not render listudy styling.');
     }
 
     if (!modalState.modalText.includes(parsedFen)) {

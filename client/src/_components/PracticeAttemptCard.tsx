@@ -1,16 +1,9 @@
 import type { CSSProperties, RefObject } from 'react';
-import Chessboard from './Chessboard';
+import BaseChessboard from './BaseChessboard';
 import { PracticeAttemptResponse, PracticeQueueItem } from '../api';
 import isPiecePlayable from '../utils/isPiecePlayable';
 import buildPracticeFeedback from '../utils/buildPracticeFeedback';
-import {
-  listudyBoardStyle,
-  listudyDarkSquareStyle,
-  listudyLightSquareStyle,
-  listudyNotationStyle,
-  listudyPreviewPieceIds,
-  listudyPieces,
-} from '../utils/listudyAssets';
+import { listudyPreviewPieceIds, listudyPieces } from '../utils/listudyAssets';
 import Badge from './Badge';
 import BaseCard, { BaseCardDragProps } from './BaseCard';
 import PracticeAttemptButton from './PracticeAttemptButton';
@@ -90,7 +83,7 @@ export default function PracticeAttemptCard({
         <>
           <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">
             <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-              <Chessboard
+              <BaseChessboard
                 id="practice-board"
                 position={practiceFen || currentPractice.fen}
                 onPieceDrop={handlePracticeDrop}
@@ -99,11 +92,6 @@ export default function PracticeAttemptCard({
                 isDraggablePiece={isPiecePlayable(practiceFen, currentPractice)}
                 boardWidth={320}
                 showBoardNotation
-                customNotationStyle={listudyNotationStyle}
-                customBoardStyle={listudyBoardStyle}
-                customLightSquareStyle={listudyLightSquareStyle}
-                customDarkSquareStyle={listudyDarkSquareStyle}
-                customPieces={listudyPieces}
                 customSquareStyles={practiceHighlightStyles}
               />
               <Text mt="2" value="Legal moves only. Drag a piece to submit." />

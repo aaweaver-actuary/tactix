@@ -12,5 +12,3 @@ export const isScopedMotif = (motif: ScopedMotifInput) =>
 
 export const isAllowedMotifFilter = (motif: MotifInput) =>
   !motif || motif === 'all' || ALLOWED_MOTIFS_SET.has(motif);
-
-export { ALLOWED_MOTIFS };

@@ -33,7 +33,7 @@
       "Step 4: Add or update unit tests for BaseChessboard",
       "Step 5: Verify ChessboardModal behavior remains unchanged"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

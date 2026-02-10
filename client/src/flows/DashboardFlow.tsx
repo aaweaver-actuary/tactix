@@ -304,12 +304,15 @@ export default function DashboardFlow() {
     [filters],
   );
 
-  const handleSourceChange = (next: ChessPlatform) => {
-    practiceScopeRef.current = `${next}:${includeFailedAttempt}`;
-    practiceSessionTotalRef.current = null;
-    practiceSessionCompletedRef.current = 0;
-    setSource(next);
-  };
+  const handleSourceChange = useCallback(
+    (next: ChessPlatform) => {
+      practiceScopeRef.current = `${next}:${includeFailedAttempt}`;
+      practiceSessionTotalRef.current = null;
+      practiceSessionCompletedRef.current = 0;
+      setSource(next);
+    },
+    [includeFailedAttempt],
+  );
 
   const ensureSourceSelected = (message: string) => {
     if (source !== 'all') return true;
@@ -404,12 +407,15 @@ export default function DashboardFlow() {
     setBackfillEndDate(value);
   };
 
-  const handleIncludeFailedAttemptChange = (next: boolean) => {
-    practiceScopeRef.current = `${source}:${next}`;
-    practiceSessionTotalRef.current = null;
-    practiceSessionCompletedRef.current = 0;
-    setIncludeFailedAttempt(next);
-  };
+  const handleIncludeFailedAttemptChange = useCallback(
+    (next: boolean) => {
+      practiceScopeRef.current = `${source}:${next}`;
+      practiceSessionTotalRef.current = null;
+      practiceSessionCompletedRef.current = 0;
+      setIncludeFailedAttempt(next);
+    },
+    [source],
+  );
 
   const handlePracticeMoveChange = useCallback(
     (value: string) => {
@@ -472,7 +478,7 @@ export default function DashboardFlow() {
         setPracticeLoading(false);
       }
     },
-    [includeFailedAttempt, practiceSession.completed, source],
+    [includeFailedAttempt, source],
   );
 
   async function loadPostgres(): Promise<void> {
@@ -1705,12 +1711,14 @@ export default function DashboardFlow() {
     currentPractice,
     data,
     filters,
+    handleIncludeFailedAttemptChange,
     handlePracticeAttempt,
     handlePracticeDrop,
     handlePracticeMoveChange,
     handleFiltersChange,
     handleOpenChessboardModal,
     handleResetFilters,
+    handleSourceChange,
     includeFailedAttempt,
     jobProgress,
     jobStatus,

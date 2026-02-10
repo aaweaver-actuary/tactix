@@ -52,3 +52,9 @@ Session summary (2026-02-09):
 - Integration verification: node verification/integration_feature_settings_modal.js.
 - Tests run: make check (before and after changes).
 - Completion status: 51/146 tests passing.
+
+Session summary (2026-02-09):
+- Re-enabled mypy override errors by typing BaseTacticDetector.detect with TacticContext and fixed resulting override violations.
+- Evidence: .venv/bin/mypy src/ clean after change; make check green.
+- Remaining mypy error types to re-enable: arg-type, attr-defined, call-overload, import-untyped, operator, typeddict-item, valid-type.
+- Tests run: .venv/bin/mypy src/; make check.

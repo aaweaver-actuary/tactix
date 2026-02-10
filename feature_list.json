@@ -57,7 +57,7 @@
       "Step 4: Keep mypy clean after each change",
       "Step 5: Document remaining error types to re-enable"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "testing",

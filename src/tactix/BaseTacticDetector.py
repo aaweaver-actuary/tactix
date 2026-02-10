@@ -9,6 +9,7 @@ import chess
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
+    from tactix.TacticContext import TacticContext
     from tactix.TacticFinding import TacticFinding
 
 PIECE_VALUES = {
@@ -199,7 +200,7 @@ class BaseTacticDetector:
 
     motif = "unknown"
 
-    def detect(self, _context: object) -> list[TacticFinding]:
+    def detect(self, _context: TacticContext) -> list[TacticFinding]:
         """Return domain findings for a tactic context."""
         raise NotImplementedError
 

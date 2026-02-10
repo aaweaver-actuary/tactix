@@ -130,7 +130,6 @@ disable_error_code=[
     "call-overload",
     "import-untyped",
     "operator",
-    "override",
     "typeddict-item",
     "valid-type",
 ]

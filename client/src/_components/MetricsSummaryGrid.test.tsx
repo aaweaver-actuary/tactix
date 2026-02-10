@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import MetricsSummaryGrid from './MetricsSummaryGrid';
+import BaseMetricsCards from './BaseMetricsCards';
+import SourceSyncCards from './SourceSyncCards';
 import type { DashboardPayload } from '../api';
 
 vi.mock('./MetricCard', () => ({
@@ -25,6 +27,45 @@ vi.mock('./MetricCard', () => ({
 }));
 
 describe('MetricsSummaryGrid', () => {
+  it('renders base metrics via the extracted cards', () => {
+    render(<BaseMetricsCards positions={4} tactics={2} metricsVersion={9} />);
+
+    const baseCards = screen.getAllByTestId('metric-card');
+    expect(baseCards).toHaveLength(3);
+    expect(screen.getByText('Positions')).toBeInTheDocument();
+    expect(screen.getByText('Tactics')).toBeInTheDocument();
+    expect(screen.getByText('Metrics ver.')).toBeInTheDocument();
+    expect(screen.getByText('4')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByText('9')).toBeInTheDocument();
+  });
+
+  it('renders source sync cards only when sources exist', () => {
+    const emptySync: DashboardPayload['source_sync'] = {
+      window_days: 7,
+      sources: [],
+    };
+
+    const { container, rerender } = render(
+      <SourceSyncCards sourceSync={emptySync} />,
+    );
+
+    expect(container.firstChild).toBeNull();
+
+    rerender(
+      <SourceSyncCards
+        sourceSync={{
+          window_days: 7,
+          sources: [{ source: 'lichess', games_played: 3, synced: true }],
+        }}
+      />,
+    );
+
+    expect(screen.getByTestId('source-sync-lichess')).toBeInTheDocument();
+    expect(screen.getByText('Lichess (7d)')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
+  });
+
   it('renders an empty state with base metrics only', () => {
     const sourceSync: DashboardPayload['source_sync'] = {
       window_days: 7,

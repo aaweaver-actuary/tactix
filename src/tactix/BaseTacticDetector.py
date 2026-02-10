@@ -53,7 +53,7 @@ def _classify_no_best_move(delta: int) -> str:
         return "missed"
     if delta <= FAILED_ATTEMPT_THRESHOLD:
         return "failed_attempt"
-    return "initiative"
+    return "unclear"
 
 
 def _classify_with_best_move(user_move_uci: str, best_move: str, delta: int) -> str:

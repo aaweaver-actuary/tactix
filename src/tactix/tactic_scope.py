@@ -20,7 +20,6 @@ ALL_MOTIFS: tuple[str, ...] = (
     "capture",
     "check",
     "escape",
-    "initiative",
 )
 
 FUTURE_MOTIFS: tuple[str, ...] = tuple(motif for motif in ALL_MOTIFS if motif not in ALLOWED_MOTIFS)

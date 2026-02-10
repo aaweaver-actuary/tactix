@@ -48,14 +48,14 @@ def _resolve_capture_motif(
     return None
 
 
-def _resolve_initiative_hanging_piece(
+def _resolve_unknown_hanging_piece(
     motif: str,
     motif_board: chess.Board,
     user_board: chess.Board,
     move: chess.Move,
     mover_color: bool,
 ) -> str | None:
-    if motif != "initiative" or not _is_new_hanging_piece(motif_board, user_board, mover_color):
+    if motif != "unknown" or not _is_new_hanging_piece(motif_board, user_board, mover_color):
         return None
     attacks = user_board.attacks(move.to_square)
     has_hanging_attack = any(
@@ -117,7 +117,7 @@ def _resolve_non_forced_motif(
     if _is_explicit_motif(motif):
         return motif
     return (
-        _resolve_initiative_hanging_piece(
+        _resolve_unknown_hanging_piece(
             motif,
             motif_board,
             user_board,

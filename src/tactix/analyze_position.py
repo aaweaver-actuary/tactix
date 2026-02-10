@@ -181,14 +181,6 @@ def _resolve_opponent_override_result(
     )
 
 
-def _should_mark_missed_for_initiative(
-    context: MotifResolutionContext,
-    result: str,
-    user_motif: str,
-) -> bool:
-    return result == "initiative" and context.best_move_obj is None and user_motif != "unknown"
-
-
 def _should_infer_best_motif(result: str, best_move_obj: object | None) -> bool:
     return result in {"missed", "failed_attempt", "unclear"} and best_move_obj is not None
 
@@ -204,7 +196,7 @@ def _resolve_best_motif_adjustment(
         context.mover_color,
     )
     if (
-        best_motif == "initiative"
+        best_motif == "unknown"
         and result in {"missed", "failed_attempt"}
         and user_motif not in _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS
     ):
@@ -235,8 +227,6 @@ def _resolve_motif_and_result(
     user_motif = context.user_motif
     motif = user_motif
     best_motif: str | None = None
-    if _should_mark_missed_for_initiative(context, result, user_motif):
-        result = "missed"
     if _should_infer_best_motif(result, context.best_move_obj):
         result, motif, best_motif = _resolve_best_motif_adjustment(
             context,

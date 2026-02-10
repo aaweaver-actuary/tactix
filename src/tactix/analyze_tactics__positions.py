@@ -32,7 +32,7 @@ _HANGING_PIECE_UNCLEAR_SWING_THRESHOLD = -300
 _MATE_MISSED_SCORE_MULTIPLIER = 200
 _SEVERITY_MIN = 1.0
 _SEVERITY_MAX = 1.5
-_OVERRIDEABLE_USER_MOTIFS = {"initiative", "capture", "check", "escape"}
+_OVERRIDEABLE_USER_MOTIFS = {"capture", "check", "escape"}
 _MISSED_OVERRIDE_TARGETS = {
     "mate",
     "fork",

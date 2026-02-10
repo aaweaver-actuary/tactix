@@ -5,6 +5,7 @@ def test_scope_lists_are_consistent() -> None:
     assert scope.ALLOWED_MOTIFS == ("hanging_piece", "mate")
     assert set(scope.ALLOWED_MOTIFS).isdisjoint(scope.FUTURE_MOTIFS)
     assert set(scope.ALL_MOTIFS) == set(scope.ALLOWED_MOTIFS) | set(scope.FUTURE_MOTIFS)
+    assert "initiative" not in scope.ALL_MOTIFS
 
 
 def test_supported_motif_requires_mate_in_one() -> None:

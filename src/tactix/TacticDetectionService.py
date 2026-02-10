@@ -36,10 +36,10 @@ class TacticDetectionService:
 
     def infer_motif(self, board: chess.Board, best_move: chess.Move | None) -> str:
         if best_move is None:
-            return "initiative"
+            return "unknown"
         context = self._build_context(board, best_move)
         findings = self.detect(context)
-        return findings[0].motif if findings else "initiative"
+        return findings[0].motif if findings else "unknown"
 
     @staticmethod
     def _build_context(board: chess.Board, move: chess.Move) -> TacticContext:

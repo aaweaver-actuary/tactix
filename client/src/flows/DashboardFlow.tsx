@@ -48,7 +48,6 @@ import {
   MetricsGrid,
   MotifTrendsCard,
   TimeTroubleCorrelationCard,
-  PracticeQueueCard,
   RecentGamesModal,
   RecentTacticsModal,
   JobProgressCard,
@@ -107,7 +106,6 @@ const DASHBOARD_CARD_IDS = [
   'metrics-grid',
   'metrics-trends',
   'time-trouble-correlation',
-  'practice-queue',
   'positions-list',
   'practice-attempt',
 ];
@@ -1411,58 +1409,6 @@ export default function DashboardFlow() {
     [handleOpenGameDetail, handleOpenLichess],
   );
 
-  const practiceQueueColumns = useMemo<ColumnDef<PracticeQueueItem>[]>(
-    () => [
-      {
-        header: 'Motif',
-        accessorKey: 'motif',
-        cell: (info) => (
-          <span className="font-display text-sm uppercase tracking-wide">
-            {String(info.getValue())}
-          </span>
-        ),
-      },
-      {
-        header: 'Result',
-        accessorKey: 'result',
-        cell: (info) => <Badge label={String(info.getValue())} />,
-      },
-      {
-        header: 'Best',
-        accessorKey: 'best_uci',
-        cell: (info) => (
-          <span className="font-mono text-xs text-teal">
-            {String(info.getValue() || '--')}
-          </span>
-        ),
-      },
-      {
-        header: 'Your move',
-        accessorKey: 'user_uci',
-        cell: (info) => (
-          <span className="font-mono text-xs">{String(info.getValue())}</span>
-        ),
-      },
-      {
-        header: 'Move',
-        accessorFn: (row) => `${row.move_number}.${row.ply}`,
-        cell: (info) => (
-          <span className="font-mono text-xs">{String(info.getValue())}</span>
-        ),
-      },
-      {
-        header: 'Delta',
-        accessorKey: 'eval_delta',
-        cell: (info) => (
-          <span className="font-mono text-xs text-rust">
-            {String(info.getValue())}
-          </span>
-        ),
-      },
-    ],
-    [],
-  );
-
   const metricsTrendsColumns = useMemo<ColumnDef<MetricsTrendsRow>[]>(
     () => [
       {
@@ -1786,25 +1732,6 @@ export default function DashboardFlow() {
         ),
       },
       {
-        id: 'practice-queue',
-        label: 'Practice queue',
-        visible: true,
-        render: (props) => (
-          <PracticeQueueCard
-            data={practiceLoading ? null : practiceQueue}
-            columns={practiceQueueColumns}
-            includeFailedAttempt={includeFailedAttempt}
-            loading={practiceLoading}
-            onIncludeFailedAttemptChange={handleIncludeFailedAttemptChange}
-            onRowClick={handleOpenGameDetail}
-            rowTestId={(row, index) =>
-              `practice-queue-row-${row.source ?? 'unknown'}-${index}`
-            }
-            {...props}
-          />
-        ),
-      },
-      {
         id: 'positions-list',
         label: 'Latest positions',
         visible: Boolean(data),
@@ -1849,7 +1776,6 @@ export default function DashboardFlow() {
     practiceLoading,
     practiceModalOpen,
     practiceQueue,
-    practiceQueueColumns,
     practiceSession,
     handleOpenPracticeModal,
     timeTroubleColumns,
@@ -1906,17 +1832,32 @@ export default function DashboardFlow() {
       />
 
       <div className="card p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-lg font-display text-sand">Practice</h2>
-          <p
-            id={practiceStatusId}
-            className="text-xs text-sand/60"
-            role="status"
-            aria-live="polite"
-            data-testid="practice-button-status"
-          >
-            {practiceButtonState.helper}
-          </p>
+        <div className="space-y-2">
+          <div>
+            <h2 className="text-lg font-display text-sand">Practice</h2>
+            <p
+              id={practiceStatusId}
+              className="text-xs text-sand/60"
+              role="status"
+              aria-live="polite"
+              data-testid="practice-button-status"
+            >
+              {practiceButtonState.helper}
+            </p>
+          </div>
+          <label className="flex items-center gap-2 text-xs text-sand/70">
+            <input
+              type="checkbox"
+              className="accent-teal"
+              checked={includeFailedAttempt}
+              onChange={(event) =>
+                handleIncludeFailedAttemptChange(event.target.checked)
+              }
+              disabled={practiceLoading}
+              data-testid="practice-include-failed"
+            />
+            Include failed attempts
+          </label>
         </div>
         <ActionButton
           type="button"

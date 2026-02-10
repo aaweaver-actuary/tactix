@@ -38,6 +38,16 @@ Session summary (2026-02-10):
 - Tests run: make check (before and after changes).
 
 Session summary (2026-02-10):
+- Removed the practice queue card from the dashboard layout and kept the include-failed toggle in the Practice header so practice data stays accessible via the practice modal.
+- Updated DashboardFlow tests to assert practice availability via the button/status and to confirm the practice queue card is absent.
+- Added manual and integration puppeteer coverage for the removed practice queue card layout.
+- Regression verification: node verification/puppeteer_feature_practice_button.js; node verification/puppeteer_feature_database_modal.js; node verification/puppeteer_feature_chessboard_modal.js.
+- Manual verification: node verification/puppeteer_feature_remove_practice_queue_card.js (feature-remove-practice-queue-card-2026-02-10.png).
+- Integration verification: node verification/integration_feature_remove_practice_queue_card.js.
+- Screenshots: feature-practice-button-2026-02-10.png; feature-fab-database-modal-2026-02-10.png; feature-chessboard-modal-open-2026-02-10.png; feature-chessboard-modal-closed-2026-02-10.png; feature-remove-practice-queue-card-2026-02-10.png.
+- Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
 - Added new GitHub issues (#65-#51) to feature_list.json as top-priority items.
 - Refreshed verification screenshots after regression batch and committed updated artifacts.
 

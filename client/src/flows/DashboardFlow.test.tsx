@@ -417,7 +417,6 @@ describe('DashboardFlow', () => {
 
     await waitFor(() => {
       expect(screen.getAllByTestId(/recent-games-row-/)).toHaveLength(2);
-      expect(screen.getAllByTestId(/practice-queue-row-/)).toHaveLength(2);
     });
 
     fireEvent.click(screen.getByTestId('recent-games-modal-close'));
@@ -560,8 +559,24 @@ describe('DashboardFlow', () => {
       screen.queryByTestId('dashboard-game-row-g-pin'),
     ).not.toBeInTheDocument();
 
-    const practiceRows = await screen.findAllByTestId(/practice-queue-row-/);
-    expect(practiceRows).toHaveLength(1);
+    const practiceButton = screen.getByTestId('practice-button');
+    const practiceStatus = screen.getByTestId('practice-button-status');
+
+    await waitFor(() => {
+      expect(practiceButton).toBeEnabled();
+    });
+
+    expect(practiceButton).toHaveTextContent('Start practice');
+    expect(practiceStatus).toHaveTextContent('1 tactic ready.');
+  });
+
+  it('omits the practice queue card from the dashboard layout', async () => {
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+
+    expect(screen.queryByTestId('practice-queue-card')).not.toBeInTheDocument();
+    expect(screen.getByTestId('practice-button')).toBeInTheDocument();
   });
 
   it('closes the filters modal on Escape', async () => {
@@ -1006,18 +1021,18 @@ describe('DashboardFlow', () => {
     expect(within(gameRows[0]).getByText('Win')).toBeInTheDocument();
     expect(within(gameRows[1]).getByText('Loss')).toBeInTheDocument();
 
-    const practiceRows = await screen.findAllByTestId(/practice-queue-row-/);
-    expect(practiceRows).toHaveLength(2);
-    practiceRows.forEach((row) => {
-      expect(within(row).getByText('missed')).toBeInTheDocument();
-      fireEvent.click(row);
-    });
+    const practiceButton = screen.getByTestId('practice-button');
 
     await waitFor(() => {
-      const lossCalls = (
-        fetchGameDetail as unknown as ReturnType<typeof vi.fn>
-      ).mock.calls.filter(([gameId]) => gameId === lossGameId);
-      expect(lossCalls).toHaveLength(2);
+      expect(practiceButton).toBeEnabled();
     });
+
+    fireEvent.click(practiceButton);
+
+    const practiceModal = await screen.findByTestId('chessboard-modal');
+    expect(practiceModal).toBeInTheDocument();
+    expect(
+      within(practiceModal).getByText(canonicalPracticeQueue.items[0].fen),
+    ).toBeInTheDocument();
   });
 });

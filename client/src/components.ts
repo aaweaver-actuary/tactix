@@ -5,7 +5,6 @@ import MetricsGrid from './_components/MetricsGrid';
 import PositionsList from './_components/PositionsList';
 import MotifTrendsCard from './_components/MotifTrendsCard';
 import TimeTroubleCorrelationCard from './_components/TimeTroubleCorrelationCard';
-import PracticeQueueCard from './_components/PracticeQueueCard';
 import RecentGamesModal from './_components/RecentGamesModal';
 import RecentTacticsModal from './_components/RecentTacticsModal';
 import ErrorCard from './_components/ErrorCard';
@@ -27,7 +26,6 @@ export {
   PositionsList,
   MotifTrendsCard,
   TimeTroubleCorrelationCard,
-  PracticeQueueCard,
   RecentGamesModal,
   RecentTacticsModal,
   ErrorCard,

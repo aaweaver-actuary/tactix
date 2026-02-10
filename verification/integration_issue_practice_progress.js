@@ -51,6 +51,7 @@ async function getPracticeFenFromCard(page) {
   const browser = await puppeteer.launch({ headless: 'new' });
   const page = await browser.newPage();
   const consoleErrors = [];
+  const practiceResponses = [];
 
   page.on('console', (msg) => {
     if (msg.type() === 'error') consoleErrors.push(msg.text());
@@ -60,6 +61,16 @@ async function getPracticeFenFromCard(page) {
     consoleErrors.push(
       `Request failed: ${request.url()} (${request.failure()?.errorText || 'unknown'})`,
     );
+  });
+  page.on('response', async (response) => {
+    if (!response.url().includes('/api/practice/attempt')) return;
+    if (response.request().method() !== 'POST') return;
+    try {
+      const payload = await response.json();
+      practiceResponses.push(payload);
+    } catch (err) {
+      console.error('Practice attempt response parse failed:', err);
+    }
   });
 
   try {
@@ -167,6 +178,13 @@ async function getPracticeFenFromCard(page) {
       throw new Error('Expected a graded practice attempt, got none.');
     }
 
+    const practiceResult = practiceResponses[0];
+    if (!practiceResult) {
+      throw new Error('Practice attempt response was not captured.');
+    }
+    const shouldReschedule =
+      practiceResult.rescheduled ?? practiceResult.correct === false;
+
     const afterSummary = await page.$eval(
       '[data-testid="practice-session-summary"]',
       (el) => el.textContent || '',
@@ -174,9 +192,10 @@ async function getPracticeFenFromCard(page) {
     const after = parseProgress(afterSummary);
     console.log('Practice summary after:', afterSummary);
 
-    if (after.total !== before.total) {
+    const expectedTotal = before.total + (shouldReschedule ? 1 : 0);
+    if (after.total !== expectedTotal) {
       throw new Error(
-        `Expected total to stay ${before.total}, got ${after.total}.`,
+        `Expected total to be ${expectedTotal}, got ${after.total}.`,
       );
     }
     if (after.completed !== before.completed + 1) {

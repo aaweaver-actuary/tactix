@@ -117,7 +117,7 @@ class PracticeUseCase:
     ) -> list[dict[str, object]]:
         return self.repository_factory.create(conn).fetch_practice_queue(
             limit=request.limit,
-            source=request.normalized_source or request.settings.source,
+            source=request.normalized_source,
             include_failed_attempt=request.include_failed_attempt,
             exclude_seen=request.exclude_seen,
         )
@@ -127,8 +127,9 @@ class PracticeUseCase:
         request: PracticeQueueRequest,
         items: list[dict[str, object]],
     ) -> dict[str, object]:
+        resolved_source = request.normalized_source or "all"
         return {
-            "source": request.normalized_source or request.settings.source,
+            "source": resolved_source,
             "include_failed_attempt": request.include_failed_attempt,
             "items": items,
         }
@@ -138,8 +139,9 @@ class PracticeUseCase:
         request: PracticeQueueRequest,
         items: list[dict[str, object]],
     ) -> dict[str, object]:
+        resolved_source = request.normalized_source or "all"
         return {
-            "source": request.normalized_source or request.settings.source,
+            "source": resolved_source,
             "include_failed_attempt": request.include_failed_attempt,
             "item": items[0] if items else None,
         }

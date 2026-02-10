@@ -78,6 +78,15 @@ Session summary (2026-02-09):
 - Manual verification: node verification/puppeteer_feature_settings_modal.js (feature-fab-filters-open-desktop-2026-02-09.png, feature-fab-filters-closed-desktop-2026-02-09.png, feature-fab-filters-open-mobile-2026-02-09.png, feature-fab-filters-closed-mobile-2026-02-09.png).
 - Integration verification: node verification/integration_feature_settings_modal.js.
 - Tests run: make check (before and after changes).
+
+Session summary (2026-02-10):
+- Fixed practice queue all-sources filtering by removing the default source fallback and returning "all" in practice queue payloads.
+- Kept practice feedback visible after queue refresh and made practice attempt verification case-insensitive for best-move text.
+- Added all-sources practice availability automation (manual + integration).
+- Regression verification (random 12): node verification/puppeteer_feature_listudy_assets.js; node verification/puppeteer_feature_practice_best_move_hidden.js; node verification/puppeteer_feature_modal_escape.js; node verification/puppeteer_feature_practice_button.js; node verification/puppeteer_feature_remove_initiative.js; node verification/puppeteer_feature_open_lichess_link.js; node verification/puppeteer_feature_settings_modal.js; node verification/puppeteer_practice_attempt.js; node verification/puppeteer_feature_chessboard_modal.js; node verification/puppeteer_feature_database_modal.js; node verification/puppeteer_feature_practice_orientation.js; node verification/puppeteer_feature_game_detail_modal.js.
+- Manual verification: node verification/puppeteer_practice_attempt.js (dashboard-practice-attempt-grading.png); node verification/puppeteer_feature_practice_all_sources.js (feature-practice-all-sources-2026-02-10.png).
+- Integration verification: node verification/integration_issue_practice_progress.js; node verification/integration_feature_practice_all_sources.js.
+- Tests run: make check.
 - Completion status: 51/146 tests passing.
 
 Session summary (2026-02-09):

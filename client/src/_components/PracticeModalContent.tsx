@@ -86,11 +86,6 @@ export default function PracticeModalContent({
               <Badge
                 label={`Move ${currentPractice.move_number}.${currentPractice.ply}`}
               />
-              {practiceFeedback ? (
-                <span data-testid="practice-best-move">
-                  <Badge label={`Best ${practiceFeedback.best_uci || '--'}`} />
-                </span>
-              ) : null}
               {currentPractice.clock_seconds !== null ? (
                 <Badge label={`${currentPractice.clock_seconds}s`} />
               ) : null}
@@ -112,24 +107,38 @@ export default function PracticeModalContent({
               <Text mode="error" value={practiceSubmitError} />
             ) : null}
             {practiceFeedback ? (
-              <div className="rounded-md border border-white/10 bg-white/5 p-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <Badge
-                    label={practiceFeedback.correct ? 'Correct' : 'Missed'}
-                  />
-                  <span className="text-sand/80">
-                    {practiceFeedback.message}
-                  </span>
-                </div>
-                <PracticeFeedbackExplanation feedback={practiceFeedback} />
-                <PracticeFeedback feedback={practiceFeedback} />
-              </div>
+              <PracticeFeedbackCard feedback={practiceFeedback} />
             ) : null}
           </div>
         </div>
       ) : (
-        <Text value="Daily set complete. Check back tomorrow." />
+        <div className="space-y-3">
+          <Text value="Daily set complete. Check back tomorrow." />
+          {practiceFeedback ? (
+            <PracticeFeedbackCard feedback={practiceFeedback} />
+          ) : null}
+        </div>
       )}
+    </div>
+  );
+}
+
+function PracticeFeedbackCard({
+  feedback,
+}: {
+  feedback: PracticeAttemptResponse;
+}): JSX.Element {
+  return (
+    <div className="rounded-md border border-white/10 bg-white/5 p-3 text-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <span data-testid="practice-best-move">
+          <Badge label={`Best ${feedback.best_uci || '--'}`} />
+        </span>
+        <Badge label={feedback.correct ? 'Correct' : 'Missed'} />
+        <span className="text-sand/80">{feedback.message}</span>
+      </div>
+      <PracticeFeedbackExplanation feedback={feedback} />
+      <PracticeFeedback feedback={feedback} />
     </div>
   );
 }

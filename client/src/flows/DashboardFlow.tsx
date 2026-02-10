@@ -485,7 +485,9 @@ export default function DashboardFlow() {
 
   const handleClosePracticeModal = useCallback(() => {
     setPracticeModalOpen(false);
-  }, []);
+    setPracticeFeedback(null);
+    setPracticeSubmitError(null);
+  }, [setPracticeFeedback, setPracticeModalOpen, setPracticeSubmitError]);
 
   const handleOpenLichess = useCallback(
     async (row: { game_id?: string | null; source?: string | null }) => {
@@ -686,10 +688,14 @@ export default function DashboardFlow() {
 
   useEffect(() => {
     if (!practiceModalOpen) return;
-    if (practiceQueue.length === 0 && practiceSessionInitializedRef.current) {
+    if (
+      practiceQueue.length === 0 &&
+      practiceSessionInitializedRef.current &&
+      !practiceFeedback
+    ) {
       setPracticeModalOpen(false);
     }
-  }, [practiceModalOpen, practiceQueue.length]);
+  }, [practiceFeedback, practiceModalOpen, practiceQueue.length]);
 
   useEffect(() => {
     resetJobState();

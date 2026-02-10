@@ -154,7 +154,7 @@ const source = process.env.TACTIX_SOURCE || 'chesscom';
     await page.waitForFunction(
       () =>
         Array.from(document.querySelectorAll('span')).some((el) =>
-          el.textContent?.includes('best'),
+          (el.textContent || '').toLowerCase().includes('best'),
         ),
       { timeout: 60000 },
     );

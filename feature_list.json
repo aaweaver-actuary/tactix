@@ -33,7 +33,7 @@
       "Step 4: Ensure practice button state matches availability for all",
       "Step 5: Add or update UI automation coverage for the all-sources state"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

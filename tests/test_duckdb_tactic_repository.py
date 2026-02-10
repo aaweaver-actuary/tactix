@@ -94,17 +94,21 @@ class DuckDbTacticRepositoryTests(unittest.TestCase):
         )
         self.assertEqual(queue_repo, queue_fn)
 
-        grade_repo = self.repo.grade_practice_attempt(
-            tactic_id_repo,
-            position_id_repo,
-            attempted_uci="e2e4",
-            latency_ms=120,
+        grade_repo = self._normalize_grade(
+            self.repo.grade_practice_attempt(
+                tactic_id_repo,
+                position_id_repo,
+                attempted_uci="e2e4",
+                latency_ms=120,
+            )
         )
-        grade_fn = self.fn_repo.grade_practice_attempt(
-            tactic_id_fn,
-            position_id_fn,
-            attempted_uci="e2e4",
-            latency_ms=120,
+        grade_fn = self._normalize_grade(
+            self.fn_repo.grade_practice_attempt(
+                tactic_id_fn,
+                position_id_fn,
+                attempted_uci="e2e4",
+                latency_ms=120,
+            )
         )
         self.assertEqual(grade_repo, grade_fn)
 
@@ -161,6 +165,9 @@ class DuckDbTacticRepositoryTests(unittest.TestCase):
             for row in analysis_rows
         ]
         return normalized
+
+    def _normalize_grade(self, payload: dict[str, object]) -> dict[str, object]:
+        return {key: value for key, value in payload.items() if key != "next_due_at"}
 
 
 if __name__ == "__main__":

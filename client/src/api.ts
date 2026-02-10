@@ -139,6 +139,8 @@ export type PracticeAttemptResponse = {
   message: string;
   explanation?: string | null;
   latency_ms?: number | null;
+  next_due_at?: string | null;
+  rescheduled?: boolean;
 };
 
 export type PostgresOpsEvent = {

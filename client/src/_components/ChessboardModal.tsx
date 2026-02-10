@@ -1,17 +1,41 @@
+import type { CSSProperties, RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import type { DashboardPayload } from '../api';
+import type {
+  DashboardPayload,
+  PracticeAttemptResponse,
+  PracticeQueueItem,
+} from '../api';
 import BaseChessboard from './BaseChessboard';
 import Badge from './Badge';
 import BaseButton from './BaseButton';
 import ModalShell from './ModalShell';
 import Text from './Text';
+import type { PracticeSessionStats } from '../utils/practiceSession';
+import PracticeModalContent from './PracticeModalContent';
 
 type PositionEntry = DashboardPayload['positions'][number];
 
 interface ChessboardModalProps {
   open: boolean;
   position: PositionEntry | null;
+  practice?: PracticeModalState | null;
   onClose: () => void;
+}
+
+interface PracticeModalState {
+  currentPractice: PracticeQueueItem | null;
+  practiceSession: PracticeSessionStats;
+  practiceFen: string;
+  practiceMove: string;
+  practiceMoveRef: RefObject<HTMLInputElement>;
+  practiceSubmitting: boolean;
+  practiceFeedback: PracticeAttemptResponse | null;
+  practiceSubmitError: string | null;
+  practiceHighlightStyles: Record<string, CSSProperties>;
+  practiceOrientation: 'white' | 'black';
+  onPracticeMoveChange: (value: string) => void;
+  handlePracticeAttempt: (overrideMove?: string) => Promise<void>;
+  handlePracticeDrop: (from: string, to: string, piece: string) => boolean;
 }
 
 const getOrientation = (fen: string | null) => {
@@ -22,10 +46,36 @@ const getOrientation = (fen: string | null) => {
 export default function ChessboardModal({
   open,
   position,
+  practice,
   onClose,
 }: ChessboardModalProps) {
   if (!open) {
     return null;
+  }
+
+  if (practice) {
+    return createPortal(
+      <ModalShell
+        testId="chessboard-modal"
+        onClose={onClose}
+        panelClassName="max-w-5xl"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <Text mode="uppercase" value="Practice board" />
+          <BaseButton
+            className="rounded-md border border-white/10 px-3 py-1 text-xs text-sand/70 hover:border-white/30"
+            onClick={onClose}
+            data-testid="chessboard-modal-close"
+          >
+            Close
+          </BaseButton>
+        </div>
+        <div className="mt-4">
+          <PracticeModalContent {...practice} />
+        </div>
+      </ModalShell>,
+      document.body,
+    );
   }
 
   const fen = position?.fen ?? '';

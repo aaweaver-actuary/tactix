@@ -1,56 +1,33 @@
-import type { CSSProperties, RefObject } from 'react';
-import BaseChessboard from './BaseChessboard';
-import { PracticeAttemptResponse, PracticeQueueItem } from '../api';
-import isPiecePlayable from '../utils/isPiecePlayable';
-import buildPracticeFeedback from '../utils/buildPracticeFeedback';
-import { listudyPreviewPieceIds, listudyPieces } from '../utils/listudyAssets';
-import Badge from './Badge';
+import BaseButton from './BaseButton';
 import BaseCard, { BaseCardDragProps } from './BaseCard';
-import PracticeAttemptButton from './PracticeAttemptButton';
-import PracticeMoveInput from './PracticeMoveInput';
-import PracticeSessionProgress from './PracticeSessionProgress';
+import Badge from './Badge';
 import Text from './Text';
+import type { PracticeQueueItem } from '../api';
 import type { PracticeSessionStats } from '../utils/practiceSession';
+import PracticeSessionProgress from './PracticeSessionProgress';
 
 interface PracticeAttemptCardProps extends BaseCardDragProps {
   currentPractice: PracticeQueueItem | null;
   practiceSession: PracticeSessionStats;
-  practiceFen: string;
-  practiceMove: string;
-  practiceMoveRef: RefObject<HTMLInputElement>;
-  practiceSubmitting: boolean;
-  practiceFeedback: PracticeAttemptResponse | null;
-  practiceSubmitError: string | null;
-  practiceHighlightStyles: Record<string, CSSProperties>;
-  practiceOrientation: 'white' | 'black';
-  onPracticeMoveChange: (value: string) => void;
-  handlePracticeAttempt: (overrideMove?: string) => Promise<void>;
-  handlePracticeDrop: (from: string, to: string, piece: string) => boolean;
+  practiceLoading: boolean;
+  practiceModalOpen: boolean;
+  onStartPractice: () => void;
 }
 
 export default function PracticeAttemptCard({
   currentPractice,
   practiceSession,
-  practiceFen,
-  practiceMove,
-  practiceMoveRef,
-  practiceSubmitting,
-  practiceFeedback,
-  practiceSubmitError,
-  practiceHighlightStyles,
-  practiceOrientation,
-  onPracticeMoveChange,
-  handlePracticeAttempt,
-  handlePracticeDrop,
+  practiceLoading,
+  practiceModalOpen,
+  onStartPractice,
   ...dragProps
 }: PracticeAttemptCardProps) {
-  const handleInputSubmit = (move: string) => {
-    void handlePracticeAttempt(move);
-  };
-
-  const handleAttemptClick = () => {
-    void handlePracticeAttempt(practiceMoveRef.current?.value);
-  };
+  const hasPractice = Boolean(currentPractice);
+  const isComplete =
+    !practiceLoading && !hasPractice && practiceSession.total > 0;
+  const buttonLabel = practiceModalOpen
+    ? 'Continue practice'
+    : 'Start practice';
 
   return (
     <BaseCard
@@ -59,118 +36,33 @@ export default function PracticeAttemptCard({
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-display text-sand">Practice attempt</h3>
-            <Text value="Play the best move for the current tactic." />
+            <Text value="Daily tactics ready to review." />
           </div>
-          <div className="flex items-center gap-2">
-            <div
-              className="hidden sm:flex items-center gap-1 opacity-80"
-              aria-hidden="true"
-            >
-              {listudyPreviewPieceIds.map((pieceId) => {
-                const Piece = listudyPieces[pieceId];
-                return <Piece key={pieceId} squareWidth={18} />;
-              })}
-            </div>
-            {currentPractice ? <Badge label={currentPractice.motif} /> : null}
-          </div>
+          {currentPractice ? <Badge label={currentPractice.motif} /> : null}
         </div>
       }
       contentClassName="pt-3"
       {...dragProps}
     >
       <PracticeSessionProgress stats={practiceSession} />
-      {currentPractice ? (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">
-            <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-              <BaseChessboard
-                id="practice-board"
-                position={practiceFen || currentPractice.fen}
-                onPieceDrop={handlePracticeDrop}
-                boardOrientation={practiceOrientation}
-                arePiecesDraggable={!practiceSubmitting}
-                isDraggablePiece={isPiecePlayable(practiceFen, currentPractice)}
-                boardWidth={320}
-                showBoardNotation
-                customSquareStyles={practiceHighlightStyles}
-              />
-              <Text mt="2" value="Legal moves only. Drag a piece to submit." />
-            </div>
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Text value="FEN" />
-                <Text value={currentPractice.fen} mode="monospace" />
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs text-sand/70">
-                <Badge
-                  label={`Move ${currentPractice.move_number}.${currentPractice.ply}`}
-                />
-                <Badge label={`Best ${currentPractice.best_uci || '--'}`} />
-                {currentPractice.clock_seconds !== null ? (
-                  <Badge label={`${currentPractice.clock_seconds}s`} />
-                ) : null}
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <PracticeMoveInput
-                  practiceMove={practiceMove}
-                  onPracticeMoveChange={onPracticeMoveChange}
-                  onPracticeSubmit={handleInputSubmit}
-                  practiceSubmitting={practiceSubmitting}
-                  inputRef={practiceMoveRef}
-                />
-                <PracticeAttemptButton
-                  onPracticeAttempt={handleAttemptClick}
-                  practiceSubmitting={practiceSubmitting}
-                />
-              </div>
-              {practiceSubmitError ? (
-                <Text mode="error" value={practiceSubmitError} />
-              ) : null}
-              {practiceFeedback ? (
-                <div className="rounded-md border border-white/10 bg-white/5 p-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      label={practiceFeedback.correct ? 'Correct' : 'Missed'}
-                    />
-                    <span className="text-sand/80">
-                      {practiceFeedback.message}
-                    </span>
-                  </div>
-                  <PracticeFeedbackExplanation feedback={practiceFeedback} />
-                  <PracticeFeedback feedback={practiceFeedback} />
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </>
+      {practiceLoading ? (
+        <Text value="Loading daily practice set..." />
+      ) : isComplete ? (
+        <Text value="Daily set complete. Great work." />
+      ) : hasPractice ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <Text value="Your next tactic is ready." />
+          <BaseButton
+            className="rounded-md border border-white/10 px-3 py-2 text-xs text-sand/80 hover:border-white/30"
+            onClick={onStartPractice}
+            data-testid="practice-start"
+          >
+            {buttonLabel}
+          </BaseButton>
+        </div>
       ) : (
         <Text value="No practice items queued yet." />
       )}
     </BaseCard>
-  );
-}
-
-function PracticeFeedbackExplanation({
-  feedback,
-}: {
-  feedback: PracticeAttemptResponse;
-}) {
-  return feedback.explanation ? (
-    <Text mt="2" value={feedback.explanation} />
-  ) : null;
-}
-
-function PracticeFeedback({
-  feedback,
-}: {
-  feedback: PracticeAttemptResponse;
-}): JSX.Element {
-  return (
-    <Text
-      mt="2"
-      mode="monospace"
-      size="xs"
-      value={buildPracticeFeedback(feedback)}
-    />
   );
 }

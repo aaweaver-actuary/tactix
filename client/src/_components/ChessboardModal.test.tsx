@@ -63,4 +63,51 @@ describe('ChessboardModal', () => {
     fireEvent.click(screen.getByTestId('chessboard-modal-close'));
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
+
+  it('renders practice mode content when provided', () => {
+    render(
+      <ChessboardModal
+        open
+        position={null}
+        practice={{
+          currentPractice: {
+            tactic_id: 1,
+            game_id: 'g1',
+            position_id: 9,
+            source: 'chesscom',
+            motif: 'hanging_piece',
+            result: 'missed',
+            best_uci: 'e2e4',
+            user_uci: 'e2e3',
+            eval_delta: -1,
+            severity: 2,
+            created_at: '2026-02-01T00:00:00Z',
+            fen: '8/8/8/8/8/8/8/8 w - - 0 1',
+            position_uci: 'e2e4',
+            san: 'e4',
+            ply: 1,
+            move_number: 1,
+            side_to_move: 'w',
+            clock_seconds: 60,
+          },
+          practiceSession: { completed: 0, total: 1, streak: 0, bestStreak: 0 },
+          practiceFen: '',
+          practiceMove: '',
+          practiceMoveRef: React.createRef<HTMLInputElement>(),
+          practiceSubmitting: false,
+          practiceFeedback: null,
+          practiceSubmitError: null,
+          practiceHighlightStyles: {},
+          practiceOrientation: 'white',
+          onPracticeMoveChange: vi.fn(),
+          handlePracticeAttempt: vi.fn(),
+          handlePracticeDrop: vi.fn(),
+        }}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Daily practice')).toBeInTheDocument();
+    expect(screen.getByTestId('chessboard-modal')).toBeInTheDocument();
+  });
 });

@@ -293,6 +293,12 @@ export default function DashboardFlow() {
   const [chessboardPosition, setChessboardPosition] =
     useState<PositionEntry | null>(null);
   const [filtersModalOpen, setFiltersModalOpen] = useState(false);
+  const [practiceModalOpen, setPracticeModalOpen] = useState(false);
+
+  const currentPractice = useMemo(
+    () => (practiceQueue.length ? practiceQueue[0] : null),
+    [practiceQueue],
+  );
 
   const floatingActions = useMemo<FloatingAction[]>(
     () => [
@@ -373,11 +379,22 @@ export default function DashboardFlow() {
   const handleOpenChessboardModal = useCallback((position: PositionEntry) => {
     setChessboardPosition(position);
     setChessboardModalOpen(true);
+    setPracticeModalOpen(false);
   }, []);
 
   const handleCloseChessboardModal = useCallback(() => {
     setChessboardModalOpen(false);
     setChessboardPosition(null);
+  }, []);
+
+  const handleOpenPracticeModal = useCallback(() => {
+    if (!currentPractice) return;
+    setChessboardModalOpen(false);
+    setPracticeModalOpen(true);
+  }, [currentPractice]);
+
+  const handleClosePracticeModal = useCallback(() => {
+    setPracticeModalOpen(false);
   }, []);
 
   const handleOpenLichess = useCallback(
@@ -559,11 +576,6 @@ export default function DashboardFlow() {
     practiceScopeRef.current = `${source}:${includeFailedAttempt}`;
   }, [source, includeFailedAttempt]);
 
-  const currentPractice = useMemo(
-    () => (practiceQueue.length ? practiceQueue[0] : null),
-    [practiceQueue],
-  );
-
   useEffect(() => {
     function resetPracticeData(): void {
       setPracticeMove('');
@@ -581,6 +593,13 @@ export default function DashboardFlow() {
       streamAbortRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (!practiceModalOpen) return;
+    if (practiceQueue.length === 0 && practiceSessionInitializedRef.current) {
+      setPracticeModalOpen(false);
+    }
+  }, [practiceModalOpen, practiceQueue.length]);
 
   useEffect(() => {
     resetJobState();
@@ -964,8 +983,17 @@ export default function DashboardFlow() {
         setPracticeFeedback(response);
         setPracticeSession((prev) => {
           const nextStats = updatePracticeSessionStats(prev, response.correct);
-          practiceSessionCompletedRef.current = nextStats.completed;
-          return nextStats;
+          const shouldReschedule =
+            response.rescheduled ?? response.correct === false;
+          const nextTotal = shouldReschedule
+            ? nextStats.total + 1
+            : nextStats.total;
+          const adjusted = { ...nextStats, total: nextTotal };
+          practiceSessionCompletedRef.current = adjusted.completed;
+          if (shouldReschedule) {
+            practiceSessionTotalRef.current = nextTotal;
+          }
+          return adjusted;
         });
         // Allow feedback to render before queue refresh resets practice state.
         await waitForPracticeFeedback();
@@ -1709,17 +1737,9 @@ export default function DashboardFlow() {
           <PracticeAttemptCard
             currentPractice={currentPractice ?? null}
             practiceSession={practiceSession}
-            practiceFen={practiceFen}
-            practiceMove={practiceMove}
-            practiceMoveRef={practiceMoveRef}
-            practiceSubmitting={practiceSubmitting}
-            practiceFeedback={practiceFeedback}
-            practiceSubmitError={practiceSubmitError}
-            practiceHighlightStyles={practiceHighlightStyles}
-            practiceOrientation={practiceOrientation}
-            onPracticeMoveChange={handlePracticeMoveChange}
-            handlePracticeAttempt={handlePracticeAttempt}
-            handlePracticeDrop={handlePracticeDrop}
+            practiceLoading={practiceLoading}
+            practiceModalOpen={practiceModalOpen}
+            onStartPractice={handleOpenPracticeModal}
             {...props}
           />
         ),
@@ -1731,9 +1751,6 @@ export default function DashboardFlow() {
     data,
     filters,
     handleIncludeFailedAttemptChange,
-    handlePracticeAttempt,
-    handlePracticeDrop,
-    handlePracticeMoveChange,
     handleFiltersChange,
     handleOpenChessboardModal,
     handleResetFilters,
@@ -1754,18 +1771,12 @@ export default function DashboardFlow() {
     postgresRawPgnsError,
     postgresRawPgnsLoading,
     postgresStatus,
-    practiceFeedback,
-    practiceFen,
-    practiceHighlightStyles,
     practiceLoading,
-    practiceMove,
-    practiceMoveRef,
-    practiceOrientation,
+    practiceModalOpen,
     practiceQueue,
     practiceQueueColumns,
     practiceSession,
-    practiceSubmitError,
-    practiceSubmitting,
+    handleOpenPracticeModal,
     ratingOptions,
     recentGamesColumns,
     resolveGameSource,
@@ -1984,6 +1995,30 @@ export default function DashboardFlow() {
         open={chessboardModalOpen}
         position={chessboardPosition}
         onClose={handleCloseChessboardModal}
+      />
+      <ChessboardModal
+        open={practiceModalOpen}
+        position={null}
+        practice={
+          practiceModalOpen
+            ? {
+                currentPractice,
+                practiceSession,
+                practiceFen,
+                practiceMove,
+                practiceMoveRef,
+                practiceSubmitting,
+                practiceFeedback,
+                practiceSubmitError,
+                practiceHighlightStyles,
+                practiceOrientation,
+                onPracticeMoveChange: handlePracticeMoveChange,
+                handlePracticeAttempt,
+                handlePracticeDrop,
+              }
+            : null
+        }
+        onClose={handleClosePracticeModal}
       />
       <GameDetailModal
         open={gameDetailOpen}

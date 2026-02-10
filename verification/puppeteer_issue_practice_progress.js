@@ -4,6 +4,7 @@ const path = require('path');
 const {
   selectSource,
   buildFallbackMove,
+  ensurePracticeCardExpanded,
 } = require('./enter_submit_helpers');
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
@@ -12,6 +13,7 @@ const screenshotName =
   'issue-practice-progress-2026-02-08.png';
 const source = process.env.TACTIX_SOURCE || 'chesscom';
 const PRACTICE_CARD_SELECTOR = '[data-testid="dashboard-card-practice-attempt"]';
+const PRACTICE_MODAL_SELECTOR = '[data-testid="chessboard-modal"]';
 const PRACTICE_FEEDBACK_LABELS = ['Correct', 'Missed'];
 const PRACTICE_ERROR_SNIPPETS = [
   'Enter a move',
@@ -29,10 +31,11 @@ function parseProgress(summaryText) {
 
 async function getBestMoveFromPracticeCard(page) {
   return page.evaluate((selector) => {
-    const card = document.querySelector(selector);
-    if (!card) return null;
+    const modal = document.querySelector('[data-testid="chessboard-modal"]');
+    const scope = modal || document.querySelector(selector);
+    if (!scope) return null;
     const uciPattern = /^[a-h][1-8][a-h][1-8][qrbn]?$/i;
-    const spans = Array.from(card.querySelectorAll('span'));
+    const spans = Array.from(scope.querySelectorAll('span'));
     for (const span of spans) {
       const text = span.textContent?.trim() || '';
       if (!text.startsWith('Best ')) continue;
@@ -45,9 +48,10 @@ async function getBestMoveFromPracticeCard(page) {
 
 async function getPracticeFenFromCard(page) {
   return page.evaluate((selector) => {
-    const card = document.querySelector(selector);
-    if (!card) return null;
-    const paragraphs = Array.from(card.querySelectorAll('p'));
+    const modal = document.querySelector('[data-testid="chessboard-modal"]');
+    const scope = modal || document.querySelector(selector);
+    if (!scope) return null;
+    const paragraphs = Array.from(scope.querySelectorAll('p'));
     for (let i = 0; i < paragraphs.length; i += 1) {
       const text = paragraphs[i]?.textContent?.trim() || '';
       if (text !== 'FEN') continue;
@@ -56,27 +60,6 @@ async function getPracticeFenFromCard(page) {
     }
     return null;
   }, PRACTICE_CARD_SELECTOR);
-}
-
-async function ensurePracticeCardExpanded(page) {
-  const cardSelector = '[data-testid="dashboard-card-practice-attempt"]';
-  const headerSelector = `${cardSelector} [role="button"]`;
-  await page.waitForSelector(headerSelector, { timeout: 60000 });
-  const isCollapsed = await page.$eval(
-    headerSelector,
-    (header) => header.getAttribute('aria-expanded') === 'false',
-  );
-  if (isCollapsed) {
-    await page.click(headerSelector);
-  }
-  await page.waitForFunction(
-    (selector) => {
-      const node = document.querySelector(selector);
-      return node && node.getAttribute('data-state') === 'expanded';
-    },
-    { timeout: 60000 },
-    `${cardSelector} [data-state]`,
-  );
 }
 
 (async () => {
@@ -117,30 +100,40 @@ async function ensurePracticeCardExpanded(page) {
     await page.waitForSelector('[data-testid="practice-session-summary"]', {
       timeout: 60000,
     });
+    await page.waitForSelector('[data-testid="practice-start"]', {
+      timeout: 60000,
+    });
+    await page.click('[data-testid="practice-start"]');
+    await page.waitForSelector(PRACTICE_MODAL_SELECTOR, { timeout: 60000 });
     await page.waitForFunction(
-      () => {
-        const input = document.querySelector('input[placeholder*="UCI"]');
+      (selector) => {
+        const modal = document.querySelector(selector);
+        const input = modal?.querySelector('input[placeholder*="UCI"]');
         if (!(input instanceof HTMLInputElement)) return false;
         const visible = input.offsetParent !== null;
         return visible && !input.disabled;
       },
       { timeout: 60000 },
+      PRACTICE_MODAL_SELECTOR,
     );
-    await page.waitForSelector('input[placeholder*="UCI"]', {
-      timeout: 60000,
-    });
+    await page.waitForSelector(
+      `${PRACTICE_MODAL_SELECTOR} input[placeholder*="UCI"]`,
+      {
+        timeout: 60000,
+      },
+    );
     await page.waitForFunction(
       (selector) => {
         const fenRegex =
           /^[prnbqkPRNBQK1-8\/]+ [wb] [KQkq-]+ [a-h1-8-]+ \d+ \d+$/;
-        const card = document.querySelector(selector);
-        if (!card) return false;
-        return Array.from(card.querySelectorAll('p')).some((node) =>
+        const modal = document.querySelector(selector);
+        if (!modal) return false;
+        return Array.from(modal.querySelectorAll('p')).some((node) =>
           fenRegex.test(node.textContent?.trim() || ''),
         );
       },
       { timeout: 60000 },
-      PRACTICE_CARD_SELECTOR,
+      PRACTICE_MODAL_SELECTOR,
     );
 
     const beforeSummary = await page.$eval(
@@ -160,12 +153,14 @@ async function ensurePracticeCardExpanded(page) {
     const moveToPlay = bestMove || buildFallbackMove(practiceFen);
 
     console.log(`Submitting practice move: ${moveToPlay}`);
-    await page.click('input[placeholder*="UCI"]', { clickCount: 3 });
+    await page.click(`${PRACTICE_MODAL_SELECTOR} input[placeholder*="UCI"]`, {
+      clickCount: 3,
+    });
     await page.keyboard.type(moveToPlay);
     await page.waitForFunction(
       (move) => {
         const input = document.querySelector(
-          'input[placeholder*="UCI"]',
+          '[data-testid="chessboard-modal"] input[placeholder*="UCI"]',
         );
         return input && input.value === move;
       },
@@ -176,38 +171,41 @@ async function ensurePracticeCardExpanded(page) {
 
     await page.waitForFunction(
       (selector, labels, errors) => {
-        const card = document.querySelector(selector);
-        if (!card) return false;
-        const spans = Array.from(card.querySelectorAll('span'));
+        const modal = document.querySelector(selector);
+        if (!modal) return false;
+        const spans = Array.from(modal.querySelectorAll('span'));
         const feedback = spans.some((el) =>
           labels.includes(el.textContent?.trim() || ''),
         );
-        const error = Array.from(card.querySelectorAll('p')).some((el) =>
+        const error = Array.from(modal.querySelectorAll('p')).some((el) =>
           errors.some((snippet) => (el.textContent || '').includes(snippet)),
         );
         return feedback || error;
       },
       { timeout: 60000 },
-      PRACTICE_CARD_SELECTOR,
+      PRACTICE_MODAL_SELECTOR,
       PRACTICE_FEEDBACK_LABELS,
       PRACTICE_ERROR_SNIPPETS,
     );
 
-    const result = await page.evaluate((selector, labels, errors) => {
-      const card = document.querySelector(selector);
-      if (!card) {
-        return { feedback: null, error: 'Practice attempt card not found.' };
-      }
-      const spanText = Array.from(card.querySelectorAll('span'))
-        .map((el) => el.textContent?.trim() || '')
-        .find((text) => labels.includes(text));
-      const errorText = Array.from(card.querySelectorAll('p'))
-        .map((el) => el.textContent || '')
-        .find(
-          (text) => errors.some((snippet) => text.includes(snippet)),
-        );
-      return { feedback: spanText || null, error: errorText || null };
-    }, PRACTICE_CARD_SELECTOR, PRACTICE_FEEDBACK_LABELS, PRACTICE_ERROR_SNIPPETS);
+    const result = await page.evaluate(
+      (selector, labels, errors) => {
+        const modal = document.querySelector(selector);
+        if (!modal) {
+          return { feedback: null, error: 'Practice modal not found.' };
+        }
+        const spanText = Array.from(modal.querySelectorAll('span'))
+          .map((el) => el.textContent?.trim() || '')
+          .find((text) => labels.includes(text));
+        const errorText = Array.from(modal.querySelectorAll('p'))
+          .map((el) => el.textContent || '')
+          .find((text) => errors.some((snippet) => text.includes(snippet)));
+        return { feedback: spanText || null, error: errorText || null };
+      },
+      PRACTICE_MODAL_SELECTOR,
+      PRACTICE_FEEDBACK_LABELS,
+      PRACTICE_ERROR_SNIPPETS,
+    );
 
     if (result.error) {
       throw new Error(`Practice submit error: ${result.error}`);

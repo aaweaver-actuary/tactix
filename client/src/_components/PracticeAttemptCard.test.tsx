@@ -5,15 +5,6 @@ import PracticeAttemptCard from './PracticeAttemptCard';
 import type { PracticeQueueItem } from '../api';
 import type { PracticeSessionStats } from '../utils/practiceSession';
 
-let lastProps: any = null;
-
-vi.mock('react-chessboard', () => ({
-  Chessboard: (props: any) => {
-    lastProps = props;
-    return <div data-testid="mock-chessboard" />;
-  },
-}));
-
 const basePractice: PracticeQueueItem = {
   tactic_id: 1,
   game_id: 'g1',
@@ -42,52 +33,36 @@ const baseSession: PracticeSessionStats = {
   bestStreak: 0,
 };
 
-const renderCard = () =>
+const renderCard = (
+  overrides?: Partial<React.ComponentProps<typeof PracticeAttemptCard>>,
+) =>
   render(
     <PracticeAttemptCard
       currentPractice={basePractice}
       practiceSession={baseSession}
-      practiceFen=""
-      practiceMove=""
-      practiceMoveRef={React.createRef<HTMLInputElement>()}
-      practiceSubmitting={false}
-      practiceFeedback={null}
-      practiceSubmitError={null}
-      practiceHighlightStyles={{}}
-      practiceOrientation="white"
-      onPracticeMoveChange={() => {}}
-      handlePracticeAttempt={async () => {}}
-      handlePracticeDrop={() => true}
+      practiceLoading={false}
+      practiceModalOpen={false}
+      onStartPractice={vi.fn()}
+      {...overrides}
     />,
   );
 
 describe('PracticeAttemptCard', () => {
-  it('passes listudy board and piece assets to the chessboard', () => {
+  it('renders a start button when practice items are available', () => {
     renderCard();
 
-    expect(screen.getByTestId('mock-chessboard')).toBeInTheDocument();
-    expect(lastProps.customBoardStyle?.backgroundImage).toContain(
-      'var(--listudy-board-texture)',
-    );
-    expect(lastProps.customPieces?.wK).toBeDefined();
-    expect(lastProps.customLightSquareStyle?.backgroundColor).toBe(
-      'transparent',
-    );
-    expect(lastProps.customDarkSquareStyle?.backgroundColor).toBe(
-      'transparent',
-    );
+    expect(screen.getByTestId('practice-start')).toBeInTheDocument();
+    expect(screen.getByText('Start practice')).toBeInTheDocument();
   });
 
-  it('renders listudy piece imagery with the cburnett set', () => {
-    renderCard();
+  it('shows a completion message when the daily set is finished', () => {
+    renderCard({
+      currentPractice: null,
+      practiceSession: { ...baseSession, total: 3 },
+    });
 
-    const Piece = lastProps.customPieces.wK as React.ComponentType<{
-      squareWidth: number;
-    }>;
-
-    render(<Piece squareWidth={32} />);
-
-    const img = screen.getByRole('img');
-    expect(img.getAttribute('src')).toBe('/pieces/cburnett/wK.svg');
+    expect(
+      screen.getByText('Daily set complete. Great work.'),
+    ).toBeInTheDocument();
   });
 });

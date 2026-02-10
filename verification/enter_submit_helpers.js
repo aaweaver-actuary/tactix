@@ -91,13 +91,10 @@ async function selectSource(page, source) {
 const ensureFiltersModalOpen = (page) => openFiltersModal(page);
 
 async function getBestMoveFromPage(page) {
-  const bestLabel = await page.$$eval('h3', (headers) => {
-    const header = headers.find((node) =>
-      (node.textContent || '').includes('Practice attempt'),
-    );
-    const card = header?.closest('.card');
-    if (!card) return '';
-    const spans = Array.from(card.querySelectorAll('span'));
+  const bestLabel = await page.$$eval('body', (body) => {
+    const modal = body.querySelector('[data-testid="chessboard-modal"]');
+    const scope = modal || body;
+    const spans = Array.from(scope.querySelectorAll('span'));
     const best = spans.find((span) => {
       const text = span.textContent?.trim() || '';
       return text.startsWith('Best ') && text !== 'Best --';
@@ -117,12 +114,14 @@ async function getFenFromPage(page) {
   const fen = await page.$$eval('h3', (headers) => {
     const fenRegex =
       /^[prnbqkPRNBQK1-8\/]+ [wb] [KQkq-]+ [a-h1-8-]+ \d+ \d+$/;
-    const header = headers.find((node) =>
-      (node.textContent || '').includes('Practice attempt'),
-    );
-    const card = header?.closest('.card');
-    if (!card) return '';
-    const nodes = Array.from(card.querySelectorAll('p'));
+    const modal = document.querySelector('[data-testid="chessboard-modal"]');
+    const scope =
+      modal ||
+      headers
+        .find((node) => (node.textContent || '').includes('Practice attempt'))
+        ?.closest('.card');
+    if (!scope) return '';
+    const nodes = Array.from(scope.querySelectorAll('p'));
     const match = nodes
       .map((node) => node.textContent?.trim() || '')
       .find((text) => fenRegex.test(text));
@@ -132,6 +131,27 @@ async function getFenFromPage(page) {
     throw new Error('Practice FEN not found for fallback move.');
   }
   return fen;
+}
+
+async function ensurePracticeCardExpanded(page) {
+  const cardSelector = '[data-testid="dashboard-card-practice-attempt"]';
+  const headerSelector = `${cardSelector} [role="button"]`;
+  await page.waitForSelector(headerSelector, { timeout: 60000 });
+  const isCollapsed = await page.$eval(
+    headerSelector,
+    (header) => header.getAttribute('aria-expanded') === 'false',
+  );
+  if (isCollapsed) {
+    await page.click(headerSelector);
+  }
+  await page.waitForFunction(
+    (selector) => {
+      const node = document.querySelector(selector);
+      return node && node.getAttribute('data-state') === 'expanded';
+    },
+    { timeout: 60000 },
+    `${cardSelector} [data-state]`,
+  );
 }
 
 function buildFallbackMove(fen) {
@@ -151,4 +171,5 @@ module.exports = {
   buildFallbackMove,
   ensureFiltersModalOpen,
   closeFiltersModal,
+  ensurePracticeCardExpanded,
 };

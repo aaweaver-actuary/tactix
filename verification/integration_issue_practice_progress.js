@@ -2,6 +2,7 @@ const puppeteer = require('../client/node_modules/puppeteer');
 const {
   selectSource,
   buildFallbackMove,
+  ensurePracticeCardExpanded,
 } = require('./enter_submit_helpers');
 
 const targetUrl = process.env.TACTIX_UI_URL || 'http://localhost:5173/';
@@ -17,14 +18,10 @@ function parseProgress(summaryText) {
 
 async function getBestMoveFromPracticeCard(page) {
   return page.evaluate(() => {
-    const headers = Array.from(document.querySelectorAll('h3'));
-    const header = headers.find(
-      (el) => el.textContent?.trim() === 'Practice attempt',
-    );
-    const card = header?.closest('.card');
-    if (!card) return null;
+    const modal = document.querySelector('[data-testid="chessboard-modal"]');
+    const scope = modal || document;
     const uciPattern = /^[a-h][1-8][a-h][1-8][qrbn]?$/i;
-    const spans = Array.from(card.querySelectorAll('span'));
+    const spans = Array.from(scope.querySelectorAll('span'));
     for (const span of spans) {
       const text = span.textContent?.trim() || '';
       if (!text.startsWith('Best ')) continue;
@@ -37,13 +34,9 @@ async function getBestMoveFromPracticeCard(page) {
 
 async function getPracticeFenFromCard(page) {
   return page.evaluate(() => {
-    const headers = Array.from(document.querySelectorAll('h3'));
-    const header = headers.find(
-      (el) => el.textContent?.trim() === 'Practice attempt',
-    );
-    const card = header?.closest('.card');
-    if (!card) return null;
-    const paragraphs = Array.from(card.querySelectorAll('p'));
+    const modal = document.querySelector('[data-testid="chessboard-modal"]');
+    const scope = modal || document;
+    const paragraphs = Array.from(scope.querySelectorAll('p'));
     for (let i = 0; i < paragraphs.length; i += 1) {
       const text = paragraphs[i]?.textContent?.trim() || '';
       if (text !== 'FEN') continue;
@@ -73,8 +66,16 @@ async function getPracticeFenFromCard(page) {
     await page.goto(targetUrl, { waitUntil: 'networkidle0' });
     await page.waitForSelector('h1', { timeout: 60000 });
     await selectSource(page, source);
+    await ensurePracticeCardExpanded(page);
 
     await page.waitForSelector('[data-testid="practice-session-summary"]', {
+      timeout: 60000,
+    });
+    await page.waitForSelector('[data-testid="practice-start"]', {
+      timeout: 60000,
+    });
+    await page.click('[data-testid="practice-start"]');
+    await page.waitForSelector('[data-testid="chessboard-modal"]', {
       timeout: 60000,
     });
     await page.waitForSelector('input[placeholder*="UCI"]', {

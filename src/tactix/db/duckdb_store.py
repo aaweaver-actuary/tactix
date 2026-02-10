@@ -19,6 +19,9 @@ from tactix.db._migration_add_columns import _migration_add_columns
 from tactix.db._migration_add_games_table import _migration_add_games_table
 from tactix.db._migration_add_pipeline_views import _migration_add_pipeline_views
 from tactix.db._migration_add_position_legality import _migration_add_position_legality
+from tactix.db._migration_add_practice_schedule import (
+    _migration_add_practice_schedule,
+)
 from tactix.db._migration_add_tactic_explanations import _migration_add_tactic_explanations
 from tactix.db._migration_add_tactic_metadata import _migration_add_tactic_metadata
 from tactix.db._migration_add_tactic_targets import _migration_add_tactic_targets
@@ -159,7 +162,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 );
 """
 
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 12
 
 
 def _should_attempt_wal_recovery(exc: BaseException) -> bool:
@@ -326,6 +329,7 @@ _SCHEMA_MIGRATIONS = [
     (9, _migration_add_tactic_metadata),
     (10, _migration_add_user_moves_view),
     (11, _migration_add_tactic_targets),
+    (12, _migration_add_practice_schedule),
 ]
 
 

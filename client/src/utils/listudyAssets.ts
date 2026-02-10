@@ -18,15 +18,6 @@ const listudyPieceIds = [
   'wR',
 ] as const;
 
-export const listudyPreviewPieceIds = [
-  'wK',
-  'wQ',
-  'wB',
-  'wN',
-  'wR',
-  'wP',
-] as const;
-
 export const listudyBoardStyle: CSSProperties = {
   backgroundImage: listudyBoardTextureVar,
   backgroundSize: 'cover',

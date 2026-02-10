@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 import duckdb
 
@@ -12,6 +13,13 @@ from tactix.db.raw_pgns_queries import latest_raw_pgns_query
 from tactix.db.record_training_attempt import record_training_attempt
 from tactix.define_base_db_store__db_store import BaseDbStore
 from tactix.domain.practice import PracticeAttemptCandidate, evaluate_practice_attempt
+from tactix.domain.spaced_repetition import (
+    ScheduleState,
+    decode_state_payload,
+    encode_state_payload,
+    end_of_day,
+    get_practice_scheduler,
+)
 from tactix.extract_pgn_metadata import extract_pgn_metadata
 from tactix.format_tactics__explanation import format_tactic_explanation
 from tactix.sql_tactics import (
@@ -20,7 +28,7 @@ from tactix.sql_tactics import (
     TACTIC_COLUMNS,
     TACTIC_QUEUE_COLUMNS,
 )
-from tactix.tactic_scope import allowed_motif_list
+from tactix.tactic_scope import allowed_motif_list, is_scoped_motif_row
 
 
 @dataclass(frozen=True)
@@ -99,31 +107,45 @@ class DuckDbTacticRepository:
         """Insert tactic outcome rows and return ids."""
         if not rows:
             return []
-        row = self._conn.execute("SELECT MAX(outcome_id) FROM tactic_outcomes").fetchone()
-        next_id = int(row[0] or 0) if row else 0
+        next_id = self._next_outcome_id()
         ids: list[int] = []
         for outcome in rows:
-            next_id += 1
-            self._conn.execute(
-                """
-                INSERT INTO tactic_outcomes (
-                    outcome_id,
-                    tactic_id,
-                    result,
-                    user_uci,
-                    eval_delta
-                ) VALUES (?, ?, ?, ?, ?)
-                """,
-                [
-                    next_id,
-                    outcome.get("tactic_id"),
-                    outcome.get("result"),
-                    outcome.get("user_uci"),
-                    outcome.get("eval_delta"),
-                ],
-            )
+            next_id = self._insert_tactic_outcome(outcome, next_id)
             ids.append(next_id)
         return ids
+
+    def _next_outcome_id(self) -> int:
+        row = self._conn.execute("SELECT MAX(outcome_id) FROM tactic_outcomes").fetchone()
+        return int(row[0] or 0) if row else 0
+
+    def _insert_tactic_outcome(self, outcome: Mapping[str, object], next_id: int) -> int:
+        outcome_id = next_id + 1
+        self._conn.execute(
+            """
+            INSERT INTO tactic_outcomes (
+                outcome_id,
+                tactic_id,
+                result,
+                user_uci,
+                eval_delta
+            ) VALUES (?, ?, ?, ?, ?)
+            """,
+            [
+                outcome_id,
+                outcome.get("tactic_id"),
+                outcome.get("result"),
+                outcome.get("user_uci"),
+                outcome.get("eval_delta"),
+            ],
+        )
+        self._maybe_seed_practice_schedule(outcome)
+        return outcome_id
+
+    def _maybe_seed_practice_schedule(self, outcome: Mapping[str, object]) -> None:
+        tactic_id = outcome.get("tactic_id")
+        result = outcome.get("result")
+        if isinstance(tactic_id, int) and isinstance(result, str):
+            self._seed_practice_schedule_if_needed(tactic_id, result)
 
     def upsert_tactic_with_outcome(
         self,
@@ -167,7 +189,7 @@ class DuckDbTacticRepository:
                 p.clock_seconds
             FROM tactics t
             LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
-            LEFT JOIN positions p ON p.position_id = t.position_id
+            LEFT JOIN positions p ON p.position_id = t.position_id AND p.game_id = t.game_id
             WHERE t.tactic_id = ?
                 AND t.motif IN ({placeholders})
                 AND (t.motif != 'mate' OR t.mate_type IS NOT NULL)
@@ -189,8 +211,11 @@ class DuckDbTacticRepository:
         results = ["missed"]
         if include_failed_attempt:
             results.append("failed_attempt")
+        self._backfill_practice_schedule(results)
         placeholders = ", ".join(["?"] * len(results))
         motif_placeholders = ", ".join(["?"] * len(allowed))
+        now = datetime.now(UTC)
+        due_before = end_of_day(now)
         query = f"""
             SELECT
                 {TACTIC_QUEUE_COLUMNS},
@@ -203,16 +228,18 @@ class DuckDbTacticRepository:
                 p.move_number,
                 p.side_to_move,
                 p.clock_seconds
-            FROM tactics t
-            INNER JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
-            INNER JOIN positions p ON p.position_id = t.position_id
-            WHERE o.result IN ({placeholders})
+            FROM practice_schedule s
+            INNER JOIN tactics t ON t.tactic_id = s.tactic_id
+            INNER JOIN positions p ON p.position_id = s.position_id AND p.game_id = s.game_id
+            LEFT JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
+            WHERE s.result IN ({placeholders})
                 AND t.motif IN ({motif_placeholders})
                 AND (t.motif != 'mate' OR t.mate_type IS NOT NULL)
+                AND s.due_at <= ?
         """
-        params: list[object] = [*results, *allowed]
+        params: list[object] = [*results, *allowed, due_before]
         if source:
-            query += " AND p.source = ?"
+            query += " AND s.source = ?"
             params.append(source)
         if exclude_seen:
             query += " AND t.tactic_id NOT IN (SELECT tactic_id FROM training_attempts"
@@ -220,7 +247,7 @@ class DuckDbTacticRepository:
                 query += " WHERE source = ?"
                 params.append(source)
             query += ")"
-        query += " ORDER BY t.created_at DESC LIMIT ?"
+        query += " ORDER BY s.due_at ASC, s.updated_at ASC, t.created_at DESC LIMIT ?"
         params.append(limit)
         result = self._conn.execute(query, params)
         return self._dependencies.rows_to_dicts(result)
@@ -248,6 +275,11 @@ class DuckDbTacticRepository:
             self._conn,
             evaluation.attempt_payload,
         )
+        schedule_update = self._update_practice_schedule_after_attempt(
+            tactic_id=tactic_id,
+            correct=evaluation.correct,
+            attempt_id=attempt_id,
+        )
         return {
             "attempt_id": attempt_id,
             "tactic_id": tactic_id,
@@ -264,6 +296,8 @@ class DuckDbTacticRepository:
             "best_san": evaluation.best_san,
             "explanation": evaluation.explanation,
             "latency_ms": latency_ms,
+            "next_due_at": schedule_update.get("next_due_at"),
+            "rescheduled": schedule_update.get("rescheduled"),
         }
 
     def record_training_attempt(self, payload: Mapping[str, object]) -> int:
@@ -370,6 +404,230 @@ class DuckDbTacticRepository:
         if not tactic or tactic.get("position_id") != position_id:
             raise ValueError("Tactic not found for position")
         return tactic
+
+    def _seed_practice_schedule_if_needed(self, tactic_id: int, result: str) -> None:
+        payload = self._resolve_practice_seed_payload(tactic_id, result)
+        if not payload:
+            return
+        self._insert_practice_schedule_row(tactic_id, payload, result)
+
+    def _resolve_practice_seed_payload(
+        self,
+        tactic_id: int,
+        result: str,
+    ) -> dict[str, object] | None:
+        if not self._should_seed_practice_schedule(result):
+            return None
+        payload = self._fetch_practice_seed_payload(tactic_id)
+        if not payload:
+            return None
+        if not self._is_scoped_practice_payload(payload):
+            return None
+        if self._practice_schedule_exists(tactic_id):
+            return None
+        return payload
+
+    def _should_seed_practice_schedule(self, result: str) -> bool:
+        return result in {"missed", "failed_attempt"}
+
+    def _fetch_practice_seed_payload(self, tactic_id: int) -> dict[str, object] | None:
+        query_result = self._conn.execute(
+            """
+            SELECT
+                t.tactic_id,
+                t.position_id,
+                t.game_id,
+                t.motif,
+                t.mate_type,
+                p.source
+            FROM tactics t
+            INNER JOIN positions p ON p.position_id = t.position_id AND p.game_id = t.game_id
+            WHERE t.tactic_id = ?
+            """,
+            [tactic_id],
+        )
+        row = query_result.fetchone()
+        if not row:
+            return None
+        columns = [desc[0] for desc in query_result.description]
+        return dict(zip(columns, row, strict=True))
+
+    def _is_scoped_practice_payload(self, payload: Mapping[str, object]) -> bool:
+        motif = payload.get("motif")
+        mate_type = payload.get("mate_type")
+        motif_value = str(motif) if motif is not None else None
+        return is_scoped_motif_row(motif_value, mate_type)
+
+    def _practice_schedule_exists(self, tactic_id: int) -> bool:
+        existing = self._conn.execute(
+            "SELECT 1 FROM practice_schedule WHERE tactic_id = ?",
+            [tactic_id],
+        ).fetchone()
+        return bool(existing)
+
+    def _insert_practice_schedule_row(
+        self,
+        tactic_id: int,
+        payload: Mapping[str, object],
+        result: str,
+    ) -> None:
+        scheduler = get_practice_scheduler()
+        now = datetime.now(UTC)
+        schedule_state = scheduler.init_state(now)
+        self._conn.execute(
+            """
+            INSERT INTO practice_schedule (
+                tactic_id,
+                position_id,
+                game_id,
+                source,
+                motif,
+                result,
+                scheduler,
+                due_at,
+                interval_days,
+                ease,
+                state_json,
+                created_at,
+                updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            """,
+            [
+                tactic_id,
+                payload.get("position_id"),
+                payload.get("game_id"),
+                payload.get("source"),
+                payload.get("motif"),
+                result,
+                schedule_state.scheduler,
+                schedule_state.due_at,
+                schedule_state.interval_days,
+                schedule_state.ease,
+                encode_state_payload(schedule_state.state_payload),
+            ],
+        )
+
+    def _update_practice_schedule_after_attempt(
+        self,
+        tactic_id: int,
+        correct: bool,
+        attempt_id: int,
+    ) -> dict[str, object]:
+        schedule_row = self._resolve_practice_schedule_row(tactic_id)
+        scheduler_name = str(schedule_row.get("scheduler")) if schedule_row else None
+        scheduler = get_practice_scheduler(scheduler_name)
+        now = datetime.now(UTC)
+        state_payload = decode_state_payload(
+            schedule_row.get("state_json") if schedule_row else None
+        )
+        updated = scheduler.review(state_payload, correct, now)
+        update = self._build_practice_schedule_update(updated, correct, now, attempt_id)
+        if schedule_row:
+            self._persist_practice_schedule_update(schedule_row, update)
+        return {
+            "next_due_at": update["due_at"].isoformat(),
+            "rescheduled": update["rescheduled"],
+        }
+
+    def _resolve_practice_schedule_row(self, tactic_id: int) -> dict[str, object] | None:
+        schedule_row = self._fetch_practice_schedule_row(tactic_id)
+        if schedule_row:
+            return schedule_row
+        result = self._fetch_practice_outcome_result(tactic_id)
+        if isinstance(result, str):
+            self._seed_practice_schedule_if_needed(tactic_id, result)
+        return self._fetch_practice_schedule_row(tactic_id)
+
+    def _fetch_practice_outcome_result(self, tactic_id: int) -> str:
+        outcome_row = self._conn.execute(
+            "SELECT result FROM tactic_outcomes WHERE tactic_id = ?",
+            [tactic_id],
+        ).fetchone()
+        return outcome_row[0] if outcome_row else "missed"
+
+    def _resolve_practice_due(
+        self,
+        due_at: datetime,
+        correct: bool,
+        now: datetime,
+    ) -> tuple[datetime, bool]:
+        if correct:
+            return due_at, False
+        return end_of_day(now), True
+
+    def _build_practice_schedule_update(
+        self,
+        updated: ScheduleState,
+        correct: bool,
+        now: datetime,
+        attempt_id: int,
+    ) -> dict[str, object]:
+        due_at, rescheduled = self._resolve_practice_due(updated.due_at, correct, now)
+        return {
+            "due_at": due_at,
+            "rescheduled": rescheduled,
+            "interval_days": updated.interval_days,
+            "ease": updated.ease,
+            "state_json": encode_state_payload(updated.state_payload),
+            "last_reviewed_at": now,
+            "last_attempt_id": attempt_id,
+        }
+
+    def _persist_practice_schedule_update(
+        self,
+        schedule_row: Mapping[str, object],
+        update: Mapping[str, object],
+    ) -> None:
+        self._conn.execute(
+            """
+            UPDATE practice_schedule
+            SET
+                due_at = ?,
+                interval_days = ?,
+                ease = ?,
+                state_json = ?,
+                last_reviewed_at = ?,
+                last_attempt_id = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE tactic_id = ?
+            """,
+            [
+                update["due_at"],
+                update["interval_days"],
+                update["ease"],
+                update["state_json"],
+                update["last_reviewed_at"],
+                update["last_attempt_id"],
+                schedule_row.get("tactic_id"),
+            ],
+        )
+
+    def _fetch_practice_schedule_row(self, tactic_id: int) -> dict[str, object] | None:
+        result = self._conn.execute(
+            "SELECT * FROM practice_schedule WHERE tactic_id = ?",
+            [tactic_id],
+        )
+        rows = self._dependencies.rows_to_dicts(result)
+        return rows[0] if rows else None
+
+    def _backfill_practice_schedule(self, results: list[str]) -> None:
+        allowed = allowed_motif_list()
+        results_placeholders = ", ".join(["?"] * len(results))
+        motif_placeholders = ", ".join(["?"] * len(allowed))
+        params: list[object] = [*results, *allowed]
+        query = f"""
+            SELECT o.tactic_id, o.result
+            FROM tactic_outcomes o
+            INNER JOIN tactics t ON t.tactic_id = o.tactic_id
+            WHERE o.result IN ({results_placeholders})
+                AND t.motif IN ({motif_placeholders})
+                AND (t.motif != 'mate' OR t.mate_type IS NOT NULL)
+                AND t.tactic_id NOT IN (SELECT tactic_id FROM practice_schedule)
+        """
+        rows = self._conn.execute(query, params).fetchall()
+        for tactic_id, result in rows:
+            if isinstance(tactic_id, int) and isinstance(result, str):
+                self._seed_practice_schedule_if_needed(tactic_id, result)
 
 
 def default_tactic_dependencies() -> DuckDbTacticDependencies:

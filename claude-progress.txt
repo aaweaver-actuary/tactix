@@ -1,4 +1,12 @@
 Session summary (2026-02-09):
+- Introduced practice modal flow: PracticeAttemptCard now launches ChessboardModal practice view via new PracticeModalContent.
+- Added practice schedule storage and spaced repetition adapters (FSRS/SM-2), plus practice queue scheduling and reschedule tracking.
+- Updated practice verification scripts and added spaced repetition unit tests; adjusted practice queue/test expectations and joins.
+- Manual verification: node verification/puppeteer_practice_attempt.js (dashboard-practice-attempt-grading.png).
+- Integration verification: node verification/integration_issue_practice_progress.js.
+- Tests run: make check.
+
+Session summary (2026-02-09):
 - Re-verified ChessboardModal, settings FAB modal, and scoped motif filters; refreshed verification screenshots.
 - Tests run: make check.
 

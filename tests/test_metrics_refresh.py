@@ -84,7 +84,7 @@ class MetricsRefreshTests(unittest.TestCase):
             self.assertIsNotNone(row.get("trend_date"))
             self.assertIsNotNone(row.get("found_rate"))
 
-    def test_metrics_refresh_rolls_over_games(self) -> None:
+    def test_metrics_refresh_rolls_over_days(self) -> None:
         tmp_dir = Path(tempfile.mkdtemp())
         db_path = tmp_dir / "metrics_games.duckdb"
         conn = get_connection(db_path)
@@ -104,7 +104,7 @@ class MetricsRefreshTests(unittest.TestCase):
         rows = []
         for idx, result in enumerate(results, start=1):
             game_id = f"game-{idx}"
-            timestamp = int((base_time + timedelta(minutes=idx)).timestamp() * 1000)
+            timestamp = int((base_time + timedelta(days=idx)).timestamp() * 1000)
             rows.append(
                 {
                     "game_id": game_id,
@@ -180,9 +180,22 @@ class MetricsRefreshTests(unittest.TestCase):
         expected_7 = []
         expected_30 = []
         numeric_results = [1 if r == "found" else 0 for r in results]
-        for idx in range(len(numeric_results)):
-            window_7 = numeric_results[max(0, idx - 6) : idx + 1]
-            window_30 = numeric_results[max(0, idx - 29) : idx + 1]
+        dates = [
+            (base_time + timedelta(days=idx + 1)).date() for idx in range(len(numeric_results))
+        ]
+        for idx, item_date in enumerate(dates):
+            window_start_7 = item_date - timedelta(days=6)
+            window_start_30 = item_date - timedelta(days=29)
+            window_7 = [
+                numeric_results[i]
+                for i, date_value in enumerate(dates)
+                if window_start_7 <= date_value <= item_date
+            ]
+            window_30 = [
+                numeric_results[i]
+                for i, date_value in enumerate(dates)
+                if window_start_30 <= date_value <= item_date
+            ]
             expected_7.append(round(sum(window_7) / len(window_7), 4))
             expected_30.append(round(sum(window_30) / len(window_30), 4))
 

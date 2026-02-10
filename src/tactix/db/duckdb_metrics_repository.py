@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 
 import duckdb
 
@@ -94,7 +94,7 @@ def _coerce_metric_count(value: object) -> int:
     return parsed if parsed is not None else 0
 
 
-def _coerce_metric_rate(value: object, numerator: int, denominator: int) -> float | None:
+def _coerce_metric_rate(value: object, numerator: int, denominator: int) -> float:
     """Coerce metric rates into floats."""
     if isinstance(value, (int, float)):
         return float(value)
@@ -182,6 +182,14 @@ def _trend_date_from_row(row: Mapping[str, object]) -> datetime.date | None:
     return None
 
 
+def _coerce_trend_date(value: object) -> date | None:
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    return None
+
+
 def _count_result_types(items: list[dict[str, object]]) -> dict[str, int]:
     counts = {
         "found": 0,
@@ -196,24 +204,19 @@ def _count_result_types(items: list[dict[str, object]]) -> dict[str, int]:
     return counts
 
 
-def _window_rate(values: list[int], idx: int, window_days: int) -> float:
-    start = max(0, idx - window_days + 1)
-    window = values[start : idx + 1]
-    return sum(window) / len(window) if window else 0.0
-
-
 def _sorted_trend_items(items: list[dict[str, object]]) -> list[dict[str, object]]:
-    return sorted(
-        items,
-        key=lambda item: (
-            item.get("last_timestamp_ms") or 0,
-            item.get("created_at") or datetime.min.replace(tzinfo=UTC),
-        ),
+    return sorted(items, key=_trend_item_sort_key)
+
+
+def _trend_item_sort_key(item: dict[str, object]) -> tuple[object, ...]:
+    trend_date = _coerce_trend_date(item.get("trend_date"))
+    date_key = trend_date or datetime.min.replace(tzinfo=UTC).date()
+    last_timestamp_ms = item.get("last_timestamp_ms") or 0
+    created_at = item.get("created_at")
+    created_key = (
+        created_at if isinstance(created_at, datetime) else datetime.min.replace(tzinfo=UTC)
     )
-
-
-def _result_flag(item: dict[str, object], expected: str) -> int:
-    return 1 if item.get("result") == expected else 0
+    return (date_key, last_timestamp_ms, created_key)
 
 
 def _build_trend_row(
@@ -249,14 +252,40 @@ def _build_trend_rows_for_group(
     window_days: int,
 ) -> list[tuple[object, ...]]:
     sorted_items = _sorted_trend_items(items)
-    results = [_result_flag(item, "found") for item in sorted_items]
-    misses = [_result_flag(item, "missed") for item in sorted_items]
+    dates = [_coerce_trend_date(item.get("trend_date")) for item in sorted_items]
     metric_rows: list[tuple[object, ...]] = []
     for idx, item in enumerate(sorted_items):
-        found_rate = _window_rate(results, idx, window_days)
-        miss_rate = _window_rate(misses, idx, window_days)
+        window_items = _window_items_by_date(sorted_items, dates, idx, window_days)
+        if not window_items:
+            window_items = [item]
+        found_rate, miss_rate = _window_rates(window_items)
         metric_rows.append(_build_trend_row(group, item, window_days, found_rate, miss_rate))
     return metric_rows
+
+
+def _window_items_by_date(
+    items: list[dict[str, object]],
+    dates: list[date | None],
+    idx: int,
+    window_days: int,
+) -> list[dict[str, object]]:
+    item_date = dates[idx]
+    if item_date is None:
+        return [items[idx]]
+    window_start = item_date - timedelta(days=window_days - 1)
+    return [
+        item
+        for item, item_date_value in zip(items, dates, strict=False)
+        if item_date_value is not None and window_start <= item_date_value <= item_date
+    ]
+
+
+def _window_rates(items: list[dict[str, object]]) -> tuple[float, float]:
+    counts = _count_result_types(items)
+    total = len(items)
+    found_rate = _coerce_metric_rate(None, counts["found"], total)
+    miss_rate = _coerce_metric_rate(None, counts["missed"], total)
+    return found_rate, miss_rate
 
 
 def _is_time_trouble_item(item: dict[str, object], threshold: int) -> bool:

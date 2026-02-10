@@ -20,7 +20,7 @@ export default function MotifTrendsCard({
       header={
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-display text-sand">Motif trends</h3>
-          <Badge label="Rolling 7/30 games" />
+          <Badge label="Rolling 7/30 days" />
         </div>
       }
       contentClassName="pt-3"

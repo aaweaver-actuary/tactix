@@ -82,6 +82,13 @@ const MOTIF_CARD_DROPPABLE_ID = 'dashboard-motif-cards';
 const PRACTICE_FEEDBACK_DELAY_MS = 600;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BACKFILL_WINDOW_DAYS = 900;
+const DEFAULT_TIME_CONTROLS = [
+  'bullet',
+  'blitz',
+  'rapid',
+  'classical',
+  'unknown',
+];
 const DEFAULT_FILTERS = {
   motif: 'all',
   timeControl: 'all',
@@ -1141,18 +1148,22 @@ export default function DashboardFlow() {
   }, [data]);
 
   const selectedRatingBucket =
-    filters.ratingBucket === 'all' ? 'all' : filters.ratingBucket;
+    filters.ratingBucket === 'all' ? null : filters.ratingBucket;
   const selectedTimeControl =
-    filters.timeControl === 'all' ? 'all' : filters.timeControl;
+    filters.timeControl === 'all' ? null : filters.timeControl;
 
   const motifBreakdown = useMemo(() => {
     if (!data) return [];
-    return data.metrics.filter(
-      (row) =>
-        row.metric_type === 'motif_breakdown' &&
-        row.rating_bucket === selectedRatingBucket &&
-        row.time_control === selectedTimeControl,
-    );
+    return data.metrics.filter((row) => {
+      if (row.metric_type !== 'motif_breakdown') return false;
+      if (selectedRatingBucket && row.rating_bucket !== selectedRatingBucket) {
+        return false;
+      }
+      if (selectedTimeControl && row.time_control !== selectedTimeControl) {
+        return false;
+      }
+      return true;
+    });
   }, [data, selectedRatingBucket, selectedTimeControl]);
 
   const motifCardIds = useMemo(() => {
@@ -1179,12 +1190,16 @@ export default function DashboardFlow() {
 
   const trendRows = useMemo(() => {
     if (!data) return [];
-    return data.metrics.filter(
-      (row) =>
-        row.metric_type === 'trend' &&
-        row.rating_bucket === selectedRatingBucket &&
-        row.time_control === selectedTimeControl,
-    );
+    return data.metrics.filter((row) => {
+      if (row.metric_type !== 'trend') return false;
+      if (selectedRatingBucket && row.rating_bucket !== selectedRatingBucket) {
+        return false;
+      }
+      if (selectedTimeControl && row.time_control !== selectedTimeControl) {
+        return false;
+      }
+      return true;
+    });
   }, [data, selectedRatingBucket, selectedTimeControl]);
 
   const trendLatestRows = useMemo<MetricsTrendsRow[]>(() => {
@@ -1214,14 +1229,14 @@ export default function DashboardFlow() {
 
   const timeTroubleRows = useMemo(() => {
     if (!data) return [];
-    return data.metrics.filter(
-      (row) =>
-        row.metric_type === 'time_trouble_correlation' &&
-        row.rating_bucket === 'all' &&
-        (selectedTimeControl === 'all'
-          ? row.time_control !== 'all'
-          : row.time_control === selectedTimeControl),
-    );
+    return data.metrics.filter((row) => {
+      if (row.metric_type !== 'time_trouble_correlation') return false;
+      if (row.rating_bucket && row.rating_bucket !== 'all') return false;
+      if (!selectedTimeControl) {
+        return row.time_control !== 'all';
+      }
+      return row.time_control === selectedTimeControl;
+    });
   }, [data, selectedTimeControl]);
 
   const timeTroubleSortedRows = useMemo(() => {
@@ -1511,12 +1526,19 @@ export default function DashboardFlow() {
   }, [data]);
 
   const timeControlOptions = useMemo(() => {
-    const values = new Set<string>();
+    const values = new Set<string>(DEFAULT_TIME_CONTROLS);
     data?.metrics.forEach((row) => {
       const value = row.time_control || 'unknown';
       if (value !== 'all') values.add(value);
     });
-    return ['all', ...Array.from(values).sort()];
+    const custom = Array.from(values).filter(
+      (value) => value !== 'all' && !DEFAULT_TIME_CONTROLS.includes(value),
+    );
+    return [
+      'all',
+      ...DEFAULT_TIME_CONTROLS.filter((value) => values.has(value)),
+      ...custom.sort(),
+    ];
   }, [data]);
 
   const ratingOptions = useMemo(() => {

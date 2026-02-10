@@ -93,7 +93,7 @@
       "Step 4: Insert missed hanging pieces/mate in 1 into the daily practice queue with spaced repetition",
       "Step 5: Train daily tactics via ChessboardModal with correct/incorrect handling and end-of-day completion"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

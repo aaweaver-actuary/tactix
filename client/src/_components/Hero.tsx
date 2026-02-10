@@ -21,6 +21,114 @@ interface HeroProps {
   onBackfillEndChange: (value: string) => void;
 }
 
+interface HeroActionsProps {
+  onRun: () => void;
+  onBackfill: () => void;
+  onRefresh: () => void;
+  onMigrate: () => void;
+  loading: boolean;
+  disabled: boolean;
+}
+
+interface BackfillRangeProps {
+  startDate: string;
+  endDate: string;
+  onStartChange: (value: string) => void;
+  onEndChange: (value: string) => void;
+  disabled: boolean;
+}
+
+const buildHeroTitle = (
+  source: ChessPlatform,
+  lichessLabel: string,
+  chesscomLabel: string,
+) => {
+  if (source === 'all') return 'All sites overview';
+  if (source === 'lichess') {
+    return `Lichess ${lichessLabel.toLowerCase()} pipeline`;
+  }
+  return `Chess.com ${chesscomLabel.toLowerCase()} pipeline`;
+};
+
+const HeroActions = ({
+  onRun,
+  onBackfill,
+  onRefresh,
+  onMigrate,
+  loading,
+  disabled,
+}: HeroActionsProps) => (
+  <div className="flex flex-wrap gap-3">
+    <BaseButton
+      className="button bg-teal text-night px-4 py-3 rounded-lg font-display"
+      onClick={onRun}
+      disabled={disabled}
+      data-testid="action-run"
+    >
+      {loading ? 'Running…' : 'Run + Refresh'}
+    </BaseButton>
+    <BaseButton
+      className="button border border-teal/50 text-teal px-4 py-3 rounded-lg"
+      onClick={onBackfill}
+      disabled={disabled}
+      data-testid="action-backfill"
+    >
+      Backfill history
+    </BaseButton>
+    <BaseButton
+      className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
+      onClick={onMigrate}
+      disabled={disabled}
+      data-testid="action-migrate"
+    >
+      Run migrations
+    </BaseButton>
+    <BaseButton
+      className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
+      onClick={onRefresh}
+      disabled={disabled}
+      data-testid="action-refresh"
+    >
+      Refresh metrics
+    </BaseButton>
+  </div>
+);
+
+const BackfillRange = ({
+  startDate,
+  endDate,
+  onStartChange,
+  onEndChange,
+  disabled,
+}: BackfillRangeProps) => (
+  <div className="flex flex-wrap items-center gap-2 text-xs text-sand/70">
+    <span className="uppercase tracking-wide">Backfill range</span>
+    <label className="flex items-center gap-2">
+      <span className="sr-only">Backfill start date</span>
+      <input
+        type="date"
+        value={startDate}
+        onChange={(event) => onStartChange(event.target.value)}
+        className="rounded border border-sand/20 bg-night px-2 py-1 text-sand"
+        data-testid="backfill-start"
+        disabled={disabled}
+      />
+    </label>
+    <span>to</span>
+    <label className="flex items-center gap-2">
+      <span className="sr-only">Backfill end date</span>
+      <input
+        type="date"
+        value={endDate}
+        onChange={(event) => onEndChange(event.target.value)}
+        className="rounded border border-sand/20 bg-night px-2 py-1 text-sand"
+        data-testid="backfill-end"
+        disabled={disabled}
+      />
+    </label>
+  </div>
+);
+
 /**
  * Hero component displays the main controls and information for managing an Airflow DAG pipeline.
  *
@@ -56,6 +164,7 @@ export default function Hero({
     ? CHESSCOM_PROFILE_LABELS[chesscomProfile]
     : 'Blitz';
   const actionsDisabled = loading || source === 'all';
+  const title = buildHeroTitle(source, lichessLabel, chesscomLabel);
 
   return (
     <div
@@ -65,11 +174,7 @@ export default function Hero({
       <div>
         <Text mode="normal" size="sm" value="Airflow DAG · daily_game_sync" />
         <h1 className="text-3xl md:text-4xl font-display text-sand mt-2">
-          {source === 'all'
-            ? 'All sites overview'
-            : source === 'lichess'
-              ? `Lichess ${lichessLabel.toLowerCase()} pipeline`
-              : `Chess.com ${chesscomLabel.toLowerCase()} pipeline`}
+          {title}
         </h1>
         <Text
           mode="normal"
@@ -79,66 +184,21 @@ export default function Hero({
         />
       </div>
       <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap gap-3">
-          <BaseButton
-            className="button bg-teal text-night px-4 py-3 rounded-lg font-display"
-            onClick={onRun}
-            disabled={actionsDisabled}
-            data-testid="action-run"
-          >
-            {loading ? 'Running…' : 'Run + Refresh'}
-          </BaseButton>
-          <BaseButton
-            className="button border border-teal/50 text-teal px-4 py-3 rounded-lg"
-            onClick={onBackfill}
-            disabled={actionsDisabled}
-            data-testid="action-backfill"
-          >
-            Backfill history
-          </BaseButton>
-          <BaseButton
-            className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
-            onClick={onMigrate}
-            disabled={actionsDisabled}
-            data-testid="action-migrate"
-          >
-            Run migrations
-          </BaseButton>
-          <BaseButton
-            className="button border border-sand/40 text-sand px-4 py-3 rounded-lg"
-            onClick={onRefresh}
-            disabled={actionsDisabled}
-            data-testid="action-refresh"
-          >
-            Refresh metrics
-          </BaseButton>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-sand/70">
-          <span className="uppercase tracking-wide">Backfill range</span>
-          <label className="flex items-center gap-2">
-            <span className="sr-only">Backfill start date</span>
-            <input
-              type="date"
-              value={backfillStartDate}
-              onChange={(event) => onBackfillStartChange(event.target.value)}
-              className="rounded border border-sand/20 bg-night px-2 py-1 text-sand"
-              data-testid="backfill-start"
-              disabled={actionsDisabled}
-            />
-          </label>
-          <span>to</span>
-          <label className="flex items-center gap-2">
-            <span className="sr-only">Backfill end date</span>
-            <input
-              type="date"
-              value={backfillEndDate}
-              onChange={(event) => onBackfillEndChange(event.target.value)}
-              className="rounded border border-sand/20 bg-night px-2 py-1 text-sand"
-              data-testid="backfill-end"
-              disabled={actionsDisabled}
-            />
-          </label>
-        </div>
+        <HeroActions
+          onRun={onRun}
+          onBackfill={onBackfill}
+          onRefresh={onRefresh}
+          onMigrate={onMigrate}
+          loading={loading}
+          disabled={actionsDisabled}
+        />
+        <BackfillRange
+          startDate={backfillStartDate}
+          endDate={backfillEndDate}
+          onStartChange={onBackfillStartChange}
+          onEndChange={onBackfillEndChange}
+          disabled={actionsDisabled}
+        />
       </div>
     </div>
   );

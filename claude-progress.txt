@@ -25,3 +25,8 @@ Session summary (2026-02-09):
 - Removed initiative motif handling from backend classification/inference paths and scope constants; added test coverage to assert initiative is no longer scoped.
 - Added manual and integration verification scripts for initiative removal with pipeline checks; captured UI screenshot.
 - Tests run: node verification/puppeteer_feature_remove_initiative.js; node verification/integration_feature_remove_initiative.js; make check.
+
+Session summary (2026-02-09):
+- Extracted motif-scoping helpers from DashboardFlow into a shared client utility for reuse.
+- Before -> after map: DashboardFlow ALLOWED_MOTIFS/isScopedMotif -> client utils/motifScope isScopedMotif/isAllowedMotifFilter; DashboardFlow scoped filters now use helper.
+- Tests run: make check.

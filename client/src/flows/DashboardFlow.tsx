@@ -66,6 +66,7 @@ import {
   reorderList,
   writeCardOrder,
 } from '../utils/cardOrder';
+import { isAllowedMotifFilter, isScopedMotif } from '../utils/motifScope';
 
 const DASHBOARD_CARD_STORAGE_KEY = 'tactix.dashboard.mainCardOrder';
 const MOTIF_CARD_STORAGE_KEY = 'tactix.dashboard.motifCardOrder';
@@ -74,7 +75,6 @@ const MOTIF_CARD_DROPPABLE_ID = 'dashboard-motif-cards';
 const PRACTICE_FEEDBACK_DELAY_MS = 600;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BACKFILL_WINDOW_DAYS = 900;
-const ALLOWED_MOTIFS = new Set(['hanging_piece', 'mate']);
 const DEFAULT_FILTERS = {
   motif: 'all',
   timeControl: 'all',
@@ -122,14 +122,8 @@ const formatCorrelation = (value: number | null) => {
 const formatRate = (value: number | null) =>
   value === null || Number.isNaN(value) ? '--' : `${(value * 100).toFixed(1)}%`;
 
-const isScopedMotif = (motif: string | null | undefined) =>
-  Boolean(motif && ALLOWED_MOTIFS.has(motif));
-
 const filterScopedMetrics = (metrics: DashboardPayload['metrics']) =>
-  metrics.filter((row) => {
-    if (!row.motif || row.motif === 'all') return true;
-    return ALLOWED_MOTIFS.has(row.motif);
-  });
+  metrics.filter((row) => isAllowedMotifFilter(row.motif));
 
 const filterScopedTactics = (tactics: DashboardPayload['tactics']) =>
   tactics.filter((row) => isScopedMotif(row.motif));

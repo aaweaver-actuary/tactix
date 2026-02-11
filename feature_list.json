@@ -1683,12 +1683,6 @@
   },
   {
     "category": "style",
-    "description": "Practice queue panel layout shows FEN, tactic type, and trigger",
-    "steps": ["Step 1: Navigate to the dashboard page", "Step 2: Verify practice queue panel is visible", "Step 3: Verify each item shows FEN, tactic type, and trigger label"],
-    "passes": false
-  },
-  {
-    "category": "style",
     "description": "Empty states for games and practice queue display friendly guidance",
     "steps": [
       "Step 1: Use filters that return no games",

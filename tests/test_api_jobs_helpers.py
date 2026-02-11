@@ -6,7 +6,9 @@ from tactix.trigger_daily_sync__api_jobs import trigger_daily_sync
 def test_trigger_daily_sync_runs_pipeline_and_refreshes_cache() -> None:
     settings = MagicMock()
     with (
-        patch("tactix.trigger_daily_sync__api_jobs.get_settings", return_value=settings) as get_settings,
+        patch(
+            "tactix.trigger_daily_sync__api_jobs.get_settings", return_value=settings
+        ) as get_settings,
         patch(
             "tactix.trigger_daily_sync__api_jobs.run_daily_game_sync",
             return_value={"games": 1},

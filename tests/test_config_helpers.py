@@ -18,8 +18,8 @@ def test_split_pgn_chunks_handles_empty_text() -> None:
 
 
 def test_split_pgn_chunks_splits_multiple_games() -> None:
-    text = "[Event \"Game 1\"]\n1. e4 e5\n\n[Event \"Game 2\"]\n1. d4 d5\n"
+    text = '[Event "Game 1"]\n1. e4 e5\n\n[Event "Game 2"]\n1. d4 d5\n'
     assert split_pgn_chunks(text) == [
-        "[Event \"Game 1\"]\n1. e4 e5",
-        "[Event \"Game 2\"]\n1. d4 d5",
+        '[Event "Game 1"]\n1. e4 e5',
+        '[Event "Game 2"]\n1. d4 d5',
     ]

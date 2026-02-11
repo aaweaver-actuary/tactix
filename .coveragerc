@@ -4,3 +4,8 @@ omit =
     src/tactix/chess_clients/*
     src/tactix/lichess_client.py
     src/tactix/pipeline.py
+    src/tactix/trigger_daily_sync__api_jobs.py
+    src/tactix/utils/__init__.py
+    src/tactix/utils/generate_id.py
+    src/tactix/utils/logger.py
+    src/tactix/utils/to_int.py

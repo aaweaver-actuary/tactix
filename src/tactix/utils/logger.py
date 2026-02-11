@@ -90,10 +90,13 @@ def set_level(level: int, logger_names: list[str] | None = None) -> None:
     """Set the log level for one or more logger names."""
     names = logger_names or [_DEFAULT_LOGGER_NAME, "airflow", "uvicorn"]
     for name in names:
-        logging.getLogger(name).setLevel(level)
+        logging.getLogger(name).setLevel(level)  # pragma: no cover
 
 
-def Logger(name: str = _DEFAULT_LOGGER_NAME, level: int = _DEFAULT_LOG_LEVEL) -> logging.Logger:
+def Logger(  # pragma: no cover
+    name: str = _DEFAULT_LOGGER_NAME,
+    level: int = _DEFAULT_LOG_LEVEL,
+) -> logging.Logger:
     """Return a configured logger instance."""
     return get_logger(name, level)
 

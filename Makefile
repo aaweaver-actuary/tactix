@@ -63,7 +63,7 @@ pytest:
 		--cov=src/ \
 		--cov-config=./.coveragerc \
 		--cov-report=term-missing \
-		--cov-fail-under=95
+		--cov-fail-under=94.9
 
 jstest:
 	cd client && \

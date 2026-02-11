@@ -184,6 +184,44 @@ def _is_favorable_trade(captured_piece: chess.Piece, mover_piece: chess.Piece) -
     )
 
 
+def _captured_piece_for_move(
+    board: chess.Board,
+    move: chess.Move,
+    mover_color: bool,
+) -> chess.Piece | None:
+    capture_square = _capture_square_for_move(board, move, mover_color)
+    return board.piece_at(capture_square)
+
+
+def _is_undefended_capture(
+    board: chess.Board,
+    move: chess.Move,
+    mover_color: bool,
+) -> bool:
+    capture_square = _capture_square_for_move(board, move, mover_color)
+    return not board.is_attacked_by(not mover_color, capture_square)
+
+
+def _is_favorable_exchange_capture(
+    board_before: chess.Board,
+    board_after: chess.Board,
+    move: chess.Move,
+    mover_color: bool,
+    captured_piece: chess.Piece,
+) -> bool:
+    mover_piece = board_before.piece_at(move.from_square)
+    if not _can_compare_capture(mover_piece, board_after):
+        return False
+    if mover_piece is None:
+        return False
+    return _is_favorable_trade(captured_piece, mover_piece) or _simple_exchange_wins(
+        board_before,
+        board_after,
+        move,
+        mover_color,
+    )
+
+
 def _legal_capture_attacker_values(
     board: chess.Board,
     target_square: chess.Square,
@@ -307,20 +345,17 @@ class BaseTacticDetector:
         """Return True when a capture removes a hanging piece."""
         if not board_before.is_capture(move):
             return False
-        capture_square = _capture_square_for_move(board_before, move, mover_color)
-        captured_piece = board_before.piece_at(capture_square)
+        captured_piece = _captured_piece_for_move(board_before, move, mover_color)
         if captured_piece is None:
             return False
-        if not board_before.is_attacked_by(not mover_color, capture_square):
+        if _is_undefended_capture(board_before, move, mover_color):
             return True
-        mover_piece = board_before.piece_at(move.from_square)
-        if not _can_compare_capture(mover_piece, board_after):
-            return False
-        return _is_favorable_trade(captured_piece, mover_piece) or _simple_exchange_wins(
+        return _is_favorable_exchange_capture(
             board_before,
             board_after,
             move,
             mover_color,
+            captured_piece,
         )
 
     @classmethod

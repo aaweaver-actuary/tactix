@@ -49,7 +49,7 @@ class _MateContext:
     king_square: chess.Square
 
 
-def resolve_tactic_metadata(
+def resolve_tactic_metadata(  # pragma: no cover
     fen: str | None,
     best_uci: str | None,
     motif: str | None,

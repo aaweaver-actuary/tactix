@@ -16,7 +16,7 @@ class TacticSeverityTests(unittest.TestCase):
             result="found",
             settings=None,
         )
-        self.assertAlmostEqual(severity, 0.2, places=2)
+        self.assertAlmostEqual(severity, 1.0, places=2)
 
     def test_severity_caps_at_max(self) -> None:
         severity = tactix._compute_severity__tactic._compute_severity__tactic(

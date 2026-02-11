@@ -41,7 +41,7 @@ class DuckDbTacticDependencies:
     ]
     record_training_attempt: Callable[[duckdb.DuckDBPyConnection, Mapping[str, object]], int]
     extract_pgn_metadata: Callable[[str, str], dict[str, object]]
-    require_position_id: Callable[[Mapping[str, object], str], None]
+    require_position_id: Callable[[Mapping[str, object], str], object]
     latest_raw_pgns_query: Callable[[], str]
 
 
@@ -154,7 +154,7 @@ class DuckDbTacticRepository:
     ) -> int:
         """Insert a tactic with its outcome and return the tactic id."""
         position_id = self._require_position_id(tactic_row)
-        self._delete_existing_for_position_if_needed(position_id)
+        self._delete_existing_for_position_if_needed(position_id, tactic_row.get("game_id"))
         tactic_id = self._insert_single_tactic(tactic_row)
         self._insert_outcome_for_tactic(tactic_id, outcome_row)
         return tactic_id
@@ -165,9 +165,14 @@ class DuckDbTacticRepository:
             "position_id is required when inserting tactics",
         )
 
-    def _delete_existing_for_position_if_needed(self, position_id: object) -> None:
+    def _delete_existing_for_position_if_needed(
+        self,
+        position_id: object,
+        game_id: object | None,
+    ) -> None:
         if isinstance(position_id, int):
-            self._delete_existing_for_position(position_id)
+            game_value = str(game_id) if isinstance(game_id, str) else None
+            self._delete_existing_for_position(position_id, game_value)
 
     def _insert_single_tactic(self, tactic_row: Mapping[str, object]) -> int:
         return self.insert_tactics([tactic_row])[0]
@@ -186,19 +191,27 @@ class DuckDbTacticRepository:
             ]
         )
 
-    def _delete_existing_for_position(self, position_id: int) -> None:
+    def _delete_existing_for_position(self, position_id: int, game_id: str | None) -> None:
+        params: list[object] = [position_id]
+        game_clause = ""
+        if game_id:
+            game_clause = " AND game_id = ?"
+            params.append(game_id)
         self._conn.execute(
             """
             DELETE FROM tactic_outcomes
             WHERE tactic_id IN (
                 SELECT tactic_id FROM tactics WHERE position_id = ?
+            """
+            + game_clause
+            + """
             )
             """,
-            [position_id],
+            params,
         )
         self._conn.execute(
-            "DELETE FROM tactics WHERE position_id = ?",
-            [position_id],
+            "DELETE FROM tactics WHERE position_id = ?" + game_clause,
+            params,
         )
 
     def fetch_practice_tactic(self, tactic_id: int) -> dict[str, object] | None:

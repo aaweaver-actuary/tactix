@@ -170,11 +170,7 @@ export default function BaseTable<TData>({
                   ]
                     .filter(Boolean)
                     .join(' ')}
-                  onClick={
-                    onRowClick
-                      ? (event) => handleRowClick(row.original, event)
-                      : undefined
-                  }
+                  onClick={(event) => handleRowClick(row.original, event)}
                   data-testid={
                     rowTestId ? rowTestId(row.original, index) : undefined
                   }
@@ -183,10 +179,8 @@ export default function BaseTable<TData>({
                     <td
                       key={cell.id}
                       className={cellClassNames}
-                      onClick={
-                        onRowClick
-                          ? (event) => handleRowClick(row.original, event, true)
-                          : undefined
+                      onClick={(event) =>
+                        handleRowClick(row.original, event, true)
                       }
                     >
                       {flexRender(

@@ -30,4 +30,26 @@ describe('BaseChart', () => {
 
     expect(screen.getByText('Inline chart')).toBeInTheDocument();
   });
+
+  it('renders a header without actions when only a title is provided', () => {
+    render(
+      <BaseChart title="Focus">
+        <div>Chart body</div>
+      </BaseChart>,
+    );
+
+    expect(screen.getByText('Focus')).toBeInTheDocument();
+    expect(screen.getByText('Chart body')).toBeInTheDocument();
+  });
+
+  it('renders description without a title', () => {
+    render(
+      <BaseChart description="Weekly rollup">
+        <div>Chart body</div>
+      </BaseChart>,
+    );
+
+    expect(screen.getByText('Weekly rollup')).toBeInTheDocument();
+    expect(screen.getByText('Chart body')).toBeInTheDocument();
+  });
 });

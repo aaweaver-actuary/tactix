@@ -98,4 +98,128 @@ describe('GameDetailModal', () => {
     fireEvent.keyDown(window, { key: 'ArrowDown' });
     expect(currentMove().textContent).toContain('2. Nf3 Nc6');
   });
+
+  it('renders empty states when no game is selected', () => {
+    render(
+      <GameDetailModal
+        open
+        onClose={() => undefined}
+        game={null}
+        moves={[]}
+        loading={false}
+        error={null}
+      />,
+    );
+
+    expect(
+      screen.getByText('Select a game to view details.'),
+    ).toBeInTheDocument();
+  });
+
+  it('renders analysis and metadata fallbacks', () => {
+    render(
+      <GameDetailModal
+        open
+        onClose={() => undefined}
+        game={
+          {
+            ...sampleGame,
+            analysis: [],
+            metadata: {
+              user_rating: null,
+              time_control: null,
+              white_player: null,
+              black_player: null,
+              white_elo: null,
+              black_elo: null,
+              result: null,
+              event: null,
+              site: null,
+              utc_date: null,
+              utc_time: null,
+              termination: null,
+              start_timestamp_ms: null,
+            },
+          } as any
+        }
+        moves={[]}
+        loading={false}
+        error={null}
+      />,
+    );
+
+    expect(screen.getByText('No metadata available.')).toBeInTheDocument();
+    expect(
+      screen.getAllByText('No analysis rows found.').length,
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText('Unknown').length).toBeGreaterThan(0);
+  });
+
+  it('updates current move via navigation and list clicks', () => {
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('game-detail-nav-first'));
+    expect(
+      screen.getByTestId('game-detail-current-move').textContent,
+    ).toContain('1. e4 e5');
+
+    fireEvent.click(screen.getByTestId('game-detail-nav-next'));
+    expect(
+      screen.getByTestId('game-detail-current-move').textContent,
+    ).toContain('2. Nf3 Nc6');
+
+    fireEvent.click(screen.getByTestId('game-detail-nav-last'));
+    expect(
+      screen.getByTestId('game-detail-current-move').textContent,
+    ).toContain('2. Nf3 Nc6');
+
+    fireEvent.click(screen.getByTestId('game-detail-nav-prev'));
+    expect(
+      screen.getByTestId('game-detail-current-move').textContent,
+    ).toContain('1. e4 e5');
+
+    fireEvent.click(screen.getAllByTestId('game-move-row')[1]);
+    expect(
+      screen.getByTestId('game-detail-current-move').textContent,
+    ).toContain('2. Nf3 Nc6');
+  });
+
+  it('renders evaluation flags for ok and missing deltas', () => {
+    render(
+      <GameDetailModal
+        open
+        onClose={() => undefined}
+        game={
+          {
+            ...sampleGame,
+            analysis: [
+              {
+                ...sampleGame.analysis[0],
+                tactic_id: 2,
+                eval_cp: null,
+                eval_delta: 50,
+                move_number: null,
+                ply: null,
+                san: null,
+                user_uci: null,
+                motif: null,
+              },
+              {
+                ...sampleGame.analysis[0],
+                tactic_id: 3,
+                eval_delta: null,
+              },
+            ],
+          } as any
+        }
+        moves={['1. e4 e5']}
+        loading={false}
+        error={null}
+      />,
+    );
+
+    expect(screen.getAllByText('OK').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('--').length).toBeGreaterThan(0);
+    fireEvent.keyDown(window, { key: 'x' });
+  });
 });

@@ -99,4 +99,34 @@ describe('PracticeMoveInput', () => {
 
     expect(onPracticeSubmit).not.toHaveBeenCalled();
   });
+
+  it('ignores non-enter keys and submitting state', () => {
+    const onPracticeSubmit = vi.fn();
+    const { rerender } = render(
+      <PracticeMoveInput
+        practiceMove="e2e4"
+        onPracticeMoveChange={() => {}}
+        onPracticeSubmit={onPracticeSubmit}
+        practiceSubmitting={false}
+      />,
+    );
+
+    const input = screen.getByPlaceholderText(
+      'Enter your move (UCI e.g., e2e4)',
+    );
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(onPracticeSubmit).not.toHaveBeenCalled();
+
+    rerender(
+      <PracticeMoveInput
+        practiceMove="e2e4"
+        onPracticeMoveChange={() => {}}
+        onPracticeSubmit={onPracticeSubmit}
+        practiceSubmitting={true}
+      />,
+    );
+
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onPracticeSubmit).not.toHaveBeenCalled();
+  });
 });

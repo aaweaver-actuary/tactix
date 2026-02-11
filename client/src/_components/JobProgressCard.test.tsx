@@ -38,4 +38,31 @@ describe('JobProgressCard', () => {
     expect(screen.getByText('Fetch games')).toBeInTheDocument();
     expect(screen.getByText('8 games')).toBeInTheDocument();
   });
+
+  it('renders additional detail variants and idle status', () => {
+    render(
+      <JobProgressCard
+        status="idle"
+        entries={[
+          {
+            step: 'Analyze positions',
+            positions: 12,
+          } as any,
+          {
+            step: 'Metrics export',
+            metrics_version: 5,
+          } as any,
+          {
+            step: 'Schema sync',
+            schema_version: 3,
+          } as any,
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('Idle')).toBeInTheDocument();
+    expect(screen.getByText('12 positions')).toBeInTheDocument();
+    expect(screen.getByText('v5')).toBeInTheDocument();
+    expect(screen.getByText('schema v3')).toBeInTheDocument();
+  });
 });

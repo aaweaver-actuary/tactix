@@ -56,7 +56,10 @@ describe('MetricsSummaryGrid', () => {
       <SourceSyncCards
         sourceSync={{
           window_days: 7,
-          sources: [{ source: 'lichess', games_played: 3, synced: true }],
+          sources: [
+            { source: 'lichess', games_played: 3, synced: true },
+            { source: 'custom', games_played: 2, synced: false },
+          ],
         }}
       />,
     );
@@ -64,6 +67,8 @@ describe('MetricsSummaryGrid', () => {
     expect(screen.getByTestId('source-sync-lichess')).toBeInTheDocument();
     expect(screen.getByText('Lichess (7d)')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByTestId('source-sync-custom')).toBeInTheDocument();
+    expect(screen.getByText('custom (7d)')).toBeInTheDocument();
   });
 
   it('renders an empty state with base metrics only', () => {

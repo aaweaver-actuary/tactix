@@ -61,4 +61,23 @@ describe('getJobStreamUrl', () => {
       'https://example.com/api/jobs/stream?job=a+b&source=x%2Fy',
     );
   });
+
+  it('handles an empty query string', async () => {
+    const originalParams = URLSearchParams;
+    class EmptyParams {
+      set() {}
+      toString() {
+        return '';
+      }
+    }
+
+    // @ts-expect-error - override for branch coverage
+    globalThis.URLSearchParams = EmptyParams;
+    try {
+      const getJobStreamUrl = await loadWithApiBase('https://example.com');
+      expect(getJobStreamUrl('')).toBe('https://example.com/api/jobs/stream');
+    } finally {
+      globalThis.URLSearchParams = originalParams;
+    }
+  });
 });

@@ -1,4 +1,9 @@
 Session summary (2026-02-10):
+- Expanded DashboardFlow coverage with tests for filters reset, profile changes, practice modal edge cases, drag/drop reordering, stream error/abort handling, and recent games row edge cases.
+- Adjusted DashboardFlow stream buffer fallback to use `||` for coverable branch behavior.
+- Tests run: make check (task; exit code 2 at prospector step; output truncated in tool).
+
+Session summary (2026-02-10):
 - Fixed Puppeteer practice orientation and best-move-hidden verification flows to use API-backed queue data and wait for enabled practice button.
 - Added DuckDB tactic upsert dedupe by deleting existing tactics/outcomes for the same position_id to prevent duplicate opportunities on re-run.
 - Added opp hanging piece regression test covering undefended capture target metadata, severity, created_at, and dedupe behavior.

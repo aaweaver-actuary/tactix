@@ -3,6 +3,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import MetricsGrid from './MetricsGrid';
 
+let dragHandlePropsValue: Record<string, unknown> | undefined = {};
+let isDraggingValue = false;
+
 vi.mock('@hello-pangea/dnd', () => ({
   Droppable: ({ children }: { children: (props: any) => React.ReactNode }) =>
     children({
@@ -14,10 +17,10 @@ vi.mock('@hello-pangea/dnd', () => ({
     children(
       {
         draggableProps: { style: {} },
-        dragHandleProps: {},
+        dragHandleProps: dragHandlePropsValue,
         innerRef: () => null,
       },
-      { isDragging: false },
+      { isDragging: isDraggingValue },
     ),
 }));
 
@@ -110,5 +113,32 @@ describe('MetricsGrid', () => {
     expect(screen.getByText('Motif B')).toBeInTheDocument();
     expect(screen.getByText('8/12')).toBeInTheDocument();
     expect(screen.getByText('2 missed, 2 failed')).toBeInTheDocument();
+  });
+
+  it('shows drag styling and end drop indicator when configured', () => {
+    dragHandlePropsValue = undefined;
+    isDraggingValue = true;
+
+    render(
+      <MetricsGrid
+        metricsData={[
+          {
+            motif: 'Motif A',
+            found: 5,
+            total: 10,
+            missed: 3,
+            failed_attempt: 2,
+          },
+        ]}
+        droppableId="motif-cards"
+        dropIndicatorIndex={1}
+      />,
+    );
+
+    expect(screen.getByTestId('motif-drop-indicator')).toBeInTheDocument();
+    expect(screen.getByTestId('motif-breakdown')).toBeInTheDocument();
+
+    isDraggingValue = false;
+    dragHandlePropsValue = {};
   });
 });

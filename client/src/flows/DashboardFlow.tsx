@@ -270,7 +270,7 @@ const parseBackfillDate = (value: string, fallbackMs: number) => {
   return date.getTime();
 };
 
-const resolveBackfillWindow = (
+export const resolveBackfillWindow = (
   startDate: string,
   endDate: string,
   nowMs: number,
@@ -288,6 +288,16 @@ const resolveBackfillWindow = (
     throw new Error('Backfill range must end after the start date');
   }
   return { startMs, endMs: cappedEnd };
+};
+
+export const ensureSourceSelected = (
+  source: ChessPlatform,
+  setError: (message: string) => void,
+  message: string,
+) => {
+  if (source !== 'all') return true;
+  setError(message);
+  return false;
 };
 
 type BaseCardDragHandleProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
@@ -519,11 +529,8 @@ export default function DashboardFlow() {
     [includeFailedAttempt, resetPracticeSessionScope],
   );
 
-  const ensureSourceSelected = (message: string) => {
-    if (source !== 'all') return true;
-    setError(message);
-    return false;
-  };
+  const ensureSourceSelectedForAction = (message: string) =>
+    ensureSourceSelected(source, setError, message);
 
   const startJob = () => {
     setLoading(true);
@@ -865,7 +872,7 @@ export default function DashboardFlow() {
     async function parseChunk(chunk: string): Promise<void> {
       buffer += chunk;
       const parts = buffer.split('\n\n');
-      buffer = parts.pop() ?? '';
+      buffer = parts.pop() || '';
 
       for (const part of parts) {
         let eventName = 'message';
@@ -1043,7 +1050,11 @@ export default function DashboardFlow() {
   };
 
   const handleRun = async () => {
-    if (!ensureSourceSelected('Select a specific site to run the pipeline.')) {
+    if (
+      !ensureSourceSelectedForAction(
+        'Select a specific site to run the pipeline.',
+      )
+    ) {
       return;
     }
     startJob();
@@ -1063,7 +1074,11 @@ export default function DashboardFlow() {
   };
 
   const handleBackfill = async () => {
-    if (!ensureSourceSelected('Select a specific site to run a backfill.')) {
+    if (
+      !ensureSourceSelectedForAction(
+        'Select a specific site to run a backfill.',
+      )
+    ) {
       return;
     }
     startJob();
@@ -1091,7 +1106,11 @@ export default function DashboardFlow() {
   };
 
   const handleMigrations = async () => {
-    if (!ensureSourceSelected('Select a specific site to run migrations.')) {
+    if (
+      !ensureSourceSelectedForAction(
+        'Select a specific site to run migrations.',
+      )
+    ) {
       return;
     }
     startJob();
@@ -1109,7 +1128,11 @@ export default function DashboardFlow() {
   };
 
   const handleRefreshMetrics = async () => {
-    if (!ensureSourceSelected('Select a specific site to refresh metrics.')) {
+    if (
+      !ensureSourceSelectedForAction(
+        'Select a specific site to refresh metrics.',
+      )
+    ) {
       return;
     }
     startJob();
@@ -1758,15 +1781,14 @@ export default function DashboardFlow() {
         id: 'positions-list',
         label: 'Latest positions',
         visible: Boolean(data),
-        render: (props) =>
-          data ? (
-            <PositionsList
-              positionsData={data.positions}
-              onPositionClick={handleOpenChessboardModal}
-              rowTestId={(row) => `positions-row-${row.position_id}`}
-              {...props}
-            />
-          ) : null,
+        render: (props) => (
+          <PositionsList
+            positionsData={data?.positions ?? []}
+            onPositionClick={handleOpenChessboardModal}
+            rowTestId={(row) => `positions-row-${row.position_id}`}
+            {...props}
+          />
+        ),
       },
     ];
   }, [
@@ -1866,7 +1888,6 @@ export default function DashboardFlow() {
 
           if (result.destination.droppableId === DASHBOARD_CARD_DROPPABLE_ID) {
             const visibleIds = orderedDashboardCards.map((card) => card.id);
-            if (!visibleIds.length) return;
             const visibleSet = new Set(visibleIds);
             const currentVisibleOrder = dashboardCardOrder.filter((id) =>
               visibleSet.has(id),
@@ -1878,9 +1899,7 @@ export default function DashboardFlow() {
             );
             let nextVisibleIndex = 0;
             const nextOrder = dashboardCardOrder.map((id) =>
-              visibleSet.has(id)
-                ? (reorderedVisible[nextVisibleIndex++] ?? id)
-                : id,
+              visibleSet.has(id) ? reorderedVisible[nextVisibleIndex++] : id,
             );
             setDashboardCardOrder(nextOrder);
             return;
@@ -1902,9 +1921,7 @@ export default function DashboardFlow() {
             );
             let nextVisibleIndex = 0;
             const nextOrder = motifCardOrder.map((id) =>
-              visibleSet.has(id)
-                ? (reorderedVisible[nextVisibleIndex++] ?? id)
-                : id,
+              visibleSet.has(id) ? reorderedVisible[nextVisibleIndex++] : id,
             );
             setMotifCardOrder(nextOrder);
           }

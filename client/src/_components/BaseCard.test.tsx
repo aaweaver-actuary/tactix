@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import BaseCard from './BaseCard';
+import BaseCard, { isInteractiveTarget } from './BaseCard';
 import BaseButton from './BaseButton';
 
 describe('BaseCard', () => {
@@ -37,6 +37,18 @@ describe('BaseCard', () => {
     expect(header).toHaveAttribute('aria-expanded', 'true');
 
     fireEvent.keyDown(header, { key: ' ' });
+    expect(header).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('ignores non-toggle keyboard events', () => {
+    render(
+      <BaseCard header={<span>Ignore key header</span>}>
+        <p>Ignore key content</p>
+      </BaseCard>,
+    );
+
+    const header = screen.getByRole('button', { name: /ignore key header/i });
+    fireEvent.keyDown(header, { key: 'Escape' });
     expect(header).toHaveAttribute('aria-expanded', 'false');
   });
 
@@ -79,6 +91,33 @@ describe('BaseCard', () => {
     expect(header).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('falls back to the default drag handle label', () => {
+    render(
+      <BaseCard header={<span>Default drag label</span>} dragHandleProps={{}}>
+        <p>Drag content</p>
+      </BaseCard>,
+    );
+
+    expect(
+      screen.getByRole('button', { name: 'Reorder card' }),
+    ).toBeInTheDocument();
+  });
+
+  it('prefers drag handle aria labels when provided', () => {
+    render(
+      <BaseCard
+        header={<span>Aria drag label</span>}
+        dragHandleProps={{ 'aria-label': 'Grab card' }}
+      >
+        <p>Drag content</p>
+      </BaseCard>,
+    );
+
+    expect(
+      screen.getByRole('button', { name: 'Grab card' }),
+    ).toBeInTheDocument();
+  });
+
   it('calls onCollapsedChange when toggling', () => {
     const onCollapsedChange = vi.fn();
     render(
@@ -106,5 +145,10 @@ describe('BaseCard', () => {
 
     expect(screen.queryByRole('button', { name: /static header/i })).toBeNull();
     expect(screen.getByText('Static content')).toBeInTheDocument();
+  });
+
+  it('treats non-element targets as non-interactive', () => {
+    expect(isInteractiveTarget(null)).toBe(false);
+    expect(isInteractiveTarget(document.createTextNode('x'))).toBe(false);
   });
 });

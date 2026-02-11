@@ -14,6 +14,14 @@ const formatRate = (value: number | null) => {
 };
 
 describe('TimeTroubleCorrelation', () => {
+  it('returns null when there is no data', () => {
+    const { container } = render(
+      <TimeTroubleCorrelation data={[]} columns={[]} />,
+    );
+
+    expect(container.firstChild).toBeNull();
+  });
+
   it('renders correlation rows with explanation', () => {
     const data = [
       {

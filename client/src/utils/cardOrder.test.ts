@@ -43,4 +43,27 @@ describe('cardOrder utilities', () => {
 
     expect(readCardOrder('order-key', ['a'], storage)).toEqual(['a']);
   });
+
+  it('returns fallback when storage is unavailable', () => {
+    const originalWindow = globalThis.window;
+    Object.defineProperty(globalThis, 'window', {
+      value: undefined,
+      configurable: true,
+    });
+
+    expect(readCardOrder('order-key', ['a'])).toEqual(['a']);
+    expect(writeCardOrder('order-key', ['b'])).toBe(false);
+
+    Object.defineProperty(globalThis, 'window', {
+      value: originalWindow,
+      configurable: true,
+    });
+  });
+
+  it('returns fallback for non-array payloads', () => {
+    const storage = createMemoryStorage();
+    storage.setItem('order-key', JSON.stringify({ a: 1 }));
+
+    expect(readCardOrder('order-key', ['a'], storage)).toEqual(['a']);
+  });
 });

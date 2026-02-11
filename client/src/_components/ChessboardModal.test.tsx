@@ -121,6 +121,106 @@ describe('ChessboardModal', () => {
     });
   });
 
+  it('requires a non-empty FEN before applying changes', () => {
+    render(
+      <ChessboardModal
+        open
+        position={
+          {
+            fen: '8/8/8/8/8/8/4K3/7k w - - 0 1',
+            move_number: 12,
+            san: 'Qh5',
+            clock_seconds: 42,
+          } as any
+        }
+        onClose={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByTestId('browser-fen-input');
+    fireEvent.change(input, { target: { value: '  ' } });
+    fireEvent.click(screen.getByTestId('browser-fen-apply'));
+
+    expect(screen.getByTestId('browser-fen-error')).toHaveTextContent(
+      'Enter a FEN string',
+    );
+  });
+
+  it('resets edited FEN values back to the original position', () => {
+    render(
+      <ChessboardModal
+        open
+        position={
+          {
+            fen: '8/8/8/8/8/8/8/8 b - - 0 1',
+            move_number: 12,
+            san: 'Qh5',
+            clock_seconds: 42,
+          } as any
+        }
+        onClose={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByTestId(
+      'browser-fen-input',
+    ) as HTMLTextAreaElement;
+    fireEvent.change(input, {
+      target: { value: '8/8/8/8/8/8/4K3/7k w - - 0 1' },
+    });
+    fireEvent.click(screen.getByTestId('browser-fen-reset'));
+
+    expect(input.value).toBe('8/8/8/8/8/8/8/8 b - - 0 1');
+    expect(screen.queryByTestId('browser-fen-error')).not.toBeInTheDocument();
+  });
+
+  it('clears the error when the FEN input changes', () => {
+    render(
+      <ChessboardModal
+        open
+        position={
+          {
+            fen: '8/8/8/8/8/8/4K3/7k w - - 0 1',
+            move_number: 12,
+            san: 'Qh5',
+            clock_seconds: 42,
+          } as any
+        }
+        onClose={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByTestId('browser-fen-input');
+    fireEvent.change(input, { target: { value: 'not a fen' } });
+    fireEvent.click(screen.getByTestId('browser-fen-apply'));
+    expect(screen.getByTestId('browser-fen-error')).toBeInTheDocument();
+
+    fireEvent.change(input, {
+      target: { value: '8/8/8/8/8/8/4K3/7k w - - 0 1' },
+    });
+    expect(screen.queryByTestId('browser-fen-error')).not.toBeInTheDocument();
+  });
+
+  it('renders placeholder text when the FEN is empty', () => {
+    render(
+      <ChessboardModal
+        open
+        position={
+          {
+            fen: '',
+            move_number: null,
+            san: null,
+            clock_seconds: null,
+          } as any
+        }
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(lastProps).toMatchObject({ position: '' });
+    expect(screen.getAllByText('--').length).toBeGreaterThan(0);
+  });
+
   it('renders practice mode content when provided', () => {
     render(
       <ChessboardModal

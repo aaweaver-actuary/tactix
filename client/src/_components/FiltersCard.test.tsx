@@ -80,4 +80,10 @@ describe('FiltersCard', () => {
     fireEvent.click(screen.getByText('Reset filters'));
     expect(onResetFilters).toHaveBeenCalledTimes(1);
   });
+
+  it('hides the open button when configured', () => {
+    render(<FiltersCard {...baseProps} showOpenButton={false} />);
+
+    expect(screen.queryByTestId('filters-open')).not.toBeInTheDocument();
+  });
 });

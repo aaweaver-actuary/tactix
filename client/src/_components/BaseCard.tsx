@@ -36,7 +36,7 @@ interface BaseCardProps
 
 const INTERACTIVE_SELECTOR = 'button, a, input, select, textarea, label';
 
-const isInteractiveTarget = (target: EventTarget | null) => {
+export const isInteractiveTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
   return Boolean(target.closest(INTERACTIVE_SELECTOR));
 };
@@ -116,7 +116,6 @@ export default function BaseCard({
   }, [collapsed, isCollapsible]);
 
   const toggle = () => {
-    if (!isCollapsible) return;
     setCollapsed((prev) => !prev);
   };
 

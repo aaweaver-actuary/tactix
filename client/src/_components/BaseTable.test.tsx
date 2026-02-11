@@ -54,10 +54,20 @@ describe('BaseTable', () => {
     fireEvent.click(sortButton);
     expect(sortButton).toHaveAttribute('aria-label', 'Sorted ascending');
 
+    fireEvent.click(sortButton);
+    expect(sortButton).toHaveAttribute('aria-label', 'Sorted descending');
+
     expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
-    expect(screen.getByTestId('row-6')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Prev' }));
+    expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Rows per page'), {
+      target: { value: '10' },
+    });
+    expect(screen.queryByText('Page 1 of 1')).not.toBeInTheDocument();
   });
 
   it('fires onRowClick when a row is clicked', () => {
@@ -74,5 +84,69 @@ describe('BaseTable', () => {
 
     fireEvent.click(screen.getByTestId('row-1'));
     expect(onRowClick).toHaveBeenCalledWith(sampleRows[0]);
+  });
+
+  it('ignores row clicks when no handler is provided', () => {
+    render(
+      <BaseTable
+        data={sampleRows.slice(0, 1)}
+        columns={columns}
+        rowTestId={rowTestId}
+        enablePagination={false}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('row-1'));
+    expect(screen.getByTestId('row-1')).toBeInTheDocument();
+  });
+
+  it('handles grouped headers and cell clicks without double firing', () => {
+    const onRowClick = vi.fn();
+    const groupedColumns: ColumnDef<SampleRow>[] = [
+      {
+        header: 'Group',
+        columns: [
+          { header: 'Name', accessorKey: 'name' },
+          { header: 'Value', accessorKey: 'value' },
+        ],
+      },
+    ];
+
+    render(
+      <BaseTable
+        data={sampleRows.slice(0, 1)}
+        columns={groupedColumns}
+        onRowClick={onRowClick}
+        rowTestId={rowTestId}
+        enablePagination={false}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('Alpha'));
+    expect(onRowClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders placeholder headers for mixed depth groups', () => {
+    const mixedColumns: ColumnDef<SampleRow>[] = [
+      {
+        header: 'Group',
+        columns: [{ header: 'Name', accessorKey: 'name' }],
+      },
+      { header: 'Value', accessorKey: 'value' },
+    ];
+
+    render(
+      <BaseTable
+        data={sampleRows.slice(0, 1)}
+        columns={mixedColumns}
+        enablePagination={false}
+      />,
+    );
+
+    const headers = screen.getAllByRole('columnheader');
+    const hasPlaceholder = headers.some(
+      (header) => (header.textContent ?? '').trim() === '',
+    );
+    expect(hasPlaceholder).toBe(true);
   });
 });

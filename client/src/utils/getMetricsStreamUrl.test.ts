@@ -51,6 +51,19 @@ describe('getMetricsStreamUrl', () => {
     );
   });
 
+  it('skips empty filter values', async () => {
+    const getMetricsStreamUrl = await loadWithApiBase('https://example.com');
+    expect(
+      getMetricsStreamUrl('lichess', {
+        motif: '',
+        rating_bucket: undefined,
+        time_control: 'blitz',
+      }),
+    ).toBe(
+      'https://example.com/api/metrics/stream?source=lichess&time_control=blitz',
+    );
+  });
+
   it('encodes query params', async () => {
     const getMetricsStreamUrl = await loadWithApiBase('https://example.com');
     expect(getMetricsStreamUrl('chesscom', { motif: 'mate in 1' })).toBe(

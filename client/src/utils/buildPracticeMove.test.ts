@@ -42,4 +42,14 @@ describe('buildPracticeMove', () => {
       to: 'e8',
     });
   });
+
+  it('does not force promotions for non-pawn moves', () => {
+    const result = buildPracticeMove(startFen, 'g1f3');
+    expect(result).toEqual({
+      uci: 'g1f3',
+      nextFen: 'rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKB1R b KQkq - 1 1',
+      from: 'g1',
+      to: 'f3',
+    });
+  });
 });

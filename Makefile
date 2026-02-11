@@ -63,12 +63,15 @@ pytest:
 		--cov=src/ \
 		--cov-config=./.coveragerc \
 		--cov-report=term-missing \
-		--cov-fail-under=94.9
+		--cov-fail-under=96
 
 jstest:
 	cd client && \
 		./node_modules/.bin/vitest run \
-		--coverage
+		--coverage \
+		--coverage.thresholds.100
+
+
 
 test: pytest jstest
 

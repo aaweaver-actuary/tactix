@@ -385,6 +385,8 @@ class BaseTacticDetector:
         """Return True when a capture removes a hanging piece."""
         if not board_before.is_capture(move):
             return False
+        if board_after.is_checkmate():
+            return False
         captured_piece = _captured_piece_for_move(board_before, move, mover_color)
         if captured_piece is None:
             return False

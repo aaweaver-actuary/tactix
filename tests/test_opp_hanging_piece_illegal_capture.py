@@ -26,7 +26,9 @@ def _build_settings() -> Settings:
     return settings
 
 
-def _analyze_position(position: dict[str, object]) -> tuple[dict[str, object], dict[str, object]] | None:
+def _analyze_position(
+    position: dict[str, object],
+) -> tuple[dict[str, object], dict[str, object]] | None:
     settings = _build_settings()
     tmp_dir = Path(tempfile.mkdtemp())
     conn = get_connection(tmp_dir / "opp_hanging_piece_illegal.duckdb")

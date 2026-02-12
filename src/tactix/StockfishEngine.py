@@ -150,8 +150,19 @@ class StockfishEngine:  # pylint: disable=protected-access
         """Return a lightweight analysis result when no engine is available."""
         mate_move = self._find_mate_in_one(board)
         if mate_move is not None:
-            return EngineResult(best_move=mate_move, score_cp=100000, depth=0, mate_in=1)
-        return EngineResult(best_move=None, score_cp=self._material_score(board), depth=0)
+            return EngineResult(
+                best_move=mate_move,
+                score_cp=100000,
+                depth=0,
+                mate_in=1,
+                best_line_uci=mate_move.uci(),
+            )
+        return EngineResult(
+            best_move=None,
+            score_cp=self._material_score(board),
+            depth=0,
+            best_line_uci=None,
+        )
 
     def _find_mate_in_one(self, board: chess.Board) -> chess.Move | None:
         """Return a move that delivers immediate checkmate when available."""

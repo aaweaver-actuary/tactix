@@ -49,6 +49,7 @@ def init_analysis_schema(conn: PgConnection) -> None:
                 motif TEXT,
                 severity DOUBLE PRECISION,
                 best_uci TEXT,
+                best_line_uci TEXT,
                 tactic_piece TEXT,
                 mate_type TEXT,
                 best_san TEXT,
@@ -56,6 +57,7 @@ def init_analysis_schema(conn: PgConnection) -> None:
                 target_piece TEXT,
                 target_square TEXT,
                 eval_cp INTEGER,
+                engine_depth INTEGER,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
             """
@@ -67,10 +69,16 @@ def init_analysis_schema(conn: PgConnection) -> None:
             f"ALTER TABLE {ANALYSIS_SCHEMA}.tactics ADD COLUMN IF NOT EXISTS mate_type TEXT"
         )
         cur.execute(
+            f"ALTER TABLE {ANALYSIS_SCHEMA}.tactics ADD COLUMN IF NOT EXISTS best_line_uci TEXT"
+        )
+        cur.execute(
             f"ALTER TABLE {ANALYSIS_SCHEMA}.tactics ADD COLUMN IF NOT EXISTS target_piece TEXT"
         )
         cur.execute(
             f"ALTER TABLE {ANALYSIS_SCHEMA}.tactics ADD COLUMN IF NOT EXISTS target_square TEXT"
+        )
+        cur.execute(
+            f"ALTER TABLE {ANALYSIS_SCHEMA}.tactics ADD COLUMN IF NOT EXISTS engine_depth INTEGER"
         )
         cur.execute(
             f"CREATE INDEX IF NOT EXISTS tactics_position_idx "

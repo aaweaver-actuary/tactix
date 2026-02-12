@@ -23,6 +23,10 @@ def _ensure_tactics_columns(conn: duckdb.DuckDBPyConnection) -> None:
         conn.execute("ALTER TABLE tactics ADD COLUMN target_piece TEXT")
     if "target_square" not in columns:
         conn.execute("ALTER TABLE tactics ADD COLUMN target_square TEXT")
+    if "best_line_uci" not in columns:
+        conn.execute("ALTER TABLE tactics ADD COLUMN best_line_uci TEXT")
+    if "engine_depth" not in columns:
+        conn.execute("ALTER TABLE tactics ADD COLUMN engine_depth INTEGER")
 
 
 def _create_games_view(conn: duckdb.DuckDBPyConnection) -> None:
@@ -69,6 +73,7 @@ def _create_opportunities_view(conn: duckdb.DuckDBPyConnection) -> None:
             t.motif,
             t.severity,
             t.best_uci,
+            t.best_line_uci,
             t.tactic_piece,
             t.mate_type,
             t.best_san,
@@ -76,6 +81,7 @@ def _create_opportunities_view(conn: duckdb.DuckDBPyConnection) -> None:
             t.target_piece,
             t.target_square,
             t.eval_cp,
+            t.engine_depth,
             t.created_at
         FROM tactics t
         INNER JOIN positions p ON p.position_id = t.position_id
@@ -121,6 +127,7 @@ def _create_practice_queue_view(conn: duckdb.DuckDBPyConnection) -> None:
             opp.motif,
             opp.severity,
             opp.best_uci,
+            opp.best_line_uci,
             opp.tactic_piece,
             opp.mate_type,
             opp.best_san,
@@ -128,6 +135,7 @@ def _create_practice_queue_view(conn: duckdb.DuckDBPyConnection) -> None:
             opp.eval_cp,
             opp.target_piece,
             opp.target_square,
+            opp.engine_depth,
             p.fen,
             p.uci AS position_uci,
             p.san,

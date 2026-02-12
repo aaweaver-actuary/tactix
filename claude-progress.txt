@@ -1,4 +1,10 @@
 Session summary (2026-02-12):
+- Added best_line_uci and engine_depth persistence for tactics; updated engine result handling and DuckDB/Postgres schemas/views/migrations.
+- Added mate-in-one opportunity regression test covering best_line_uci, engine_depth, dedupe, and required fields.
+- Regression verification (random 12 core tests): pytest tests/test_api_chesscom_bullet_pipeline_canonical.py tests/test_api_dashboard_cache.py tests/test_api_practice.py tests/test_chesscom_client.py tests/test_mate_in_one_bullet.py tests/test_mate_in_two_bullet.py tests/test_hanging_piece_bullet.py tests/test_position_extractor.py tests/test_postgres_store.py tests/test_practice_queue.py tests/test_stockfish_and_pipeline.py tests/test_tactics_analyzer.py (runTests tool did not discover tests; used pytest directly).
+- Tests run: pytest tests/test_mate_in_one_opportunity.py.
+
+Session summary (2026-02-12):
 - Extracted shared DashboardFlow actions test helpers to reduce duplicated render/wait and source-selection steps.
 - Before -> after map: DashboardFlow.actions.test inline render/wait + filters-set-chesscom clicks -> renderDashboard + selectChesscomSource helpers.
 - Tests run: make check (before and after changes; before exit code 2 at prospector step).

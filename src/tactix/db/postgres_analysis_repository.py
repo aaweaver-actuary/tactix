@@ -46,6 +46,7 @@ def fetch_analysis_tactics_with_conn(
                 t.motif,
                 t.severity,
                 t.best_uci,
+                t.best_line_uci,
                 t.tactic_piece,
                 t.mate_type,
                 t.best_san,
@@ -53,6 +54,7 @@ def fetch_analysis_tactics_with_conn(
                 t.target_piece,
                 t.target_square,
                 t.eval_cp,
+                t.engine_depth,
                 t.created_at,
                 o.result,
                 o.user_uci,
@@ -99,15 +101,17 @@ def _insert_analysis_tactic(cur, tactic_plan: TacticInsertPlan) -> int:
             motif,
             severity,
             best_uci,
+            best_line_uci,
             tactic_piece,
             mate_type,
             best_san,
             explanation,
             target_piece,
             target_square,
-            eval_cp
+            eval_cp,
+            engine_depth
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING tactic_id
         """,
         (
@@ -116,6 +120,7 @@ def _insert_analysis_tactic(cur, tactic_plan: TacticInsertPlan) -> int:
             tactic_plan.motif,
             tactic_plan.severity,
             tactic_plan.best_uci,
+            tactic_plan.best_line_uci,
             tactic_plan.tactic_piece,
             tactic_plan.mate_type,
             tactic_plan.best_san,
@@ -123,6 +128,7 @@ def _insert_analysis_tactic(cur, tactic_plan: TacticInsertPlan) -> int:
             tactic_plan.target_piece,
             tactic_plan.target_square,
             tactic_plan.eval_cp,
+            tactic_plan.engine_depth,
         ),
     )
     tactic_id_row = cur.fetchone()

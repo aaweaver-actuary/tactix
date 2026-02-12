@@ -166,6 +166,7 @@ class BaseDbStore:
             motif=cast(str, tactic_row.get("motif", "unknown")),
             severity=tactic_row.get("severity", 0.0),
             best_uci=tactic_row.get("best_uci", ""),
+            best_line_uci=tactic_row.get("best_line_uci"),
             tactic_piece=tactic_row.get("tactic_piece"),
             mate_type=tactic_row.get("mate_type"),
             best_san=tactic_row.get("best_san"),
@@ -173,6 +174,7 @@ class BaseDbStore:
             target_piece=tactic_row.get("target_piece"),
             target_square=tactic_row.get("target_square"),
             eval_cp=tactic_row.get("eval_cp", 0),
+            engine_depth=tactic_row.get("engine_depth"),
         )
 
     @staticmethod

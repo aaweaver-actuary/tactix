@@ -9,6 +9,7 @@ from tactix.utils.logger import funclogger
 @dataclass(frozen=True)
 class TacticRowDetails:  # pylint: disable=too-many-instance-attributes
     best_uci: str | None
+    best_line_uci: str | None
     best_san: str | None
     explanation: str | None
     mate_in: int | None
@@ -16,6 +17,7 @@ class TacticRowDetails:  # pylint: disable=too-many-instance-attributes
     mate_type: str | None
     target_piece: str | None
     target_square: str | None
+    engine_depth: int | None
 
 
 @dataclass(frozen=True)
@@ -38,6 +40,7 @@ class TacticRow:
             eval_cp=inputs.details.base_cp,
             details=TacticRowDetails(
                 best_uci=inputs.details.best_move,
+                best_line_uci=inputs.details.best_line_uci,
                 best_san=inputs.details.best_san,
                 explanation=inputs.details.explanation,
                 mate_in=inputs.details.mate_in,
@@ -45,6 +48,7 @@ class TacticRow:
                 mate_type=inputs.details.mate_type,
                 target_piece=inputs.details.target_piece,
                 target_square=inputs.details.target_square,
+                engine_depth=inputs.details.engine_depth,
             ),
         )
 
@@ -55,6 +59,7 @@ class TacticRow:
             "motif": self.motif,
             "severity": self.severity,
             "best_uci": self.details.best_uci,
+            "best_line_uci": self.details.best_line_uci,
             "eval_cp": self.eval_cp,
             "best_san": self.details.best_san,
             "explanation": self.details.explanation,
@@ -63,4 +68,5 @@ class TacticRow:
             "mate_type": self.details.mate_type,
             "target_piece": self.details.target_piece,
             "target_square": self.details.target_square,
+            "engine_depth": self.details.engine_depth,
         }

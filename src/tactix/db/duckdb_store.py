@@ -22,6 +22,9 @@ from tactix.db._migration_add_position_legality import _migration_add_position_l
 from tactix.db._migration_add_practice_schedule import (
     _migration_add_practice_schedule,
 )
+from tactix.db._migration_add_tactic_engine_fields import (
+    _migration_add_tactic_engine_fields,
+)
 from tactix.db._migration_add_tactic_explanations import _migration_add_tactic_explanations
 from tactix.db._migration_add_tactic_metadata import _migration_add_tactic_metadata
 from tactix.db._migration_add_tactic_targets import _migration_add_tactic_targets
@@ -88,6 +91,7 @@ CREATE TABLE IF NOT EXISTS tactics (
     motif TEXT,
     severity DOUBLE,
     best_uci TEXT,
+    best_line_uci TEXT,
     tactic_piece TEXT,
     mate_type TEXT,
     best_san TEXT,
@@ -95,6 +99,7 @@ CREATE TABLE IF NOT EXISTS tactics (
     target_piece TEXT,
     target_square TEXT,
     eval_cp INTEGER,
+    engine_depth INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 """
@@ -162,7 +167,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 );
 """
 
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 13
 
 
 def _should_attempt_wal_recovery(exc: BaseException) -> bool:
@@ -330,6 +335,7 @@ _SCHEMA_MIGRATIONS = [
     (10, _migration_add_user_moves_view),
     (11, _migration_add_tactic_targets),
     (12, _migration_add_practice_schedule),
+    (13, _migration_add_tactic_engine_fields),
 ]
 
 

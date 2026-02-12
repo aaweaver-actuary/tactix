@@ -75,14 +75,16 @@ class DuckDbTacticRepository:
                     motif,
                     severity,
                     best_uci,
+                    best_line_uci,
                     tactic_piece,
                     mate_type,
                     best_san,
                     explanation,
                     target_piece,
                     target_square,
-                    eval_cp
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    eval_cp,
+                    engine_depth
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     next_id,
@@ -91,6 +93,7 @@ class DuckDbTacticRepository:
                     tactic.get("motif"),
                     tactic.get("severity"),
                     tactic.get("best_uci"),
+                    tactic.get("best_line_uci"),
                     tactic.get("tactic_piece"),
                     tactic.get("mate_type"),
                     tactic.get("best_san"),
@@ -98,6 +101,7 @@ class DuckDbTacticRepository:
                     tactic.get("target_piece"),
                     tactic.get("target_square"),
                     tactic.get("eval_cp"),
+                    tactic.get("engine_depth"),
                 ],
             )
             ids.append(next_id)

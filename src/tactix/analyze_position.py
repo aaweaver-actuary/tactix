@@ -350,9 +350,15 @@ def _prepare_tactic_row_input(  # noqa: PLR0915
     settings: Settings | None,
 ) -> TacticRowInput | None:
     fen, user_move_uci, board, motif_board, mover_color = _prepare_position_inputs(position)
-    best_move_obj, best_move, base_cp, mate_in_one, mate_in_two = _evaluate_engine_position(
-        board, engine, mover_color, motif_board
-    )
+    (
+        best_move_obj,
+        best_move,
+        base_cp,
+        mate_in_one,
+        mate_in_two,
+        best_line_uci,
+        engine_depth,
+    ) = _evaluate_engine_position(board, engine, mover_color, motif_board)
     user_move = _parse_user_move(board, user_move_uci, fen)
     if user_move is None:
         return None
@@ -464,7 +470,9 @@ def _prepare_tactic_row_input(  # noqa: PLR0915
             motif=motif,
             severity=severity,
             best_move=best_move,
+            best_line_uci=best_line_uci,
             base_cp=base_cp,
+            engine_depth=engine_depth,
             mate_in=mate_in,
             tactic_piece=metadata["tactic_piece"],
             mate_type=metadata["mate_type"],

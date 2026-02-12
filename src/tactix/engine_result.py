@@ -17,6 +17,7 @@ class EngineResult:
     score_cp: int
     depth: int
     mate_in: int | None = None
+    best_line_uci: str | None = None
 
     @classmethod
     def from_engine_result(
@@ -32,7 +33,14 @@ class EngineResult:
         value, mate_in = _score_value_and_mate(pov_score)
         best_move = _best_move_from_info(info)
         depth = _depth_from_info(info)
-        return cls(best_move=best_move, score_cp=int(value or 0), depth=depth, mate_in=mate_in)
+        best_line_uci = _best_line_uci_from_info(info)
+        return cls(
+            best_move=best_move,
+            score_cp=int(value or 0),
+            depth=depth,
+            mate_in=mate_in,
+            best_line_uci=best_line_uci,
+        )
 
     @classmethod
     def empty(cls) -> EngineResult:
@@ -74,6 +82,14 @@ def _best_move_from_info(info: chess.engine.InfoDict) -> chess.Move | None:
     """Return the best move from the PV info."""
     pv = info.get("pv") or []
     return pv[0] if pv else None
+
+
+def _best_line_uci_from_info(info: chess.engine.InfoDict) -> str | None:
+    """Return a space-separated PV line in UCI format."""
+    pv = info.get("pv") or []
+    if not pv:
+        return None
+    return " ".join(move.uci() for move in pv)
 
 
 def _depth_from_info(info: chess.engine.InfoDict) -> int:

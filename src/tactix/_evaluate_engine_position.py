@@ -21,14 +21,8 @@ def _evaluate_engine_position(
     best_move = best_move_obj.uci() if best_move_obj else None
     best_line_uci = engine_result.best_line_uci or best_move
     base_cp = BaseTacticDetector.score_from_pov(engine_result.score_cp, mover_color, board.turn)
-    mate_in_one = False
-    mate_in_two = False
-    if best_move_obj is not None:
-        mate_board = motif_board.copy()
-        mate_board.push(best_move_obj)
-        mate_in_one = mate_board.is_checkmate()
-    if engine_result.mate_in is not None and engine_result.mate_in == MATE_IN_TWO:
-        mate_in_two = True
+    mate_in_one = _detect_mate_in_one(best_move_obj, motif_board)
+    mate_in_two = _detect_mate_in_two(engine_result.mate_in)
     return (
         best_move_obj,
         best_move,
@@ -38,3 +32,17 @@ def _evaluate_engine_position(
         best_line_uci,
         engine_result.depth,
     )
+
+
+def _detect_mate_in_one(best_move: chess.Move | None, board: chess.Board) -> bool:
+    """Return True when the best move is an immediate checkmate."""
+    if best_move is None:
+        return False
+    mate_board = board.copy()
+    mate_board.push(best_move)
+    return mate_board.is_checkmate()
+
+
+def _detect_mate_in_two(mate_in: int | None) -> bool:
+    """Return True when the engine result reports mate in two."""
+    return mate_in == MATE_IN_TWO

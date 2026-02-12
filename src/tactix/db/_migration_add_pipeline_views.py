@@ -8,25 +8,43 @@ from tactix.db._migration_add_user_moves_view import _migration_add_user_moves_v
 from tactix.db.raw_pgns_queries import latest_raw_pgns_query
 
 
+def _ensure_missing_columns(
+    conn: duckdb.DuckDBPyConnection,
+    columns: set[str],
+    additions: dict[str, str],
+) -> None:
+    for name, statement in additions.items():
+        if name not in columns:
+            conn.execute(statement)
+
+
 def _ensure_positions_columns(conn: duckdb.DuckDBPyConnection) -> None:
     columns = {row[1] for row in conn.execute("PRAGMA table_info('positions')").fetchall()}
-    if "side_to_move" not in columns:
-        conn.execute("ALTER TABLE positions ADD COLUMN side_to_move TEXT")
-    if "user_to_move" not in columns:
-        conn.execute("ALTER TABLE positions ADD COLUMN user_to_move BOOLEAN DEFAULT TRUE")
+    has_user_to_move = "user_to_move" in columns
+    _ensure_missing_columns(
+        conn,
+        columns,
+        {
+            "side_to_move": "ALTER TABLE positions ADD COLUMN side_to_move TEXT",
+            "user_to_move": "ALTER TABLE positions ADD COLUMN user_to_move BOOLEAN DEFAULT TRUE",
+        },
+    )
+    if not has_user_to_move:
         conn.execute("UPDATE positions SET user_to_move = TRUE WHERE user_to_move IS NULL")
 
 
 def _ensure_tactics_columns(conn: duckdb.DuckDBPyConnection) -> None:
     columns = {row[1] for row in conn.execute("PRAGMA table_info('tactics')").fetchall()}
-    if "target_piece" not in columns:
-        conn.execute("ALTER TABLE tactics ADD COLUMN target_piece TEXT")
-    if "target_square" not in columns:
-        conn.execute("ALTER TABLE tactics ADD COLUMN target_square TEXT")
-    if "best_line_uci" not in columns:
-        conn.execute("ALTER TABLE tactics ADD COLUMN best_line_uci TEXT")
-    if "engine_depth" not in columns:
-        conn.execute("ALTER TABLE tactics ADD COLUMN engine_depth INTEGER")
+    _ensure_missing_columns(
+        conn,
+        columns,
+        {
+            "target_piece": "ALTER TABLE tactics ADD COLUMN target_piece TEXT",
+            "target_square": "ALTER TABLE tactics ADD COLUMN target_square TEXT",
+            "best_line_uci": "ALTER TABLE tactics ADD COLUMN best_line_uci TEXT",
+            "engine_depth": "ALTER TABLE tactics ADD COLUMN engine_depth INTEGER",
+        },
+    )
 
 
 def _create_games_view(conn: duckdb.DuckDBPyConnection) -> None:

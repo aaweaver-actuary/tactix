@@ -9,6 +9,11 @@ from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from typing import cast
 
+from tactix.build_insert_plans__db_store import (
+    build_outcome_insert_plan,
+    build_tactic_insert_plan,
+    require_position_id,
+)
 from tactix.config import Settings
 from tactix.dashboard_query import DashboardQuery
 from tactix.define_base_db_store_context__db_store import BaseDbStoreContext
@@ -147,10 +152,7 @@ class BaseDbStore:
         error_message: str,
     ) -> object:
         """Return the position id or raise a ValueError."""
-        position_id = tactic_row.get("position_id")
-        if position_id is None:
-            raise ValueError(error_message)
-        return position_id
+        return require_position_id(tactic_row, error_message)
 
     @staticmethod
     def build_tactic_insert_plan(
@@ -160,21 +162,10 @@ class BaseDbStore:
         tactic_row: Mapping[str, object],
     ) -> TacticInsertPlan:
         """Build a tactic insert plan from a row mapping."""
-        return TacticInsertPlan(
+        return build_tactic_insert_plan(
             game_id=game_id,
             position_id=position_id,
-            motif=cast(str, tactic_row.get("motif", "unknown")),
-            severity=tactic_row.get("severity", 0.0),
-            best_uci=tactic_row.get("best_uci", ""),
-            best_line_uci=tactic_row.get("best_line_uci"),
-            tactic_piece=tactic_row.get("tactic_piece"),
-            mate_type=tactic_row.get("mate_type"),
-            best_san=tactic_row.get("best_san"),
-            explanation=tactic_row.get("explanation"),
-            target_piece=tactic_row.get("target_piece"),
-            target_square=tactic_row.get("target_square"),
-            eval_cp=tactic_row.get("eval_cp", 0),
-            engine_depth=tactic_row.get("engine_depth"),
+            tactic_row=tactic_row,
         )
 
     @staticmethod
@@ -182,11 +173,7 @@ class BaseDbStore:
         outcome_row: Mapping[str, object],
     ) -> OutcomeInsertPlan:
         """Build an outcome insert plan from a row mapping."""
-        return OutcomeInsertPlan(
-            result=cast(str, outcome_row.get("result", "unclear")),
-            user_uci=outcome_row.get("user_uci", ""),
-            eval_delta=outcome_row.get("eval_delta", 0),
-        )
+        return build_outcome_insert_plan(outcome_row)
 
     def _now_utc(self) -> datetime:
         """Return the current UTC time."""

@@ -26,26 +26,32 @@ class EngineResult:
         board: chess.Board | None = None,
     ) -> EngineResult:
         """Build an EngineResult from a python-chess analysis result."""
-        info = _select_engine_info(result)
-        pov_score = _resolve_pov_score(info.get("score"), board)
-        if pov_score is None:
+        snapshot = _extract_engine_snapshot(result, board)
+        if snapshot.pov_score is None:
             return cls(best_move=None, score_cp=0, depth=0)
-        value, mate_in = _score_value_and_mate(pov_score)
-        best_move = _best_move_from_info(info)
-        depth = _depth_from_info(info)
-        best_line_uci = _best_line_uci_from_info(info)
+        value, mate_in = _score_value_and_mate(snapshot.pov_score)
         return cls(
-            best_move=best_move,
+            best_move=snapshot.best_move,
             score_cp=int(value or 0),
-            depth=depth,
+            depth=snapshot.depth,
             mate_in=mate_in,
-            best_line_uci=best_line_uci,
+            best_line_uci=snapshot.best_line_uci,
         )
 
     @classmethod
     def empty(cls) -> EngineResult:
         """Return an empty engine result placeholder."""
         return cls(best_move=None, score_cp=0, depth=0)
+
+
+@dataclass(slots=True, frozen=True)
+class EngineInfoSnapshot:
+    """Parsed view of engine analysis info."""
+
+    best_move: chess.Move | None
+    depth: int
+    best_line_uci: str | None
+    pov_score: chess.engine.Score | None
 
 
 def _select_engine_info(
@@ -55,6 +61,20 @@ def _select_engine_info(
     if isinstance(result, list):
         return _select_info_from_list(cast(list[chess.engine.InfoDict], result))
     return _select_info_from_single(result)
+
+
+def _extract_engine_snapshot(
+    result: chess.engine.InfoDict | chess.engine.AnalysisResult | list[chess.engine.InfoDict],
+    board: chess.Board | None,
+) -> EngineInfoSnapshot:
+    """Extract a normalized snapshot from the engine result payload."""
+    info = _select_engine_info(result)
+    return EngineInfoSnapshot(
+        best_move=_best_move_from_info(info),
+        depth=_depth_from_info(info),
+        best_line_uci=_best_line_uci_from_info(info),
+        pov_score=_resolve_pov_score(info.get("score"), board),
+    )
 
 
 def _resolve_pov_score(

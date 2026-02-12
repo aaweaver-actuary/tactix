@@ -8,8 +8,12 @@ from typing import Any, cast
 from psycopg2.extensions import connection as PgConnection  # noqa: N812
 from psycopg2.extras import RealDictCursor
 
+from tactix.build_insert_plans__db_store import (
+    build_outcome_insert_plan,
+    build_tactic_insert_plan,
+    require_position_id,
+)
 from tactix.config import Settings
-from tactix.define_base_db_store__db_store import BaseDbStore
 from tactix.define_db_schemas__const import ANALYSIS_SCHEMA
 from tactix.define_outcome_insert_plan__db_store import OutcomeInsertPlan
 from tactix.define_tactic_insert_plan__db_store import TacticInsertPlan
@@ -168,17 +172,17 @@ def upsert_analysis_tactic_with_outcome(
     """Upsert a tactic and its outcome and return the tactic id."""
     position_id = cast(
         int,
-        BaseDbStore.require_position_id(
+        require_position_id(
             tactic_row,
             "position_id is required for Postgres analysis upsert",
         ),
     )
-    tactic_plan = BaseDbStore.build_tactic_insert_plan(
+    tactic_plan = build_tactic_insert_plan(
         game_id=tactic_row.get("game_id"),
         position_id=position_id,
         tactic_row=tactic_row,
     )
-    outcome_plan = BaseDbStore.build_outcome_insert_plan(outcome_row)
+    outcome_plan = build_outcome_insert_plan(outcome_row)
     autocommit_state = conn.autocommit
     conn.autocommit = False
     try:

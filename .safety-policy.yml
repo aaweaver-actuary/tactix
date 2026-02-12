@@ -37,6 +37,9 @@ security:
     79598:
       reason: 'Airflow provider constraints lock Flask-AppBuilder <=4.5.3.'
       expires: '2026-12-31'
+    79883:
+      reason: 'Awaiting pip patch release for CVE-2025-8869.'
+      expires: '2026-12-31'
     82196:
       reason: 'Airflow pins Werkzeug <3; upstream compatibility required for fixes.'
       expires: '2026-12-31'

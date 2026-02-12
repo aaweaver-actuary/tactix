@@ -49,6 +49,36 @@ def _capture_square_for_move(
     return move.to_square
 
 
+def _board_for_capture_checks(
+    board: chess.Board,
+    attacker_color: bool,
+) -> chess.Board:
+    if board.turn == attacker_color:
+        return board
+    board_copy = board.copy()
+    board_copy.turn = attacker_color
+    return board_copy
+
+
+def _has_legal_capture_on_square(
+    board: chess.Board,
+    target_square: chess.Square,
+    attacker_color: bool,
+) -> bool:
+    board_for_side = _board_for_capture_checks(board, attacker_color)
+    for response in board_for_side.legal_moves:
+        if not board_for_side.is_capture(response):
+            continue
+        capture_square = _capture_square_for_move(
+            board_for_side,
+            response,
+            attacker_color,
+        )
+        if capture_square == target_square:
+            return True
+    return False
+
+
 def _classify_no_best_move(delta: int) -> str:
     if delta <= MISSED_DELTA_THRESHOLD:
         return "missed"
@@ -111,9 +141,9 @@ def _is_hanging_piece_on_square(
     mover_color: bool,
 ) -> bool:
     opponent = not mover_color
-    if not board.is_attacked_by(opponent, square):
+    if not _has_legal_capture_on_square(board, square, opponent):
         return False
-    if not board.is_attacked_by(mover_color, square):
+    if not _has_legal_capture_on_square(board, square, mover_color):
         return True
     return BaseTacticDetector.is_favorable_trade_on_square(board, square, piece, opponent)
 
@@ -145,13 +175,14 @@ def _iter_capture_attackers(
     target_square: chess.Square,
     opponent: bool,
 ) -> Iterable[chess.Piece]:
-    for response in board.legal_moves:
-        if not board.is_capture(response):
+    board_for_side = _board_for_capture_checks(board, opponent)
+    for response in board_for_side.legal_moves:
+        if not board_for_side.is_capture(response):
             continue
-        capture_square = _capture_square_for_move(board, response, opponent)
+        capture_square = _capture_square_for_move(board_for_side, response, opponent)
         if capture_square != target_square:
             continue
-        attacker = board.piece_at(response.from_square)
+        attacker = board_for_side.piece_at(response.from_square)
         if attacker is not None:
             yield attacker
 
@@ -199,7 +230,7 @@ def _is_undefended_capture(
     mover_color: bool,
 ) -> bool:
     capture_square = _capture_square_for_move(board, move, mover_color)
-    return not board.is_attacked_by(not mover_color, capture_square)
+    return not _has_legal_capture_on_square(board, capture_square, not mover_color)
 
 
 def _is_favorable_exchange_capture(
@@ -333,6 +364,15 @@ class BaseTacticDetector:
         opponent: bool,
     ) -> bool:
         return _is_favorable_trade_on_square(board, target_square, target_piece, opponent)
+
+    @classmethod
+    def has_legal_capture_on_square(
+        cls,
+        board: chess.Board,
+        target_square: chess.Square,
+        attacker_color: bool,
+    ) -> bool:
+        return _has_legal_capture_on_square(board, target_square, attacker_color)
 
     @classmethod
     def is_hanging_capture(

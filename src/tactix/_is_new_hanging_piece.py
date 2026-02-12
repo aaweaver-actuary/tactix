@@ -2,6 +2,7 @@
 
 import chess
 
+from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.utils.logger import funclogger
 
 
@@ -18,8 +19,14 @@ def _is_new_hanging_piece(
         for square, piece in board.piece_map().items():
             if piece.color != opponent:
                 continue
-            if board.is_attacked_by(mover_color, square) and not board.is_attacked_by(
-                opponent, square
+            if BaseTacticDetector.has_legal_capture_on_square(
+                board,
+                square,
+                mover_color,
+            ) and not BaseTacticDetector.has_legal_capture_on_square(
+                board,
+                square,
+                opponent,
             ):
                 return True
         return False

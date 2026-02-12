@@ -1109,7 +1109,7 @@
       "Step 9: Verify confidence is not high for illegal candidates",
       "Step 10: Verify no opportunities reference illegal target squares"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

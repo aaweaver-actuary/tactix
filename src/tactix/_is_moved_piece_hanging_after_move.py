@@ -47,7 +47,11 @@ def _is_hanging_after_move(
     moved_piece: chess.Piece,
     mover_color: bool,
 ) -> bool:
-    if not board_after.is_attacked_by(not mover_color, target_square):
+    if not BaseTacticDetector.has_legal_capture_on_square(
+        board_after,
+        target_square,
+        not mover_color,
+    ):
         return False
     return _resolve_defended_hanging_after_move(
         board_after,
@@ -63,7 +67,11 @@ def _resolve_defended_hanging_after_move(
     moved_piece: chess.Piece,
     mover_color: bool,
 ) -> bool:
-    if not board_after.is_attacked_by(mover_color, target_square):
+    if not BaseTacticDetector.has_legal_capture_on_square(
+        board_after,
+        target_square,
+        mover_color,
+    ):
         return True
     return BaseTacticDetector.is_favorable_trade_on_square(
         board_after,

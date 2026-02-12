@@ -57,9 +57,8 @@ def _resolve_unknown_hanging_piece(
 ) -> str | None:
     if motif != "unknown" or not _is_new_hanging_piece(motif_board, user_board, mover_color):
         return None
-    attacks = user_board.attacks(move.to_square)
     has_hanging_attack = any(
-        _is_hanging_attack(user_board, mover_color, square, attacks)
+        _is_hanging_attack(user_board, mover_color, square, move)
         for square in _iter_opponent_squares(user_board, mover_color)
     )
     return "hanging_piece" if has_hanging_attack else None
@@ -132,12 +131,20 @@ def _is_hanging_attack(
     user_board: chess.Board,
     mover_color: bool,
     square: chess.Square,
-    attacks: chess.SquareSet,
+    move: chess.Move,
 ) -> bool:
-    if square not in attacks:
+    if square not in user_board.attacks(move.to_square):
         return False
-    return user_board.is_attacked_by(mover_color, square) and not user_board.is_attacked_by(
-        not mover_color, square
+    if not BaseTacticDetector.has_legal_capture_on_square(
+        user_board,
+        square,
+        mover_color,
+    ):
+        return False
+    return not BaseTacticDetector.has_legal_capture_on_square(
+        user_board,
+        square,
+        not mover_color,
     )
 
 

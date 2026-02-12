@@ -440,6 +440,25 @@ const buildStreamReader = (chunks: string[]) => {
   } as ReadableStreamDefaultReader<Uint8Array>;
 };
 
+const buildDeferredReader = () => {
+  let resolveRead:
+    | ((value: ReadableStreamReadResult<Uint8Array>) => void)
+    | null = null;
+  return {
+    reader: {
+      read: vi.fn(
+        () =>
+          new Promise<ReadableStreamReadResult<Uint8Array>>((resolve) => {
+            resolveRead = resolve;
+          }),
+      ),
+    } as ReadableStreamDefaultReader<Uint8Array>,
+    resolve: (result: ReadableStreamReadResult<Uint8Array>) => {
+      resolveRead?.(result);
+    },
+  };
+};
+
 const setupBaseMocks = () => {
   (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
     baseDashboard,
@@ -2312,6 +2331,10 @@ describe('DashboardFlow', () => {
       expect(lastDropResult).toBe(true);
     });
 
+    await waitFor(() => {
+      expect(submitPracticeAttempt).toHaveBeenCalled();
+    });
+
     chessboardDropArgs = ['e2', 'e4', 'wP'];
     fireEvent.click(screen.getByTestId('mock-chessboard'));
     expect(lastDropResult).toBe(false);
@@ -2804,6 +2827,10 @@ describe('DashboardFlow', () => {
 
     await waitForDashboardLoad();
 
+    await waitFor(() => {
+      expect(dragContextHandlers.onDragEnd).toBeDefined();
+    });
+
     dragContextHandlers.onDragEnd?.({
       source: { droppableId: 'dashboard-motif-cards', index: 0 },
       destination: { droppableId: 'dashboard-motif-cards', index: 1 },
@@ -2832,6 +2859,530 @@ describe('DashboardFlow', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Pipeline run failed')).toBeInTheDocument();
+    });
+  });
+
+  it('uses fallback sources when row sources are missing', async () => {
+    const dashboard: DashboardPayload = {
+      ...baseDashboard,
+      recent_games: [
+        {
+          ...baseDashboard.recent_games[0],
+          source: null,
+          game_id: 'g1',
+        },
+      ],
+      tactics: [],
+      positions: [],
+    };
+
+    (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      dashboard,
+    );
+
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+
+    await openRecentGamesModal();
+
+    fireEvent.click(screen.getByTestId('go-to-game-g1'));
+
+    await waitFor(() => {
+      expect(fetchGameDetail).toHaveBeenCalledWith('g1', undefined);
+    });
+
+    (fetchGameDetail as unknown as ReturnType<typeof vi.fn>).mockClear();
+
+    await openFiltersModal();
+    changeFilter('filter-source', 'chesscom');
+
+    fireEvent.click(screen.getByTestId('go-to-game-g1'));
+
+    await waitFor(() => {
+      expect(fetchGameDetail).toHaveBeenCalledWith('g1', 'chesscom');
+    });
+  });
+
+  it('closes the popup when Lichess URLs are unavailable', async () => {
+    (fetchGameDetail as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ...baseGameDetail,
+      pgn: '',
+    });
+    const popup = {
+      close: vi.fn(),
+      location: { href: '' },
+      opener: 'test',
+    } as unknown as Window;
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(popup as Window);
+
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+
+    await openRecentGamesModal();
+
+    fireEvent.click(screen.getByTestId('open-lichess-g1'));
+
+    await waitFor(() => {
+      expect(popup.close).toHaveBeenCalled();
+    });
+
+    openSpy.mockRestore();
+  });
+
+  it('handles Lichess fetch errors without a popup', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    (fetchGameDetail as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('boom'),
+    );
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+
+    await openRecentGamesModal();
+
+    fireEvent.click(screen.getByTestId('open-lichess-g1'));
+
+    await waitFor(() => {
+      expect(fetchGameDetail).toHaveBeenCalled();
+    });
+
+    openSpy.mockRestore();
+    consoleSpy.mockRestore();
+  });
+
+  it('closes the popup when Lichess fetches fail', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    (fetchGameDetail as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('boom'),
+    );
+    const popup = {
+      close: vi.fn(),
+      location: { href: '' },
+      opener: 'test',
+    } as unknown as Window;
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(popup as Window);
+
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+
+    await openRecentGamesModal();
+
+    fireEvent.click(screen.getByTestId('open-lichess-g1'));
+
+    await waitFor(() => {
+      expect(popup.close).toHaveBeenCalled();
+    });
+
+    openSpy.mockRestore();
+    consoleSpy.mockRestore();
+  });
+
+  it('handles missing Postgres analysis tactics', async () => {
+    (
+      fetchPostgresAnalysis as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValue({ status: 'ok' });
+
+    render(<DashboardFlow />);
+
+    await waitFor(() => {
+      expect(fetchPostgresAnalysis).toHaveBeenCalled();
+    });
+  });
+
+  it('applies metrics updates even when payload fields are missing', async () => {
+    const metricsUpdate = {
+      metrics_version: 9,
+      metrics: baseDashboard.metrics,
+      source: 'chesscom',
+    };
+    const stream = buildStreamReader([
+      'event: metrics_update\n' + `data: ${JSON.stringify(metricsUpdate)}\n\n`,
+      'event: metrics_update\n' + 'data: {}\n\n',
+      'event: complete\n' + 'data: {"step":"done"}\n\n',
+    ]);
+    (openEventStream as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      stream,
+    );
+
+    render(<DashboardFlow />);
+
+    await openFiltersModal();
+    changeFilter('filter-source', 'chesscom');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('action-refresh')).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByTestId('action-refresh'));
+
+    await waitFor(() => {
+      expect(getMetricsStreamUrl).toHaveBeenCalled();
+    });
+
+    const metricsLabel = await screen.findByText('Metrics ver.');
+    const metricsCard = metricsLabel.closest('.card');
+    expect(metricsCard).not.toBeNull();
+    expect(
+      within(metricsCard as HTMLElement).getByText('9'),
+    ).toBeInTheDocument();
+  });
+
+  it('uses the lichess profile for backfill jobs', async () => {
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+    await openFiltersModal();
+    changeFilter('filter-source', 'lichess');
+    changeFilter('filter-lichess-profile', 'rapid');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('action-backfill')).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByTestId('action-backfill'));
+
+    await waitFor(() => {
+      expect(getJobStreamUrl).toHaveBeenCalledWith(
+        'daily_game_sync',
+        'lichess',
+        'rapid',
+        expect.any(Number),
+        expect.any(Number),
+      );
+    });
+  });
+
+  it('handles optional trend and game values', async () => {
+    const trendRows = [
+      {
+        ...baseDashboard.metrics[0],
+        metric_type: 'trend',
+        motif: 'hanging_piece',
+        window_days: 7,
+        trend_date: '2026-02-02T00:00:00Z',
+        rating_bucket: 'all',
+        time_control: 'all',
+      },
+      {
+        ...baseDashboard.metrics[0],
+        metric_type: 'trend',
+        motif: 'hanging_piece',
+        window_days: 7,
+        trend_date: '2026-02-01T00:00:00Z',
+        rating_bucket: 'all',
+        time_control: 'all',
+      },
+      {
+        ...baseDashboard.metrics[0],
+        metric_type: 'trend',
+        motif: 'mate',
+        window_days: 30,
+        trend_date: '2026-01-15T00:00:00Z',
+        rating_bucket: 'all',
+        time_control: 'all',
+      },
+      {
+        ...baseDashboard.metrics[0],
+        metric_type: 'time_trouble_correlation',
+        motif: 'all',
+        window_days: null,
+        trend_date: null,
+        rating_bucket: 'all',
+        time_control: null,
+      },
+    ];
+    const dashboard: DashboardPayload = {
+      ...baseDashboard,
+      metrics: trendRows,
+      tactics: [],
+      positions: [],
+      recent_games: [
+        {
+          ...baseDashboard.recent_games[0],
+          result: null,
+          time_control: null,
+        },
+      ],
+    };
+
+    (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      dashboard,
+    );
+
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+
+    fireEvent.click(
+      screen.getAllByRole('button', { name: /motif trends/i })[0],
+    );
+    expect(screen.getByText('Last update')).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getAllByRole('button', { name: /time-trouble correlation/i })[0],
+    );
+    expect(screen.getByText('unknown')).toBeInTheDocument();
+
+    await openRecentGamesModal();
+    expect(screen.getAllByText('--').length).toBeGreaterThan(0);
+  });
+
+  it('skips position actions when game ids are missing', async () => {
+    const dashboard: DashboardPayload = {
+      ...baseDashboard,
+      recent_games: [
+        {
+          ...baseDashboard.recent_games[0],
+          game_id: null,
+          source: null,
+        },
+      ],
+      tactics: [],
+      positions: [],
+    };
+    (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      dashboard,
+    );
+
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+
+    await openRecentGamesModal();
+
+    const openGame = screen.getByTestId('go-to-game-unknown');
+    const openLichess = screen.getByTestId('open-lichess-unknown');
+    openGame.removeAttribute('disabled');
+    openLichess.removeAttribute('disabled');
+
+    fireEvent.click(openGame);
+    fireEvent.click(openLichess);
+
+    expect(fetchGameDetail).not.toHaveBeenCalled();
+  });
+
+  it('renders positions list with missing data safely', async () => {
+    const dashboard = {
+      ...baseDashboard,
+      positions: undefined,
+      recent_games: [],
+      tactics: [],
+    } as DashboardPayload;
+    (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      dashboard,
+    );
+
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+
+    expect(screen.queryByTestId(/^positions-row-/)).not.toBeInTheDocument();
+  });
+
+  it('keeps normalized dashboard card orders intact', async () => {
+    const order = [
+      'metrics-summary',
+      'job-progress',
+      'metrics-grid',
+      'metrics-trends',
+      'time-trouble-correlation',
+      'positions-list',
+    ];
+    const originalStorage = globalThis.localStorage;
+    const memoryStorage: Storage = {
+      _data: new Map<string, string>(),
+      getItem(key: string) {
+        return this._data.get(key) ?? null;
+      },
+      setItem(key: string, value: string) {
+        this._data.set(key, value);
+      },
+      removeItem(key: string) {
+        this._data.delete(key);
+      },
+      clear() {
+        this._data.clear();
+      },
+      key(index: number) {
+        return Array.from(this._data.keys())[index] ?? null;
+      },
+      get length() {
+        return this._data.size;
+      },
+    } as Storage;
+    Object.defineProperty(globalThis, 'localStorage', {
+      value:
+        originalStorage && typeof originalStorage.setItem === 'function'
+          ? originalStorage
+          : memoryStorage,
+      configurable: true,
+    });
+    globalThis.localStorage?.setItem(
+      'tactix.dashboard.mainCardOrder',
+      JSON.stringify(order),
+    );
+
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+
+    expect(screen.getAllByTestId(/^dashboard-card-/).length).toBeGreaterThan(0);
+
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: originalStorage,
+      configurable: true,
+    });
+  });
+
+  it('normalizes dashboard card order when storage is incomplete', async () => {
+    const order = ['metrics-summary'];
+    const originalStorage = globalThis.localStorage;
+    const memoryStorage: Storage = {
+      _data: new Map<string, string>(),
+      getItem(key: string) {
+        return this._data.get(key) ?? null;
+      },
+      setItem(key: string, value: string) {
+        this._data.set(key, value);
+      },
+      removeItem(key: string) {
+        this._data.delete(key);
+      },
+      clear() {
+        this._data.clear();
+      },
+      key(index: number) {
+        return Array.from(this._data.keys())[index] ?? null;
+      },
+      get length() {
+        return this._data.size;
+      },
+    } as Storage;
+    Object.defineProperty(globalThis, 'localStorage', {
+      value:
+        originalStorage && typeof originalStorage.setItem === 'function'
+          ? originalStorage
+          : memoryStorage,
+      configurable: true,
+    });
+    globalThis.localStorage?.setItem(
+      'tactix.dashboard.mainCardOrder',
+      JSON.stringify(order),
+    );
+
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+
+    expect(screen.getAllByTestId(/^dashboard-card-/).length).toBeGreaterThan(1);
+    const storedOrder = globalThis.localStorage?.getItem(
+      'tactix.dashboard.mainCardOrder',
+    );
+    expect(storedOrder).not.toBeNull();
+
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: originalStorage,
+      configurable: true,
+    });
+  });
+
+  it('handles drag updates with null indices', async () => {
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+
+    dragContextHandlers.onDragUpdate?.({
+      destination: { droppableId: 'dashboard-main-cards', index: null },
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('card-drop-indicator'),
+      ).not.toBeInTheDocument();
+    });
+
+    dragContextHandlers.onDragUpdate?.({
+      destination: { droppableId: 'dashboard-motif-cards', index: null },
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('motif-drop-indicator'),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it('returns early when motif cards are not visible', async () => {
+    const dashboard = { ...baseDashboard, metrics: [] } as DashboardPayload;
+    (
+      fetchDashboard as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce(dashboard);
+
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+
+    dragContextHandlers.onDragEnd?.({
+      source: { droppableId: 'dashboard-motif-cards', index: 0 },
+      destination: { droppableId: 'dashboard-motif-cards', index: 1 },
+    });
+
+    expect(screen.getByTestId('motif-breakdown')).toBeInTheDocument();
+  });
+
+  it('handles motif reorder filtering and empty visible sets', async () => {
+    const dashboard: DashboardPayload = {
+      ...baseDashboard,
+      metrics: [
+        {
+          ...baseDashboard.metrics[0],
+          metric_type: 'motif_breakdown',
+          motif: 'hanging_piece',
+          rating_bucket: '1400-1599',
+          time_control: 'all',
+        },
+        {
+          ...baseDashboard.metrics[0],
+          metric_type: 'motif_breakdown',
+          motif: 'mate',
+          rating_bucket: 'all',
+          time_control: 'all',
+          updated_at: '2026-02-02T00:00:00Z',
+        },
+      ],
+      recent_games: [],
+      tactics: [],
+      positions: [],
+    };
+    (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      dashboard,
+    );
+
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+
+    await openFiltersModal();
+    changeFilter('filter-rating', '1400-1599');
+
+    dragContextHandlers.onDragEnd?.({
+      source: { droppableId: 'dashboard-motif-cards', index: 0 },
+      destination: { droppableId: 'dashboard-motif-cards', index: 0 },
+    });
+
+    dragContextHandlers.onDragEnd?.({
+      source: { droppableId: 'dashboard-motif-cards', index: 0 },
+      destination: { droppableId: 'dashboard-motif-cards', index: 1 },
+    });
+
+    dragContextHandlers.onDragEnd?.({
+      source: { droppableId: 'dashboard-motif-cards', index: 0 },
+      destination: { droppableId: 'unknown-drop', index: 1 },
     });
   });
 });

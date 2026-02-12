@@ -297,7 +297,7 @@ describe('GameDetailModal', () => {
 
     expect(screen.getAllByText('OK').length).toBeGreaterThan(0);
     expect(screen.getAllByText('--').length).toBeGreaterThan(0);
-    expect(screen.getByText('Move 1')).toBeInTheDocument();
+    expect(screen.getAllByText('Move 1').length).toBeGreaterThan(0);
     fireEvent.keyDown(window, { key: 'x' });
   });
 });

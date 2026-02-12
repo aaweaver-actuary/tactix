@@ -78,6 +78,8 @@ describe('TacticsActionButtons', () => {
     const openLichess = screen.getByTestId('tactics-open-lichess-unknown');
     goToGame.removeAttribute('disabled');
     openLichess.removeAttribute('disabled');
+    goToGame.disabled = false;
+    openLichess.disabled = false;
 
     fireEvent.click(goToGame);
     fireEvent.click(openLichess);

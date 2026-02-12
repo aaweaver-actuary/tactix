@@ -364,11 +364,7 @@ export default function DashboardFlow() {
     'idle' | 'running' | 'error' | 'complete'
   >('idle');
   const [dashboardCardOrder, setDashboardCardOrder] = useState(() => {
-    const stored = readCardOrder(
-      DASHBOARD_CARD_STORAGE_KEY,
-      DASHBOARD_CARD_IDS,
-    );
-    return normalizeOrder(stored, DASHBOARD_CARD_IDS);
+    return readCardOrder(DASHBOARD_CARD_STORAGE_KEY, DASHBOARD_CARD_IDS);
   });
   const [dropIndicatorIndex, setDropIndicatorIndex] = useState<number | null>(
     null,
@@ -585,7 +581,6 @@ export default function DashboardFlow() {
 
   const handleOpenLichess = useCallback(
     async (row: { game_id?: string | null; source?: string | null }) => {
-      if (!row.game_id) return;
       const popup = window.open('about:blank', '_blank');
       try {
         const detail = await fetchGameDetail(
@@ -1167,7 +1162,6 @@ export default function DashboardFlow() {
       from?: string;
       to?: string;
     }) => {
-      if (!currentPractice) return;
       setPracticeSubmitting(true);
       setPracticeSubmitError(null);
       setPracticeFeedback(null);
@@ -1239,7 +1233,6 @@ export default function DashboardFlow() {
 
   const handlePracticeAttempt = useCallback(
     async (overrideMove?: string) => {
-      if (!currentPractice) return;
       const candidate = overrideMove ?? practiceMove;
       if (!candidate.trim()) {
         setPracticeSubmitError('Enter a move in UCI notation (e.g., e2e4).');
@@ -1266,7 +1259,7 @@ export default function DashboardFlow() {
 
   const handlePracticeDrop = useCallback(
     (from: string, to: string, piece: string) => {
-      if (!currentPractice || practiceSubmitting) return false;
+      if (practiceSubmitting) return false;
       const baseFen = getPracticeBaseFen();
       const isPawn = typeof piece === 'string' && piece.endsWith('P');
       const promotion =
@@ -1291,8 +1284,8 @@ export default function DashboardFlow() {
   const totals = useMemo(() => {
     if (!data) return { positions: 0, tactics: 0 };
     return {
-      positions: data.positions.length,
-      tactics: data.tactics.length,
+      positions: data.positions?.length ?? 0,
+      tactics: data.tactics?.length ?? 0,
     };
   }, [data]);
 
@@ -1600,7 +1593,6 @@ export default function DashboardFlow() {
                 disabled={!hasGameId}
                 onClick={(event) => {
                   event.stopPropagation();
-                  if (!hasGameId) return;
                   void handleOpenGameDetail(row.original);
                 }}
               >
@@ -1613,7 +1605,6 @@ export default function DashboardFlow() {
                 disabled={!hasGameId}
                 onClick={(event) => {
                   event.stopPropagation();
-                  if (!hasGameId) return;
                   void handleOpenLichess(row.original);
                 }}
               >

@@ -30,8 +30,20 @@ vi.mock('react-chessboard', () => ({
 }));
 
 vi.mock('../_components/Hero', () => ({
-  default: ({ onRun, onBackfill, onMigrate, onRefresh }: any) => (
+  default: ({
+    onRun,
+    onBackfill,
+    onMigrate,
+    onRefresh,
+    onPractice,
+    version,
+    user,
+  }: any) => (
     <div>
+      <div data-testid="metrics-version">{`metrics version ${version} | user ${user}`}</div>
+      <TestButton data-testid="action-practice" onClick={onPractice}>
+        Practice
+      </TestButton>
       <TestButton data-testid="action-run" onClick={onRun}>
         Run
       </TestButton>
@@ -117,6 +129,25 @@ const buildReader = (chunks: string[]) => {
   } as unknown as ReadableStreamDefaultReader<Uint8Array>;
 };
 
+const buildDeferredReader = () => {
+  let resolveRead:
+    | ((value: ReadableStreamReadResult<Uint8Array>) => void)
+    | null = null;
+  return {
+    reader: {
+      read: vi.fn(
+        () =>
+          new Promise<ReadableStreamReadResult<Uint8Array>>((resolve) => {
+            resolveRead = resolve;
+          }),
+      ),
+    } as ReadableStreamDefaultReader<Uint8Array>,
+    resolve: (result: ReadableStreamReadResult<Uint8Array>) => {
+      resolveRead?.(result);
+    },
+  };
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
@@ -180,8 +211,8 @@ describe('DashboardFlow action guards', () => {
 
     const metricsUpdate = { ...baseDashboard, metrics_version: 9 };
 
-    (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce(
-      pending,
+    (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      () => pending,
     );
     (openEventStream as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
       buildReader([
@@ -206,11 +237,58 @@ describe('DashboardFlow action guards', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/metrics version 9/)).toBeInTheDocument();
+      expect(screen.getByTestId('metrics-version')).toHaveTextContent(
+        'metrics version 9',
+      );
     });
 
     if (resolveDashboard) {
       resolveDashboard(baseDashboard);
     }
+  });
+
+  it('keeps practice modal closed when no queue items exist', async () => {
+    render(<DashboardFlow />);
+
+    await waitFor(() => {
+      expect(fetchDashboard).toHaveBeenCalled();
+    });
+
+    fireEvent.click(screen.getByTestId('action-practice'));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('chessboard-modal')).not.toBeInTheDocument();
+    });
+  });
+
+  it('keeps the abort ref when a newer metrics stream starts', async () => {
+    const deferred = buildDeferredReader();
+    const quick = buildReader([
+      'event: complete\n' + 'data: {"step":"done"}\n\n',
+    ]);
+    (openEventStream as unknown as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce(deferred.reader)
+      .mockResolvedValueOnce(quick);
+
+    render(<DashboardFlow />);
+
+    await waitFor(() => {
+      expect(fetchDashboard).toHaveBeenCalled();
+    });
+
+    fireEvent.click(screen.getByTestId('filters-set-chesscom'));
+
+    fireEvent.click(screen.getByTestId('action-refresh'));
+    fireEvent.click(screen.getByTestId('action-refresh'));
+
+    await waitFor(() => {
+      expect(openEventStream).toHaveBeenCalledTimes(2);
+    });
+
+    await waitFor(() => {
+      expect(deferred.reader.read).toHaveBeenCalled();
+    });
+
+    deferred.resolve({ done: true, value: undefined });
   });
 });

@@ -26,9 +26,11 @@ type DragEventResult = {
   draggableId?: string;
 };
 
-const TestButton = (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
-  <button type="button" {...props} />
-);
+const TestButton = ({
+  children,
+  ...props
+}: React.PropsWithChildren<React.ButtonHTMLAttributes<HTMLButtonElement>>) =>
+  React.createElement('button', { type: 'button', ...props }, children);
 
 const dragContextHandlers: {
   onDragUpdate?: (result: DragEventResult) => void;
@@ -438,25 +440,6 @@ const buildStreamReader = (chunks: string[]) => {
       return { done: false, value } as const;
     }),
   } as ReadableStreamDefaultReader<Uint8Array>;
-};
-
-const buildDeferredReader = () => {
-  let resolveRead:
-    | ((value: ReadableStreamReadResult<Uint8Array>) => void)
-    | null = null;
-  return {
-    reader: {
-      read: vi.fn(
-        () =>
-          new Promise<ReadableStreamReadResult<Uint8Array>>((resolve) => {
-            resolveRead = resolve;
-          }),
-      ),
-    } as ReadableStreamDefaultReader<Uint8Array>,
-    resolve: (result: ReadableStreamReadResult<Uint8Array>) => {
-      resolveRead?.(result);
-    },
-  };
 };
 
 const setupBaseMocks = () => {
@@ -1347,9 +1330,12 @@ describe('DashboardFlow', () => {
 
     render(<DashboardFlow />);
 
+    await waitForDashboardLoad();
     await openRecentGamesModal();
 
-    expect(screen.getByText('Draw')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Draw')).toBeInTheDocument();
+    });
     expect(screen.getByText('1-0')).toBeInTheDocument();
     expect(screen.getAllByText('--').length).toBeGreaterThan(0);
     expect(screen.getByText('not-a-date')).toBeInTheDocument();
@@ -1543,6 +1529,44 @@ describe('DashboardFlow', () => {
 
     expect(screen.getByText('-0.25')).toBeInTheDocument();
     expect(screen.getAllByText('--').length).toBeGreaterThan(0);
+  });
+
+  it('renders unknown time controls in time trouble rows', async () => {
+    const dashboard: DashboardPayload = {
+      ...baseDashboard,
+      metrics: [
+        { ...baseDashboard.metrics[0], metric_type: 'motif_breakdown' },
+        {
+          ...baseDashboard.metrics[0],
+          metric_type: 'time_trouble_correlation',
+          motif: 'all',
+          time_control: null,
+          found_rate: 0.2,
+          miss_rate: 0.1,
+        },
+        {
+          ...baseDashboard.metrics[0],
+          metric_type: 'time_trouble_correlation',
+          motif: 'all',
+          time_control: 'rapid',
+          found_rate: 0.3,
+          miss_rate: 0.2,
+        },
+      ],
+      recent_games: [],
+      positions: [],
+      tactics: [],
+    };
+
+    (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      dashboard,
+    );
+
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+
+    expect(screen.getByText('unknown')).toBeInTheDocument();
   });
 
   it('reports backfill errors when the date range is invalid', async () => {
@@ -2196,9 +2220,18 @@ describe('DashboardFlow', () => {
         },
       ],
     };
-    (fetchPracticeQueue as unknown as ReturnType<typeof vi.fn>)
-      .mockResolvedValueOnce(dropQueue)
-      .mockResolvedValueOnce(dropQueue);
+    const promotionFen = dropQueue.items[0].fen;
+    const buildPracticeMoveSpy = vi
+      .spyOn(buildPracticeMoveModule, 'default')
+      .mockReturnValue({
+        uci: 'e7e8q',
+        nextFen: promotionFen,
+        from: 'e7',
+        to: 'e8',
+      });
+    (
+      fetchPracticeQueue as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValue(dropQueue);
     (
       submitPracticeAttempt as unknown as ReturnType<typeof vi.fn>
     ).mockResolvedValueOnce({
@@ -2216,23 +2249,29 @@ describe('DashboardFlow', () => {
       message: 'Nice.',
     });
 
-    render(<DashboardFlow />);
+    try {
+      render(<DashboardFlow />);
 
-    await openPracticeModal();
+      await openPracticeModal();
 
-    await waitFor(() => {
-      expect(
-        screen.getByText('Legal moves only. Drag a piece to submit.'),
-      ).toBeInTheDocument();
-    });
+      await waitFor(() => {
+        expect(
+          screen.getByText('Legal moves only. Drag a piece to submit.'),
+        ).toBeInTheDocument();
+      });
 
-    chessboardDropArgs = ['e7', 'e8', 'wP'];
-    fireEvent.click(screen.getByTestId('mock-chessboard'));
+      chessboardDropArgs = ['e7', 'e8', 'wP'];
+      fireEvent.click(screen.getByTestId('mock-chessboard'));
 
-    await waitFor(() => {
-      expect(lastDropResult).toBe(false);
-    });
-    expect(submitPracticeAttempt).not.toHaveBeenCalled();
+      await waitFor(() => {
+        expect(lastDropResult).toBe(true);
+      });
+      const calledMove = buildPracticeMoveSpy.mock.calls[0]?.[1];
+      expect(calledMove).toBe('e7e8q');
+      expect(submitPracticeAttempt).toHaveBeenCalled();
+    } finally {
+      buildPracticeMoveSpy.mockRestore();
+    }
   });
 
   it('rejects illegal practice drops', async () => {
@@ -2287,6 +2326,49 @@ describe('DashboardFlow', () => {
       );
       fireEvent.change(input, { target: { value: 'e2e4' } });
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+
+      await waitFor(() => {
+        expect(submitPracticeAttempt).toHaveBeenCalled();
+      });
+    } finally {
+      buildPracticeMoveSpy.mockRestore();
+    }
+  });
+
+  it('submits practice attempts without optional fen metadata', async () => {
+    (fetchPracticeQueue as unknown as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce(basePracticeQueue)
+      .mockResolvedValueOnce(basePracticeQueue);
+    const buildPracticeMoveSpy = vi
+      .spyOn(buildPracticeMoveModule, 'default')
+      .mockReturnValue({ uci: 'e2e4' } as any);
+    (
+      submitPracticeAttempt as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce({
+      attempt_id: 2,
+      tactic_id: 1,
+      position_id: 1,
+      source: 'chesscom',
+      attempted_uci: 'e2e4',
+      best_uci: 'e2e4',
+      correct: true,
+      rescheduled: false,
+      motif: 'hanging_piece',
+      severity: 1,
+      eval_delta: 0,
+      message: 'Nice.',
+    });
+
+    try {
+      render(<DashboardFlow />);
+
+      await openPracticeModal();
+
+      fireEvent.change(
+        screen.getByPlaceholderText('Enter your move (UCI e.g., e2e4)'),
+        { target: { value: 'e2e4' } },
+      );
+      fireEvent.click(screen.getByRole('button', { name: /submit attempt/i }));
 
       await waitFor(() => {
         expect(submitPracticeAttempt).toHaveBeenCalled();
@@ -2407,6 +2489,49 @@ describe('DashboardFlow', () => {
       ).map((node) => node.getAttribute('data-motif-id'));
       expect(motifAfter[1]).toBe(motifBefore[0]);
     });
+  });
+
+  it('ignores motif card reordering when no motifs are visible', async () => {
+    const dashboard: DashboardPayload = {
+      ...baseDashboard,
+      metrics: [
+        baseDashboard.metrics[0],
+        { ...baseDashboard.metrics[1], rating_bucket: '1200-1399' },
+      ],
+    };
+
+    (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      dashboard,
+    );
+
+    render(<DashboardFlow />);
+
+    await waitForDashboardLoad();
+
+    await openFiltersModal();
+    changeFilter('filter-rating', '1200-1399');
+
+    await waitFor(() => {
+      expect(fetchDashboard).toHaveBeenLastCalledWith('all', {
+        motif: undefined,
+        time_control: undefined,
+        rating_bucket: '1200-1399',
+        start_date: undefined,
+        end_date: undefined,
+      });
+    });
+
+    const motifContainer = screen.getByTestId('motif-breakdown');
+    await waitFor(() => {
+      expect(motifContainer.querySelectorAll('[data-motif-id]').length).toBe(0);
+    });
+
+    dragContextHandlers.onDragEnd?.({
+      source: { droppableId: 'dashboard-motif-cards', index: 0 },
+      destination: { droppableId: 'dashboard-motif-cards', index: 1 },
+    });
+
+    expect(motifContainer.querySelectorAll('[data-motif-id]').length).toBe(0);
   });
 
   it('handles job stream error events with refresh', async () => {

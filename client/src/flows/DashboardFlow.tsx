@@ -246,13 +246,13 @@ const GAME_RESULT_LABELS_BY_COLOR: Record<string, Record<string, string>> = {
 };
 
 const formatGameResult = (result: string | null, userColor: string | null) => {
-  if (!result) return '--';
+  if (!result) return null;
   if (result === '1/2-1/2') return 'Draw';
   return GAME_RESULT_LABELS_BY_COLOR[result]?.[userColor ?? ''] ?? result;
 };
 
 const formatGameDate = (value: string | null) => {
-  if (!value) return '--';
+  if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString();
@@ -592,7 +592,7 @@ export default function DashboardFlow() {
           console.warn('Unable to build Lichess analysis URL for game.', {
             gameId: row.game_id,
           });
-          if (popup) popup.close();
+          popup?.close();
           return;
         }
         if (popup) {
@@ -602,7 +602,7 @@ export default function DashboardFlow() {
           openLichessAnalysisWindow(url);
         }
       } catch (err) {
-        if (popup) popup.close();
+        popup?.close();
         console.error(err);
       }
     },
@@ -795,7 +795,7 @@ export default function DashboardFlow() {
       setPracticeMove('');
       setPracticeSubmitError(null);
       setPracticeLastMove(null);
-      setPracticeFen(currentPractice?.fen ?? '');
+      setPracticeFen('');
       setPracticeServedAtMs(currentPractice ? Date.now() : null);
     }
     resetPracticeData();
@@ -912,7 +912,6 @@ export default function DashboardFlow() {
     profile?: LichessProfile | ChesscomProfile,
     backfillStartMs?: number,
     backfillEndMs?: number,
-    refreshDashboardOnComplete = true,
   ) => {
     streamAbortRef.current?.abort();
     const controller = new AbortController();
@@ -952,13 +951,11 @@ export default function DashboardFlow() {
 
           if (eventName === 'complete') {
             setJobStatus('complete');
-            if (refreshDashboardOnComplete) {
-              const dashboard = await fetchDashboard(nextSource, nextFilters);
-              setData(dashboard);
-              await loadPracticeQueue(nextSource, includeFailedAttempt, true);
-              await loadPostgres();
-              await loadPostgresAnalysis();
-            }
+            const dashboard = await fetchDashboard(nextSource, nextFilters);
+            setData(dashboard);
+            await loadPracticeQueue(nextSource, includeFailedAttempt, true);
+            await loadPostgres();
+            await loadPostgresAnalysis();
             setLoading(false);
             return true;
           }
@@ -967,10 +964,8 @@ export default function DashboardFlow() {
             setJobStatus('error');
             setLoading(false);
             setError(disconnectMessage);
-            if (refreshDashboardOnComplete) {
-              await loadPostgres();
-              await loadPostgresAnalysis();
-            }
+            await loadPostgres();
+            await loadPostgresAnalysis();
             return true;
           }
 
@@ -1151,7 +1146,7 @@ export default function DashboardFlow() {
   }
 
   const getPracticeBaseFen = useCallback(
-    () => practiceFen || currentPractice?.fen || '',
+    () => practiceFen || currentPractice?.fen,
     [currentPractice, practiceFen],
   );
 
@@ -1285,7 +1280,7 @@ export default function DashboardFlow() {
     if (!data) return { positions: 0, tactics: 0 };
     return {
       positions: data.positions?.length ?? 0,
-      tactics: data.tactics?.length ?? 0,
+      tactics: data.tactics.length,
     };
   }, [data]);
 
@@ -1360,7 +1355,7 @@ export default function DashboardFlow() {
       const existing = current[slot];
       if (
         !existing ||
-        new Date(row.trend_date) > new Date(existing.trend_date || 0)
+        new Date(row.trend_date) > new Date(existing.trend_date)
       ) {
         current[slot] = row;
       }
@@ -1381,14 +1376,21 @@ export default function DashboardFlow() {
     });
   }, [data, selectedTimeControl]);
 
+  const normalizedTimeTroubleRows = useMemo(
+    () =>
+      timeTroubleRows.map((row) => ({
+        ...row,
+        time_control: row.time_control || 'unknown',
+      })),
+    [timeTroubleRows],
+  );
+
   const timeTroubleSortedRows = useMemo(() => {
-    if (!timeTroubleRows.length) return [];
-    return [...timeTroubleRows].sort((a, b) => {
-      const left = a.time_control ?? 'unknown';
-      const right = b.time_control ?? 'unknown';
-      return left.localeCompare(right);
-    });
-  }, [timeTroubleRows]);
+    if (!normalizedTimeTroubleRows.length) return [];
+    return [...normalizedTimeTroubleRows].sort((a, b) =>
+      a.time_control.localeCompare(b.time_control),
+    );
+  }, [normalizedTimeTroubleRows]);
 
   const gameDetailMoves = useMemo(() => {
     if (!gameDetail?.pgn) return [];
@@ -1479,8 +1481,7 @@ export default function DashboardFlow() {
       },
       {
         header: 'Last update',
-        accessorFn: (row) =>
-          row.seven?.trend_date || row.thirty?.trend_date || '--',
+        accessorFn: (row) => row.seven?.trend_date ?? row.thirty?.trend_date,
         cell: (info) => (
           <span className="font-mono text-xs text-sand/70">
             {String(info.getValue())}
@@ -1499,9 +1500,7 @@ export default function DashboardFlow() {
         header: 'Time control',
         accessorKey: 'time_control',
         cell: (info) => (
-          <span className="text-sand">
-            {String(info.getValue() ?? 'unknown')}
-          </span>
+          <span className="text-sand">{String(info.getValue())}</span>
         ),
       },
       {

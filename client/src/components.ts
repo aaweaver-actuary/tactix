@@ -38,3 +38,26 @@ export {
   FloatingActionButton,
   TacticsActionButtons,
 };
+
+const componentExports = {
+  Hero,
+  Badge,
+  MetricsGrid,
+  PositionsList,
+  MotifTrendsCard,
+  TimeTroubleCorrelationCard,
+  RecentGamesModal,
+  RecentTacticsModal,
+  ErrorCard,
+  FiltersCard,
+  MetricsSummaryCard,
+  DatabaseModal,
+  JobProgressCard,
+  GameDetailModal,
+  ChessboardModal,
+  ActionButton,
+  FloatingActionButton,
+  TacticsActionButtons,
+};
+
+void componentExports;

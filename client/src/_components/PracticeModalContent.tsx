@@ -48,7 +48,7 @@ export default function PracticeModalContent({
   };
 
   const handleAttemptClick = () => {
-    void handlePracticeAttempt(practiceMoveRef.current?.value);
+    void handlePracticeAttempt();
   };
 
   return (

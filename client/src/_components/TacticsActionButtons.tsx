@@ -15,6 +15,8 @@ const handleActionClick = (
   action();
 };
 
+export const __test__ = { handleActionClick };
+
 type TacticsActionButtonsProps = {
   tactic: DashboardPayload['tactics'][number];
   onOpenGameDetail: (tactic: DashboardPayload['tactics'][number]) => void;

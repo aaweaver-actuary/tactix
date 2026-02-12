@@ -2,9 +2,11 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, it, vi, expect, beforeEach } from 'vitest';
 
-const TestButton = (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
-  <button type="button" {...props} />
-);
+const TestButton = ({
+  children,
+  ...props
+}: React.PropsWithChildren<React.ButtonHTMLAttributes<HTMLButtonElement>>) =>
+  React.createElement('button', { type: 'button', ...props }, children);
 
 vi.mock('@hello-pangea/dnd', () => ({
   DragDropContext: ({ children }: any) => <div>{children}</div>,

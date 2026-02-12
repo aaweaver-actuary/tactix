@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import TacticsActionButtons from './TacticsActionButtons';
+import TacticsActionButtons, { __test__ } from './TacticsActionButtons';
 
 const baseTactic = {
   tactic_id: 1,
@@ -86,5 +86,15 @@ describe('TacticsActionButtons', () => {
 
     expect(onOpenGameDetail).not.toHaveBeenCalled();
     expect(onOpenLichess).not.toHaveBeenCalled();
+  });
+
+  it('short-circuits the action handler when disabled', () => {
+    const action = vi.fn();
+    const stopPropagation = vi.fn();
+
+    __test__.handleActionClick({ stopPropagation } as any, false, action);
+
+    expect(stopPropagation).toHaveBeenCalled();
+    expect(action).not.toHaveBeenCalled();
   });
 });

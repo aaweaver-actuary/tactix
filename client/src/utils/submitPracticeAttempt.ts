@@ -1,1 +1,5 @@
-export { submitPracticeAttempt as default } from '../client/practice';
+import { submitPracticeAttempt } from '../client/practice';
+
+const exportSubmitPracticeAttempt = submitPracticeAttempt;
+
+export default exportSubmitPracticeAttempt;

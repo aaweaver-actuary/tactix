@@ -1,1 +1,5 @@
-export { fetchDashboard as default } from '../client/dashboard';
+import { fetchDashboard } from '../client/dashboard';
+
+const exportFetchDashboard = fetchDashboard;
+
+export default exportFetchDashboard;

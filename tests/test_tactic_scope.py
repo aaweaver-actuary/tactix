@@ -8,10 +8,10 @@ def test_scope_lists_are_consistent() -> None:
     assert "initiative" not in scope.ALL_MOTIFS
 
 
-def test_supported_motif_requires_mate_in_one() -> None:
+def test_supported_motif_allows_mate_in_two() -> None:
     assert scope.is_supported_motif("hanging_piece")
     assert scope.is_supported_motif("mate", mate_in=1)
-    assert not scope.is_supported_motif("mate", mate_in=2)
+    assert scope.is_supported_motif("mate", mate_in=2)
     for motif in scope.FUTURE_MOTIFS:
         assert not scope.is_supported_motif(motif)
 

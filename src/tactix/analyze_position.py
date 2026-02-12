@@ -34,6 +34,7 @@ from tactix._score_after_move import _score_after_move
 from tactix.analyze_tactics__positions import (
     _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS,
     _OVERRIDEABLE_USER_MOTIFS,
+    MATE_IN_TWO,
 )
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.config import Settings
@@ -464,6 +465,9 @@ def _prepare_tactic_row_input(  # noqa: PLR0915
         motif,
     )
     metadata = resolve_tactic_metadata(fen, best_move, motif)
+    mate_type = metadata["mate_type"]
+    if motif == "mate" and mate_in == MATE_IN_TWO and not mate_type:
+        mate_type = "mate_in_two"
     return TacticRowInput(
         position=position,
         details=TacticDetails(
@@ -475,7 +479,7 @@ def _prepare_tactic_row_input(  # noqa: PLR0915
             engine_depth=engine_depth,
             mate_in=mate_in,
             tactic_piece=metadata["tactic_piece"],
-            mate_type=metadata["mate_type"],
+            mate_type=mate_type,
             best_san=best_san,
             explanation=explanation,
             target_piece=target_piece,

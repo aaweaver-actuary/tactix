@@ -1,5 +1,5 @@
 from tactix import tactic_scope
-from tactix.analyze_tactics__positions import MATE_IN_ONE
+from tactix.analyze_tactics__positions import MATE_IN_ONE, MATE_IN_TWO
 
 
 def test_is_supported_motif_handles_none_and_hanging_piece() -> None:
@@ -7,8 +7,9 @@ def test_is_supported_motif_handles_none_and_hanging_piece() -> None:
     assert tactic_scope.is_supported_motif("hanging_piece")
 
 
-def test_is_supported_motif_requires_mate_in_one() -> None:
+def test_is_supported_motif_allows_mate_in_two() -> None:
     assert tactic_scope.is_supported_motif("mate", mate_in=MATE_IN_ONE)
+    assert tactic_scope.is_supported_motif("mate", mate_in=MATE_IN_TWO)
     assert not tactic_scope.is_supported_motif("mate", mate_in=None)
 
 

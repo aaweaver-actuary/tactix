@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tactix.analyze_tactics__positions import MATE_IN_ONE
+from tactix.analyze_tactics__positions import MATE_IN_ONE, MATE_IN_TWO
 
 ALLOWED_MOTIFS: tuple[str, ...] = (
     "hanging_piece",
@@ -32,7 +32,7 @@ def is_supported_motif(motif: str | None, mate_in: int | None = None) -> bool:
     if motif == "hanging_piece":
         return True
     if motif == "mate":
-        return mate_in == MATE_IN_ONE
+        return mate_in in {MATE_IN_ONE, MATE_IN_TWO}
     return False
 
 

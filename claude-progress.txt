@@ -119,6 +119,12 @@ Session summary (2026-02-10):
 - Before -> after map: FiltersCard inline BaseButton for modal open/close -> FiltersActionButton component.
 - Tests run: make check (before and after changes).
 
+Session summary (2026-02-12):
+- Enabled mate-in-two tactics in scope, surfaced mate distance in tactic rows, and tagged mate-in-two opportunities with a mate type for filtering.
+- Added mate-in-two opportunity regression test covering best_line_uci, engine_depth, dedupe, and required fields.
+- Regression verification (required step) blocked: runTests tool reported "No tests found" for selected test files.
+- UI verification not applicable (no direct UI workflow for mate-in-two opportunity creation).
+
 Session summary (2026-02-10):
 - Reused ModalHeader for the Filters modal header to keep modal chrome consistent and reduce duplicated header markup.
 - Before -> after map: FiltersCard inline filters modal header markup -> ModalHeader with rightSlot close button.

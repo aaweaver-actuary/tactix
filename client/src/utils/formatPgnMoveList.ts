@@ -37,7 +37,6 @@ export default function formatPgnMoveList(pgn: string): string[] {
   if (!movetext || !/\d+\./.test(movetext)) return [];
 
   const tokens = movetext.split(/\s+/).filter((token) => {
-    if (!token) return false;
     if (/^\d+\.{1,3}$/.test(token)) return false;
     if (/^(1-0|0-1|1\/2-1\/2|\*)$/.test(token)) return false;
     return true;

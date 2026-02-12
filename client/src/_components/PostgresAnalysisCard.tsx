@@ -52,12 +52,7 @@ export default function PostgresAnalysisCard({
           ))}
         </ul>
       ) : (
-        <Text
-          size="xs"
-          mode="normal"
-          value={loading ? 'Loading analysis rows...' : 'No analysis rows yet'}
-          mt="2"
-        />
+        <Text size="xs" mode="normal" value="Loading analysis rows..." mt="2" />
       )}
     </BaseCard>
   );

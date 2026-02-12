@@ -99,6 +99,24 @@ describe('GameDetailModal', () => {
     expect(currentMove().textContent).toContain('2. Nf3 Nc6');
   });
 
+  it('ignores keyboard navigation when no moves exist', () => {
+    render(
+      <GameDetailModal
+        open
+        onClose={() => undefined}
+        game={sampleGame}
+        moves={[]}
+        loading={false}
+        error={null}
+      />,
+    );
+
+    const currentMove = screen.getByTestId('game-detail-current-move');
+    expect(currentMove.textContent).toContain('No moves loaded');
+    fireEvent.keyDown(window, { key: 'ArrowLeft' });
+    expect(currentMove.textContent).toContain('No moves loaded');
+  });
+
   it('renders empty states when no game is selected', () => {
     render(
       <GameDetailModal
@@ -184,6 +202,63 @@ describe('GameDetailModal', () => {
     ).toContain('2. Nf3 Nc6');
   });
 
+  it('jumps to the last move from the first position', () => {
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('game-detail-nav-first'));
+    fireEvent.click(screen.getByTestId('game-detail-nav-last'));
+
+    expect(
+      screen.getByTestId('game-detail-current-move').textContent,
+    ).toContain('2. Nf3 Nc6');
+  });
+
+  it('renders default player labels when one side is missing', () => {
+    render(
+      <GameDetailModal
+        open
+        onClose={() => undefined}
+        game={
+          {
+            ...sampleGame,
+            metadata: {
+              ...sampleGame.metadata,
+              white_player: null,
+            },
+          } as any
+        }
+        moves={['1. e4 e5']}
+        loading={false}
+        error={null}
+      />,
+    );
+
+    expect(screen.getByText('White vs Bob')).toBeInTheDocument();
+  });
+
+  it('falls back to a Black label when the black player is missing', () => {
+    render(
+      <GameDetailModal
+        open
+        onClose={() => undefined}
+        game={
+          {
+            ...sampleGame,
+            metadata: {
+              ...sampleGame.metadata,
+              black_player: null,
+            },
+          } as any
+        }
+        moves={['1. e4 e5']}
+        loading={false}
+        error={null}
+      />,
+    );
+
+    expect(screen.getByText('Alice vs Black')).toBeInTheDocument();
+  });
+
   it('renders evaluation flags for ok and missing deltas', () => {
     render(
       <GameDetailModal
@@ -208,6 +283,8 @@ describe('GameDetailModal', () => {
                 ...sampleGame.analysis[0],
                 tactic_id: 3,
                 eval_delta: null,
+                move_number: 1,
+                ply: null,
               },
             ],
           } as any
@@ -220,6 +297,7 @@ describe('GameDetailModal', () => {
 
     expect(screen.getAllByText('OK').length).toBeGreaterThan(0);
     expect(screen.getAllByText('--').length).toBeGreaterThan(0);
+    expect(screen.getByText('Move 1')).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'x' });
   });
 });

@@ -61,4 +61,28 @@ describe('TacticsActionButtons', () => {
     expect(onOpenGameDetail).not.toHaveBeenCalled();
     expect(onOpenLichess).not.toHaveBeenCalled();
   });
+
+  it('stops disabled actions even when the button is forced enabled', () => {
+    const onOpenGameDetail = vi.fn();
+    const onOpenLichess = vi.fn();
+
+    render(
+      <TacticsActionButtons
+        tactic={{ ...baseTactic, game_id: null } as any}
+        onOpenGameDetail={onOpenGameDetail}
+        onOpenLichess={onOpenLichess}
+      />,
+    );
+
+    const goToGame = screen.getByTestId('tactics-go-to-game-unknown');
+    const openLichess = screen.getByTestId('tactics-open-lichess-unknown');
+    goToGame.removeAttribute('disabled');
+    openLichess.removeAttribute('disabled');
+
+    fireEvent.click(goToGame);
+    fireEvent.click(openLichess);
+
+    expect(onOpenGameDetail).not.toHaveBeenCalled();
+    expect(onOpenLichess).not.toHaveBeenCalled();
+  });
 });

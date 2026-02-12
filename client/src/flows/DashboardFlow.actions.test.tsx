@@ -2,6 +2,10 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, it, vi, expect, beforeEach } from 'vitest';
 
+const TestButton = (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+  <button type="button" {...props} />
+);
+
 vi.mock('@hello-pangea/dnd', () => ({
   DragDropContext: ({ children }: any) => <div>{children}</div>,
   Droppable: ({ children }: any) =>
@@ -28,31 +32,30 @@ vi.mock('react-chessboard', () => ({
 vi.mock('../_components/Hero', () => ({
   default: ({ onRun, onBackfill, onMigrate, onRefresh }: any) => (
     <div>
-      <button data-testid="action-run" onClick={onRun} type="button">
+      <TestButton data-testid="action-run" onClick={onRun}>
         Run
-      </button>
-      <button data-testid="action-backfill" onClick={onBackfill} type="button">
+      </TestButton>
+      <TestButton data-testid="action-backfill" onClick={onBackfill}>
         Backfill
-      </button>
-      <button data-testid="action-migrate" onClick={onMigrate} type="button">
+      </TestButton>
+      <TestButton data-testid="action-migrate" onClick={onMigrate}>
         Migrate
-      </button>
-      <button data-testid="action-refresh" onClick={onRefresh} type="button">
+      </TestButton>
+      <TestButton data-testid="action-refresh" onClick={onRefresh}>
         Refresh
-      </button>
+      </TestButton>
     </div>
   ),
 }));
 
 vi.mock('../_components/FiltersCard', () => ({
   default: ({ onSourceChange }: any) => (
-    <button
+    <TestButton
       data-testid="filters-set-chesscom"
       onClick={() => onSourceChange('chesscom')}
-      type="button"
     >
       Set source
-    </button>
+    </TestButton>
   ),
 }));
 
@@ -111,7 +114,7 @@ const buildReader = (chunks: string[]) => {
       index += 1;
       return { done: false, value } as ReadableStreamReadResult<Uint8Array>;
     }),
-  } as ReadableStreamDefaultReader<Uint8Array>;
+  } as unknown as ReadableStreamDefaultReader<Uint8Array>;
 };
 
 beforeEach(() => {
@@ -175,13 +178,15 @@ describe('DashboardFlow action guards', () => {
       resolveDashboard = resolve as (value: any) => void;
     });
 
+    const metricsUpdate = { ...baseDashboard, metrics_version: 9 };
+
     (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce(
       pending,
     );
     (openEventStream as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
       buildReader([
         'event: metrics_update\n' +
-          'data: {"metrics_version":9,"metrics":[]}\n\n',
+          `data: ${JSON.stringify(metricsUpdate)}\n\n`,
         'event: complete\n' + 'data: {"step":"done"}\n\n',
       ]),
     );
@@ -200,6 +205,12 @@ describe('DashboardFlow action guards', () => {
       expect(openEventStream).toHaveBeenCalled();
     });
 
-    resolveDashboard?.(baseDashboard);
+    await waitFor(() => {
+      expect(screen.getByText(/metrics version 9/)).toBeInTheDocument();
+    });
+
+    if (resolveDashboard) {
+      resolveDashboard(baseDashboard);
+    }
   });
 });

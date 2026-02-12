@@ -17,4 +17,21 @@ describe('formatPgnMoveList (loadPgn path)', () => {
     const mod = await import('./formatPgnMoveList');
     expect(mod.default('1. e4 e5 2. Nf3')).toEqual(['1. e4 e5', '2. Nf3']);
   });
+
+  it('returns empty when loadPgn succeeds with no history', async () => {
+    vi.resetModules();
+    vi.doMock('chess.js', () => ({
+      Chess: class {
+        loadPgn() {
+          return true;
+        }
+        history() {
+          return [];
+        }
+      },
+    }));
+
+    const mod = await import('./formatPgnMoveList');
+    expect(mod.default('1. e4')).toEqual([]);
+  });
 });

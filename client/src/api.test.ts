@@ -19,4 +19,16 @@ describe('api env setup', () => {
     const mod = await import('./api');
     expect(mod.authHeaders).toEqual({});
   });
+
+  it('falls back to the default token when env is empty', async () => {
+    vi.resetModules();
+    vi.stubEnv('VITE_API_BASE', '');
+    vi.stubEnv('VITE_TACTIX_API_TOKEN', '');
+
+    const mod = await import('./api');
+    expect(mod.authHeaders).toEqual({
+      Authorization: 'Bearer local-dev-token',
+    });
+    expect(mod.client.defaults.baseURL).toBeUndefined();
+  });
 });

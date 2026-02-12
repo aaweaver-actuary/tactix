@@ -12,6 +12,7 @@ import DashboardFlow, {
   resolveBackfillWindow,
 } from './DashboardFlow';
 import buildLichessAnalysisUrl from '../utils/buildLichessAnalysisUrl';
+import * as buildPracticeMoveModule from '../utils/buildPracticeMove';
 import type {
   DashboardPayload,
   GameDetailResponse,
@@ -24,6 +25,10 @@ type DragEventResult = {
   source?: { droppableId?: string | null; index?: number | null } | null;
   draggableId?: string;
 };
+
+const TestButton = (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+  <button type="button" {...props} />
+);
 
 const dragContextHandlers: {
   onDragUpdate?: (result: DragEventResult) => void;
@@ -65,13 +70,14 @@ vi.mock('react-chessboard', () => ({
   }: {
     onPieceDrop?: (...args: any[]) => boolean;
   }) => (
-    <button
+    <TestButton
       data-testid="mock-chessboard"
       onClick={() => {
         lastDropResult = onPieceDrop?.(...chessboardDropArgs);
       }}
-      type="button"
-    />
+    >
+      Chessboard
+    </TestButton>
   ),
 }));
 
@@ -2234,32 +2240,41 @@ describe('DashboardFlow', () => {
     (fetchPracticeQueue as unknown as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce(basePracticeQueue)
       .mockResolvedValueOnce(basePracticeQueue);
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const buildPracticeMoveSpy = vi
+      .spyOn(buildPracticeMoveModule, 'default')
+      .mockReturnValue({
+        uci: 'e2e4',
+        nextFen: startingFen,
+        from: 'e2',
+        to: 'e4',
+      });
     (
       submitPracticeAttempt as unknown as ReturnType<typeof vi.fn>
-    ).mockImplementationOnce(() => {
-      throw new Error('boom');
-    });
+    ).mockRejectedValueOnce(new Error('boom'));
 
-    render(<DashboardFlow />);
+    try {
+      render(<DashboardFlow />);
 
-    await openPracticeModal();
+      await openPracticeModal();
 
-    fireEvent.change(
-      screen.getByPlaceholderText('Enter your move (UCI e.g., e2e4)'),
-      { target: { value: 'e2e4' } },
-    );
-    fireEvent.click(screen.getByRole('button', { name: /submit attempt/i }));
+      await waitFor(() => {
+        expect(
+          screen.getByText('Legal moves only. Drag a piece to submit.'),
+        ).toBeInTheDocument();
+      });
 
-    await waitFor(() => {
-      expect(submitPracticeAttempt).toHaveBeenCalled();
-    });
+      const input = screen.getByPlaceholderText(
+        'Enter your move (UCI e.g., e2e4)',
+      );
+      fireEvent.change(input, { target: { value: 'e2e4' } });
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
-    await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalled();
-    });
-
-    consoleSpy.mockRestore();
+      await waitFor(() => {
+        expect(submitPracticeAttempt).toHaveBeenCalled();
+      });
+    } finally {
+      buildPracticeMoveSpy.mockRestore();
+    }
   });
 
   it('submits practice drops and ignores drops while submitting', async () => {

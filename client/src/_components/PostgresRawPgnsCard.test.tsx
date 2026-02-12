@@ -51,4 +51,29 @@ describe('PostgresRawPgnsCard', () => {
     expect(screen.getByText('15 games')).toBeInTheDocument();
     expect(screen.getAllByText(/2026/).length).toBeGreaterThan(0);
   });
+
+  it('omits per-source timestamps when unavailable', () => {
+    render(
+      <PostgresRawPgnsCard
+        data={{
+          status: 'ok',
+          total_rows: 10,
+          distinct_games: 2,
+          latest_ingested_at: null,
+          sources: [
+            {
+              source: 'chesscom',
+              total_rows: 10,
+              distinct_games: 2,
+              latest_ingested_at: null,
+            },
+          ],
+        }}
+        loading={false}
+      />,
+    );
+
+    expect(screen.getByText('chesscom')).toBeInTheDocument();
+    expect(screen.queryByText(/2026/)).not.toBeInTheDocument();
+  });
 });

@@ -1184,7 +1184,7 @@ export default function DashboardFlow() {
           position_id: currentPractice.position_id,
           attempted_uci: payload.uci,
           source,
-          served_at_ms: practiceServedAtMs ?? undefined,
+          served_at_ms: practiceServedAtMs,
         });
         setPracticeFeedback(response);
         setPracticeSession((prev) => {

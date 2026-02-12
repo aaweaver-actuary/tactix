@@ -174,6 +174,33 @@ describe('ChessboardModal', () => {
     expect(screen.queryByTestId('browser-fen-error')).not.toBeInTheDocument();
   });
 
+  it('resets to an empty FEN when the position is nullish', () => {
+    render(
+      <ChessboardModal
+        open
+        position={
+          {
+            fen: null,
+            move_number: null,
+            san: null,
+            clock_seconds: null,
+          } as any
+        }
+        onClose={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByTestId(
+      'browser-fen-input',
+    ) as HTMLTextAreaElement;
+    fireEvent.change(input, {
+      target: { value: '8/8/8/8/8/8/4K3/7k w - - 0 1' },
+    });
+    fireEvent.click(screen.getByTestId('browser-fen-reset'));
+
+    expect(input.value).toBe('');
+  });
+
   it('clears the error when the FEN input changes', () => {
     render(
       <ChessboardModal

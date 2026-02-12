@@ -150,6 +150,17 @@ const buildDeferredReader = () => {
   };
 };
 
+const renderDashboard = async () => {
+  render(<DashboardFlow />);
+  await waitFor(() => {
+    expect(fetchDashboard).toHaveBeenCalled();
+  });
+};
+
+const selectChesscomSource = () => {
+  fireEvent.click(screen.getByTestId('filters-set-chesscom'));
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   (fetchDashboard as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
@@ -178,11 +189,7 @@ beforeEach(() => {
 
 describe('DashboardFlow action guards', () => {
   it('blocks pipeline actions when source is all', async () => {
-    render(<DashboardFlow />);
-
-    await waitFor(() => {
-      expect(fetchDashboard).toHaveBeenCalled();
-    });
+    await renderDashboard();
 
     fireEvent.click(screen.getByTestId('action-run'));
     expect(
@@ -224,13 +231,9 @@ describe('DashboardFlow action guards', () => {
       ]),
     );
 
-    render(<DashboardFlow />);
+    await renderDashboard();
 
-    await waitFor(() => {
-      expect(fetchDashboard).toHaveBeenCalled();
-    });
-
-    fireEvent.click(screen.getByTestId('filters-set-chesscom'));
+    selectChesscomSource();
 
     fireEvent.click(screen.getByTestId('action-run'));
 
@@ -250,11 +253,7 @@ describe('DashboardFlow action guards', () => {
   });
 
   it('keeps practice modal closed when no queue items exist', async () => {
-    render(<DashboardFlow />);
-
-    await waitFor(() => {
-      expect(fetchDashboard).toHaveBeenCalled();
-    });
+    await renderDashboard();
 
     fireEvent.click(screen.getByTestId('action-practice'));
 
@@ -272,13 +271,9 @@ describe('DashboardFlow action guards', () => {
       .mockResolvedValueOnce(deferred.reader)
       .mockResolvedValueOnce(quick);
 
-    render(<DashboardFlow />);
+    await renderDashboard();
 
-    await waitFor(() => {
-      expect(fetchDashboard).toHaveBeenCalled();
-    });
-
-    fireEvent.click(screen.getByTestId('filters-set-chesscom'));
+    selectChesscomSource();
 
     fireEvent.click(screen.getByTestId('action-refresh'));
     fireEvent.click(screen.getByTestId('action-refresh'));

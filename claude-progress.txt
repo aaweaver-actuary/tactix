@@ -1,4 +1,9 @@
 Session summary (2026-02-12):
+- Extracted shared DashboardFlow actions test helpers to reduce duplicated render/wait and source-selection steps.
+- Before -> after map: DashboardFlow.actions.test inline render/wait + filters-set-chesscom clicks -> renderDashboard + selectChesscomSource helpers.
+- Tests run: make check (before and after changes; before exit code 2 at prospector step).
+
+Session summary (2026-02-12):
 - Enforced legal-capture checks for hanging piece detection, excluding pinned/illegal capture candidates while keeping favorable exchange logic intact.
 - Added opp hanging piece illegal-capture regression tests covering pinned capture, in-check capture, and legal alternative target selection.
 - Added manual + integration UI automation for illegal capture scenario via Browser modal FEN input; captured new screenshot.

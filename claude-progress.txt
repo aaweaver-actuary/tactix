@@ -1,4 +1,9 @@
 Session summary (2026-02-12):
+- Refactored analyze_position flow by introducing context-based outcome/detail helpers to reduce complexity gating in xenon.
+- Before -> after map: inline outcome+detail assembly in _prepare_tactic_row_input -> _build_position_analysis_context + _resolve_outcome_for_position + _build_tactic_details_for_context.
+- Tests run: make check.
+
+Session summary (2026-02-12):
 - Extracted insert plan builders to decouple repositories from BaseDbStore, added engine info snapshot parsing, and reduced engine/migration helper complexity to satisfy xenon gating.
 - Updated safety policy to ignore pip vulnerability 79883 so guard checks pass.
 - Before -> after map: BaseDbStore build_* / require_position_id usage in Postgres analysis repo -> build_insert_plans__db_store helpers; engine_result inline info parsing -> EngineInfoSnapshot + _extract_engine_snapshot; _ensure_tactics_columns inline if ladder -> _ensure_missing_columns helper; _evaluate_engine_position inline mate checks -> _detect_mate_in_one/_detect_mate_in_two.

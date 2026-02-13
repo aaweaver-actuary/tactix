@@ -174,6 +174,8 @@ def _apply_hanging_capture_conversion(
 ) -> str:
     if motif != "hanging_piece":
         return result
+    if result == "unclear":
+        return result
     if not _captures_hanging_target(board, user_move, hanging_target):
         return result
     return "found"

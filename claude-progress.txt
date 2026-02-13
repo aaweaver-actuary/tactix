@@ -518,3 +518,9 @@ Session summary (2026-02-12):
 - Extracted shared conversion test helpers for settings, connection setup, position insertion, and conversion fetches to reduce duplication across conversion tests.
 - Before -> after map: test_conversion_played_mate_line/test_conversion_captured_target inline setup/query -> tests/conversion_test_helpers helpers + updated call sites.
 - Tests run: make check (before and after changes).
+
+Session summary (2026-02-12):
+- Added a conversion regression test to ensure non-converting moves record converted=false with no conversion_reason.
+- Regression verification (random 12): node verification/puppeteer_feature_practice_button.js; node verification/puppeteer_feature_database_modal.js; node verification/puppeteer_feature_chessboard_modal.js; node verification/puppeteer_feature_settings_modal.js; node verification/puppeteer_feature_modal_escape.js; node verification/puppeteer_feature_open_lichess_link.js; node verification/puppeteer_feature_source_filter.js; node verification/puppeteer_feature_practice_orientation.js; node verification/puppeteer_practice_attempt.js; node verification/puppeteer_feature_listudy_assets.js; node verification/puppeteer_feature_recent_cards_fab.js; node verification/puppeteer_feature_game_detail_modal.js.
+- Manual verification: n/a (backend-only). Closest UI validation via the regression Puppeteer runs above; screenshot example: verification/feature-practice-button-2026-02-10.png.
+- Tests run: runTests (tests/test_conversion_non_converting_move.py -> "No tests found"), make check (green).

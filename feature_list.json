@@ -1178,7 +1178,7 @@
       "Step 3: Run ComputeConversions",
       "Step 4: Verify conversion record exists with converted false"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

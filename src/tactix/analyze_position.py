@@ -154,6 +154,31 @@ def _capture_square_for_move(
     return move.to_square
 
 
+def _captures_hanging_target(
+    board: chess.Board,
+    move: chess.Move,
+    hanging_target: HangingCaptureTarget | None,
+) -> bool:
+    if hanging_target is None or not board.is_capture(move):
+        return False
+    capture_square = _capture_square_for_move(board, move)
+    return chess.square_name(capture_square) == hanging_target.target_square
+
+
+def _apply_hanging_capture_conversion(
+    result: str,
+    motif: str,
+    board: chess.Board,
+    user_move: chess.Move,
+    hanging_target: HangingCaptureTarget | None,
+) -> str:
+    if motif != "hanging_piece":
+        return result
+    if not _captures_hanging_target(board, user_move, hanging_target):
+        return result
+    return "found"
+
+
 def _should_override_hanging_motif(motif: str, board: chess.Board) -> bool:
     non_overrideable = {
         "fork",
@@ -436,6 +461,13 @@ def _resolve_outcome_for_position(
             mate_in_two=context["mate_in_two"],
             settings=context["settings"],
         )
+    )
+    result = _apply_hanging_capture_conversion(
+        result,
+        motif,
+        context["motif_board"],
+        context["user_move"],
+        hanging_target,
     )
     result = _finalize_hanging_piece_result(
         result,

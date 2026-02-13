@@ -123,6 +123,14 @@ def _create_conversions_view(conn: duckdb.DuckDBPyConnection) -> None:
             o.result,
             o.user_uci,
             o.eval_delta,
+            o.result = 'found' AS converted,
+            CASE
+                WHEN opp.motif = 'hanging_piece'
+                    AND o.result = 'found'
+                    AND opp.target_square IS NOT NULL
+                    AND substr(o.user_uci, 3, 2) = opp.target_square
+                THEN 'captured_target'
+            END AS conversion_reason,
             o.created_at
         FROM tactic_outcomes o
         INNER JOIN opportunities opp ON opp.opportunity_id = o.tactic_id

@@ -1,4 +1,10 @@
 Session summary (2026-02-12):
+- Marked hanging-piece conversions as found when the user captures the target square and exposed converted/conversion_reason on the conversions view.
+- Added hanging-piece conversion regression test asserting captured_target reason in conversions view output.
+- UI verification (closest available): database modal automation + integration check; screenshot captured.
+- Tests run: pytest tests/test_conversion_captured_target.py -q (skips if stockfish missing); node verification/puppeteer_feature_database_modal.js; node verification/integration_feature_database_modal.js; make check.
+
+Session summary (2026-02-12):
 - Completed feature #87 (mate-in-two opportunity fields) after make check green; updated feature_list.json to passes: true.
 - Note: backend-only verification; no UI surface available for screenshots.
 - Tests run: make check.

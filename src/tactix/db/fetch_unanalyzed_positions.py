@@ -16,7 +16,6 @@ def fetch_unanalyzed_positions(
     params: list[object] = []
     filters: list[str] = [
         "t.position_id IS NULL",
-        "COALESCE(p.user_to_move, TRUE) = TRUE",
     ]
     if game_ids:
         placeholders = ", ".join(["?"] * len(game_ids))

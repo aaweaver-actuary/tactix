@@ -470,16 +470,6 @@ def _resolve_outcome_for_position(
         context["base_cp"],
         context["settings"],
     )
-    result, motif = _apply_moved_piece_hanging_override(
-        result,
-        motif,
-        MovedPieceHangingContext(
-            board_before=context["motif_board"],
-            board_after=context["board"],
-            user_move=context["user_move"],
-            mover_color=context["mover_color"],
-        ),
-    )
     return OutcomeResolution(
         result=result,
         motif=motif,
@@ -547,6 +537,8 @@ def _prepare_tactic_row_input(  # noqa: PLR0915
     engine: StockfishEngine,
     settings: Settings | None,
 ) -> TacticRowInput | None:
+    if not position.get("user_to_move", True):
+        return _prepare_post_move_tactic_row_input(position, engine, settings)
     context = _build_position_analysis_context(position, engine, settings)
     if context is None:
         return None
@@ -568,6 +560,80 @@ def _prepare_tactic_row_input(  # noqa: PLR0915
         outcome=OutcomeDetails(
             result=result,
             user_move_uci=context["user_move_uci"],
+            delta=delta,
+        ),
+    )
+
+
+@funclogger
+def _prepare_post_move_tactic_row_input(  # noqa: PLR0915
+    position: dict[str, object],
+    engine: StockfishEngine,
+    settings: Settings | None,
+) -> TacticRowInput | None:
+    fen = str(position.get("fen") or "")
+    if not fen:
+        return None
+    try:
+        board = chess.Board(fen)
+    except ValueError:
+        return None
+    mover_color = board.turn
+    hanging_target = _find_hanging_capture_target(board, mover_color)
+    if hanging_target is None:
+        return None
+    user_color = not mover_color
+    engine_result = engine.analyse(board)
+    base_cp = BaseTacticDetector.score_from_pov(
+        engine_result.score_cp,
+        user_color,
+        board.turn,
+    )
+    best_move = hanging_target.move.uci()
+    best_line_uci = engine_result.best_line_uci or best_move
+    board_after = board.copy()
+    board_after.push(hanging_target.move)  # pylint: disable=E1101
+    after_cp = BaseTacticDetector.score_from_pov(
+        engine.analyse(board_after).score_cp,
+        user_color,
+        board_after.turn,  # pylint: disable=E1101
+    )
+    delta = after_cp - base_cp
+    severity = _compute_severity_for_position(
+        build_severity_context(
+            SeverityInputs(
+                base_cp=base_cp,
+                delta=delta,
+                motif="hanging_piece",
+                mate_in=None,
+                result="missed",
+                settings=settings,
+            )
+        )
+    )
+    best_san, explanation = format_tactic_explanation(fen, best_move, "hanging_piece")
+    metadata = resolve_tactic_metadata(fen, best_move, "hanging_piece")
+    mate_type = _resolve_mate_type("hanging_piece", None, metadata)
+    return TacticRowInput(
+        position=position,
+        details=TacticDetails(
+            motif="hanging_piece",
+            severity=severity,
+            best_move=best_move,
+            best_line_uci=best_line_uci,
+            base_cp=base_cp,
+            engine_depth=engine_result.depth,
+            mate_in=None,
+            tactic_piece=metadata["tactic_piece"],
+            mate_type=mate_type,
+            best_san=best_san,
+            explanation=explanation,
+            target_piece=hanging_target.target_piece,
+            target_square=hanging_target.target_square,
+        ),
+        outcome=OutcomeDetails(
+            result="missed",
+            user_move_uci=str(position.get("uci") or ""),
             delta=delta,
         ),
     )

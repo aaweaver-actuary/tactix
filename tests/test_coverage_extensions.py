@@ -338,7 +338,7 @@ def test_load_resume_context(monkeypatch, tmp_path) -> None:
     )
     assert resume_index == RESUME_INDEX_START
     assert signature == "sig"
-    assert positions == [{"user_to_move": True}]
+    assert positions == [{"user_to_move": True}, {"user_to_move": False}]
 
     calls = []
     monkeypatch.setattr(

@@ -57,4 +57,4 @@ def _fetch_positions_to_analyze(
     if not existing_positions:
         _clear_analysis_checkpoint(analysis_checkpoint_path)
         return []
-    return [pos for pos in existing_positions if pos.get("user_to_move", True)]
+    return list(existing_positions)

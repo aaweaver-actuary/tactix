@@ -1,4 +1,10 @@
 Session summary (2026-02-12):
+- Added post-move hanging piece analysis path to create USER_HANGING_PIECE opportunities on post-move positions and stopped pre-move moved-piece hanging overrides.
+- Included post-move positions in analysis selection/resume flows.
+- Added post-move user hanging piece regression test and adjusted resume-positions coverage expectation.
+- Tests run: runTests tests/test_user_hanging_piece_post_move.py tests/test_coverage_extensions.py (tool reported "No tests found").
+
+Session summary (2026-02-12):
 - Marked mate conversions when the user plays the first move of best_line_uci by tagging conversions with played_mate_line.
 - Added conversion regression test that selects the engine mate line and asserts the conversion reason.
 - UI verification (closest available): database modal automation + integration check; screenshot captured.

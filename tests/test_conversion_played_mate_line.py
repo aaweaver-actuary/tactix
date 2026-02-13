@@ -8,6 +8,7 @@ from tactix.StockfishEngine import StockfishEngine
 from tactix.analyze_position import analyze_position
 from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
 from tests.conversion_test_helpers import (
+    build_position__from_move,
     build_settings__chesscom_blitz_stockfish,
     create_connection__conversion,
     fetch_conversion__by_tactic_id,
@@ -42,19 +43,11 @@ class ConversionPlayedMateLineTests(unittest.TestCase):
             user_move = chess.Move.from_uci(first_move_uci)
             self.assertIn(user_move, board.legal_moves)
 
-            position = {
-                "game_id": "conversion-played-mate-line",
-                "user": "chesscom",
-                "source": "chesscom",
-                "fen": fen,
-                "ply": board.ply(),
-                "move_number": board.fullmove_number,
-                "side_to_move": "white",
-                "uci": user_move.uci(),
-                "san": board.san(user_move),
-                "clock_seconds": None,
-                "is_legal": True,
-            }
+            position = build_position__from_move(
+                "conversion-played-mate-line",
+                board,
+                user_move,
+            )
 
             insert_position__single(conn, position)
 

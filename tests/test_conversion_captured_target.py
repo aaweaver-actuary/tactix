@@ -7,6 +7,7 @@ from tactix.StockfishEngine import StockfishEngine
 from tactix.analyze_position import analyze_position
 from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
 from tests.conversion_test_helpers import (
+    build_position__from_move,
     build_settings__chesscom_blitz_stockfish,
     create_connection__conversion,
     fetch_conversion__by_tactic_id,
@@ -25,19 +26,11 @@ class ConversionCapturedTargetTests(unittest.TestCase):
         self.assertTrue(board.is_capture(user_move))
         self.assertIn(user_move, board.legal_moves)
 
-        position = {
-            "game_id": "conversion-captured-target",
-            "user": "chesscom",
-            "source": "chesscom",
-            "fen": fen,
-            "ply": board.ply(),
-            "move_number": board.fullmove_number,
-            "side_to_move": "white",
-            "uci": user_move.uci(),
-            "san": board.san(user_move),
-            "clock_seconds": None,
-            "is_legal": True,
-        }
+        position = build_position__from_move(
+            "conversion-captured-target",
+            board,
+            user_move,
+        )
 
         conn = create_connection__conversion("conversion_captured_target.duckdb")
         insert_position__single(conn, position)

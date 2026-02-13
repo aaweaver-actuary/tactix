@@ -39,6 +39,29 @@ def insert_position__single(conn, position: dict[str, Any]) -> dict[str, Any]:
     return position
 
 
+def build_position__from_move(
+    game_id: str,
+    board,
+    user_move,
+    *,
+    user: str = "chesscom",
+    source: str = "chesscom",
+) -> dict[str, Any]:
+    return {
+        "game_id": game_id,
+        "user": user,
+        "source": source,
+        "fen": board.fen(),
+        "ply": board.ply(),
+        "move_number": board.fullmove_number,
+        "side_to_move": "white" if board.turn else "black",
+        "uci": user_move.uci(),
+        "san": board.san(user_move),
+        "clock_seconds": None,
+        "is_legal": True,
+    }
+
+
 def fetch_conversion__by_tactic_id(conn, tactic_id: int):
     return conn.execute(
         """

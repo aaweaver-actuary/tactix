@@ -1,39 +1,29 @@
 import shutil
-import tempfile
 import unittest
-from pathlib import Path
 
 import chess
 
 from tactix._evaluate_engine_position import _evaluate_engine_position
 from tactix.StockfishEngine import StockfishEngine
 from tactix.analyze_position import analyze_position
-from tactix.config import Settings
-from tactix.db.duckdb_store import get_connection, init_schema
-from tactix.db.position_repository_provider import insert_positions
 from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
+from tests.conversion_test_helpers import (
+    build_settings__chesscom_blitz_stockfish,
+    create_connection__conversion,
+    fetch_conversion__by_tactic_id,
+    insert_position__single,
+)
 
 
 class ConversionPlayedMateLineTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_mate_line_first_move_marks_conversion(self) -> None:
-        settings = Settings(
-            source="chesscom",
-            chesscom_user="chesscom",
-            chesscom_profile="blitz",
-            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
-            stockfish_movetime_ms=60,
-            stockfish_depth=None,
-            stockfish_multipv=1,
-        )
-        settings.apply_chesscom_profile("blitz")
+        settings = build_settings__chesscom_blitz_stockfish()
 
         fen = "7k/5Q2/7K/8/8/8/8/8 w - - 0 1"
         board = chess.Board(fen)
 
-        tmp_dir = Path(tempfile.mkdtemp())
-        conn = get_connection(tmp_dir / "conversion_played_mate_line.duckdb")
-        init_schema(conn)
+        conn = create_connection__conversion("conversion_played_mate_line.duckdb")
 
         with StockfishEngine(settings) as engine:
             (
@@ -66,8 +56,7 @@ class ConversionPlayedMateLineTests(unittest.TestCase):
                 "is_legal": True,
             }
 
-            position_ids = insert_positions(conn, [position])
-            position["position_id"] = position_ids[0]
+            insert_position__single(conn, position)
 
             result = analyze_position(position, engine, settings=settings)
 
@@ -78,14 +67,7 @@ class ConversionPlayedMateLineTests(unittest.TestCase):
         self.assertEqual(str(tactic_row["best_line_uci"]).split()[0], user_move.uci())
 
         tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
-        conversion = conn.execute(
-            """
-            SELECT converted, conversion_reason, result, user_uci
-            FROM conversions
-            WHERE opportunity_id = ?
-            """,
-            [tactic_id],
-        ).fetchone()
+        conversion = fetch_conversion__by_tactic_id(conn, tactic_id)
 
         self.assertIsNotNone(conversion)
         self.assertTrue(conversion[0])

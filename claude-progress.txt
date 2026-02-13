@@ -513,3 +513,8 @@ Session summary (2026-02-12):
 - Extracted capture-square resolution into a shared helper to centralize en passant handling and reduce duplication across conversion logic and motif inference.
 - Before -> after map: analyze_position/_find_hanging_capture_target/_infer_hanging_or_detected_motif/BaseTacticDetector inline _capture_square_for_move -> _resolve_capture_square__move helper module.
 - Tests run: make check (before and after changes).
+
+Session summary (2026-02-12):
+- Extracted shared conversion test helpers for settings, connection setup, position insertion, and conversion fetches to reduce duplication across conversion tests.
+- Before -> after map: test_conversion_played_mate_line/test_conversion_captured_target inline setup/query -> tests/conversion_test_helpers helpers + updated call sites.
+- Tests run: make check (before and after changes).

@@ -1,31 +1,23 @@
 import shutil
-import tempfile
 import unittest
-from pathlib import Path
 
 import chess
 
 from tactix.StockfishEngine import StockfishEngine
 from tactix.analyze_position import analyze_position
-from tactix.config import Settings
-from tactix.db.duckdb_store import get_connection, init_schema
-from tactix.db.position_repository_provider import insert_positions
 from tactix.db.tactic_repository_provider import upsert_tactic_with_outcome
+from tests.conversion_test_helpers import (
+    build_settings__chesscom_blitz_stockfish,
+    create_connection__conversion,
+    fetch_conversion__by_tactic_id,
+    insert_position__single,
+)
 
 
 class ConversionCapturedTargetTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("stockfish"), "Stockfish binary not on PATH")
     def test_hanging_piece_capture_marks_conversion(self) -> None:
-        settings = Settings(
-            source="chesscom",
-            chesscom_user="chesscom",
-            chesscom_profile="blitz",
-            stockfish_path=Path(shutil.which("stockfish") or "stockfish"),
-            stockfish_movetime_ms=60,
-            stockfish_depth=None,
-            stockfish_multipv=1,
-        )
-        settings.apply_chesscom_profile("blitz")
+        settings = build_settings__chesscom_blitz_stockfish()
 
         fen = "4k3/8/8/8/3q4/5N2/8/4K3 w - - 0 1"
         board = chess.Board(fen)
@@ -47,11 +39,8 @@ class ConversionCapturedTargetTests(unittest.TestCase):
             "is_legal": True,
         }
 
-        tmp_dir = Path(tempfile.mkdtemp())
-        conn = get_connection(tmp_dir / "conversion_captured_target.duckdb")
-        init_schema(conn)
-        position_ids = insert_positions(conn, [position])
-        position["position_id"] = position_ids[0]
+        conn = create_connection__conversion("conversion_captured_target.duckdb")
+        insert_position__single(conn, position)
 
         with StockfishEngine(settings) as engine:
             result = analyze_position(position, engine, settings=settings)
@@ -61,14 +50,7 @@ class ConversionCapturedTargetTests(unittest.TestCase):
         self.assertEqual(tactic_row["motif"], "hanging_piece")
 
         tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)
-        conversion = conn.execute(
-            """
-            SELECT converted, conversion_reason, result, user_uci
-            FROM conversions
-            WHERE opportunity_id = ?
-            """,
-            [tactic_id],
-        ).fetchone()
+        conversion = fetch_conversion__by_tactic_id(conn, tactic_id)
 
         self.assertIsNotNone(conversion)
         self.assertTrue(conversion[0])

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import TypedDict
 
 import chess
 
@@ -77,6 +78,35 @@ class PositionMotifContext:
     user_move: chess.Move
     best_move_obj: chess.Move | None
     mover_color: bool
+
+
+@dataclass(frozen=True)
+class OutcomeResolution:
+    result: str
+    motif: str
+    mate_in: str | None
+    delta: int
+    hanging_target: HangingCaptureTarget | None
+
+
+class PositionAnalysisContext(TypedDict):
+    position: dict[str, object]
+    settings: Settings | None
+    engine: StockfishEngine
+    fen: str
+    user_move_uci: str
+    board: chess.Board
+    motif_board: chess.Board
+    mover_color: bool
+    best_move_obj: chess.Move | None
+    best_move: str | None
+    base_cp: int | None
+    mate_in_one: bool
+    mate_in_two: bool
+    best_line_uci: str | None
+    engine_depth: int | None
+    user_move: chess.Move
+    after_cp: int
 
 
 @dataclass(frozen=True)
@@ -333,6 +363,147 @@ def _classify_non_missed_delta(
     return "unclear"
 
 
+def _resolve_hanging_target_for_position(
+    position: dict[str, object],
+    motif_board: chess.Board,
+    mover_color: bool,
+) -> HangingCaptureTarget | None:
+    if position.get("user_to_move", True):
+        return _find_hanging_capture_target(motif_board, mover_color)
+    return None
+
+
+def _resolve_outcome_for_position(
+    context: PositionAnalysisContext,
+) -> OutcomeResolution:
+    result, delta = _resolve_initial_result(
+        InitialResultContext(
+            best_move=context["best_move"],
+            best_move_obj=context["best_move_obj"],
+            user_move=context["user_move"],
+            user_move_uci=context["user_move_uci"],
+            base_cp=context["base_cp"],
+            after_cp=context["after_cp"],
+        )
+    )
+    result, motif, best_motif = _resolve_motif_for_position(
+        PositionMotifContext(
+            result=result,
+            delta=delta,
+            motif_board=context["motif_board"],
+            user_move=context["user_move"],
+            best_move_obj=context["best_move_obj"],
+            mover_color=context["mover_color"],
+        )
+    )
+    hanging_target = _resolve_hanging_target_for_position(
+        context["position"],
+        context["motif_board"],
+        context["mover_color"],
+    )
+    result, motif = _apply_opponent_hanging_override(
+        OpponentHangingContext(
+            result=result,
+            motif=motif,
+            mover_color=context["mover_color"],
+            user_to_move=bool(context["position"].get("user_to_move", True)),
+            hanging_target=hanging_target,
+        )
+    )
+    swing = _resolve_best_line_swing(
+        BestLineContext(
+            board=context["motif_board"],
+            best_move=context["best_move_obj"],
+            user_move_uci=context["user_move_uci"],
+            after_cp=context["after_cp"],
+            engine=context["engine"],
+            mover_color=context["mover_color"],
+        )
+    )
+    result, motif, mate_in = _apply_outcome_overrides_for_position(
+        OutcomeOverridePositionContext(
+            outcome=BaseOutcomeContext(
+                result=result,
+                motif=motif,
+                best_move=context["best_move"],
+                user_move_uci=context["user_move_uci"],
+                swing=swing,
+                after_cp=context["after_cp"],
+            ),
+            after_cp=context["after_cp"],
+            best_motif=best_motif,
+            mate_in_one=context["mate_in_one"],
+            mate_in_two=context["mate_in_two"],
+            settings=context["settings"],
+        )
+    )
+    result = _finalize_hanging_piece_result(
+        result,
+        motif,
+        delta,
+        context["base_cp"],
+        context["settings"],
+    )
+    result, motif = _apply_moved_piece_hanging_override(
+        result,
+        motif,
+        MovedPieceHangingContext(
+            board_before=context["motif_board"],
+            board_after=context["board"],
+            user_move=context["user_move"],
+            mover_color=context["mover_color"],
+        ),
+    )
+    return OutcomeResolution(
+        result=result,
+        motif=motif,
+        mate_in=mate_in,
+        delta=delta,
+        hanging_target=hanging_target,
+    )
+
+
+def _build_position_analysis_context(
+    position: dict[str, object],
+    engine: StockfishEngine,
+    settings: Settings | None,
+) -> PositionAnalysisContext | None:
+    fen, user_move_uci, board, motif_board, mover_color = _prepare_position_inputs(position)
+    (
+        best_move_obj,
+        best_move,
+        base_cp,
+        mate_in_one,
+        mate_in_two,
+        best_line_uci,
+        engine_depth,
+    ) = _evaluate_engine_position(board, engine, mover_color, motif_board)
+    user_move = _parse_user_move(board, user_move_uci, fen)
+    if user_move is None:
+        return None
+    board.push(user_move)
+    after_cp = _score_after_move(board, engine, mover_color)
+    return {
+        "position": position,
+        "settings": settings,
+        "engine": engine,
+        "fen": fen,
+        "user_move_uci": user_move_uci,
+        "board": board,
+        "motif_board": motif_board,
+        "mover_color": mover_color,
+        "best_move_obj": best_move_obj,
+        "best_move": best_move,
+        "base_cp": base_cp,
+        "mate_in_one": mate_in_one,
+        "mate_in_two": mate_in_two,
+        "best_line_uci": best_line_uci,
+        "engine_depth": engine_depth,
+        "user_move": user_move,
+        "after_cp": after_cp,
+    }
+
+
 @funclogger
 def analyze_position(
     position: dict[str, object],
@@ -350,144 +521,27 @@ def _prepare_tactic_row_input(  # noqa: PLR0915
     engine: StockfishEngine,
     settings: Settings | None,
 ) -> TacticRowInput | None:
-    fen, user_move_uci, board, motif_board, mover_color = _prepare_position_inputs(position)
-    (
-        best_move_obj,
-        best_move,
-        base_cp,
-        mate_in_one,
-        mate_in_two,
-        best_line_uci,
-        engine_depth,
-    ) = _evaluate_engine_position(board, engine, mover_color, motif_board)
-    user_move = _parse_user_move(board, user_move_uci, fen)
-    if user_move is None:
+    context = _build_position_analysis_context(position, engine, settings)
+    if context is None:
         return None
-    board.push(user_move)
-    after_cp = _score_after_move(board, engine, mover_color)
-    result, delta = _resolve_initial_result(
-        InitialResultContext(
-            best_move=best_move,
-            best_move_obj=best_move_obj,
-            user_move=user_move,
-            user_move_uci=user_move_uci,
-            base_cp=base_cp,
-            after_cp=after_cp,
-        )
-    )
-    result, motif, best_motif = _resolve_motif_for_position(
-        PositionMotifContext(
-            result=result,
-            delta=delta,
-            motif_board=motif_board,
-            user_move=user_move,
-            best_move_obj=best_move_obj,
-            mover_color=mover_color,
-        )
-    )
-    hanging_target = None
-    if position.get("user_to_move", True):
-        hanging_target = _find_hanging_capture_target(motif_board, mover_color)
-    result, motif = _apply_opponent_hanging_override(
-        OpponentHangingContext(
-            result=result,
-            motif=motif,
-            mover_color=mover_color,
-            user_to_move=bool(position.get("user_to_move", True)),
-            hanging_target=hanging_target,
-        )
-    )
-    swing = _resolve_best_line_swing(
-        BestLineContext(
-            board=motif_board,
-            best_move=best_move_obj,
-            user_move_uci=user_move_uci,
-            after_cp=after_cp,
-            engine=engine,
-            mover_color=mover_color,
-        )
-    )
-    result, motif, mate_in = _apply_outcome_overrides_for_position(
-        OutcomeOverridePositionContext(
-            outcome=BaseOutcomeContext(
-                result=result,
-                motif=motif,
-                best_move=best_move,
-                user_move_uci=user_move_uci,
-                swing=swing,
-                after_cp=after_cp,
-            ),
-            after_cp=after_cp,
-            best_motif=best_motif,
-            mate_in_one=mate_in_one,
-            mate_in_two=mate_in_two,
-            settings=settings,
-        )
-    )
-    result = _finalize_hanging_piece_result(result, motif, delta, base_cp, settings)
-    result, motif = _apply_moved_piece_hanging_override(
-        result,
-        motif,
-        MovedPieceHangingContext(
-            board_before=motif_board,
-            board_after=board,
-            user_move=user_move,
-            mover_color=mover_color,
-        ),
-    )
+    outcome = _resolve_outcome_for_position(context)
+    result = outcome.result
+    motif = outcome.motif
+    mate_in = outcome.mate_in
+    delta = outcome.delta
     if not is_supported_motif(motif, mate_in):
         return None
-    target_piece, target_square = _resolve_hanging_piece_target(
-        motif,
-        HangingTargetContext(
-            board_before=motif_board,
-            board_after=board,
-            user_move=user_move,
-            mover_color=mover_color,
-            hanging_target=hanging_target,
-        ),
+    details = _build_tactic_details_for_context(
+        context,
+        outcome,
+        settings,
     )
-    severity = _compute_severity_for_position(
-        build_severity_context(
-            SeverityInputs(
-                base_cp=base_cp,
-                delta=delta,
-                motif=motif,
-                mate_in=mate_in,
-                result=result,
-                settings=settings,
-            )
-        )
-    )
-    best_san, explanation = format_tactic_explanation(
-        fen,
-        best_move or "",
-        motif,
-    )
-    metadata = resolve_tactic_metadata(fen, best_move, motif)
-    mate_type = metadata["mate_type"]
-    if motif == "mate" and mate_in == MATE_IN_TWO and not mate_type:
-        mate_type = "mate_in_two"
     return TacticRowInput(
         position=position,
-        details=TacticDetails(
-            motif=motif,
-            severity=severity,
-            best_move=best_move,
-            best_line_uci=best_line_uci,
-            base_cp=base_cp,
-            engine_depth=engine_depth,
-            mate_in=mate_in,
-            tactic_piece=metadata["tactic_piece"],
-            mate_type=mate_type,
-            best_san=best_san,
-            explanation=explanation,
-            target_piece=target_piece,
-            target_square=target_square,
-        ),
+        details=details,
         outcome=OutcomeDetails(
             result=result,
-            user_move_uci=user_move_uci,
+            user_move_uci=context["user_move_uci"],
             delta=delta,
         ),
     )
@@ -564,6 +618,72 @@ def _finalize_hanging_piece_result(
 @funclogger
 def _compute_severity_for_position(context: SeverityContext) -> int:
     return _compute_severity__tactic(context)
+
+
+def _resolve_mate_type(
+    motif: str,
+    mate_in: str | None,
+    metadata: dict[str, str | None],
+) -> str | None:
+    mate_type = metadata["mate_type"]
+    if motif == "mate" and mate_in == MATE_IN_TWO and not mate_type:
+        return "mate_in_two"
+    return mate_type
+
+
+def _build_tactic_details_for_context(
+    context: PositionAnalysisContext,
+    outcome: OutcomeResolution,
+    settings: Settings | None,
+) -> TacticDetails:
+    target_piece, target_square = _resolve_hanging_piece_target(
+        outcome.motif,
+        HangingTargetContext(
+            board_before=context["motif_board"],
+            board_after=context["board"],
+            user_move=context["user_move"],
+            mover_color=context["mover_color"],
+            hanging_target=outcome.hanging_target,
+        ),
+    )
+    severity = _compute_severity_for_position(
+        build_severity_context(
+            SeverityInputs(
+                base_cp=context["base_cp"],
+                delta=outcome.delta,
+                motif=outcome.motif,
+                mate_in=outcome.mate_in,
+                result=outcome.result,
+                settings=settings,
+            )
+        )
+    )
+    best_san, explanation = format_tactic_explanation(
+        context["fen"],
+        context["best_move"] or "",
+        outcome.motif,
+    )
+    metadata = resolve_tactic_metadata(
+        context["fen"],
+        context["best_move"],
+        outcome.motif,
+    )
+    mate_type = _resolve_mate_type(outcome.motif, outcome.mate_in, metadata)
+    return TacticDetails(
+        motif=outcome.motif,
+        severity=severity,
+        best_move=context["best_move"],
+        best_line_uci=context["best_line_uci"],
+        base_cp=context["base_cp"],
+        engine_depth=context["engine_depth"],
+        mate_in=outcome.mate_in,
+        tactic_piece=metadata["tactic_piece"],
+        mate_type=mate_type,
+        best_san=best_san,
+        explanation=explanation,
+        target_piece=target_piece,
+        target_square=target_square,
+    )
 
 
 def _resolve_hanging_piece_target(

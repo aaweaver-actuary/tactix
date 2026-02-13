@@ -1143,7 +1143,7 @@
       "Step 9: Verify no duplicate opportunity on re-run",
       "Step 10: Verify engine_depth is recorded when available"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

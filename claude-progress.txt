@@ -1,4 +1,9 @@
 Session summary (2026-02-12):
+- Completed feature #87 (mate-in-two opportunity fields) after make check green; updated feature_list.json to passes: true.
+- Note: backend-only verification; no UI surface available for screenshots.
+- Tests run: make check.
+
+Session summary (2026-02-12):
 - Refactored analyze_position flow by introducing context-based outcome/detail helpers to reduce complexity gating in xenon.
 - Before -> after map: inline outcome+detail assembly in _prepare_tactic_row_input -> _build_position_analysis_context + _resolve_outcome_for_position + _build_tactic_details_for_context.
 - Tests run: make check.

@@ -130,6 +130,11 @@ def _create_conversions_view(conn: duckdb.DuckDBPyConnection) -> None:
                     AND opp.target_square IS NOT NULL
                     AND substr(o.user_uci, 3, 2) = opp.target_square
                 THEN 'captured_target'
+                WHEN opp.motif = 'mate'
+                    AND o.result = 'found'
+                    AND opp.best_line_uci IS NOT NULL
+                    AND split_part(opp.best_line_uci, ' ', 1) = o.user_uci
+                THEN 'played_mate_line'
             END AS conversion_reason,
             o.created_at
         FROM tactic_outcomes o

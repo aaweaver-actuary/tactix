@@ -1,4 +1,10 @@
 Session summary (2026-02-12):
+- Marked mate conversions when the user plays the first move of best_line_uci by tagging conversions with played_mate_line.
+- Added conversion regression test that selects the engine mate line and asserts the conversion reason.
+- UI verification (closest available): database modal automation + integration check; screenshot captured.
+- Tests run: pytest tests/test_conversion_played_mate_line.py -q (runTests tool did not discover tests); node verification/puppeteer_feature_database_modal.js; node verification/integration_feature_database_modal.js; make check.
+
+Session summary (2026-02-12):
 - Marked hanging-piece conversions as found when the user captures the target square and exposed converted/conversion_reason on the conversions view.
 - Added hanging-piece conversion regression test asserting captured_target reason in conversions view output.
 - UI verification (closest available): database modal automation + integration check; screenshot captured.

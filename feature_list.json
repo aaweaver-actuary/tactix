@@ -1167,7 +1167,7 @@
       "Step 4: Verify conversion record exists with converted true",
       "Step 5: Verify conversion_reason is played_mate_line"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

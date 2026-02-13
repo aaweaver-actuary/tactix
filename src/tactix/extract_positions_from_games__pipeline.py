@@ -37,4 +37,4 @@ def _extract_positions_from_games(
     position_ids = insert_positions(conn, positions_to_insert)
     for pos, pos_id in zip(positions_to_insert, position_ids, strict=False):
         pos["position_id"] = pos_id
-    return positions
+    return positions_to_insert

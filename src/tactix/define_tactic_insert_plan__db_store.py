@@ -23,3 +23,4 @@ class TacticInsertPlan:  # pylint: disable=too-many-instance-attributes
     target_square: object
     eval_cp: object
     engine_depth: object
+    confidence: object

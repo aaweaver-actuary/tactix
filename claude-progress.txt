@@ -534,3 +534,10 @@ Session summary (2026-02-12):
 - Extracted a shared conversion test helper for building position payloads from board/move pairs to reduce duplication.
 - Before -> after map: test_conversion_* inline position dicts -> tests/conversion_test_helpers build_position__from_move + updated call sites.
 - Tests run: make check (before and after changes).
+
+Session summary (2026-02-13):
+- Updated post-move hanging piece analysis to select the highest-value hanging capture using legal capture/favorable trade checks and propagate confidence into post-move tactics.
+- Stabilized analysis checkpoint signatures by sorting game ids.
+- Added resume-path coverage tests for analysis inputs and resume-index short-circuit logic.
+- Tests run: make check; pytest tests/test_api_chesscom_bullet_dashboard_practice_2026_02_01.py::test_api_practice_queue_contains_hung_bishop_and_knight -q; pytest tests/test_api_chesscom_bullet_pipeline_canonical.py::test_canonical_pipeline_missed_hanging_pieces tests/test_api_chesscom_bullet_pipeline_canonical.py::test_canonical_pipeline_post_blunder_positions_recorded tests/test_chesscom_bullet_pipeline_2026_02_01.py::test_canonical_practice_queue_contains_two_missed_hanging_pieces tests/test_chesscom_bullet_pipeline_2026_02_01.py::test_missed_hanging_piece_positions_are_post_blunder_positions tests/test_pipeline_state.py::PipelineStateTests::test_resume_after_partial_failure_and_dedup -q.
+

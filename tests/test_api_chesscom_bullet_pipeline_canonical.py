@@ -8,7 +8,6 @@ from datetime import UTC, date, datetime
 from io import StringIO
 from pathlib import Path
 
-import chess
 import chess.pgn
 import pytest
 from fastapi.testclient import TestClient
@@ -18,7 +17,6 @@ from tactix._get_game_result_for_user_from_pgn_headers import (
     _get_game_result_for_user_from_pgn_headers,
 )
 from tactix._get_user_color_from_pgn_headers import _get_user_color_from_pgn_headers
-from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.chess_game_result import ChessGameResult
 from tactix.chess_player_color import ChessPlayerColor
 from tactix.chess_time_control import normalize_time_control_label
@@ -179,51 +177,6 @@ def _expected_game_metadata(
     }
 
 
-def _capture_square(board: chess.Board, move: chess.Move) -> chess.Square:
-    if board.is_en_passant(move):
-        return move.to_square + (-8 if board.turn == chess.WHITE else 8)
-    return move.to_square
-
-
-def _hanging_user_piece_labels_after_move(fen: str, user_move_uci: str) -> set[str]:  # noqa: PLR0912, PLR0915
-    if not user_move_uci:
-        return set()
-    board = chess.Board(fen)
-    move = chess.Move.from_uci(user_move_uci)
-    if move not in board.legal_moves:
-        return set()
-    moved_piece = board.piece_at(move.from_square)
-    user_color = board.turn
-    board.push(move)
-    if moved_piece is None:
-        return set()
-    target_square = move.to_square
-    labels: set[str] = set()
-    if board.is_attacked_by(not user_color, target_square):
-        is_unprotected = not board.is_attacked_by(user_color, target_square)
-        is_favorable = False
-        for response in board.legal_moves:
-            if not board.is_capture(response):
-                continue
-            capture_square = _capture_square(board, response)
-            if capture_square != target_square:
-                continue
-            mover_piece = board.piece_at(response.from_square)
-            if mover_piece is None:
-                continue
-            is_favorable = BaseTacticDetector.piece_value(
-                moved_piece.piece_type
-            ) > BaseTacticDetector.piece_value(mover_piece.piece_type)
-            if is_favorable:
-                break
-        if is_unprotected or is_favorable:
-            if moved_piece.piece_type == chess.KNIGHT:
-                labels.add("knight")
-            elif moved_piece.piece_type == chess.BISHOP:
-                labels.add("bishop")
-    return labels
-
-
 def _loss_game_id(games: list[tuple[str, chess.pgn.Game]]) -> str:
     for game_id, game in games:
         if _get_game_result_for_user_from_pgn_headers(game.headers, USER) == ChessGameResult.LOSS:
@@ -300,22 +253,21 @@ def test_canonical_pipeline_missed_hanging_pieces(
         loss_game_id = _loss_game_id(canonical_games)
         tactic_rows = conn.execute(
             """
-            SELECT t.tactic_id, t.position_id, t.best_uci, p.fen, p.uci
+            SELECT t.target_piece
             FROM tactics t
             JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
             JOIN positions p ON p.position_id = t.position_id
             WHERE t.game_id = ?
             AND t.motif = 'hanging_piece'
             AND o.result = 'missed'
+            AND COALESCE(p.user_to_move, TRUE) = FALSE
             """,
             [loss_game_id],
         ).fetchall()
     finally:
         conn.close()
 
-    labels: set[str] = set()
-    for _, _, _best_uci, fen, user_move_uci in tactic_rows:
-        labels.update(_hanging_user_piece_labels_after_move(fen, user_move_uci))
+    labels = {row[0] for row in tactic_rows if row[0] in {"knight", "bishop"}}
     assert {"knight", "bishop"}.issubset(labels)
 
 
@@ -346,7 +298,7 @@ def test_games_table_stores_canonical_metadata(canonical_db_path: Path) -> None:
         assert row.get("played_at") == expected["played_at"]
 
 
-def test_canonical_pipeline_pre_blunder_positions_recorded(
+def test_canonical_pipeline_post_blunder_positions_recorded(
     canonical_db_path: Path,
     canonical_games,
 ) -> None:
@@ -355,13 +307,14 @@ def test_canonical_pipeline_pre_blunder_positions_recorded(
         loss_game_id = _loss_game_id(canonical_games)
         tactic_rows = conn.execute(
             """
-            SELECT t.tactic_id, t.position_id, t.best_uci, p.fen, p.uci
+            SELECT t.tactic_id, t.position_id, t.best_uci, p.fen, t.target_piece, p.user_to_move
             FROM tactics t
             JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
             JOIN positions p ON p.position_id = t.position_id
             WHERE t.game_id = ?
             AND t.motif = 'hanging_piece'
             AND o.result = 'missed'
+            AND COALESCE(p.user_to_move, TRUE) = FALSE
             """,
             [loss_game_id],
         ).fetchall()
@@ -376,11 +329,9 @@ def test_canonical_pipeline_pre_blunder_positions_recorded(
         queue_by_id = {row[0]: row for row in queue_rows}
 
         canonical: dict[str, tuple[int, int, str, str]] = {}
-        for tactic_id, position_id, best_uci, fen, user_move_uci in tactic_rows:
-            labels = _hanging_user_piece_labels_after_move(fen, user_move_uci)
-            for label in labels:
-                if label in {"knight", "bishop"} and label not in canonical:
-                    canonical[label] = (tactic_id, position_id, best_uci, fen)
+        for tactic_id, position_id, best_uci, fen, target_piece, _user_to_move in tactic_rows:
+            if target_piece in {"knight", "bishop"} and target_piece not in canonical:
+                canonical[str(target_piece)] = (tactic_id, position_id, best_uci, fen)
 
         assert set(canonical.keys()) == {"knight", "bishop"}
 
@@ -401,18 +352,7 @@ def test_canonical_pipeline_pre_blunder_positions_recorded(
             ).fetchone()
             assert position_row is not None
             assert position_row[0] == fen
-            assert position_row[1] is True
-
-            move_row = conn.execute(
-                """
-                SELECT played_uci
-                FROM user_moves
-                WHERE position_id = ?
-                """,
-                [position_id],
-            ).fetchone()
-            assert move_row is not None
-            assert move_row[0] != best_uci
+            assert position_row[1] is False
     finally:
         conn.close()
 

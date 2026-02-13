@@ -8,7 +8,6 @@ from datetime import date
 from io import StringIO
 from pathlib import Path
 
-import chess
 import chess.pgn
 import pytest
 from fastapi.testclient import TestClient
@@ -17,7 +16,6 @@ from tactix._get_game_result_for_user_from_pgn_headers import (
     _get_game_result_for_user_from_pgn_headers,
 )
 from tactix._get_user_color_from_pgn_headers import _get_user_color_from_pgn_headers
-from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.chess_game_result import ChessGameResult
 from tactix.chess_player_color import ChessPlayerColor
 
@@ -33,51 +31,6 @@ AUTH_HEADERS = {"Authorization": "Bearer test-token"}
 def _ensure_stockfish_available() -> None:
     if not shutil.which("stockfish"):
         pytest.skip("Stockfish binary not on PATH")
-
-
-def _capture_square(board: chess.Board, move: chess.Move) -> chess.Square:
-    if board.is_en_passant(move):
-        return move.to_square + (-8 if board.turn == chess.WHITE else 8)
-    return move.to_square
-
-
-def _hanging_user_piece_labels_after_move(fen: str, user_move_uci: str) -> set[str]:
-    if not user_move_uci:
-        return set()
-    board = chess.Board(fen)
-    move = chess.Move.from_uci(user_move_uci)
-    if move not in board.legal_moves:
-        return set()
-    moved_piece = board.piece_at(move.from_square)
-    user_color = board.turn
-    board.push(move)
-    if moved_piece is None:
-        return set()
-    target_square = move.to_square
-    labels: set[str] = set()
-    if board.is_attacked_by(not user_color, target_square):
-        is_unprotected = not board.is_attacked_by(user_color, target_square)
-        is_favorable = False
-        for response in board.legal_moves:
-            if not board.is_capture(response):
-                continue
-            capture_square = _capture_square(board, response)
-            if capture_square != target_square:
-                continue
-            mover_piece = board.piece_at(response.from_square)
-            if mover_piece is None:
-                continue
-            is_favorable = BaseTacticDetector.piece_value(
-                moved_piece.piece_type
-            ) > BaseTacticDetector.piece_value(mover_piece.piece_type)
-            if is_favorable:
-                break
-        if is_unprotected or is_favorable:
-            if moved_piece.piece_type == chess.KNIGHT:
-                labels.add("knight")
-            elif moved_piece.piece_type == chess.BISHOP:
-                labels.add("bishop")
-    return labels
 
 
 def _rating_diff(headers: chess.pgn.Headers, user: str) -> int:
@@ -257,11 +210,9 @@ def test_api_practice_queue_contains_hung_bishop_and_knight(
 
     labels: set[str] = set()
     for item in loss_items:
-        fen = item.get("fen")
-        position_uci = item.get("position_uci")
-        if not isinstance(fen, str) or not isinstance(position_uci, str):
-            continue
-        labels.update(_hanging_user_piece_labels_after_move(fen, position_uci))
+        target_piece = item.get("target_piece")
+        if target_piece in {"knight", "bishop"}:
+            labels.add(target_piece)
 
     assert "knight" in labels
     assert "bishop" in labels

@@ -59,6 +59,7 @@ def fetch_analysis_tactics_with_conn(
                 t.target_square,
                 t.eval_cp,
                 t.engine_depth,
+                t.confidence,
                 t.created_at,
                 o.result,
                 o.user_uci,
@@ -113,9 +114,10 @@ def _insert_analysis_tactic(cur, tactic_plan: TacticInsertPlan) -> int:
             target_piece,
             target_square,
             eval_cp,
-            engine_depth
+            engine_depth,
+            confidence
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING tactic_id
         """,
         (
@@ -133,6 +135,7 @@ def _insert_analysis_tactic(cur, tactic_plan: TacticInsertPlan) -> int:
             tactic_plan.target_square,
             tactic_plan.eval_cp,
             tactic_plan.engine_depth,
+            tactic_plan.confidence,
         ),
     )
     tactic_id_row = cur.fetchone()

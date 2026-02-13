@@ -244,6 +244,7 @@ def _resolve_best_motif_adjustment(
         context.motif_board,
         context.best_move_obj,
         context.mover_color,
+        allow_new_hanging=False,
     )
     if (
         best_motif == "unknown"
@@ -479,6 +480,65 @@ def _resolve_outcome_for_position(
     )
 
 
+def _resolve_post_move_hanging_target(
+    board: chess.Board,
+    mover_color: bool,
+) -> HangingCaptureTarget | None:
+    scored_targets: list[tuple[tuple[int, int, str], HangingCaptureTarget]] = []
+    for move in sorted(board.legal_moves, key=lambda candidate: candidate.uci()):
+        if not board.is_capture(move):
+            continue
+        capture_square = _resolve_capture_square__move(board, move, mover_color)
+        captured_piece = board.piece_at(capture_square)
+        if captured_piece is None or captured_piece.color == mover_color:
+            continue
+        if not BaseTacticDetector.has_legal_capture_on_square(
+            board,
+            capture_square,
+            mover_color,
+        ):
+            continue
+        if BaseTacticDetector.has_legal_capture_on_square(
+            board,
+            capture_square,
+            not mover_color,
+        ) and not BaseTacticDetector.is_favorable_trade_on_square(
+            board,
+            capture_square,
+            captured_piece,
+            mover_color,
+        ):
+            continue
+        mover_piece = board.piece_at(move.from_square)
+        mover_value = (
+            BaseTacticDetector.piece_value(mover_piece.piece_type) if mover_piece is not None else 0
+        )
+        captured_value = BaseTacticDetector.piece_value(captured_piece.piece_type)
+        confidence = (
+            "high"
+            if not BaseTacticDetector.has_legal_capture_on_square(
+                board,
+                capture_square,
+                not mover_color,
+            )
+            else "medium"
+        )
+        scored_targets.append(
+            (
+                (captured_value, -mover_value, move.uci()),
+                HangingCaptureTarget(
+                    move=move,
+                    target_piece=_piece_label(captured_piece),
+                    target_square=chess.square_name(capture_square),
+                    confidence=confidence,
+                ),
+            )
+        )
+    if not scored_targets:
+        return None
+    return max(scored_targets, key=lambda item: item[0])[1]
+
+
 def _build_position_analysis_context(
     position: dict[str, object],
     engine: StockfishEngine,
@@ -572,14 +632,15 @@ def _prepare_post_move_tactic_row_input(  # noqa: PLR0915
     settings: Settings | None,
 ) -> TacticRowInput | None:
     fen = str(position.get("fen") or "")
-    if not fen:
+    user_move_uci = str(position.get("uci") or "")
+    if not fen or not user_move_uci:
         return None
     try:
         board = chess.Board(fen)
     except ValueError:
         return None
     mover_color = board.turn
-    hanging_target = _find_hanging_capture_target(board, mover_color)
+    hanging_target = _resolve_post_move_hanging_target(board, mover_color)
     if hanging_target is None:
         return None
     user_color = not mover_color
@@ -623,6 +684,7 @@ def _prepare_post_move_tactic_row_input(  # noqa: PLR0915
             best_line_uci=best_line_uci,
             base_cp=base_cp,
             engine_depth=engine_result.depth,
+            confidence=hanging_target.confidence,
             mate_in=None,
             tactic_piece=metadata["tactic_piece"],
             mate_type=mate_type,
@@ -633,7 +695,7 @@ def _prepare_post_move_tactic_row_input(  # noqa: PLR0915
         ),
         outcome=OutcomeDetails(
             result="missed",
-            user_move_uci=str(position.get("uci") or ""),
+            user_move_uci=user_move_uci,
             delta=delta,
         ),
     )
@@ -662,6 +724,7 @@ def _resolve_motif_for_position(
         context.motif_board,
         context.user_move,
         context.mover_color,
+        allow_new_hanging=False,
     )
     return _resolve_motif_and_result(
         MotifResolutionContext(
@@ -768,6 +831,9 @@ def _build_tactic_details_for_context(
         best_line_uci=context["best_line_uci"],
         base_cp=context["base_cp"],
         engine_depth=context["engine_depth"],
+        confidence=(
+            outcome.hanging_target.confidence if outcome.hanging_target is not None else None
+        ),
         mate_in=outcome.mate_in,
         tactic_piece=metadata["tactic_piece"],
         mate_type=mate_type,

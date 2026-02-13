@@ -15,7 +15,8 @@ TACTIC_COLUMNS = """
     t.target_piece,
     t.target_square,
     t.eval_cp,
-    t.engine_depth
+    t.engine_depth,
+    t.confidence
 """
 
 TACTIC_ANALYSIS_COLUMNS = """
@@ -34,6 +35,7 @@ TACTIC_ANALYSIS_COLUMNS = """
     t.target_square,
     t.eval_cp,
     t.engine_depth,
+    t.confidence,
     t.created_at
 """
 
@@ -57,6 +59,7 @@ TACTIC_QUEUE_COLUMNS = """
     t.target_piece,
     t.target_square,
     t.engine_depth,
+    t.confidence,
     t.created_at
 """
 
@@ -75,6 +78,7 @@ TACTIC_INSERT_COLUMNS: tuple[str, ...] = (
     "target_square",
     "eval_cp",
     "engine_depth",
+    "confidence",
 )
 
 

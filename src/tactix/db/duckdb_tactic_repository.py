@@ -83,8 +83,9 @@ class DuckDbTacticRepository:
                     target_piece,
                     target_square,
                     eval_cp,
-                    engine_depth
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    engine_depth,
+                    confidence
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     next_id,
@@ -102,6 +103,7 @@ class DuckDbTacticRepository:
                     tactic.get("target_square"),
                     tactic.get("eval_cp"),
                     tactic.get("engine_depth"),
+                    tactic.get("confidence"),
                 ],
             )
             ids.append(next_id)

@@ -42,6 +42,7 @@ def build_tactic_insert_plan(
         target_square=tactic_row.get("target_square"),
         eval_cp=tactic_row.get("eval_cp", 0),
         engine_depth=tactic_row.get("engine_depth"),
+        confidence=tactic_row.get("confidence"),
     )
 
 

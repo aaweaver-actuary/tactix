@@ -28,7 +28,7 @@ def _analysis_signature(game_ids: list[str], positions_count: int, source: str) 
         A SHA-256 hash signature representing the analysis parameters.
     """
     payload = {
-        "game_ids": game_ids,
+        "game_ids": sorted(game_ids),
         "positions_count": positions_count,
         "source": source,
     }

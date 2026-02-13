@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from dataclasses import dataclass
 
 import chess
 
@@ -98,23 +99,21 @@ def _resolve_forced_motif(
 
 
 def _resolve_non_forced_motif(
-    motif: str,
-    motif_board: chess.Board,
-    user_board: chess.Board,
-    move: chess.Move,
-    mover_color: bool,
+    context: "NonForcedMotifContext",
 ) -> str:
-    if _is_explicit_motif(motif):
-        return motif
+    if _is_explicit_motif(context.motif):
+        return context.motif
+    if not context.allow_new_hanging:
+        return context.motif
     return (
         _resolve_unknown_hanging_piece(
-            motif,
-            motif_board,
-            user_board,
-            move,
-            mover_color,
+            context.motif,
+            context.motif_board,
+            context.user_board,
+            context.move,
+            context.mover_color,
         )
-        or motif
+        or context.motif
     )
 
 
@@ -148,11 +147,23 @@ def _iter_opponent_squares(
             yield square
 
 
+@dataclass(frozen=True)
+class NonForcedMotifContext:
+    motif: str
+    motif_board: chess.Board
+    user_board: chess.Board
+    move: chess.Move
+    mover_color: bool
+    allow_new_hanging: bool
+
+
 @funclogger
 def _infer_hanging_or_detected_motif(
     motif_board: chess.Board,
     move: chess.Move,
     mover_color: bool,
+    *,
+    allow_new_hanging: bool = True,
 ) -> str:
     user_board = motif_board.copy()
     user_board.push(move)
@@ -162,9 +173,12 @@ def _infer_hanging_or_detected_motif(
     if forced_motif is not None:
         return forced_motif
     return _resolve_non_forced_motif(
-        motif,
-        motif_board,
-        user_board,
-        move,
-        mover_color,
+        NonForcedMotifContext(
+            motif=motif,
+            motif_board=motif_board,
+            user_board=user_board,
+            move=move,
+            mover_color=mover_color,
+            allow_new_hanging=allow_new_hanging,
+        )
     )

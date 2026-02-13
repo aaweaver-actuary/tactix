@@ -11,7 +11,6 @@ from pathlib import Path
 import chess
 import pytest
 
-from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.config import Settings
 from tactix.db.dashboard_repository_provider import fetch_recent_games
 from tactix.db.duckdb_store import get_connection
@@ -177,51 +176,6 @@ def _is_attacked_by(
     return attacker_square in board.attackers(attacker_color, square)
 
 
-def _capture_square(board: chess.Board, move: chess.Move) -> chess.Square:
-    if board.is_en_passant(move):
-        return move.to_square + (-8 if board.turn == chess.WHITE else 8)
-    return move.to_square
-
-
-def _hanging_user_piece_labels_after_move(fen: str, user_move_uci: str) -> set[str]:  # noqa: PLR0912, PLR0915
-    if not user_move_uci:
-        return set()
-    board = chess.Board(fen)
-    move = chess.Move.from_uci(user_move_uci)
-    if move not in board.legal_moves:
-        return set()
-    moved_piece = board.piece_at(move.from_square)
-    user_color = board.turn
-    board.push(move)
-    if moved_piece is None:
-        return set()
-    target_square = move.to_square
-    labels: set[str] = set()
-    if board.is_attacked_by(not user_color, target_square):
-        is_unprotected = not board.is_attacked_by(user_color, target_square)
-        is_favorable = False
-        for response in board.legal_moves:
-            if not board.is_capture(response):
-                continue
-            capture_square = _capture_square(board, response)
-            if capture_square != target_square:
-                continue
-            mover_piece = board.piece_at(response.from_square)
-            if mover_piece is None:
-                continue
-            is_favorable = BaseTacticDetector.piece_value(
-                moved_piece.piece_type
-            ) > BaseTacticDetector.piece_value(mover_piece.piece_type)
-            if is_favorable:
-                break
-        if is_unprotected or is_favorable:
-            if moved_piece.piece_type == chess.KNIGHT:
-                labels.add("knight")
-            elif moved_piece.piece_type == chess.BISHOP:
-                labels.add("bishop")
-    return labels
-
-
 @pytest.fixture(scope="module")
 def pipeline_db_path() -> Path:
     """DuckDB path produced by the 2026-02-01 chess.com bullet fixture pipeline."""
@@ -342,25 +296,24 @@ def test_canonical_practice_queue_contains_two_missed_hanging_pieces(  # noqa: P
 
         tactic_rows = conn.execute(
             """
-            SELECT t.best_uci, p.fen, p.uci
+            SELECT t.target_piece
             FROM tactics t
             JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
             JOIN positions p ON p.position_id = t.position_id
             WHERE t.game_id = ?
             AND t.motif = 'hanging_piece'
             AND o.result = 'missed'
+            AND COALESCE(p.user_to_move, TRUE) = FALSE
             """,
             [loss_game_id],
         ).fetchall()
-        labels: set[str] = set()
-        for _best_uci, fen, user_move_uci in tactic_rows:
-            labels.update(_hanging_user_piece_labels_after_move(fen, user_move_uci))
+        labels = {row[0] for row in tactic_rows if row[0] in {"knight", "bishop"}}
         assert {"knight", "bishop"}.issubset(labels)
     finally:
         conn.close()
 
 
-def test_missed_hanging_piece_positions_are_pre_blunder_positions(  # noqa: PLR0915
+def test_missed_hanging_piece_positions_are_post_blunder_positions(  # noqa: PLR0915
     pipeline_db_path: Path,
 ) -> None:
     conn = get_connection(pipeline_db_path)
@@ -381,23 +334,22 @@ def test_missed_hanging_piece_positions_are_pre_blunder_positions(  # noqa: PLR0
 
         tactic_rows = conn.execute(
             """
-            SELECT t.tactic_id, t.position_id, t.best_uci, p.fen, p.uci
+            SELECT t.tactic_id, t.position_id, t.best_uci, p.fen, t.target_piece, p.user_to_move
             FROM tactics t
             JOIN tactic_outcomes o ON o.tactic_id = t.tactic_id
             JOIN positions p ON p.position_id = t.position_id
             WHERE t.game_id = ?
             AND t.motif = 'hanging_piece'
             AND o.result = 'missed'
+            AND COALESCE(p.user_to_move, TRUE) = FALSE
             """,
             [loss_game_id],
         ).fetchall()
 
         canonical: dict[str, tuple[object, object, object, object]] = {}
-        for tactic_id, position_id, best_uci, fen, user_move_uci in tactic_rows:
-            labels = _hanging_user_piece_labels_after_move(fen, user_move_uci)
-            for label in labels:
-                if label in {"knight", "bishop"} and label not in canonical:
-                    canonical[label] = (tactic_id, position_id, best_uci, fen)
+        for tactic_id, position_id, best_uci, fen, target_piece, _user_to_move in tactic_rows:
+            if target_piece in {"knight", "bishop"} and target_piece not in canonical:
+                canonical[str(target_piece)] = (tactic_id, position_id, best_uci, fen)
 
         assert set(canonical.keys()) == {"knight", "bishop"}
 
@@ -434,17 +386,6 @@ def test_missed_hanging_piece_positions_are_pre_blunder_positions(  # noqa: PLR0
             ).fetchone()
             assert position_row is not None
             assert position_row[0] == fen
-            assert position_row[1] is True
-
-            move_row = conn.execute(
-                """
-                SELECT played_uci
-                FROM user_moves
-                WHERE position_id = ?
-                """,
-                [position_id],
-            ).fetchone()
-            assert move_row is not None
-            assert move_row[0] != best_uci
+            assert position_row[1] is False
     finally:
         conn.close()

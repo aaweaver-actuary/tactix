@@ -43,6 +43,7 @@ class UserHangingPiecePostMoveTests(unittest.TestCase):
         self.assertEqual(outcome_row["result"], "missed")
         self.assertEqual(tactic_row["target_piece"], "pawn")
         self.assertEqual(tactic_row["target_square"], "e3")
+        self.assertIn(tactic_row["confidence"], {"high", "medium"})
         self.assertEqual(tactic_row["position_id"], post_position["position_id"])
 
         tactic_id = upsert_tactic_with_outcome(conn, tactic_row, outcome_row)

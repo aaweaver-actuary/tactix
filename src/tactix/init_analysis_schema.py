@@ -58,6 +58,7 @@ def init_analysis_schema(conn: PgConnection) -> None:
                 target_square TEXT,
                 eval_cp INTEGER,
                 engine_depth INTEGER,
+                confidence TEXT,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
             """
@@ -79,6 +80,9 @@ def init_analysis_schema(conn: PgConnection) -> None:
         )
         cur.execute(
             f"ALTER TABLE {ANALYSIS_SCHEMA}.tactics ADD COLUMN IF NOT EXISTS engine_depth INTEGER"
+        )
+        cur.execute(
+            f"ALTER TABLE {ANALYSIS_SCHEMA}.tactics ADD COLUMN IF NOT EXISTS confidence TEXT"
         )
         cur.execute(
             f"CREATE INDEX IF NOT EXISTS tactics_position_idx "

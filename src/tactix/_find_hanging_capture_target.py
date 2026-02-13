@@ -17,6 +17,7 @@ class HangingCaptureTarget:
     move: chess.Move
     target_piece: str
     target_square: str
+    confidence: str
 
 
 def _find_hanging_capture_target(
@@ -33,10 +34,35 @@ def _find_hanging_capture_target(
     return best_target
 
 
+def _find_hanging_capture_target_on_square(
+    board: chess.Board,
+    mover_color: bool,
+    target_square: chess.Square,
+) -> HangingCaptureTarget | None:
+    """Return the highest-value hanging capture target on a specific square."""
+    scored_targets = (
+        (_score_hanging_target(board, move, target), target)
+        for move in sorted(board.legal_moves, key=lambda candidate: candidate.uci())
+        if (
+            target := _hanging_target_for_move(
+                board,
+                move,
+                mover_color,
+                target_square=target_square,
+            )
+        )
+        is not None
+    )
+    _best_score, best_target = max(scored_targets, default=((0, 0, ""), None))
+    return best_target
+
+
 def _hanging_target_for_move(
     board: chess.Board,
     move: chess.Move,
     mover_color: bool,
+    *,
+    target_square: chess.Square | None = None,
 ) -> HangingCaptureTarget | None:
     if not board.is_capture(move):
         return None
@@ -45,14 +71,32 @@ def _hanging_target_for_move(
     if not BaseTacticDetector.is_hanging_capture(board, board_after, move, mover_color):
         return None
     capture_square = _resolve_capture_square__move(board, move, mover_color)
+    if target_square is not None and capture_square != target_square:
+        return None
     captured_piece = board.piece_at(capture_square)
     if captured_piece is None:
         return None
+    confidence = _resolve_capture_confidence(board, capture_square, mover_color)
     return HangingCaptureTarget(
         move=move,
         target_piece=_piece_label(captured_piece),
         target_square=chess.square_name(capture_square),
+        confidence=confidence,
     )
+
+
+def _resolve_capture_confidence(
+    board: chess.Board,
+    capture_square: chess.Square,
+    mover_color: bool,
+) -> str:
+    if not BaseTacticDetector.has_legal_capture_on_square(
+        board,
+        capture_square,
+        not mover_color,
+    ):
+        return "high"
+    return "medium"
 
 
 def _score_hanging_target(

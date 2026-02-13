@@ -43,6 +43,7 @@ def _ensure_tactics_columns(conn: duckdb.DuckDBPyConnection) -> None:
             "target_square": "ALTER TABLE tactics ADD COLUMN target_square TEXT",
             "best_line_uci": "ALTER TABLE tactics ADD COLUMN best_line_uci TEXT",
             "engine_depth": "ALTER TABLE tactics ADD COLUMN engine_depth INTEGER",
+            "confidence": "ALTER TABLE tactics ADD COLUMN confidence TEXT",
         },
     )
 
@@ -100,6 +101,7 @@ def _create_opportunities_view(conn: duckdb.DuckDBPyConnection) -> None:
             t.target_square,
             t.eval_cp,
             t.engine_depth,
+            t.confidence,
             t.created_at
         FROM tactics t
         INNER JOIN positions p ON p.position_id = t.position_id
@@ -167,6 +169,7 @@ def _create_practice_queue_view(conn: duckdb.DuckDBPyConnection) -> None:
             opp.target_piece,
             opp.target_square,
             opp.engine_depth,
+            opp.confidence,
             p.fen,
             p.uci AS position_uci,
             p.san,

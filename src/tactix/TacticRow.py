@@ -18,6 +18,7 @@ class TacticRowDetails:  # pylint: disable=too-many-instance-attributes
     target_piece: str | None
     target_square: str | None
     engine_depth: int | None
+    confidence: str | None
 
 
 @dataclass(frozen=True)
@@ -49,6 +50,7 @@ class TacticRow:
                 target_piece=inputs.details.target_piece,
                 target_square=inputs.details.target_square,
                 engine_depth=inputs.details.engine_depth,
+                confidence=inputs.details.confidence,
             ),
         )
 
@@ -69,4 +71,5 @@ class TacticRow:
             "target_piece": self.details.target_piece,
             "target_square": self.details.target_square,
             "engine_depth": self.details.engine_depth,
+            "confidence": self.details.confidence,
         }

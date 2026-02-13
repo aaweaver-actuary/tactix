@@ -9,6 +9,7 @@ class TacticDetails:  # pylint: disable=too-many-instance-attributes
     best_line_uci: str | None
     base_cp: int
     engine_depth: int | None
+    confidence: str | None
     mate_in: int | None
     tactic_piece: str | None
     mate_type: str | None

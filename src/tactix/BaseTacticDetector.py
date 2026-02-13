@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING
 import chess
 from pydantic import BaseModel
 
+from tactix._resolve_capture_square__move import _resolve_capture_square__move
+
 if TYPE_CHECKING:
     from tactix.TacticContext import TacticContext
     from tactix.TacticFinding import TacticFinding
@@ -39,16 +41,6 @@ SLIDER_PIECES = {
 }
 
 
-def _capture_square_for_move(
-    board: chess.Board,
-    move: chess.Move,
-    mover_color: bool,
-) -> chess.Square:
-    if board.is_en_passant(move):
-        return move.to_square + (-8 if mover_color == chess.WHITE else 8)
-    return move.to_square
-
-
 def _board_for_capture_checks(
     board: chess.Board,
     attacker_color: bool,
@@ -69,7 +61,7 @@ def _has_legal_capture_on_square(
     for response in board_for_side.legal_moves:
         if not board_for_side.is_capture(response):
             continue
-        capture_square = _capture_square_for_move(
+        capture_square = _resolve_capture_square__move(
             board_for_side,
             response,
             attacker_color,
@@ -179,7 +171,7 @@ def _iter_capture_attackers(
     for response in board_for_side.legal_moves:
         if not board_for_side.is_capture(response):
             continue
-        capture_square = _capture_square_for_move(board_for_side, response, opponent)
+        capture_square = _resolve_capture_square__move(board_for_side, response, opponent)
         if capture_square != target_square:
             continue
         attacker = board_for_side.piece_at(response.from_square)
@@ -220,7 +212,7 @@ def _captured_piece_for_move(
     move: chess.Move,
     mover_color: bool,
 ) -> chess.Piece | None:
-    capture_square = _capture_square_for_move(board, move, mover_color)
+    capture_square = _resolve_capture_square__move(board, move, mover_color)
     return board.piece_at(capture_square)
 
 
@@ -229,7 +221,7 @@ def _is_undefended_capture(
     move: chess.Move,
     mover_color: bool,
 ) -> bool:
-    capture_square = _capture_square_for_move(board, move, mover_color)
+    capture_square = _resolve_capture_square__move(board, move, mover_color)
     return not _has_legal_capture_on_square(board, capture_square, not mover_color)
 
 
@@ -261,7 +253,7 @@ def _legal_capture_attacker_values(
     for response in board.legal_moves:
         if not board.is_capture(response):
             continue
-        capture_square = _capture_square_for_move(board, response, board.turn)
+        capture_square = _resolve_capture_square__move(board, response, board.turn)
         if capture_square != target_square:
             continue
         attacker = board.piece_at(response.from_square)
@@ -277,7 +269,7 @@ def _simple_exchange_wins(
     move: chess.Move,
     mover_color: bool,
 ) -> bool:
-    capture_square = _capture_square_for_move(board_before, move, mover_color)
+    capture_square = _resolve_capture_square__move(board_before, move, mover_color)
     captured_piece = board_before.piece_at(capture_square)
     if captured_piece is None:
         return False

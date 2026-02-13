@@ -502,3 +502,8 @@ Session summary (2026-02-10):
 - Added targeted tests for tactic metadata, sync contexts, API job helper, and utility modules to improve coverage.
 - Adjusted coverage gating: lowered pytest coverage threshold to 94.9 and updated .coveragerc omit list for wiring modules; marked resolve_tactic_metadata and logger wiring lines as no-cover to stabilize coverage reporting.
 - Tests run: make pytest; make check (green).
+
+Session summary (2026-02-12):
+- Extracted capture-square resolution into a shared helper to centralize en passant handling and reduce duplication across conversion logic and motif inference.
+- Before -> after map: analyze_position/_find_hanging_capture_target/_infer_hanging_or_detected_motif/BaseTacticDetector inline _capture_square_for_move -> _resolve_capture_square__move helper module.
+- Tests run: make check (before and after changes).

@@ -31,6 +31,7 @@ from tactix._override_motif_for_missed import _override_motif_for_missed
 from tactix._parse_user_move import _parse_user_move
 from tactix._prepare_position_inputs import _prepare_position_inputs
 from tactix._reclassify_failed_attempt import _reclassify_failed_attempt
+from tactix._resolve_capture_square__move import _resolve_capture_square__move
 from tactix._score_after_move import _score_after_move
 from tactix.analyze_tactics__positions import (
     _FAILED_ATTEMPT_RECLASSIFY_THRESHOLDS,
@@ -145,15 +146,6 @@ class HangingTargetContext:
     hanging_target: HangingCaptureTarget | None
 
 
-def _capture_square_for_move(
-    board: chess.Board,
-    move: chess.Move,
-) -> chess.Square:
-    if board.is_en_passant(move):
-        return move.to_square + (-8 if board.turn == chess.WHITE else 8)
-    return move.to_square
-
-
 def _captures_hanging_target(
     board: chess.Board,
     move: chess.Move,
@@ -161,7 +153,7 @@ def _captures_hanging_target(
 ) -> bool:
     if hanging_target is None or not board.is_capture(move):
         return False
-    capture_square = _capture_square_for_move(board, move)
+    capture_square = _resolve_capture_square__move(board, move, board.turn)
     return chess.square_name(capture_square) == hanging_target.target_square
 
 

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 import chess
 
+from tactix._resolve_capture_square__move import _resolve_capture_square__move
 from tactix.BaseTacticDetector import BaseTacticDetector
 
 
@@ -43,7 +44,7 @@ def _hanging_target_for_move(
     board_after.push(move)
     if not BaseTacticDetector.is_hanging_capture(board, board_after, move, mover_color):
         return None
-    capture_square = _capture_square_for_move(board, move, mover_color)
+    capture_square = _resolve_capture_square__move(board, move, mover_color)
     captured_piece = board.piece_at(capture_square)
     if captured_piece is None:
         return None
@@ -69,16 +70,6 @@ def _score_hanging_target(
     mover_piece = board.piece_at(move.from_square)
     mover_value = BaseTacticDetector.piece_value(mover_piece.piece_type) if mover_piece else 0
     return (captured_value, -mover_value, move.uci())
-
-
-def _capture_square_for_move(
-    board: chess.Board,
-    move: chess.Move,
-    mover_color: bool,
-) -> chess.Square:
-    if board.is_en_passant(move):
-        return move.to_square + (-8 if mover_color == chess.WHITE else 8)
-    return move.to_square
 
 
 def _piece_label(piece: chess.Piece) -> str:

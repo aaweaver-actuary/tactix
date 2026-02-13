@@ -3,19 +3,10 @@ from collections.abc import Iterable
 import chess
 
 from tactix._is_new_hanging_piece import _is_new_hanging_piece
+from tactix._resolve_capture_square__move import _resolve_capture_square__move
 from tactix.analyze_tactics__positions import MOTIF_DETECTORS
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.utils.logger import funclogger
-
-
-def _capture_square_for_move(
-    board: chess.Board,
-    move: chess.Move,
-    mover_color: bool,
-) -> chess.Square:
-    if board.is_en_passant(move):
-        return move.to_square + (-8 if mover_color == chess.WHITE else 8)
-    return move.to_square
 
 
 def _resolve_checkmate_capture_motif(
@@ -23,7 +14,7 @@ def _resolve_checkmate_capture_motif(
     move: chess.Move,
     mover_color: bool,
 ) -> str:
-    capture_square = _capture_square_for_move(motif_board, move, mover_color)
+    capture_square = _resolve_capture_square__move(motif_board, move, mover_color)
     captured_piece = motif_board.piece_at(capture_square)
     if captured_piece is None:
         return "mate"

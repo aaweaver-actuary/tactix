@@ -1211,7 +1211,7 @@
   },
   {
     "category": "functional",
-    "description": "Practice queue adds an item when MATE_IN_1 or MATE_IN_2 is missed",
+    "description": "Practice queue adds an item when MATE_IN_1 is missed",
     "steps": [
       "Step 1: Create a position with mate opportunity",
       "Step 2: Set user move to a non-mate move",

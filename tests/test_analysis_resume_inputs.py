@@ -6,7 +6,11 @@ from pathlib import Path
 
 import duckdb
 
-from tactix.analysis_context import AnalysisPositionContext, AnalysisPositionMeta, AnalysisPositionPersistence
+from tactix.analysis_context import (
+    AnalysisPositionContext,
+    AnalysisPositionMeta,
+    AnalysisPositionPersistence,
+)
 from tactix.analysis_signature__pipeline import _analysis_signature
 from tactix.app.use_cases.pipeline_support import _write_analysis_checkpoint
 from tactix.config import Settings
@@ -18,13 +22,13 @@ from tactix.process_analysis_position__pipeline import _process_analysis_positio
 
 def _build_game_row() -> dict[str, object]:
     pgn = (
-        "[Event \"Test Game\"]\n"
-        "[Site \"?\"]\n"
-        "[Date \"2026.02.01\"]\n"
-        "[Round \"-\"]\n"
-        "[White \"user1\"]\n"
-        "[Black \"user2\"]\n"
-        "[Result \"1-0\"]\n\n"
+        '[Event "Test Game"]\n'
+        '[Site "?"]\n'
+        '[Date "2026.02.01"]\n'
+        '[Round "-"]\n'
+        '[White "user1"]\n'
+        '[Black "user2"]\n'
+        '[Result "1-0"]\n\n'
         "1. e4 e5 2. Nf3 Nc6 1-0"
     )
     now = datetime.now(UTC)

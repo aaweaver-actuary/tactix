@@ -77,14 +77,18 @@ import {
   isScopedMotif,
 } from '../utils/motifScope';
 import type { FloatingAction } from '../_components/FloatingActionButton';
+import {
+  BACKFILL_WINDOW_DAYS,
+  DAY_MS,
+  ensureSourceSelected,
+  resolveBackfillWindow,
+} from './dashboardFlowUtils';
 
 const DASHBOARD_CARD_STORAGE_KEY = 'tactix.dashboard.mainCardOrder';
 const MOTIF_CARD_STORAGE_KEY = 'tactix.dashboard.motifCardOrder';
 const DASHBOARD_CARD_DROPPABLE_ID = 'dashboard-main-cards';
 const MOTIF_CARD_DROPPABLE_ID = 'dashboard-motif-cards';
 const PRACTICE_FEEDBACK_DELAY_MS = 600;
-const DAY_MS = 24 * 60 * 60 * 1000;
-const BACKFILL_WINDOW_DAYS = 900;
 const DEFAULT_TIME_CONTROLS = [
   'bullet',
   'blitz',
@@ -265,41 +269,6 @@ const openLichessAnalysisWindow = (url: string) => {
 const waitForPracticeFeedback = () =>
   new Promise((resolve) => setTimeout(resolve, PRACTICE_FEEDBACK_DELAY_MS));
 
-const parseBackfillDate = (value: string, fallbackMs: number) => {
-  const date = value ? new Date(`${value}T00:00:00`) : new Date(fallbackMs);
-  return date.getTime();
-};
-
-export const resolveBackfillWindow = (
-  startDate: string,
-  endDate: string,
-  nowMs: number,
-) => {
-  const startMs = parseBackfillDate(
-    startDate,
-    nowMs - BACKFILL_WINDOW_DAYS * DAY_MS,
-  );
-  const endMs = parseBackfillDate(endDate, nowMs);
-  const cappedEnd = Math.min(endMs + DAY_MS, nowMs);
-  if (Number.isNaN(startMs) || Number.isNaN(cappedEnd)) {
-    throw new Error('Invalid backfill date range');
-  }
-  if (startMs >= cappedEnd) {
-    throw new Error('Backfill range must end after the start date');
-  }
-  return { startMs, endMs: cappedEnd };
-};
-
-export const ensureSourceSelected = (
-  source: ChessPlatform,
-  setError: (message: string) => void,
-  message: string,
-) => {
-  if (source !== 'all') return true;
-  setError(message);
-  return false;
-};
-
 type BaseCardDragHandleProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 type BaseCardRenderProps = {
   dragHandleProps?: BaseCardDragHandleProps;
@@ -323,7 +292,7 @@ export default function DashboardFlow() {
     useState<ChesscomProfile>('blitz');
   const [filters, setFilters] = useState(() => ({ ...DEFAULT_FILTERS }));
   const [backfillStartDate, setBackfillStartDate] = useState(() => {
-    const date = new Date(Date.now() - 900 * 24 * 60 * 60 * 1000);
+    const date = new Date(Date.now() - BACKFILL_WINDOW_DAYS * DAY_MS);
     return date.toISOString().slice(0, 10);
   });
   const [backfillEndDate, setBackfillEndDate] = useState(() => {
@@ -1244,7 +1213,6 @@ export default function DashboardFlow() {
       await submitPracticeMove(moveResult);
     },
     [
-      currentPractice,
       getPracticeBaseFen,
       practiceMove,
       setPracticeSubmitError,
@@ -1268,7 +1236,6 @@ export default function DashboardFlow() {
       return true;
     },
     [
-      currentPractice,
       getPracticeBaseFen,
       practiceSubmitting,
       setPracticeSubmitError,

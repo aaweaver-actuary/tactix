@@ -1,21 +1,9 @@
-import type { MouseEvent } from 'react';
 import { DashboardPayload } from '../api';
 import ActionButton from './ActionButton';
+import { handleActionClick } from './tacticsActionButtonsUtils';
 
 const BUTTON_CLASSES =
   'rounded border border-white/10 px-2 py-1 text-xs text-sand/80 hover:border-white/30 disabled:cursor-not-allowed disabled:border-white/5 disabled:text-sand/40';
-
-const handleActionClick = (
-  event: MouseEvent<HTMLButtonElement>,
-  enabled: boolean,
-  action: () => void,
-) => {
-  event.stopPropagation();
-  if (!enabled) return;
-  action();
-};
-
-export const __test__ = { handleActionClick };
 
 type TacticsActionButtonsProps = {
   tactic: DashboardPayload['tactics'][number];

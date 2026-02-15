@@ -7,10 +7,11 @@ import {
   within,
 } from '@testing-library/react';
 import { vi } from 'vitest';
-import DashboardFlow, {
+import DashboardFlow from './DashboardFlow';
+import {
   ensureSourceSelected,
   resolveBackfillWindow,
-} from './DashboardFlow';
+} from './dashboardFlowUtils';
 import buildLichessAnalysisUrl from '../utils/buildLichessAnalysisUrl';
 import * as buildPracticeMoveModule from '../utils/buildPracticeMove';
 import type {

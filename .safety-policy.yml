@@ -43,6 +43,9 @@ security:
     82196:
       reason: 'Airflow pins Werkzeug <3; upstream compatibility required for fixes.'
       expires: '2026-12-31'
+    84324:
+      reason: 'Airflow pins Werkzeug <3; upstream compatibility required for fixes.'
+      expires: '2026-12-31'
   continue-on-vulnerability-error: false
 
 security-updates:

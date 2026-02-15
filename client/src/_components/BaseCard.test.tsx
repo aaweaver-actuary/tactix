@@ -1,7 +1,8 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import BaseCard, { isInteractiveTarget } from './BaseCard';
+import BaseCard from './BaseCard';
+import { isInteractiveTarget } from './baseCardUtils';
 import BaseButton from './BaseButton';
 
 describe('BaseCard', () => {

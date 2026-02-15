@@ -1,7 +1,8 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import TacticsActionButtons, { __test__ } from './TacticsActionButtons';
+import TacticsActionButtons from './TacticsActionButtons';
+import { handleActionClick } from './tacticsActionButtonsUtils';
 
 const baseTactic = {
   tactic_id: 1,
@@ -92,7 +93,7 @@ describe('TacticsActionButtons', () => {
     const action = vi.fn();
     const stopPropagation = vi.fn();
 
-    __test__.handleActionClick({ stopPropagation } as any, false, action);
+    handleActionClick({ stopPropagation } as any, false, action);
 
     expect(stopPropagation).toHaveBeenCalled();
     expect(action).not.toHaveBeenCalled();

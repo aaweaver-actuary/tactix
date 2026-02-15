@@ -21,6 +21,7 @@ from tactix.infra.clients.lichess_client import (
     _fetch_remote_games,
     _fetch_remote_games_once,
     _is_auth_error,
+    _parse_cursor,
     _pgn_to_game_row,
     _read_cached_token,
     _refresh_lichess_token,
@@ -55,6 +56,20 @@ class LichessClientTests(unittest.TestCase):
         ckpt_path = self.tmp_dir / "since_invalid.txt"
         ckpt_path.write_text("bad")
         self.assertIsNone(read_checkpoint(ckpt_path))
+
+    def test_checkpoint_blank_and_none_write(self) -> None:
+        ckpt_path = self.tmp_dir / "since_blank.txt"
+        ckpt_path.write_text("  ")
+        self.assertIsNone(read_checkpoint(ckpt_path))
+
+        write_checkpoint(ckpt_path, None)
+        self.assertEqual(ckpt_path.read_text(), "")
+        self.assertIsNone(read_checkpoint(ckpt_path))
+
+    def test_parse_cursor_handles_non_digit_values(self) -> None:
+        self.assertEqual(_parse_cursor("bad:cursor"), (0, "bad:cursor"))
+        self.assertEqual(_parse_cursor("abc"), (0, "abc"))
+        self.assertEqual(_parse_cursor("123"), (123, ""))
 
     def test_fixture_fetch_respects_since(self) -> None:
         settings = Settings(

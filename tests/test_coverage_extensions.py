@@ -62,7 +62,12 @@ from tactix.pgn_context_kwargs import (
     build_pgn_context_kwargs,
     build_pgn_context_kwargs_from_values,
 )
-from tactix.pgn_headers import PgnHeaders, _coerce_pgn_datetime, _parse_pgn_date_str
+from tactix.pgn_headers import (
+    PgnHeaders,
+    _coerce_pgn_date,
+    _coerce_pgn_datetime,
+    _parse_pgn_date_str,
+)
 from tactix.prepare_dag_helpers__airflow import (
     _apply_triggered_end,
     _coerce_optional_int,
@@ -948,6 +953,8 @@ def test_pgn_headers_helpers(tmp_path, monkeypatch, capsys) -> None:
         time_control=headers.time_control,
     )
     assert date_headers.date == datetime(2024, 1, 1, tzinfo=UTC).date()
+    sample_date = datetime(2024, 1, 2, tzinfo=UTC).date()
+    assert _coerce_pgn_date(sample_date) == sample_date
 
     def _raise(*_args, **_kwargs):
         raise ValueError("bad")

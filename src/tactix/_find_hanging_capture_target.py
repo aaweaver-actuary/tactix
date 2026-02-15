@@ -64,17 +64,11 @@ def _hanging_target_for_move(
     *,
     target_square: chess.Square | None = None,
 ) -> HangingCaptureTarget | None:
-    if not board.is_capture(move):
+    candidate = _resolve_hanging_capture_candidate(board, move, mover_color)
+    if candidate is None:
         return None
-    board_after = board.copy()
-    board_after.push(move)
-    if not BaseTacticDetector.is_hanging_capture(board, board_after, move, mover_color):
-        return None
-    capture_square = _resolve_capture_square__move(board, move, mover_color)
+    capture_square, captured_piece = candidate
     if target_square is not None and capture_square != target_square:
-        return None
-    captured_piece = board.piece_at(capture_square)
-    if captured_piece is None:
         return None
     confidence = _resolve_capture_confidence(board, capture_square, mover_color)
     return HangingCaptureTarget(
@@ -83,6 +77,24 @@ def _hanging_target_for_move(
         target_square=chess.square_name(capture_square),
         confidence=confidence,
     )
+
+
+def _resolve_hanging_capture_candidate(
+    board: chess.Board,
+    move: chess.Move,
+    mover_color: bool,
+) -> tuple[chess.Square, chess.Piece] | None:
+    if not board.is_capture(move):
+        return None
+    board_after = board.copy()
+    board_after.push(move)
+    if not BaseTacticDetector.is_hanging_capture(board, board_after, move, mover_color):
+        return None
+    capture_square = _resolve_capture_square__move(board, move, mover_color)
+    captured_piece = board.piece_at(capture_square)
+    if captured_piece is None:
+        return None
+    return capture_square, captured_piece
 
 
 def _resolve_capture_confidence(
@@ -126,3 +138,6 @@ def _piece_label(piece: chess.Piece) -> str:
         chess.KING: "king",
     }
     return labels.get(piece.piece_type, "unknown")
+
+
+_VULTURE_USED = (_find_hanging_capture_target_on_square,)

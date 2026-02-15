@@ -40,6 +40,7 @@ from tactix.analyze_tactics__positions import (
 )
 from tactix.BaseTacticDetector import BaseTacticDetector
 from tactix.config import Settings
+from tactix.engine_result import EngineResult
 from tactix.format_tactics__explanation import format_tactic_explanation
 from tactix.outcome_context import BaseOutcomeContext, OutcomeOverridesContext
 from tactix.OutcomeDetails import OutcomeDetails
@@ -79,6 +80,23 @@ class PositionMotifContext:
     user_move: chess.Move
     best_move_obj: chess.Move | None
     mover_color: bool
+
+
+@dataclass(frozen=True)
+# pylint: disable=too-many-instance-attributes
+class PostMoveTacticDetailsInputs:
+    best_move: str
+    best_line_uci: str
+    base_cp: int
+    engine_depth: int | None
+    confidence: str
+    metadata: dict[str, object]
+    mate_type: str | None
+    best_san: str
+    explanation: str
+    target_piece: str
+    target_square: str
+    severity: str
 
 
 @dataclass(frozen=True)
@@ -480,52 +498,112 @@ def _resolve_outcome_for_position(
     )
 
 
+def _resolve_post_move_capture_candidate(
+    board: chess.Board,
+    move: chess.Move,
+    mover_color: bool,
+) -> tuple[chess.Square, chess.Piece] | None:
+    capture_info = _resolve_post_move_capture_piece(board, move, mover_color)
+    if capture_info is None:
+        return None
+    capture_square, captured_piece = capture_info
+    if not _is_valid_post_move_capture(board, capture_square, captured_piece, mover_color):
+        return None
+    return capture_square, captured_piece
+
+
+def _resolve_post_move_capture_piece(
+    board: chess.Board,
+    move: chess.Move,
+    mover_color: bool,
+) -> tuple[chess.Square, chess.Piece] | None:
+    if not board.is_capture(move):
+        return None
+    capture_square = _resolve_capture_square__move(board, move, mover_color)
+    captured_piece = board.piece_at(capture_square)
+    if captured_piece is None or captured_piece.color == mover_color:
+        return None
+    return capture_square, captured_piece
+
+
+def _is_valid_post_move_capture(
+    board: chess.Board,
+    capture_square: chess.Square,
+    captured_piece: chess.Piece,
+    mover_color: bool,
+) -> bool:
+    if not BaseTacticDetector.has_legal_capture_on_square(
+        board,
+        capture_square,
+        mover_color,
+    ):
+        return False
+    return not _should_skip_post_move_trade(board, capture_square, captured_piece, mover_color)
+
+
+def _should_skip_post_move_trade(
+    board: chess.Board,
+    capture_square: chess.Square,
+    captured_piece: chess.Piece,
+    mover_color: bool,
+) -> bool:
+    if not BaseTacticDetector.has_legal_capture_on_square(
+        board,
+        capture_square,
+        not mover_color,
+    ):
+        return False
+    return not BaseTacticDetector.is_favorable_trade_on_square(
+        board,
+        capture_square,
+        captured_piece,
+        mover_color,
+    )
+
+
+def _resolve_post_move_capture_confidence(
+    board: chess.Board,
+    capture_square: chess.Square,
+    mover_color: bool,
+) -> str:
+    if not BaseTacticDetector.has_legal_capture_on_square(
+        board,
+        capture_square,
+        not mover_color,
+    ):
+        return "high"
+    return "medium"
+
+
+def _score_post_move_target(
+    board: chess.Board,
+    move: chess.Move,
+    captured_piece: chess.Piece,
+) -> tuple[int, int, str]:
+    mover_piece = board.piece_at(move.from_square)
+    mover_value = BaseTacticDetector.piece_value(mover_piece.piece_type) if mover_piece else 0
+    captured_value = BaseTacticDetector.piece_value(captured_piece.piece_type)
+    return (captured_value, -mover_value, move.uci())
+
+
 def _resolve_post_move_hanging_target(
     board: chess.Board,
     mover_color: bool,
 ) -> HangingCaptureTarget | None:
     scored_targets: list[tuple[tuple[int, int, str], HangingCaptureTarget]] = []
     for move in sorted(board.legal_moves, key=lambda candidate: candidate.uci()):
-        if not board.is_capture(move):
+        candidate = _resolve_post_move_capture_candidate(board, move, mover_color)
+        if candidate is None:
             continue
-        capture_square = _resolve_capture_square__move(board, move, mover_color)
-        captured_piece = board.piece_at(capture_square)
-        if captured_piece is None or captured_piece.color == mover_color:
-            continue
-        if not BaseTacticDetector.has_legal_capture_on_square(
+        capture_square, captured_piece = candidate
+        confidence = _resolve_post_move_capture_confidence(
             board,
             capture_square,
             mover_color,
-        ):
-            continue
-        if BaseTacticDetector.has_legal_capture_on_square(
-            board,
-            capture_square,
-            not mover_color,
-        ) and not BaseTacticDetector.is_favorable_trade_on_square(
-            board,
-            capture_square,
-            captured_piece,
-            mover_color,
-        ):
-            continue
-        mover_piece = board.piece_at(move.from_square)
-        mover_value = (
-            BaseTacticDetector.piece_value(mover_piece.piece_type) if mover_piece is not None else 0
-        )
-        captured_value = BaseTacticDetector.piece_value(captured_piece.piece_type)
-        confidence = (
-            "high"
-            if not BaseTacticDetector.has_legal_capture_on_square(
-                board,
-                capture_square,
-                not mover_color,
-            )
-            else "medium"
         )
         scored_targets.append(
             (
-                (captured_value, -mover_value, move.uci()),
+                _score_post_move_target(board, move, captured_piece),
                 HangingCaptureTarget(
                     move=move,
                     target_piece=_piece_label(captured_piece),
@@ -626,38 +704,101 @@ def _prepare_tactic_row_input(  # noqa: PLR0915
 
 
 @funclogger
-def _prepare_post_move_tactic_row_input(  # noqa: PLR0915
+def _parse_post_move_inputs(
     position: dict[str, object],
-    engine: StockfishEngine,
-    settings: Settings | None,
-) -> TacticRowInput | None:
-    fen = str(position.get("fen") or "")
-    user_move_uci = str(position.get("uci") or "")
-    if not fen or not user_move_uci:
+) -> tuple[str, str, chess.Board, bool] | None:
+    fen = _coerce_post_move_text(position.get("fen"))
+    if fen is None:
         return None
+    user_move_uci = _coerce_post_move_text(position.get("uci"))
+    if user_move_uci is None:
+        return None
+    board = _safe_board_from_fen(fen)
+    if board is None:
+        return None
+    return fen, user_move_uci, board, board.turn
+
+
+def _coerce_post_move_text(value: object) -> str | None:
+    if value is None:
+        return None
+    text = str(value)
+    if not text:
+        return None
+    return text
+
+
+def _safe_board_from_fen(fen: str) -> chess.Board | None:
     try:
-        board = chess.Board(fen)
+        return chess.Board(fen)
     except ValueError:
         return None
-    mover_color = board.turn
-    hanging_target = _resolve_post_move_hanging_target(board, mover_color)
-    if hanging_target is None:
-        return None
-    user_color = not mover_color
+
+
+def _evaluate_post_move_engine_context(
+    board: chess.Board,
+    move: chess.Move,
+    engine: StockfishEngine,
+    user_color: bool,
+) -> tuple[EngineResult, int, str, str, int]:
     engine_result = engine.analyse(board)
     base_cp = BaseTacticDetector.score_from_pov(
         engine_result.score_cp,
         user_color,
         board.turn,
     )
-    best_move = hanging_target.move.uci()
+    best_move = move.uci()
     best_line_uci = engine_result.best_line_uci or best_move
     board_after = board.copy()
-    board_after.push(hanging_target.move)  # pylint: disable=E1101
+    board_after.push(move)  # pylint: disable=E1101
     after_cp = BaseTacticDetector.score_from_pov(
         engine.analyse(board_after).score_cp,
         user_color,
         board_after.turn,  # pylint: disable=E1101
+    )
+    return engine_result, base_cp, best_move, best_line_uci, after_cp
+
+
+def _build_post_move_tactic_details(
+    inputs: PostMoveTacticDetailsInputs,
+) -> TacticDetails:
+    return TacticDetails(
+        motif="hanging_piece",
+        severity=inputs.severity,
+        best_move=inputs.best_move,
+        best_line_uci=inputs.best_line_uci,
+        base_cp=inputs.base_cp,
+        engine_depth=inputs.engine_depth,
+        confidence=inputs.confidence,
+        mate_in=None,
+        tactic_piece=inputs.metadata["tactic_piece"],
+        mate_type=inputs.mate_type,
+        best_san=inputs.best_san,
+        explanation=inputs.explanation,
+        target_piece=inputs.target_piece,
+        target_square=inputs.target_square,
+    )
+
+
+@funclogger
+def _prepare_post_move_tactic_row_input(
+    position: dict[str, object],
+    engine: StockfishEngine,
+    settings: Settings | None,
+) -> TacticRowInput | None:
+    parsed = _parse_post_move_inputs(position)
+    if parsed is None:
+        return None
+    fen, user_move_uci, board, mover_color = parsed
+    hanging_target = _resolve_post_move_hanging_target(board, mover_color)
+    if hanging_target is None:
+        return None
+    user_color = not mover_color
+    engine_result, base_cp, best_move, best_line_uci, after_cp = _evaluate_post_move_engine_context(
+        board,
+        hanging_target.move,
+        engine,
+        user_color,
     )
     delta = after_cp - base_cp
     severity = _compute_severity_for_position(
@@ -675,24 +816,25 @@ def _prepare_post_move_tactic_row_input(  # noqa: PLR0915
     best_san, explanation = format_tactic_explanation(fen, best_move, "hanging_piece")
     metadata = resolve_tactic_metadata(fen, best_move, "hanging_piece")
     mate_type = _resolve_mate_type("hanging_piece", None, metadata)
-    return TacticRowInput(
-        position=position,
-        details=TacticDetails(
-            motif="hanging_piece",
-            severity=severity,
+    details = _build_post_move_tactic_details(
+        PostMoveTacticDetailsInputs(
             best_move=best_move,
             best_line_uci=best_line_uci,
             base_cp=base_cp,
             engine_depth=engine_result.depth,
             confidence=hanging_target.confidence,
-            mate_in=None,
-            tactic_piece=metadata["tactic_piece"],
+            metadata=metadata,
             mate_type=mate_type,
             best_san=best_san,
             explanation=explanation,
             target_piece=hanging_target.target_piece,
             target_square=hanging_target.target_square,
-        ),
+            severity=severity,
+        )
+    )
+    return TacticRowInput(
+        position=position,
+        details=details,
         outcome=OutcomeDetails(
             result="missed",
             user_move_uci=user_move_uci,
@@ -842,6 +984,9 @@ def _build_tactic_details_for_context(
         target_piece=target_piece,
         target_square=target_square,
     )
+
+
+_VULTURE_USED = (_apply_moved_piece_hanging_override,)
 
 
 def _resolve_hanging_piece_target(
